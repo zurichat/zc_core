@@ -4,11 +4,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"zuri.chat/zccore/utils"
 )
 
-const PLUGIN_COLLECTION_NAME = "plugins"
+const _PLUGIN_COLLECTION_NAME = "plugins"
 
 // Plugin (App) model
 type Plugin struct {
@@ -42,11 +43,39 @@ func Create(w http.ResponseWriter, r *http.Request) {
 func createPlugin(p *Plugin) error {
 	m, _ := utils.StructToMap(p, "bson")
 	m["created_at"] = time.Now()
-	res, err := utils.CreateMongoDbDoc(PLUGIN_COLLECTION_NAME, m)
+	res, err := utils.CreateMongoDbDoc(_PLUGIN_COLLECTION_NAME, m)
 	if err != nil {
 		return err
 	}
 	p.ID = res.InsertedID.(primitive.ObjectID)
 	p.CreatedAt = m["created_at"].(time.Time)
 	return nil
+}
+
+func List(w http.ResponseWriter, r *http.Request) {
+	filter := make(map[string]interface{})
+	ps, err := utils.GetMongoDbDocs(_PLUGIN_COLLECTION_NAME, filter)
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("success", ps, w)
+}
+
+func GetOne(w http.ResponseWriter, r *http.Request) {
+	idHex := mux.Vars(r)["plugin_id"]
+	objId, _ := primitive.ObjectIDFromHex(idHex)
+	filter := make(map[string]interface{})
+	filter["_id"] = objId
+
+	p, err := utils.GetMongoDbDoc(_PLUGIN_COLLECTION_NAME, filter)
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("success", p, w)
 }
