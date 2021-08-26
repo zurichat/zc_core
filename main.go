@@ -11,6 +11,7 @@ import (
 	"github.com/joho/godotenv"
 	"zuri.chat/zccore/data"
 	"zuri.chat/zccore/organizations"
+	"zuri.chat/zccore/plugin"
 )
 
 func Router() *mux.Router {
@@ -21,6 +22,7 @@ func Router() *mux.Router {
 	r.HandleFunc("/data/write", data.WriteData)
 	r.HandleFunc("/data/read", data.ReadData)
 	r.HandleFunc("/organisation/create", organizations.Create).Methods("POST")
+	r.HandleFunc("/plugin/create", plugin.Create).Methods("POST")
 
 	http.Handle("/", r)
 

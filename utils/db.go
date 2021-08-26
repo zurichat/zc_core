@@ -98,6 +98,13 @@ func CreateMongoDbDoc(CollectionName string, data map[string]interface{}) (*mong
 	}
 
 	collection := client.Database(DbName).Collection(CollectionName)
+
+	// Allow mongodb to assign automatic and unique ObjectIDs to new documents.
+	// If _id field exists, it should be removed.
+	if _, exists := data["_id"]; exists {
+		delete(data, "_id")
+	}
+
 	res, err := collection.InsertOne(ctx, MapToBson(data))
 
 	if err != nil {

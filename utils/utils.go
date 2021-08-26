@@ -2,9 +2,12 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
+	"reflect"
 
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
@@ -18,9 +21,9 @@ type ErrorResponse struct {
 
 // SuccessResponse : This is success model.
 type SuccessResponse struct {
-	StatusCode   int    `json:"status"`
-	Message string `json:"message"`
-	Data	interface{} `json:"data"`
+	StatusCode int         `json:"status"`
+	Message    string      `json:"message"`
+	Data       interface{} `json:"data"`
 }
 
 // GetError : This is helper function to prepare error model.
@@ -39,14 +42,14 @@ func GetError(err error, StatusCode int, w http.ResponseWriter) {
 // GetSuccess : This is helper function to prepare success model.
 func GetSuccess(msg string, data interface{}, w http.ResponseWriter) {
 	var response = SuccessResponse{
-		Message: msg,
+		Message:    msg,
 		StatusCode: http.StatusOK,
-		Data: data,
+		Data:       data,
 	}
 
 	message, _ := json.Marshal(response)
 
-	w.WriteHeader(response.StatusCode)
+	//	w.WriteHeader(response.StatusCode) if status code is not set write automatically sets it to 200
 	w.Write(message)
 }
 
@@ -85,4 +88,49 @@ func MapToBson(data map[string]interface{}) bson.M {
 	}
 
 	return bsonM
+}
+
+// ParseJSONFromRequest unmarshals JSON from request into a Go native type
+func ParseJSONFromRequest(r *http.Request, v interface{}) error {
+	return parseJSON(r.Body, v)
+}
+
+func parseJSON(r io.Reader, v interface{}) error {
+	return json.NewDecoder(r).Decode(v)
+}
+
+// StructToMap converts a struct of any type to a map[string]inteface{} based on struct tags
+// The struct tag is used to decide which field is added to the map.
+// This function is useful when you want to convert a model struct to a map[string]interface{}
+// for use with the MapToBson() function.
+// this intermediate Go stuff, uses reflection and struct annotations (tags)
+// the tag name here should be `bson` and the value should be the name of the struct field
+func StructToMap(inStruct interface{}, tag string) (map[string]interface{}, error) {
+	out := make(map[string]interface{})
+
+	v := reflect.ValueOf(inStruct)
+
+	// if it is a pointer to a struct, extract the element
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	// only accepts struct kind, any other kind is an error
+	if v.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("StructToMap only accepts structs or pointer to structs: got %T", v)
+	}
+
+	typ := v.Type()
+
+	for i := 0; i < v.NumField(); i++ {
+		field := typ.Field(i)
+		if tagVal := field.Tag.Get(tag); !shouldOmitTag(tagVal) {
+			out[tagVal] = v.Field(i).Interface()
+		}
+	}
+	return out, nil
+}
+
+func shouldOmitTag(tagVal string) bool {
+	return tagVal == "" || tagVal == "-"
 }
