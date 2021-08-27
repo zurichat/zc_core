@@ -16,6 +16,7 @@ type Plugin struct {
 	ID           primitive.ObjectID `json:"_id,omitempty" bson:"_id"`
 	Name         string             `json:"name" bson:"name"`
 	Description  string             `json:"description" bson:"description"`
+	AuthToken    string             `json:"auth_token" bson:"auth_token"`
 	InstallCount int                `json:"install_count" bson:"install_count"`
 	Approved     bool               `json:"approved" bson:"approved"`
 	ApprovedAt   time.Time          `json:"approved_at" bson:"approved_at"`
