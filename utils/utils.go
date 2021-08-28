@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strings"
 
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
@@ -102,8 +103,7 @@ func parseJSON(r io.Reader, v interface{}) error {
 // StructToMap converts a struct of any type to a map[string]inteface{} based on struct tags
 // The struct tag is used to decide which field is added to the map.
 // This function is useful when you want to convert a model struct to a map[string]interface{}
-// for use with the MapToBson() function.
-// this intermediate Go stuff, uses reflection and struct annotations (tags)
+// this is intermediate Go stuff, uses reflection and struct annotations (tags)
 // the tag name here should be `bson` and the value should be the name of the struct field
 func StructToMap(inStruct interface{}, tag string) (map[string]interface{}, error) {
 	out := make(map[string]interface{})
@@ -132,5 +132,5 @@ func StructToMap(inStruct interface{}, tag string) (map[string]interface{}, erro
 }
 
 func shouldOmitTag(tagVal string) bool {
-	return tagVal == "" || tagVal == "-"
+	return tagVal == "" || tagVal == "-" || strings.Contains(tagVal, "omitempty")
 }

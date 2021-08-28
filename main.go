@@ -21,7 +21,7 @@ func Router() *mux.Router {
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
 	r.HandleFunc("/data/write", data.WriteData)
 	r.HandleFunc("/data/read", data.ReadData)
-	r.HandleFunc("/data/read/{plugin_id}/{coll_name}", data.ReadData).Methods("GET")
+	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
 	r.HandleFunc("/organisation/create", organizations.Create).Methods("POST")
 	r.HandleFunc("/plugins", plugin.Create).Methods("POST")
 	r.HandleFunc("/plugins", plugin.List).Methods("GET")

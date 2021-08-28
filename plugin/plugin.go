@@ -11,7 +11,7 @@ import (
 
 const _PLUGIN_COLLECTION_NAME = "plugins"
 
-// Plugin (App) model
+// Plugin (App) model is used to keep track of all plugins in the application
 type Plugin struct {
 	ID           primitive.ObjectID `json:"_id,omitempty" bson:"_id"`
 	Name         string             `json:"name" bson:"name"`
@@ -24,6 +24,15 @@ type Plugin struct {
 	UpdatedAt    time.Time          `json:"updated_at" bson:"updated_at"`
 }
 
+// represents plugins installed in an organization
+//type OrganizationPlugin struct {
+// ID
+// OrganizationID
+// PluginID
+// InstalledAt
+//}
+
+// Create handles registration or creation of a new plugin in the app.
 func Create(w http.ResponseWriter, r *http.Request) {
 	p := &Plugin{}
 
@@ -53,6 +62,7 @@ func createPlugin(p *Plugin) error {
 	return nil
 }
 
+// List returns a list of all plugins that have been registered.
 func List(w http.ResponseWriter, r *http.Request) {
 	filter := make(map[string]interface{})
 	ps, err := utils.GetMongoDbDocs(_PLUGIN_COLLECTION_NAME, filter)
@@ -65,6 +75,7 @@ func List(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("success", ps, w)
 }
 
+// GetOne is used to find single plugin by its _id
 func GetOne(w http.ResponseWriter, r *http.Request) {
 	idHex := mux.Vars(r)["plugin_id"]
 	objId, _ := primitive.ObjectIDFromHex(idHex)
