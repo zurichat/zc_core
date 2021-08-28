@@ -71,11 +71,15 @@ var decoder = schema.NewDecoder()
 
 func parseURLQuery(r *http.Request) map[string]interface{} {
 	m := M{}
-	df := &DataFilter{}
+	//	df := &DataFilter{}
 	if len(r.URL.Query()) == 0 {
 		return m
 	}
-	_ = decoder.Decode(df, r.URL.Query())
-	m, _ = utils.StructToMap(df, "bson")
+
+	for k, v := range r.URL.Query() {
+		m[k] = v[0]
+	}
+	//	_ = decoder.Decode(df, r.URL.Query())
+	//	m, _ = utils.StructToMap(df, "bson")
 	return m
 }
