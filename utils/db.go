@@ -113,3 +113,24 @@ func CreateMongoDbDoc(CollectionName string, data map[string]interface{}) (*mong
 
 	return res, nil
 }
+
+// update single MongoDb document for a collection
+func UpdateOneMongoDbDoc(CollectionName string, ID string, data map[string]interface{}) (*mongo.UpdateResult, error) {
+	DbName := Env("DB_NAME")
+	client, ctx, err := getMongoDbConnection()
+	if err != nil {
+		return nil, err
+	}
+
+	collection := client.Database(DbName).Collection(CollectionName)
+
+	id, _ := primitive.ObjectIDFromHex(ID)
+	filter:= bson.M{"_id": id}
+	res, err := collection.UpdateOne(ctx, filter, MapToBson(data))
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return res, nil
+}
