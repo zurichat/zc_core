@@ -79,6 +79,6 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 }
 func Index(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	http.HandleFunc("/v1/welcome", Index)
-	fmt.Fprintf(w, "Welcome to Zuri Core")
+	// http.HandleFunc("/v1/welcome", Index)
+	fmt.Fprintf(w, "Welcome to Zuri Core Index")
 }
