@@ -4,9 +4,9 @@ import (
 	"context"
 	"log"
 	"time"
-	
-	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -126,7 +126,7 @@ func UpdateOneMongoDbDoc(CollectionName string, ID string, data map[string]inter
 	collection := client.Database(DbName).Collection(CollectionName)
 
 	id, _ := primitive.ObjectIDFromHex(ID)
-	filter:= bson.M{"_id": id}
+	filter := bson.M{"_id": id}
 	res, err := collection.UpdateOne(ctx, filter, MapToBson(data))
 
 	if err != nil {
