@@ -56,19 +56,18 @@ func GetSuccess(msg string, data interface{}, w http.ResponseWriter) {
 
 // get env vars; return empty string if not found
 func Env(key string) string {
+
+	if env, ok := os.LookupEnv(key); ok {
+		return env
+	}
+
 	if !FileExists(".env") {
-		log.Fatal("error loading .env file")
+		log.Println("error loading .env file")
 	}
 
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("error loading .env file")
-	}
-
-	env, ok := os.LookupEnv(key)
-
-	if ok {
-		return env
+		log.Println("error loading .env file")
 	}
 
 	return ""
@@ -82,13 +81,9 @@ func FileExists(name string) bool {
 
 // convert map to bson.M for mongoDB docs
 func MapToBson(data map[string]interface{}) bson.M {
-	bsonM := bson.M{}
-
-	for k, v := range data {
-		bsonM[k] = v
-	}
-
-	return bsonM
+	// bson.M has an underlying type similar to that of the data param, so type conversion is enough
+	// no need to range over the map.
+	return bson.M(data)
 }
 
 // ParseJSONFromRequest unmarshals JSON from request into a Go native type
