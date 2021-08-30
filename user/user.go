@@ -10,6 +10,23 @@ type UserWorkspace struct {
 	ID primitive.ObjectID `bson:"_id"`
 }
 
+type Role int
+
+const (
+	Super Role = iota
+	Admin
+	Member
+)
+
+type UserRole struct {
+	ID   primitive.ObjectID `bson:"_id"`
+	role Role
+}
+
+type UserSettings struct {
+	role UserRole
+}
+
 type Status int
 
 const (
@@ -26,7 +43,8 @@ type User struct {
 	password   string
 	status     Status
 	company    string
-	settings   string
+	settings   UserSettings
+	timezone   string
 	created_at time.Time
 	updated_at time.Time
 	deleted_at time.Time
