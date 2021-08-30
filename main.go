@@ -10,18 +10,22 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"zuri.chat/zccore/data"
+	"zuri.chat/zccore/app"
+	"zuri.chat/zccore/messaging"
 	"zuri.chat/zccore/organizations"
 )
 
+// Added a PathPrefix to route all endpoints via "/v1"
 func Router() *mux.Router {
-	r := mux.NewRouter()
-
-	r.HandleFunc("/", VersionHandler)
-	r.HandleFunc("/v1/welcome", Index).Methods("GET")
-	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
-	r.HandleFunc("/data/write", data.WriteData)
-	r.HandleFunc("/data/read", data.ReadData)
-	r.HandleFunc("/organisation/create", organizations.Create).Methods("POST")
+	r := mux.NewRouter().StrictSlash(true)
+  	wsr := r.PathPrefix("/v1").Subrouter()	
+    r.HandleFunc("/", VersionHandler).Methods("GET")
+	wsr.HandleFunc("/app", app.AppHandler)
+	wsr.HandleFunc("/messaging", messaging.Message).Methods("GET")
+	wsr.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
+	wsr.HandleFunc("/data/write", data.WriteData)
+	wsr.HandleFunc("/data/read", data.ReadData)
+	wsr.HandleFunc("/organisation/create", organizations.Create).Methods("POST")
 
 	http.Handle("/", r)
 
@@ -72,13 +76,8 @@ func LoadApp(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "<div><b>Hello</b> World <button style='color: green;'>Click me!</button></div>: App = %s\n", appId)
 }
+
 func VersionHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Zuri Chat API - Version 0.0001\n")
-	
-}
-func Index(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	// http.HandleFunc("/v1/welcome", Index)
-	fmt.Fprintf(w, "Welcome to Zuri Core Index")
 }
