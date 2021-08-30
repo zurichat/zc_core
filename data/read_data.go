@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"zuri.chat/zccore/utils"
@@ -46,6 +47,20 @@ func pluginHasCollection(pluginID, collectionName string) bool {
 		return true
 	}
 	return false
+}
+
+func createPluginCollectionRecord(pluginID, collectionName string) error {
+	doc := M{
+		"plugin_id":       pluginID,
+		"collection_name": collectionName,
+		"created_at":      time.Now(),
+	}
+
+	if _, err := utils.CreateMongoDbDoc("plugin_collections", doc); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func parseURLQuery(r *http.Request) map[string]interface{} {
