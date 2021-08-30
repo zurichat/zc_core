@@ -2,11 +2,11 @@ package utils
 
 import (
 	"context"
-	"log"
 	"sync"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -108,7 +108,97 @@ func CreateMongoDbDoc(collectionName string, data map[string]interface{}) (*mong
 	res, err := collection.InsertOne(ctx, MapToBson(data))
 
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func CreateManyMongoDbDocs(collectionName string, data []interface{}) (*mongo.InsertManyResult, error) {
+	ctx := context.Background()
+	collection := defaultMongoHandle.GetCollection(collectionName)
+	res, err := collection.InsertMany(ctx, data)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Update single MongoDb document for a collection
+func UpdateOneMongoDbDoc(collectionName string, ID string, data map[string]interface{}) (*mongo.UpdateResult, error) {
+	ctx := context.Background()
+	collection := defaultMongoHandle.GetCollection(collectionName)
+
+	id, _ := primitive.ObjectIDFromHex(ID)
+	filter := bson.M{"_id": id}
+
+	//updateOne sets the fields, without using $set the entire document will be overwritten
+	update_data := bson.M{"$set": MapToBson(data)}
+	res, err := collection.UpdateOne(ctx, filter, update_data)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Update many MongoDb documents for a collection
+func UpdateManyMongoDbDocs(collectionName string, filter map[string]interface{}, data map[string]interface{}) (*mongo.UpdateResult, error) {
+	ctx := context.Background()
+	collection := defaultMongoHandle.GetCollection(collectionName)
+	update_data := bson.M{"$set": MapToBson(data)}
+
+	res, err := collection.UpdateMany(ctx, MapToBson(filter), update_data)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Replace a document with new data but preserve its id
+func ReplaceMongoDbDoc(collectionName string, filter map[string]interface{}, data map[string]interface{}) (*mongo.UpdateResult, error) {
+	ctx := context.Background()
+	collection := defaultMongoHandle.GetCollection(collectionName)
+
+	res, err := collection.ReplaceOne(ctx, MapToBson(filter), MapToBson(data))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Delete single MongoDb document for a collection
+func DeleteOneMongoDoc(collectionName string, ID string) (*mongo.DeleteResult, error) {
+	ctx := context.Background()
+	collection := defaultMongoHandle.GetCollection(collectionName)
+
+	id, _ := primitive.ObjectIDFromHex(ID)
+	filter := bson.M{"_id": id}
+	res, err := collection.DeleteOne(ctx, filter)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// Delete many MongoDb documents for a collection
+func DeleteManyMongoDoc(collectionName string, filter map[string]interface{}) (*mongo.DeleteResult, error) {
+	ctx := context.Background()
+	collection := defaultMongoHandle.GetCollection(collectionName)
+
+	res, err := collection.DeleteMany(ctx, filter)
+
+	if err != nil {
+		return nil, err
 	}
 
 	return res, nil

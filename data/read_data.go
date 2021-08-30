@@ -4,10 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"zuri.chat/zccore/utils"
 )
 
@@ -36,42 +34,6 @@ func ReadData(w http.ResponseWriter, r *http.Request) {
 // used to add a prefix to a collection name so we can generate unique collection names for different organizations for a plugin.
 func getPrefixedCollectionName(pluginID, orgID, collName string) string {
 	return fmt.Sprintf("%s:%s:%s", pluginID, orgID, collName)
-}
-
-func recordExists(collName, id string) bool {
-	objId, _ := primitive.ObjectIDFromHex(id)
-	_, err := utils.GetMongoDbDoc(collName, M{"_id": objId})
-	if err == nil {
-		return true
-	}
-	return false
-}
-
-func pluginHasCollection(pluginID, orgID, collectionName string) bool {
-	filter := M{
-		"plugin_id":       pluginID,
-		"collection_name": collectionName,
-		"organization_id": orgID,
-	}
-	_, err := utils.GetMongoDbDoc("plugin_collections", filter)
-	if err == nil {
-		return true
-	}
-	return false
-}
-
-func createPluginCollectionRecord(pluginID, orgID, collectionName string) error {
-	doc := M{
-		"plugin_id":       pluginID,
-		"organization_id": orgID,
-		"collection_name": collectionName,
-		"created_at":      time.Now(),
-	}
-
-	if _, err := utils.CreateMongoDbDoc("plugin_collections", doc); err != nil {
-		return err
-	}
-	return nil
 }
 
 func parseURLQuery(r *http.Request) map[string]interface{} {
