@@ -26,9 +26,22 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !recordExists("plugins", reqData.PluginID) {
+		msg := "plugin with this id does not exist"
+		utils.GetError(errors.New(msg), http.StatusNotFound, w)
+		return
+	}
+
+	if !recordExists("organization", reqData.OrganizationID) {
+		// organization with this id does not exist
+		msg := "organization with this id does not exist"
+		utils.GetError(errors.New(msg), http.StatusNotFound, w)
+		return
+	}
+
 	// if plugin is accessing this collection the first time, we create a record linking this collection to the plugin.
-	if !pluginHasCollection(reqData.PluginID, reqData.CollectionName) {
-		createPluginCollectionRecord(reqData.PluginID, reqData.CollectionName)
+	if !pluginHasCollection(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName) {
+		createPluginCollectionRecord(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName)
 	}
 
 	switch r.Method {
@@ -42,10 +55,6 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wdr *writeDataRequest) handlePost(w http.ResponseWriter, r *http.Request) {
-	if wdr.CollectionName == "" || wdr.PluginID == "" {
-		utils.GetError(errors.New("invalid data destination"), http.StatusBadRequest, w)
-		return
-	}
 	var err error
 	writeCount := 0
 	if wdr.BulkWrite {
@@ -67,7 +76,27 @@ func (wdr *writeDataRequest) handlePost(w http.ResponseWriter, r *http.Request) 
 }
 
 func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "hello world")
+	if wdr.CollectionName == "" || wdr.PluginID == "" {
+		utils.GetError(errors.New("invalid data destination"), http.StatusBadRequest, w)
+		return
+	}
+	var err error
+	writeCount := 0
+	if wdr.BulkWrite {
+		writeCount, err = updateMany(wdr.prefixCollectionName(), wdr.ObjectIDs, wdr.Payload)
+		if err != nil {
+			utils.GetError(fmt.Errorf("an error occured: %v", err), http.StatusInternalServerError, w)
+			return
+		}
+	} else {
+		if err := updateOne(wdr.prefixCollectionName(), wdr.ObjectID, wdr.Payload); err != nil {
+			utils.GetError(fmt.Errorf("an error occured: %v", err), http.StatusInternalServerError, w)
+			return
+		}
+		writeCount = 1
+	}
+
+	utils.GetSuccess("success", M{"update_count": writeCount}, w)
 }
 
 func (wdr *writeDataRequest) handleDelete(w http.ResponseWriter, r *http.Request) {
@@ -98,16 +127,28 @@ func insertOne(collName string, data interface{}) error {
 	return nil
 }
 
-func updateOne(id string, upd interface{}) error {
+func updateOne(collName, id string, upd interface{}) error {
+	_, ok := upd.(map[string]interface{})
+	if !ok {
+		return errors.New("type assertion error")
+	}
+	// do updateOne
 	return nil
 }
-func updateMany(id string, upd interface{}) (int, error) {
+
+func updateMany(collName string, id []string, upd interface{}) (int, error) {
+	_, ok := upd.([]interface{})
+	if !ok {
+		return 0, errors.New("type assertion error")
+	}
+	// do update many
 	return 0, nil
 }
 
-func deleteOne(id string) error {
+func deleteOne(collName, id string) error {
 	return nil
 }
-func deleteMany(id string) (int, error) {
+
+func deleteMany(collName, ids []string) (int, error) {
 	return 0, nil
 }

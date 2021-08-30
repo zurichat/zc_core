@@ -21,13 +21,7 @@ type Plugin struct {
 type PluginCollection struct {
 	ID             primitive.ObjectID `bson:"_id"`
 	PluginID       string             `bson:"plugin_id"`
+	OrganizationID string             `bson:"organization_id"`
 	CollectionName string             `bson:"collection_name"`
 	CreatedAt      time.Time          `bson:"created_at"`
-}
-
-func NewPluginModel(name, description string) *Plugin {
-	return &Plugin{
-		Name:        name,
-		Description: description,
-	}
 }
