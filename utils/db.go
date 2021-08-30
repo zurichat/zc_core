@@ -13,44 +13,43 @@ import (
 )
 
 type MongoDBHandle struct {
-	client    *mongo.Client
-	sync.Once // to create connection exactly once
+	client *mongo.Client
 }
 
 var defaultMongoHandle = &MongoDBHandle{}
 
+var once sync.Once
+
 func ConnectToDB(clusterURL string) error {
-	return defaultMongoHandle.Connect(clusterURL)
+	var err error
+	once.Do(func() {
+		err = defaultMongoHandle.Connect(clusterURL)
+	})
+	return err
 }
 
 func (mh *MongoDBHandle) Connect(clusterURL string) error {
-	var Err error
+	clientOptions := options.Client().ApplyURI(clusterURL)
 
-	// do this only once
-	mh.Once.Do(func() {
-		clientOptions := options.Client().ApplyURI(clusterURL)
+	client, err := mongo.NewClient(clientOptions)
+	if err != nil {
+		return err
+	}
 
-		client, err := mongo.NewClient(clientOptions)
-		if err != nil {
-			Err = err
-			return
-		}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
+	err = client.Connect(ctx)
+	if err != nil {
+		return err
+	}
 
-		err = client.Connect(ctx)
-		if err != nil {
-			return
-		}
-
-		err = client.Ping(context.Background(), readpref.Primary())
-		if err != nil {
-			return
-		}
-		mh.client = client
-	})
-	return Err
+	err = client.Ping(context.Background(), readpref.Primary())
+	if err != nil {
+		return err
+	}
+	mh.client = client
+	return nil
 }
 
 func (mh *MongoDBHandle) GetCollection(collectionName string) *mongo.Collection {
