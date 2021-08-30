@@ -11,6 +11,7 @@ import (
 	"github.com/joho/godotenv"
 	"zuri.chat/zccore/data"
 	"zuri.chat/zccore/organizations"
+	"zuri.chat/zccore/utils"
 )
 
 func Router() *mux.Router {
@@ -19,7 +20,7 @@ func Router() *mux.Router {
 	r.HandleFunc("/", VersionHandler)
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
 	r.HandleFunc("/data/write", data.WriteData)
-	r.HandleFunc("/data/read", data.ReadData)
+	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
 	r.HandleFunc("/organisation/create", organizations.Create).Methods("POST")
 
 	http.Handle("/", r)
@@ -27,26 +28,18 @@ func Router() *mux.Router {
 	return r
 }
 
-// function to check if a file exists, usefull in checking for .env
-func file_exists(name string) bool {
-	_, err := os.Stat(name)
-	return !os.IsNotExist(err)
-}
-
 func main() {
-	// load .env file if it exists
-	if file_exists(".env") {
-		err := godotenv.Load()
-		if err != nil {
-			log.Fatal("Error loading .env file")
-		}
+	// load .env file once
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Error loading .env file: %v", err)
 	}
 
-	// get PORT from environment variables
-	port, ok := os.LookupEnv("PORT")
+	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
+		log.Fatal(err)
+	}
 
-	// if there is no PORT in environment variables default to port 8000
-	if !ok {
+	port := os.Getenv("PORT")
+	if port == "" {
 		port = "8000"
 	}
 
