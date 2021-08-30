@@ -6,8 +6,20 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+type WorkSpaceProfile struct {
+	display_picture string
+	status          Status
+	bio             string
+	timezone        string
+	password        string
+	password_resets []UserPasswordReset
+	roles           []Role
+}
+
 type UserWorkspace struct {
-	ID primitive.ObjectID `bson:"_id"`
+	ID           primitive.ObjectID `bson:"_id"`
+	organization int                // should this be an ID instead?
+	profile      WorkSpaceProfile
 }
 
 type Role int
@@ -52,11 +64,11 @@ const (
 
 type User struct {
 	ID                 primitive.ObjectID `bson:"_id"`
-	first_name         string             `json:"first_name" validate:"required,min=2,max=100"`
-	last_name          string             `json:"last_name" validate:"required,min=2,max=100"`
-	email              string             `json:"email" validate:"email,required"`
-	password           string             `json:"Password" validate:"required,min=6""`
-	phone              string             `json:"phone" validate:"required"`
+	first_name         string             `bson:"first_name" validate:"required,min=2,max=100"`
+	last_name          string             `bson:"last_name" validate:"required,min=2,max=100"`
+	email              string             `bson:"email" validate:"email,required"`
+	password           string             `bson:"Password" validate:"required,min=6""`
+	phone              string             `bson:"phone" validate:"required"`
 	status             Status
 	company            string
 	settings           UserSettings
