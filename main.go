@@ -18,6 +18,7 @@ func Router() *mux.Router {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", VersionHandler)
+	r.HandleFunc("/v1/welcome", Index).Methods("GET")
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
 	r.HandleFunc("/data/write", data.WriteData)
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
@@ -64,8 +65,13 @@ func LoadApp(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "<div><b>Hello</b> World <button style='color: green;'>Click me!</button></div>: App = %s\n", appId)
 }
-
 func VersionHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Zuri Chat API - Version 0.0001\n")
+	
+}
+func Index(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	// http.HandleFunc("/v1/welcome", Index)
+	fmt.Fprintf(w, "Welcome to Zuri Core Index")
 }
