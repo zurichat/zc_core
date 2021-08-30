@@ -10,7 +10,7 @@ Based on this methods a CREATE, UPDATE or DELETE action will be performed on the
  "organization_id": "xxx",
  "collection_name": "mycollection",
  "bulk_write": false,
- "object_id": "xxxx"
+ "object_id": "xxxx",
  "object_ids": [],
  "payload": {}
 }
