@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/data"
 	"zuri.chat/zccore/organizations"
 )
@@ -23,6 +24,8 @@ func Router() *mux.Router {
 	r.HandleFunc("/data/read", data.ReadData)
 	r.HandleFunc("/organisation/create", organizations.Create).Methods("POST")
 
+	prefix := r.PathPrefix("/zurichat/v1/api").Subrouter()
+	prefix.HandleFunc("/auth/register", auth.register).Methods("POST")
 	http.Handle("/", r)
 
 	return r
