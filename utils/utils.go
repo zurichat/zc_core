@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"net/mail"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -85,4 +86,9 @@ func MapToBson(data map[string]interface{}) bson.M {
 	}
 
 	return bsonM
+}
+
+func IsValidEmail(email string) bool {
+    _, err := mail.ParseAddress(email)
+    return err == nil
 }

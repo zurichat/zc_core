@@ -11,6 +11,7 @@ import (
 	"github.com/joho/godotenv"
 	"zuri.chat/zccore/data"
 	"zuri.chat/zccore/organizations"
+	"zuri.chat/zccore/utils"
 )
 
 func Router() *mux.Router {
@@ -21,37 +22,58 @@ func Router() *mux.Router {
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
 	r.HandleFunc("/data/write", data.WriteData)
 	r.HandleFunc("/data/read", data.ReadData)
-	r.HandleFunc("/organisation/create", organizations.Create).Methods("POST")
 
 	http.Handle("/", r)
 
 	return r
 }
 
-// function to check if a file exists, usefull in checking for .env
-func file_exists(name string) bool {
-	_, err := os.Stat(name)
-	return !os.IsNotExist(err)
+func sanityCheck() {
+
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	envProps := []string{
+		"ORGANIZATION_COLLECTION",
+		"DB_NAME",
+		"CLUSTER_URL",
+		"PORT",
+	}
+	
+	for _, k := range envProps {
+		_, ok := os.LookupEnv(k)		
+		if !ok {
+			log.Fatal(fmt.Sprintf("Environment variable %s not defined. Terminating application...", k))
+		}
+	}
+	fmt.Println("Environment variables successfully loaded. Starting application...")
 }
 
 func main() {
-	// load .env file if it exists
-	if file_exists(".env") {
-		err := godotenv.Load()
-		if err != nil {
-			log.Fatal("Error loading .env file")
-		}
+	// check that all required variables are loaded
+	sanityCheck()
+
+	// fecth variables from environment
+	DATABASE_NAME, _ := os.LookupEnv("DB_NAME")
+	ORGANIZATION_COLLECTION, _ := os.LookupEnv("ORGANIZATION_COLLECTION")
+	
+	orgCollection, err := utils.GetMongoDbCollection(DATABASE_NAME, ORGANIZATION_COLLECTION)
+
+	if err != nil {
+		log.Fatalf("%s", err.Error())
 	}
+
+	orgRepo := organizations.NewOrgRepository(orgCollection)
+	OrgService := organizations.NewOrgService(orgRepo)
 
 	// get PORT from environment variables
-	port, ok := os.LookupEnv("PORT")
-
-	// if there is no PORT in environment variables default to port 8000
-	if !ok {
-		port = "8000"
-	}
+	port, _ := os.LookupEnv("PORT")
 
 	r := Router()
+	// organization route handler
+	organizations.NewOrgController(r, OrgService)
 
 	srv := &http.Server{
 		Handler:      r,
@@ -72,11 +94,13 @@ func LoadApp(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "<div><b>Hello</b> World <button style='color: green;'>Click me!</button></div>: App = %s\n", appId)
 }
+
 func VersionHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Zuri Chat API - Version 0.0001\n")
 	
 }
+
 func Index(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	http.HandleFunc("/v1/welcome", Index)
