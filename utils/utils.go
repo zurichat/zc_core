@@ -150,3 +150,7 @@ func StructToMap(inStruct interface{}, tag string) (map[string]interface{}, erro
 func shouldOmitTag(tagVal string) bool {
 	return tagVal == "" || tagVal == "-" || strings.Contains(tagVal, "omitempty")
 }
+
+func ParseJsonFromRequest(r *http.Request, v interface{}) error {
+	return json.NewDecoder(r.Body).Decode(v)
+}

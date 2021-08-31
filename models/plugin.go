@@ -17,8 +17,8 @@ type Plugin struct {
 	UpdatedAt    time.Time          `bson:"updated_at"`
 }
 
-// PluginCollection is used internally to keep track collections a plugin created.
-type PluginCollection struct {
+// PluginCollections is used internally to keep track collections a plugin created.
+type PluginCollections struct {
 	ID             primitive.ObjectID `bson:"_id"`
 	PluginID       string             `bson:"plugin_id"`
 	OrganizationID string             `bson:"organization_id"`

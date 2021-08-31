@@ -26,13 +26,13 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !recordExists("plugins", reqData.PluginID) {
+	if !recordExists(_PluginCollectionName, reqData.PluginID) {
 		msg := "plugin with this id does not exist"
 		utils.GetError(errors.New(msg), http.StatusNotFound, w)
 		return
 	}
 
-	if !recordExists("organization", reqData.OrganizationID) {
+	if !recordExists(_OrganizationCollectionName, reqData.OrganizationID) {
 		// organization with this id does not exist
 		msg := "organization with this id does not exist"
 		utils.GetError(errors.New(msg), http.StatusNotFound, w)
@@ -76,10 +76,6 @@ func (wdr *writeDataRequest) handlePost(w http.ResponseWriter, r *http.Request) 
 }
 
 func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, r *http.Request) {
-	if wdr.CollectionName == "" || wdr.PluginID == "" {
-		utils.GetError(errors.New("invalid data destination"), http.StatusBadRequest, w)
-		return
-	}
 	var err error
 	writeCount := 0
 	if wdr.BulkWrite {

@@ -8,7 +8,14 @@ import (
 
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"zuri.chat/zccore/models"
 	"zuri.chat/zccore/utils"
+)
+
+const (
+	_PluginCollectionName            = models.PluginCollectionName
+	_PluginCollectionsCollectionName = models.PluginCollectionsCollectionName
+	_OrganizationCollectionName      = models.OrganizationCollectionName
 )
 
 type M map[string]interface{}
@@ -53,7 +60,7 @@ func pluginHasCollection(pluginID, orgID, collectionName string) bool {
 		"collection_name": collectionName,
 		"organization_id": orgID,
 	}
-	_, err := utils.GetMongoDbDoc("plugin_collections", filter)
+	_, err := utils.GetMongoDbDoc(_PluginCollectionsCollectionName, filter)
 	if err == nil {
 		return true
 	}
@@ -68,7 +75,7 @@ func createPluginCollectionRecord(pluginID, orgID, collectionName string) error 
 		"created_at":      time.Now(),
 	}
 
-	if _, err := utils.CreateMongoDbDoc("plugin_collections", doc); err != nil {
+	if _, err := utils.CreateMongoDbDoc(_PluginCollectionsCollectionName, doc); err != nil {
 		return err
 	}
 	return nil
