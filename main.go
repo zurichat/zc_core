@@ -29,29 +29,48 @@ func Router() *mux.Router {
 	r.HandleFunc("/marketplace/plugins", marketplace.GetAllApprovedPlugins).Methods("GET")
 	r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetOneApprovedPlugin).Methods("GET")
 	r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
-	r.HandleFunc("/organization/create", organizations.Create).Methods("POST")
-	r.HandleFunc("/organizations/{org_id}/plugins", organizations.GetPlugins).Methods("GET")
+
 	http.Handle("/", r)
 
 	return r
 }
 
+
 func main() {
-	// load .env file once
-	if err := godotenv.Load(); err != nil {
-		log.Printf("Error loading .env file: %v", err)
+	
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
 	}
+	fmt.Println("Environment variables successfully loaded. Starting application...")
 
 	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
 		log.Fatal(err)
 	}
 
-	port := os.Getenv("PORT")
+	// fetch variables from environment
+	DATABASE_NAME, _ := os.LookupEnv("DB_NAME")
+	ORGANIZATION_COLLECTION, _ := os.LookupEnv("ORGANIZATION_COLLECTION")
+	
+	orgCollection, err := utils.GetMongoDbCollection(DATABASE_NAME, ORGANIZATION_COLLECTION)
+
+	if err != nil {
+		log.Fatalf("%s", err.Error())
+	}
+
+	orgRepo := organizations.NewOrgRepository(orgCollection)
+	OrgService := organizations.NewOrgService(orgRepo)
+
+	// get PORT from environment variables
+	port, _ := os.LookupEnv("PORT")
 	if port == "" {
 		port = "8000"
 	}
 
 	r := Router()
+
+	// organization route handler
+	organizations.NewOrgController(r, OrgService)
 
 	srv := &http.Server{
 		Handler:      r,
@@ -72,11 +91,13 @@ func LoadApp(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "<div><b>Hello</b> World <button style='color: green;'>Click me!</button></div>: App = %s\n", appId)
 }
+
 func VersionHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Zuri Chat API - Version 0.0001\n")
 
 }
+
 func Index(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	// http.HandleFunc("/v1/welcome", Index)
