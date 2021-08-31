@@ -1,7 +1,6 @@
 package messaging
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -9,6 +8,7 @@ import (
 
 type Room struct {
 	OwnerId     primitive.ObjectID   `json:"ownerid,omitempty" bson:"ownerid,omitempty"`
+	RoomName    string               `json:"roomname,omitempty" bson:"roomname,omitempty"`
 	RoomType    string               `json:"roomtype,omitempty" bson:"roomtype,omitempty"` //inbox, group, channel
 	Members     []primitive.ObjectID `json:"members,omitempty" bson:"members,omitempty"`
 	CreatedAt   string               `json:"createat,omitempty" bson:"createat,omitempty"`
@@ -32,6 +32,7 @@ type Reaction struct {
 type Message struct {
 	Content     MessageContent       `json:"content,omitempty" bson:"content,omitempty"`
 	SenderId    primitive.ObjectID   `json:"senderid,omitempty" bson:"senderid,omitempty"`
+	SenderName  string               `json:"sendername,omitempty" bson:"sendername,omitempty"`
 	RoomId      primitive.ObjectID   `json:"roomid,omitempty" bson:"roomid,omitempty"`
 	CreatedAt   string               `json:"createdat,omitempty" bson:"createdat,omitempty"`
 	Read        string               `json:"read,omitempty" bson:"read,omitempty"` // true or false
@@ -67,34 +68,31 @@ type SuccessResponse struct {
 }
 
 // GetError : This is helper function to prepare error model.
-func GetMessageError(err error, StatusCode int) []byte {
+func GetMessageError(err error, StatusCode int) interface{} {
 	var response = ErrorResponse{
 		ErrorMessage: err.Error(),
 		StatusCode:   StatusCode,
 	}
 
-	message, _ := json.Marshal(response)
-	return message
+	return response
 }
 
 // GetError : This is helper function to prepare error model.
-func GetCustomMessageError(err string, StatusCode int) []byte {
+func GetCustomMessageError(err string, StatusCode int) interface{} {
 	var response = ErrorResponse{
 		ErrorMessage: err,
 		StatusCode:   StatusCode,
 	}
 
-	message, _ := json.Marshal(response)
-	return message
+	return response
 }
 
 // GetSuccess : This is helper function to prepare success model.
-func GetMessageSuccess(msg string, data interface{}) []byte {
+func GetMessageSuccess(msg string, data interface{}) interface{} {
 	var response = SuccessResponse{
 		Message:    msg,
 		StatusCode: http.StatusOK,
 		Data:       data,
 	}
-	message, _ := json.Marshal(response)
-	return message
+	return response
 }

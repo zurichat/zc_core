@@ -7,24 +7,25 @@ import (
 	"os"
 	"time"
 
+	socketio "github.com/googollee/go-socket.io"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"zuri.chat/zccore/data"
 	"zuri.chat/zccore/messaging"
 	"zuri.chat/zccore/organizations"
-	"zuri.chat/zccore/todolist"
 )
 
-func Router() *mux.Router {
+func Router(Server *socketio.Server) *mux.Router {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", VersionHandler)
+	// r.Handle("/", http.FileServer(http.Dir("./views/chat/")))
 	r.HandleFunc("/v1/welcome", Index).Methods("GET")
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
 	r.HandleFunc("/data/write", data.WriteData)
 	r.HandleFunc("/data/read", data.ReadData)
 	r.HandleFunc("/organisation/create", organizations.Create).Methods("POST")
-	r.Handle("/socket.io/", messaging.Server)
+	r.Handle("/socket.io/", Server)
 
 	http.Handle("/", r)
 
@@ -38,6 +39,28 @@ func file_exists(name string) bool {
 }
 
 func main() {
+	////////////////////////////////////Socket  events////////////////////////////////////////////////
+	var Server = socketio.NewServer(nil)
+	Server.OnConnect("/socket.io/", func(s socketio.Conn) error {
+		messaging.Connect(s)
+		return nil
+	})
+	Server.OnEvent("/socket.io/", "enter_converstion", func(s socketio.Conn, msg string) {
+		messaging.EnterConversation(Server, s, msg)
+	})
+	Server.OnEvent("/socket.io/", "conversation", func(s socketio.Conn, msg string) {
+		messaging.BroadCastToConversation(Server, s, msg)
+	})
+	Server.OnError("/", func(s socketio.Conn, e error) {
+		fmt.Println("meet error:", e)
+	})
+
+	Server.OnDisconnect("/", func(s socketio.Conn, reason string) {
+		fmt.Println("closed", reason)
+	})
+
+	////////////////////////////////////Socket  events////////////////////////////////////////////////
+
 	// load .env file if it exists
 	if file_exists(".env") {
 		err := godotenv.Load()
@@ -54,7 +77,7 @@ func main() {
 		port = "8000"
 	}
 
-	r := Router()
+	r := Router(Server)
 
 	srv := &http.Server{
 		Handler:      r,
@@ -62,10 +85,9 @@ func main() {
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
-	go messaging.Server.Serve()
-	defer messaging.Server.Close()
-	messaging.Messaging()
-	todolist.TodoOps()
+	go Server.Serve()
+	fmt.Println("Socket Served")
+	defer Server.Close()
 
 	fmt.Println("Zuri Chat API running on port ", port)
 	log.Fatal(srv.ListenAndServe())
