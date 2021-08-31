@@ -38,6 +38,7 @@ func (a *OrgController) CreateOrganization(w http.ResponseWriter, r *http.Reques
 	// validate that email is not empty and it meets the format
 	if !utils.IsValidEmail(newOrg.OwnerEmail){
 		utils.GetError(fmt.Errorf("invalid email format : %s", newOrg.OwnerEmail), http.StatusInternalServerError, w)
+		return
 	}
 
 	res, err := a.Service.Create(r.Context(), newOrg)
