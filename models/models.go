@@ -8,4 +8,5 @@ const (
 	OrganizationCollectionName      = "organizations"
 	MarkeplaceCollectionName        = "marketplaces" // ??
 	MessagesCollectionName          = "messages"
+	InstalledPluginsCollectionName  = "installed_plugins"
 )

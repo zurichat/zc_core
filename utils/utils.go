@@ -2,7 +2,6 @@ package utils
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -71,6 +70,7 @@ func MapToBson(data map[string]interface{}) bson.M {
 
 // MapToStruct converts generic map[string]interface{} to a struct, passing a pointer to the struct
 // This uses struct tags instead of field names since StructToMap also uses tags
+// USE AT YOUR RISK
 func MapToStruct(m map[string]interface{}, s interface{}, tag string) error {
 	v := reflect.ValueOf(s)
 
@@ -97,7 +97,8 @@ func MapToStruct(m map[string]interface{}, s interface{}, tag string) error {
 		val := reflect.ValueOf(value)
 
 		if structFieldValue.Type() != val.Type() {
-			return errors.New("Provided value didn't match struct field type")
+			return fmt.Errorf("Provided value didn't match struct field type")
+
 		}
 
 		structFieldValue.Set(val)
