@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/data"
 	"zuri.chat/zccore/organizations"
 )
@@ -22,11 +23,13 @@ func Router() *mux.Router {
 	r.HandleFunc("/data/write", data.WriteData)
 	r.HandleFunc("/data/read", data.ReadData)
 	r.HandleFunc("/organisation/create", organizations.Create).Methods("POST")
+	r.HandleFunc("/user/create", auth.CreateUserRegEndPoint).Methods("POST")
 
 	http.Handle("/", r)
 
 	return r
 }
+
 
 // function to check if a file exists, usefull in checking for .env
 func file_exists(name string) bool {
@@ -50,6 +53,8 @@ func main() {
 	if !ok {
 		port = "8000"
 	}
+
+	
 
 	r := Router()
 
