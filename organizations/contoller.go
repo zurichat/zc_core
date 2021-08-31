@@ -21,7 +21,7 @@ func NewOrgController(r *mux.Router, os OrgService) {
 
 	r.HandleFunc("/organizations", handler.CreateOrganization).Methods("POST")
 	// r.HandleFunc("/organizations", handler.GetOrganizations).Methods("GET")
-	// r.HandleFunc("/organizations/{org_id}", handler.GetOrganization).Methods("GET")	
+	// r.HandleFunc("/organizations/{org_id}", handler.GetOrganization).Methods("GET")
 	// r.HandleFunc("/organizations/{org_id}", handler.DeleteOrganization).Methods("DELETE")
 }
 
@@ -36,7 +36,7 @@ func (a *OrgController) CreateOrganization(w http.ResponseWriter, r *http.Reques
 	}
 
 	// validate that email is not empty and it meets the format
-	if !utils.IsValidEmail(newOrg.OwnerEmail){
+	if !utils.IsValidEmail(newOrg.OwnerEmail) {
 		utils.GetError(fmt.Errorf("invalid email format : %s", newOrg.OwnerEmail), http.StatusInternalServerError, w)
 		return
 	}

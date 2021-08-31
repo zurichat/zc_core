@@ -1,8 +1,7 @@
 # zc_core
 
 
-# Data read and write for plugins
-
+### Data read and write for plugins
 
 #### Data Write
 Plugins are allowed to write data to the database by calling the /data/write endpoint with any of the POST, PUT, DELETE http methods.
@@ -30,16 +29,16 @@ Once this data is passed, the api performs the operation and sends a response co
 
 
 #### Data Read
+
 The data read operation occurs at the [GET]  /data/read/{plugin_id}/{collection_name}/{organization_id} endpoint.
 Once the api receives this request, it checks the internal record to validate that the plugin with this {plugin_id} is the one that created the {collection_name} for the org with this {organization_id}. Once this is established to be true, then access is granted and the api returns the data requested as an array.
 Extra simple mongodb query parameters can be passed as a url query param e.g ?title=this and the api uses it to query the database.
 
-The link for testing is at https://zccore.herokuapp.com
 
 TODO:
 - Implement data-write for DELETE, only POST and UPDATE are implemented.
 
-## Marketplace
+### Marketplace
 
 #### Marketplace List
 The marketplace list endpoint lists all approved plugins
@@ -62,14 +61,8 @@ This endpoint at [POST] /marketplace/install takes a json request in the format
 ```
 Successfull installation returns the plugin details, including the template_url which can be displayed by the frontend
 
-## List organization plugins
 
-To get all plugins in an organization, the [GET] /organizations/{org_id}/plugins endpoint handles that request and returns a list of all plugins for that org
-
-Dummy data for testing this at https://zzcore.herokuapp.com are org_id=612a3a914acf115e685df8e3 and plugin_id=612e0c38a560ba3687c9ae4b any user_id value can be used.
-
-
-## Plugins
+### Plugins
 
 #### Registration
 Registration of plugins has been implemented.

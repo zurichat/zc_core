@@ -26,8 +26,8 @@ func Router() *mux.Router {
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
 	r.HandleFunc("/plugin/register", plugin.Register).Methods("POST")
 	r.HandleFunc("/plugin/{id}", plugin.GetByID).Methods("GET")
-	r.HandleFunc("/marketplace/plugins", marketplace.GetAllApprovedPlugins).Methods("GET")
-	r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetOneApprovedPlugin).Methods("GET")
+	r.HandleFunc("/marketplace/plugins", marketplace.GetAllPlugins).Methods("GET")
+	r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetPlugin).Methods("GET")
 	r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
 
 	http.Handle("/", r)
@@ -35,9 +35,8 @@ func Router() *mux.Router {
 	return r
 }
 
-
 func main() {
-	
+
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -51,7 +50,7 @@ func main() {
 	// fetch variables from environment
 	DATABASE_NAME, _ := os.LookupEnv("DB_NAME")
 	ORGANIZATION_COLLECTION, _ := os.LookupEnv("ORGANIZATION_COLLECTION")
-	
+
 	orgCollection, err := utils.GetMongoDbCollection(DATABASE_NAME, ORGANIZATION_COLLECTION)
 
 	if err != nil {
