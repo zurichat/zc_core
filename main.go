@@ -22,6 +22,7 @@ func Router() *mux.Router {
 	r.HandleFunc("/data/write", data.WriteData)
 	r.HandleFunc("/data/read", data.ReadData)
 	r.HandleFunc("/organisation/create", organizations.Create).Methods("POST")
+	r.HandleFunc("/organisation/plugins", organizations.GetPluginsOrganizations).Methods("GET")
 
 	http.Handle("/", r)
 
