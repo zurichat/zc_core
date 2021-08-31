@@ -69,7 +69,7 @@ Successfull installation returns the plugin details, including the template_url 
 
 To get all plugins in an organization, the [GET] /organizations/{org_id}/plugins endpoint handles that request and returns a list of all plugins for that org
 
-Dummy data for testing this at https://zzcore.herokuapp.com are org_id=612e30a15e90597cce7febd6 and plugin_id=612e0c38a560ba3687c9ae4b any user_id value can be used.
+Dummy data for testing this at https://zzcore.herokuapp.com are org_id=612a3a914acf115e685df8e3 and plugin_id=612e0c38a560ba3687c9ae4b any user_id value can be used.
 
 
 ## Plugins
