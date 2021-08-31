@@ -10,20 +10,25 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"zuri.chat/zccore/data"
+	"zuri.chat/zccore/marketplace"
 	"zuri.chat/zccore/organizations"
+	"zuri.chat/zccore/plugin"
 	"zuri.chat/zccore/utils"
 )
 
 func Router() *mux.Router {
-	r := mux.NewRouter()
+	r := mux.NewRouter().StrictSlash(true)
 
 	r.HandleFunc("/", VersionHandler)
 	r.HandleFunc("/v1/welcome", Index).Methods("GET")
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
-	r.HandleFunc("/data/write", data.WriteData)
+	r.HandleFunc("/data/write", data.WriteData).Methods("POST", "PUT", "DELETE")
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
+	r.HandleFunc("/plugin/register", plugin.Register).Methods("POST")
+	r.HandleFunc("/plugin/{id}", plugin.GetByID).Methods("GET")
+	r.HandleFunc("/marketplace/list", marketplace.GetAllApprovedPlugins).Methods("GET")
+	r.HandleFunc("/marketplace/{id}", marketplace.GetOneApprovedPlugin).Methods("GET")
 	r.HandleFunc("/organisation/create", organizations.Create).Methods("POST")
-
 	http.Handle("/", r)
 
 	return r
@@ -68,7 +73,7 @@ func LoadApp(w http.ResponseWriter, r *http.Request) {
 func VersionHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Zuri Chat API - Version 0.0001\n")
-	
+
 }
 func Index(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
