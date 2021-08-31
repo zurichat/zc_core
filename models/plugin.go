@@ -7,14 +7,20 @@ import (
 )
 
 type Plugin struct {
-	ID           primitive.ObjectID `bson:"_id"`
-	Name         string             `bson:"name"`
-	Description  string             `bson:"description"`
-	InstallCount int64              `bson:"install_count"`
-	Approved     string             `bson:"approved"`
-	ApprovedAt   time.Time          `bson:"approved_at"`
-	CreatedAt    time.Time          `bson:"created_at"`
-	UpdatedAt    time.Time          `bson:"updated_at"`
+	ID             primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Name           string             `json:"name" bson:"name" validate:"required"`
+	Description    string             `json:"description" bson:"description" validate:"required"`
+	DeveloperName  string             `json:"developer_name" bson:"developer_name" validate:"required"`
+	DeveloperEmail string             `json:"developer_email" bson:"developer_email" validate:"required"`
+	TemplateURL    string             `json:"template_url" bson:"template_url" validate:"required"`
+	SidebarURL     string             `json:"sidebar_url" bson:"sidebar_url" validate:"required"`
+	InstallURL     string             `json:"install_url" bson:"install_url" validate:"required"`
+	IconURL        string             `json:"icon_url" bson:"icon_url"`
+	InstallCount   int64              `json:"install_count,omitempty" bson:"install_count"`
+	Approved       string             `json:"-" bson:"approved"`
+	ApprovedAt     time.Time          `json:"approved_at" bson:"approved_at"`
+	CreatedAt      time.Time          `json:"created_at" bson:"created_at"`
+	UpdatedAt      time.Time          `json:"updated_at" bson:"updated_at"`
 }
 
 // PluginCollections is used internally to keep track collections a plugin created.
