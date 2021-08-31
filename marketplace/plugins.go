@@ -34,7 +34,7 @@ func Plugins(response http.ResponseWriter, request *http.Request) {
 	for cursor.Next(ctx) {
 		var plugin Plugins
 		cursor.Decode(&plugin)
-		plugins = append(plugins, plugin)
+		plugins = append(plugins, *plugin)
 	}
 
 	json.NewEncoder(response).Encode(plugins)
