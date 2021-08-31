@@ -26,7 +26,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/v1/welcome", Index).Methods("GET")
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
 	r.HandleFunc("/organisation/create", organizations.Create).Methods("POST")
-	r.HandleFunc("/organisation/{org_id}", organizations.Create).Methods("POST")
+	r.HandleFunc("/organisation/{org_id}", organizations.Create).Methods("GET")
 	r.Handle("/socket.io/", Server)
 	r.HandleFunc("/data/write", data.WriteData).Methods("POST", "PUT", "DELETE")
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
