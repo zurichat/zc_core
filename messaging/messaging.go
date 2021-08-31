@@ -76,7 +76,7 @@ func EnterConversation(Server *socketio.Server, s socketio.Conn, msg string) {
 			fmt.Println(err)
 		} else {
 			response := GetMessageSuccess("Entered Conversation", filtered)
-			s.Emit("enter_converstion", response)
+			s.Emit("enter_conversation", response)
 		}
 	}
 

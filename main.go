@@ -45,7 +45,7 @@ func main() {
 		messaging.Connect(s)
 		return nil
 	})
-	Server.OnEvent("/socket.io/", "enter_converstion", func(s socketio.Conn, msg string) {
+	Server.OnEvent("/socket.io/", "enter_conversation", func(s socketio.Conn, msg string) {
 		messaging.EnterConversation(Server, s, msg)
 	})
 	Server.OnEvent("/socket.io/", "conversation", func(s socketio.Conn, msg string) {
