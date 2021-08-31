@@ -29,7 +29,7 @@ func Router() *mux.Router {
 	r.HandleFunc("/marketplace/plugins", marketplace.GetAllApprovedPlugins).Methods("GET")
 	r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetOneApprovedPlugin).Methods("GET")
 	r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
-	r.HandleFunc("/organisation/create", organizations.Create).Methods("POST")
+	r.HandleFunc("/organization/create", organizations.Create).Methods("POST")
 	r.HandleFunc("/organizations/{org_id}/plugins", organizations.GetPlugins).Methods("GET")
 	http.Handle("/", r)
 
