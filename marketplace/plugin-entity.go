@@ -18,7 +18,7 @@ type Plugins struct {
 	Name         string             `json:"name" bson:"name"`
 	Description  string             `json:"description" bson:"description"`
 	InstallCount int                `json:"install_count,omitempty" bson:"install___count,omitempty"`
-	Categories   *Categories        `bson:",omitempty" bson:",omitempty"`
-	Features     *Features          `bson:",omitempty" bson:",omitempty"`
+	Categories   Categories        `bson:",omitempty" bson:",omitempty"`
+	Features     Features          `bson:",omitempty" bson:",omitempty"`
 	ApprovedAt   bool               `json:"approved_at,omitempty" bson:"approved___at,omitempty"`
 }
