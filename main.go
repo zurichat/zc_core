@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"zuri.chat/zccore/data"
+	"zuri.chat/zccore/messaging"
 	"zuri.chat/zccore/organizations"
 	"zuri.chat/zccore/todolist"
 )
@@ -23,7 +24,7 @@ func Router() *mux.Router {
 	r.HandleFunc("/data/write", data.WriteData)
 	r.HandleFunc("/data/read", data.ReadData)
 	r.HandleFunc("/organisation/create", organizations.Create).Methods("POST")
-	r.Handle("/socket.io/", todolist.Server)
+	r.Handle("/socket.io/", messaging.Server)
 
 	http.Handle("/", r)
 
@@ -61,6 +62,9 @@ func main() {
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
+	go messaging.Server.Serve()
+	defer messaging.Server.Close()
+	messaging.Messaging()
 	todolist.TodoOps()
 
 	fmt.Println("Zuri Chat API running on port ", port)
