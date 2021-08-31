@@ -22,7 +22,7 @@ func remove(slice []interface{}, s int) []interface{} {
 
 func Connect(s socketio.Conn) {
 	s.SetContext("")
-	fmt.Println("connected:", s.ID())
+	// fmt.Println("connected:", s.ID())
 	iid, _ := strconv.Atoi(s.ID())
 	// Server.JoinRoom("/socket.io/", "slack", s)
 	if iid == 1 {
@@ -48,7 +48,7 @@ func Connect(s socketio.Conn) {
 
 	// s.Send("slack", "message", args ...interface{})
 	response := GetMessageSuccess("Connection Successful", "No data")
-	fmt.Println(response)
+	// fmt.Println(response)
 	s.Emit("connection", response)
 
 }
