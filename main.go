@@ -10,52 +10,45 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"zuri.chat/zccore/data"
+	"zuri.chat/zccore/marketplace"
 	"zuri.chat/zccore/organizations"
+	"zuri.chat/zccore/plugin"
 	"zuri.chat/zccore/utils"
 )
 
 func Router() *mux.Router {
-	r := mux.NewRouter()
+	r := mux.NewRouter().StrictSlash(true)
 
 	r.HandleFunc("/", VersionHandler)
 	r.HandleFunc("/v1/welcome", Index).Methods("GET")
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
-	r.HandleFunc("/data/write", data.WriteData)
-	r.HandleFunc("/data/read", data.ReadData)
+	r.HandleFunc("/data/write", data.WriteData).Methods("POST", "PUT", "DELETE")
+	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
+	r.HandleFunc("/plugin/register", plugin.Register).Methods("POST")
+	r.HandleFunc("/plugin/{id}", plugin.GetByID).Methods("GET")
+	r.HandleFunc("/marketplace/plugins", marketplace.GetAllApprovedPlugins).Methods("GET")
+	r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetOneApprovedPlugin).Methods("GET")
+	r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
 
 	http.Handle("/", r)
 
 	return r
 }
 
-func sanityCheck() {
 
+func main() {
+	
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-
-	envProps := []string{
-		"ORGANIZATION_COLLECTION",
-		"DB_NAME",
-		"CLUSTER_URL",
-		"PORT",
-	}
-	
-	for _, k := range envProps {
-		_, ok := os.LookupEnv(k)		
-		if !ok {
-			log.Fatal(fmt.Sprintf("Environment variable %s not defined. Terminating application...", k))
-		}
-	}
 	fmt.Println("Environment variables successfully loaded. Starting application...")
-}
 
-func main() {
-	// check that all required variables are loaded
-	sanityCheck()
+	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
+		log.Fatal(err)
+	}
 
-	// fecth variables from environment
+	// fetch variables from environment
 	DATABASE_NAME, _ := os.LookupEnv("DB_NAME")
 	ORGANIZATION_COLLECTION, _ := os.LookupEnv("ORGANIZATION_COLLECTION")
 	
@@ -70,8 +63,12 @@ func main() {
 
 	// get PORT from environment variables
 	port, _ := os.LookupEnv("PORT")
+	if port == "" {
+		port = "8000"
+	}
 
 	r := Router()
+
 	// organization route handler
 	organizations.NewOrgController(r, OrgService)
 
@@ -98,11 +95,11 @@ func LoadApp(w http.ResponseWriter, r *http.Request) {
 func VersionHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Zuri Chat API - Version 0.0001\n")
-	
+
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	http.HandleFunc("/v1/welcome", Index)
-	fmt.Fprintf(w, "Welcome to Zuri Core")
+	// http.HandleFunc("/v1/welcome", Index)
+	fmt.Fprintf(w, "Welcome to Zuri Core Index")
 }
