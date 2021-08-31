@@ -10,44 +10,44 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"zuri.chat/zccore/data"
+	"zuri.chat/zccore/marketplace"
 	"zuri.chat/zccore/organizations"
+	"zuri.chat/zccore/plugin"
+	"zuri.chat/zccore/utils"
 )
 
 func Router() *mux.Router {
-	r := mux.NewRouter()
+	r := mux.NewRouter().StrictSlash(true)
 
 	r.HandleFunc("/", VersionHandler)
 	r.HandleFunc("/v1/welcome", Index).Methods("GET")
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
-	r.HandleFunc("/data/write", data.WriteData)
-	r.HandleFunc("/data/read", data.ReadData)
+	r.HandleFunc("/data/write", data.WriteData).Methods("POST", "PUT", "DELETE")
+	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
+	r.HandleFunc("/plugin/register", plugin.Register).Methods("POST")
+	r.HandleFunc("/plugin/{id}", plugin.GetByID).Methods("GET")
+	r.HandleFunc("/marketplace/plugins", marketplace.GetAllApprovedPlugins).Methods("GET")
+	r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetOneApprovedPlugin).Methods("GET")
+	r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
 	r.HandleFunc("/organisation/create", organizations.Create).Methods("POST")
-
+	r.HandleFunc("/organizations/{org_id}/plugins", organizations.GetPlugins).Methods("GET")
 	http.Handle("/", r)
 
 	return r
 }
 
-// function to check if a file exists, usefull in checking for .env
-func file_exists(name string) bool {
-	_, err := os.Stat(name)
-	return !os.IsNotExist(err)
-}
-
 func main() {
-	// load .env file if it exists
-	if file_exists(".env") {
-		err := godotenv.Load()
-		if err != nil {
-			log.Fatal("Error loading .env file")
-		}
+	// load .env file once
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Error loading .env file: %v", err)
 	}
 
-	// get PORT from environment variables
-	port, ok := os.LookupEnv("PORT")
+	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
+		log.Fatal(err)
+	}
 
-	// if there is no PORT in environment variables default to port 8000
-	if !ok {
+	port := os.Getenv("PORT")
+	if port == "" {
 		port = "8000"
 	}
 
@@ -75,7 +75,7 @@ func LoadApp(w http.ResponseWriter, r *http.Request) {
 func VersionHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Zuri Chat API - Version 0.0001\n")
-	
+
 }
 func Index(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
