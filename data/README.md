@@ -1,13 +1,7 @@
-# zc_core test
+## How it works
 
-### Test link
-https://zccore.herokuapp.com
-
-
-# Data read and write for plugins
-
-
-#### Data Write
+Data Write
+----------
 Plugins are allowed to write data to the database by calling the /data/write endpoint with any of the POST, PUT, DELETE http methods.
 Based on this methods a CREATE, UPDATE or DELETE action will be performed on the database. The plugin would have to provide the following json data body
 ```json
@@ -32,7 +26,8 @@ The `payload` contains the actual data the plugin wants to store. The schema is 
 Once this data is passed, the api performs the operation and sends a response containing the success status and how many documents were successfully written.
 
 
-#### Data Read
+Data Read
+----------
 The data read operation occurs at the [GET]  /data/read/{plugin_id}/{collection_name}/{organization_id} endpoint.
 Once the api receives this request, it checks the internal record to validate that the plugin with this {plugin_id} is the one that created the {collection_name} for the org with this {organization_id}. Once this is established to be true, then access is granted and the api returns the data requested as an array.
 Extra simple mongodb query parameters can be passed as a url query param e.g ?title=this and the api uses it to query the database.
@@ -40,57 +35,6 @@ Extra simple mongodb query parameters can be passed as a url query param e.g ?ti
 The link for testing is at https://zccore.herokuapp.com
 
 TODO:
-- Implement data-write for DELETE, only POST and UPDATE are implemented.
-
-## Marketplace
-
-#### Marketplace List
-The marketplace list endpoint lists all approved plugins
-
-A [GET] request to /marketplace/plugins will return the minimal information required to display plugins
-
-
-#### Marketplace Get Plugin
-This [GET] /marketplace/plugins/{id} retreives an approved plugin with the id, and returns data containing the plugin details including the url to install it.
-
-#### Installation of plugins from marketplace to an org
-This endpoint at [POST] /marketplace/install takes a json request in the format
-```json
-{
-"organization_id": "xxxx",
-"plugin_id": "xxxx",
-"user_id": "xxx"
-}
-
-```
-Successfull installation returns the plugin details, including the template_url which can be displayed by the frontend
-
-## List organization plugins
-
-To get all plugins in an organization, the [GET] /organizations/{org_id}/plugins endpoint handles that request and returns a list of all plugins for that org
-
-Dummy data for testing this at https://zzcore.herokuapp.com are org_id=612a3a914acf115e685df8e3 and plugin_id=612e0c38a560ba3687c9ae4b any user_id value can be used.
-
-
-## Plugins
-
-#### Registration
-Registration of plugins has been implemented.
-
-To create a plugin, go to the following endpoint with the following data
- [POST] /plugin/register
-
-```json
-{
-"name": "name of plugin",
-"description": "description",
-"template_url": "index page of the plugin frontend",
-"sidebar_url": "api endpoint to for zuri main to get the plugin sidebar details",
-"install_url":  "not sure what this does, but was in the spec",
-"icon_url": "icon for the plugin"
-}
-
-```
-Every field here is required, else validation error will occur.
-After a success message is received, i created a mock fucnction to simulate time it takes to approve a plugin. It takes 10 seconds before the plugin can be listed in the marketplace.
-
+- Extra checks to ensure the plugin and organization records exists in our db before data can be read or written, as at now any plugin_id or org_id can be used to write data.
+- Implement bulk_write functionality, only the single object functionality is implemented.
+- Implement data-write for UPDATE and DELETE, only POST is implemented.
