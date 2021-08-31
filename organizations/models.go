@@ -17,3 +17,16 @@ type Organization struct {
 	// Settings
 	// DateUpdated    time.Time
 }
+
+type Channel struct {
+	_id            	string		`json:"id" bson:"_id"`
+	Name			string		`json:"name" bson:"name"`
+	Description     string		`json:"description" bson:"description"`
+	isPrivate       bool        `json:"is_private" bson:"is_private"`
+	Bookmark 	    []string	`json:"bookmark" bson:"bookmark"`
+	User  			[]string	`json:"user" bson:"user"`
+	DateCreated     time.Time	`json:"date_created" bson:"date_created"`
+	DateUpdated     time.Time	`json:"date_updated" bson:"date_updated"`
+}
+
+
