@@ -11,7 +11,7 @@ type WorkSpaceProfile struct {
 	status          Status
 	bio             string
 	timezone        string
-	password        string
+	password        string `bson:"Password" validate:"required,min=6""`
 	password_resets []UserPasswordReset
 	roles           []Role
 }
@@ -40,18 +40,18 @@ type UserSettings struct {
 }
 
 type UserEmailVerification struct {
-	verified   bool
-	token      string
-	expired_at primitive.Timestamp
+	verified   bool      `bson:"verified"`
+	token      string    `bson:"token"`
+	expired_at time.Time `bson:"expired_at"`
 }
 
 type UserPasswordReset struct {
 	ID         primitive.ObjectID `bson:"_id"`
 	ipaddress  string
 	token      string
-	expired_at string `bson:"expired_at"`
-	updated_at string `bson:"updated_at"`
-	created_at string `bson:"created_at"`
+	expired_at time.Time `bson:"expired_at"`
+	updated_at time.Time `bson:"updated_at"`
+	created_at time.Time `bson:"created_at"`
 }
 
 type Status int
@@ -70,7 +70,7 @@ type User struct {
 	password           string             `bson:"Password" validate:"required,min=6""`
 	phone              string             `bson:"phone" validate:"required"`
 	status             Status
-	company            string
+	company            string `bson:"company"`
 	settings           UserSettings
 	timezone           string
 	created_at         time.Time `bson:"created_at"`
