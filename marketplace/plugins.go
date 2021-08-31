@@ -12,7 +12,7 @@ import (
 
 func Plugins(response http.ResponseWriter, request *http.Request) {
 	response.WriteHeader(http.StatusOK)
-	var pluguns []Plugins
+	var plugins []Plugins
 
 	response.Header().Set("Content-Type", "application/json")
 
