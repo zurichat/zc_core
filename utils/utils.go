@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/mail"
 	"os"
 	"reflect"
 	"strings"
@@ -154,4 +155,9 @@ func shouldOmitTag(tagVal string) bool {
 
 func ParseJsonFromRequest(r *http.Request, v interface{}) error {
 	return json.NewDecoder(r.Body).Decode(v)
+}
+
+func IsValidEmail(email string) bool {
+    _, err := mail.ParseAddress(email)
+    return err == nil
 }

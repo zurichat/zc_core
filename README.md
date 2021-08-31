@@ -1,7 +1,4 @@
-# zc_core test
-
-### Test link
-https://zccore.herokuapp.com
+# zc_core
 
 
 # Data read and write for plugins
