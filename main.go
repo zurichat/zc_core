@@ -45,24 +45,7 @@ func Router(Server *socketio.Server) *mux.Router {
 func main() {
 	////////////////////////////////////Socket  events////////////////////////////////////////////////
 	var Server = socketio.NewServer(nil)
-	Server.OnConnect("/socket.io/", func(s socketio.Conn) error {
-		messaging.Connect(s)
-		return nil
-	})
-	Server.OnEvent("/socket.io/", "enter_conversation", func(s socketio.Conn, msg string) {
-		messaging.EnterConversation(Server, s, msg)
-	})
-	Server.OnEvent("/socket.io/", "conversation", func(s socketio.Conn, msg string) {
-		messaging.BroadCastToConversation(Server, s, msg)
-	})
-	Server.OnError("/", func(s socketio.Conn, e error) {
-		fmt.Println("meet error:", e)
-	})
-
-	Server.OnDisconnect("/", func(s socketio.Conn, reason string) {
-		fmt.Println("closed", reason)
-	})
-
+	messaging.SocketEvents(Server)
 	////////////////////////////////////Socket  events////////////////////////////////////////////////
 
 	// load .env file if it exists
