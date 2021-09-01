@@ -28,6 +28,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
 	r.HandleFunc("/organizations", organizations.Create).Methods("POST")
 	r.HandleFunc("/organizations", organizations.GetOrganizations).Methods("GET")
+	r.HandleFunc("/organizations/{id}", organizations.DeleteOrganization).Methods("DELETE")
 	r.Handle("/socket.io/", Server)
 	r.HandleFunc("/data/write", data.WriteData).Methods("POST", "PUT", "DELETE")
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
@@ -45,24 +46,7 @@ func Router(Server *socketio.Server) *mux.Router {
 func main() {
 	////////////////////////////////////Socket  events////////////////////////////////////////////////
 	var Server = socketio.NewServer(nil)
-	Server.OnConnect("/socket.io/", func(s socketio.Conn) error {
-		messaging.Connect(s)
-		return nil
-	})
-	Server.OnEvent("/socket.io/", "enter_conversation", func(s socketio.Conn, msg string) {
-		messaging.EnterConversation(Server, s, msg)
-	})
-	Server.OnEvent("/socket.io/", "conversation", func(s socketio.Conn, msg string) {
-		messaging.BroadCastToConversation(Server, s, msg)
-	})
-	Server.OnError("/", func(s socketio.Conn, e error) {
-		fmt.Println("meet error:", e)
-	})
-
-	Server.OnDisconnect("/", func(s socketio.Conn, reason string) {
-		fmt.Println("closed", reason)
-	})
-
+	messaging.SocketEvents(Server)
 	////////////////////////////////////Socket  events////////////////////////////////////////////////
 
 	// load .env file if it exists

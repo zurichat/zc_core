@@ -95,3 +95,20 @@ func GetOrganizations(w http.ResponseWriter, r *http.Request) {
 
 	utils.GetSuccess("organization retrieved successfully", save, w)
 }
+
+
+
+func DeleteOrganization(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+    orgId := mux.Vars(r)["id"]
+
+    collection := "organizations"
+
+    save, err := utils.DeleteOneMongoDoc(collection, orgId)
+    if err != nil {
+        utils.GetError(err, http.StatusInternalServerError, w)
+        return
+    }
+
+    utils.GetSuccess("organization deleted successfully", save, w)
+}
