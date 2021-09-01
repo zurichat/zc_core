@@ -41,13 +41,13 @@ import (
 	orgId := mux.Vars(r)["org_id"]
 	objId, _ := primitive.ObjectIDFromHex(orgId)
 
-	_, err := utils.GetMongoDbDoc(models.OrganizationCollectionName, bson.M{"_id": objId})
+	_, err := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": objId})
 	if err != nil {
 		// org not found.
 		utils.GetError(err, http.StatusNotFound, w)
 		return
 	}
-	org := models.Organization{ID: objId}
+	org := Organization{ID: objId}
 	org.PopulatePlugins()
 	utils.GetSuccess("success", org.Plugins, w)
 } */
