@@ -35,7 +35,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/marketplace/plugins", marketplace.GetAllApprovedPlugins).Methods("GET")
 	r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetOneApprovedPlugin).Methods("GET")
 	r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
-
+    r.HandleFunc("/auth/login", auth.UserLogin).Methods("Post")
 	return r
 }
 
