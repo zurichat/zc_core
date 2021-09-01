@@ -35,5 +35,5 @@ func GetOrganizationPlugins(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("success", docs, w)
+	utils.GetSuccess("Plugins returned successfully", docs, w)
 }
