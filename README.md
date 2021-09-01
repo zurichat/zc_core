@@ -49,7 +49,7 @@ A [GET] request to /marketplace/plugins will return the minimal information requ
 #### Marketplace Get Plugin
 This [GET] /marketplace/plugins/{id} retreives an approved plugin with the id, and returns data containing the plugin details including the url to install it.
 
-#### Installation of plugins from marketplace to an org
+#### Installing plugins from marketplace to an org
 This endpoint at [POST] /marketplace/install takes a json request in the format
 ```json
 {

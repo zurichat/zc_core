@@ -26,9 +26,9 @@ type Plugin struct {
 	IconURL        string             `json:"icon_url" bson:"icon_url"`
 	InstallCount   int64              `json:"install_count,omitempty" bson:"install_count"`
 	Approved       bool               `json:"-" bson:"approved"`
-	ApprovedAt     time.Time          `json:"approved_at" bson:"approved_at"`
-	CreatedAt      time.Time          `json:"created_at" bson:"created_at"`
-	UpdatedAt      time.Time          `json:"updated_at" bson:"updated_at"`
+	ApprovedAt     string             `json:"approved_at" bson:"approved_at"`
+	CreatedAt      string             `json:"created_at" bson:"created_at"`
+	UpdatedAt      string             `json:"updated_at" bson:"updated_at"`
 }
 
 // PluginCollections is used internally to keep track collections a plugin created.
@@ -37,12 +37,13 @@ type PluginCollections struct {
 	PluginID       string             `bson:"plugin_id"`
 	OrganizationID string             `bson:"organization_id"`
 	CollectionName string             `bson:"collection_name"`
-	CreatedAt      time.Time          `bson:"created_at"`
+	CreatedAt      string             `bson:"created_at"`
 }
 
 func CreatePlugin(p *Plugin) error {
-	p.CreatedAt = time.Now()
+	p.CreatedAt = time.Now().String()
 	doc, _ := utils.StructToMap(p, "bson")
+	delete(doc, "_id")
 	res, err := utils.CreateMongoDbDoc(PluginCollectionName, doc)
 	p.ID = res.InsertedID.(primitive.ObjectID)
 	return err
@@ -66,6 +67,7 @@ func FindPlugins(filter bson.M) ([]*Plugin, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	plugins := make([]*Plugin, len(docs))
 	for i, doc := range docs {
 		p := &Plugin{}
@@ -78,5 +80,8 @@ func FindPlugins(filter bson.M) ([]*Plugin, error) {
 }
 
 func MapToStruct(m map[string]interface{}, v interface{}) error {
-	return mapstructure.Decode(m, v)
+	config := &mapstructure.DecoderConfig{TagName: "bson"}
+	config.Result = v
+	dec, _ := mapstructure.NewDecoder(config)
+	return dec.Decode(m)
 }

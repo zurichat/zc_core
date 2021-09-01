@@ -55,12 +55,12 @@ func InstallPluginToOrg(w http.ResponseWriter, r *http.Request) {
 	userId := requestData["user_id"]
 	//TODO check if these records exists
 
-	// get plugin struct
 	p, err := plugin.FindPluginByID(pluginId)
 	if err != nil {
 		utils.GetError(err, http.StatusNotFound, w)
 		return
 	}
+	// TODO: this has to be handled by organization guys
 	// add plugin and org to installed_plugins coll
 	_, err = utils.CreateMongoDbDoc(InstalledPluginsCollectionName, bson.M{
 		"plugin_id":       pluginId,

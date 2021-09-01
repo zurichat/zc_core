@@ -8,14 +8,14 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"zuri.chat/zccore/models"
+	"zuri.chat/zccore/plugin"
 	"zuri.chat/zccore/utils"
 )
 
 const (
-	_PluginCollectionName            = models.PluginCollectionName
-	_PluginCollectionsCollectionName = models.PluginCollectionsCollectionName
-	_OrganizationCollectionName      = models.OrganizationCollectionName
+	_PluginCollectionName            = "plugins"
+	_PluginCollectionsCollectionName = "plugin_collections"
+	_OrganizationCollectionName      = "organizations"
 )
 
 type writeDataRequest struct {
@@ -35,7 +35,7 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !recordExists(_PluginCollectionName, reqData.PluginID) {
+	if _, err := plugin.FindPluginByID(reqData.PluginID); err != nil {
 		msg := "plugin with this id does not exist"
 		utils.GetError(errors.New(msg), http.StatusNotFound, w)
 		return
