@@ -1,58 +1,15 @@
 package user
 
 import (
+	"context"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"zuri.chat/zccore/utils"
 )
 
-type WorkSpaceProfile struct {
-	display_picture string
-	status          Status
-	bio             string
-	timezone        string
-	password        string `bson:"Password" validate:"required,min=6""`
-	password_resets []UserPasswordReset
-	roles           []Role
-}
-
-type UserWorkspace struct {
-	ID           primitive.ObjectID `bson:"_id"`
-	organization int                // should this be an ID instead?
-	profile      WorkSpaceProfile
-}
-
-type Role int
-
-const (
-	Super Role = iota
-	Admin
-	Member
-)
-
-type UserRole struct {
-	ID   primitive.ObjectID `bson:"_id"`
-	role Role
-}
-
-type UserSettings struct {
-	role []UserRole
-}
-
-type UserEmailVerification struct {
-	verified   bool      `bson:"verified"`
-	token      string    `bson:"token"`
-	expired_at time.Time `bson:"expired_at"`
-}
-
-type UserPasswordReset struct {
-	ID         primitive.ObjectID `bson:"_id"`
-	ipaddress  string
-	token      string
-	expired_at time.Time `bson:"expired_at"`
-	updated_at time.Time `bson:"updated_at"`
-	created_at time.Time `bson:"created_at"`
-}
+type M map[string]interface{}
 
 type Status int
 
@@ -62,21 +19,116 @@ const (
 	Disabled
 )
 
+type Role int
+
+const (
+	Super Role = iota
+	Admin
+	Member
+)
+
+// The struct fields should be exported, don't you think? encoding and decoding to JSON might not work.
+type WorkSpaceProfile struct {
+	DisplayPicture string
+	Status         Status
+	Bio            string
+	Timezone       string
+	Password       string `bson:"password" validate:"required,min=6"`
+	PasswordResets []*UserPasswordReset
+	Roles          []*Role
+}
+
+type UserWorkspace struct {
+	ID             primitive.ObjectID `bson:"_id"`
+	OrganizationID string             // should this be an ID instead? Yes, objectID or string
+	Profile        WorkSpaceProfile
+}
+
+type UserRole struct {
+	ID   primitive.ObjectID `bson:"_id"`
+	Role Role
+}
+
+type UserSettings struct {
+	Role []UserRole
+}
+
+type UserEmailVerification struct {
+	Verified  bool      `bson:"verified"`
+	Token     string    `bson:"token"`
+	ExpiredAt time.Time `bson:"expired_at"`
+}
+
+type UserPasswordReset struct {
+	ID        primitive.ObjectID `bson:"_id"`
+	IPAddress string
+	Token     string
+	ExpiredAt time.Time `bson:"expired_at"`
+	UpdatedAt time.Time `bson:"updated_at"`
+	CreatedAt time.Time `bson:"created_at"`
+}
+
 type User struct {
-	ID                 primitive.ObjectID `bson:"_id"`
-	first_name         string             `bson:"first_name" validate:"required,min=2,max=100"`
-	last_name          string             `bson:"last_name" validate:"required,min=2,max=100"`
-	email              string             `bson:"email" validate:"email,required"`
-	password           string             `bson:"Password" validate:"required,min=6""`
-	phone              string             `bson:"phone" validate:"required"`
-	status             Status
-	company            string `bson:"company"`
-	settings           UserSettings
-	timezone           string
-	created_at         time.Time `bson:"created_at"`
-	updated_at         time.Time `bson:"updated_at"`
-	deleted_at         time.Time `bson:"deleted_at"`
-	workspaces         []UserWorkspace
-	email_verification UserEmailVerification
-	password_resets    []UserPasswordReset
+	ID                primitive.ObjectID `bson:"_id"`
+	FirstName         string             `bson:"first_name" validate:"required,min=2,max=100"`
+	LastName          string             `bson:"last_name" validate:"required,min=2,max=100"`
+	Email             string             `bson:"email" validate:"email,required"`
+	Password          string             `bson:"password" validate:"required,min=6"`
+	Phone             string             `bson:"phone" validate:"required"`
+	Status            Status
+	Company           string `bson:"company"`
+	Settings          *UserSettings
+	Timezone          string
+	CreatedAt         time.Time `bson:"created_at"`
+	UpdatedAt         time.Time `bson:"updated_at"`
+	DeletedAt         time.Time `bson:"deleted_at"`
+	Workspaces        []*UserWorkspace
+	EmailVerification UserEmailVerification
+	PasswordResets    []*UserPasswordReset
+}
+
+// helper functions perform CRUD operations on user
+func FindUserByID(ctx context.Context, id string) (*User, error) {
+	user := &User{}
+	collectionName := "users"
+	objID, _ := primitive.ObjectIDFromHex(id)
+	collection := utils.GetCollection(collectionName)
+	res := collection.FindOne(ctx, bson.M{"_id": objID})
+	if err := res.Decode(user); err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func FindUsers(ctx context.Context, filter M) ([]*User, error) {
+	users := []*User{}
+	collectionName := "users"
+	collection := utils.GetCollection(collectionName)
+	cursor, err := collection.Find(ctx, filter)
+
+	if err != nil {
+		return nil, err
+	}
+	if err = cursor.All(ctx, &users); err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func CreateUser(ctx context.Context, u *User) error {
+	collectionName := "users"
+	collection := utils.GetCollection(collectionName)
+	_, err := collection.InsertOne(ctx, u)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func FindUserProfile(ctx context.Context, userID, orgID string) (*UserWorkspace, error) {
+	return nil, nil
+}
+
+func CreateUserProfile(ctx context.Context, uw *UserWorkspace) error {
+	return nil
 }

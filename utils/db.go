@@ -57,6 +57,11 @@ func (mh *MongoDBHandle) GetCollection(collectionName string) *mongo.Collection 
 	return mh.client.Database(DbName).Collection(collectionName)
 }
 
+// GetCollection return collection for the db in DB_NAME env variable.
+func GetCollection(collectionName string) *mongo.Collection {
+	return defaultMongoHandle.GetCollection(collectionName)
+}
+
 func (mh *MongoDBHandle) Client() *mongo.Client {
 	return mh.client
 }

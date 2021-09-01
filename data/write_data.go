@@ -1,7 +1,6 @@
 package data
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -30,7 +29,7 @@ type writeDataRequest struct {
 
 func WriteData(w http.ResponseWriter, r *http.Request) {
 	reqData := new(writeDataRequest)
-	if err := json.NewDecoder(r.Body).Decode(reqData); err != nil {
+	if err := utils.ParseJsonFromRequest(r, reqData); err != nil {
 		utils.GetError(fmt.Errorf("error processing request: %v", err), http.StatusUnprocessableEntity, w)
 		return
 	}
@@ -47,7 +46,7 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// if plugin is accessing this collection the first time, we create a record linking this collection to the plugin.
+	// if plugin is writing to this collection the first time, we create a record linking this collection to the plugin.
 	if !pluginHasCollection(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName) {
 		createPluginCollectionRecord(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName)
 	}
@@ -59,6 +58,8 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 		reqData.handlePut(w, r)
 	case "DELETE":
 		reqData.handleDelete(w, r)
+	default:
+		fmt.Fprint(w, "Data write endpoint")
 	}
 }
 
