@@ -25,7 +25,8 @@ func Router(Server *socketio.Server) *mux.Router {
 	// r.Handle("/", http.FileServer(http.Dir("./views/chat/")))
 	r.HandleFunc("/v1/welcome", Index).Methods("GET")
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
-	r.HandleFunc("/organisation/create", organizations.Create).Methods("POST")
+	r.HandleFunc("/organizations", organizations.Create).Methods("POST")
+	r.HandleFunc("/organizations", organizations.GetOrganizations).Methods("GET")
 	r.Handle("/socket.io/", Server)
 	r.HandleFunc("/data/write", data.WriteData).Methods("POST", "PUT", "DELETE")
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
@@ -69,24 +70,12 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+	
 	fmt.Println("Environment variables successfully loaded. Starting application...")
 
 	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
 		log.Fatal(err)
 	}
-
-	// fetch variables from environment
-	DATABASE_NAME, _ := os.LookupEnv("DB_NAME")
-	ORGANIZATION_COLLECTION, _ := os.LookupEnv("ORGANIZATION_COLLECTION")
-
-	orgCollection, err := utils.GetMongoDbCollection(DATABASE_NAME, ORGANIZATION_COLLECTION)
-
-	if err != nil {
-		log.Fatalf("%s", err.Error())
-	}
-
-	orgRepo := organizations.NewOrgRepository(orgCollection)
-	OrgService := organizations.NewOrgService(orgRepo)
 
 	// get PORT from environment variables
 	port, _ := os.LookupEnv("PORT")
@@ -95,9 +84,6 @@ func main() {
 	}
 
 	r := Router(Server)
-
-	// organization route handler
-	organizations.NewOrgController(r, OrgService)
 
 	srv := &http.Server{
 		Handler:      r,
