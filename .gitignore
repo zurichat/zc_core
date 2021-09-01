@@ -1,2 +1,4 @@
 .env
+todolist/
+views/
 .vscode

@@ -65,3 +65,17 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	}
 	utils.GetSuccess("organization created", save, w)
 }
+
+func GetOrganizations(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	collection := "organizations"
+
+	save, err := utils.GetMongoDbDocs(collection, nil)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("organization retrieved successfully", save, w)
+}

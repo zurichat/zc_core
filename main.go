@@ -7,21 +7,27 @@ import (
 	"os"
 	"time"
 
+	socketio "github.com/googollee/go-socket.io"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"zuri.chat/zccore/data"
 	"zuri.chat/zccore/marketplace"
+	"zuri.chat/zccore/messaging"
 	"zuri.chat/zccore/organizations"
 	"zuri.chat/zccore/plugin"
 	"zuri.chat/zccore/utils"
 )
 
-func Router() *mux.Router {
+func Router(Server *socketio.Server) *mux.Router {
 	r := mux.NewRouter().StrictSlash(true)
 
 	r.HandleFunc("/", VersionHandler)
+	// r.Handle("/", http.FileServer(http.Dir("./views/chat/")))
 	r.HandleFunc("/v1/welcome", Index).Methods("GET")
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
+	r.HandleFunc("/organizations", organizations.Create).Methods("POST")
+	r.HandleFunc("/organizations", organizations.GetOrganizations).Methods("GET")
+	r.Handle("/socket.io/", Server)
 	r.HandleFunc("/data/write", data.WriteData).Methods("POST", "PUT", "DELETE")
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
 	r.HandleFunc("/plugin/register", plugin.Register).Methods("POST")
@@ -35,29 +41,40 @@ func Router() *mux.Router {
 }
 
 func main() {
+	////////////////////////////////////Socket  events////////////////////////////////////////////////
+	var Server = socketio.NewServer(nil)
+	Server.OnConnect("/socket.io/", func(s socketio.Conn) error {
+		messaging.Connect(s)
+		return nil
+	})
+	Server.OnEvent("/socket.io/", "enter_conversation", func(s socketio.Conn, msg string) {
+		messaging.EnterConversation(Server, s, msg)
+	})
+	Server.OnEvent("/socket.io/", "conversation", func(s socketio.Conn, msg string) {
+		messaging.BroadCastToConversation(Server, s, msg)
+	})
+	Server.OnError("/", func(s socketio.Conn, e error) {
+		fmt.Println("meet error:", e)
+	})
+
+	Server.OnDisconnect("/", func(s socketio.Conn, reason string) {
+		fmt.Println("closed", reason)
+	})
+
+	////////////////////////////////////Socket  events////////////////////////////////////////////////
+
+	// load .env file if it exists
 
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+
 	fmt.Println("Environment variables successfully loaded. Starting application...")
 
 	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
 		log.Fatal(err)
 	}
-
-	// fetch variables from environment
-	DATABASE_NAME, _ := os.LookupEnv("DB_NAME")
-	ORGANIZATION_COLLECTION, _ := os.LookupEnv("ORGANIZATION_COLLECTION")
-
-	orgCollection, err := utils.GetMongoDbCollection(DATABASE_NAME, ORGANIZATION_COLLECTION)
-
-	if err != nil {
-		log.Fatalf("%s", err.Error())
-	}
-
-	orgRepo := organizations.NewOrgRepository(orgCollection)
-	OrgService := organizations.NewOrgService(orgRepo)
 
 	// get PORT from environment variables
 	port, _ := os.LookupEnv("PORT")
@@ -65,10 +82,7 @@ func main() {
 		port = "8000"
 	}
 
-	r := Router()
-
-	// organization route handler
-	organizations.NewOrgController(r, OrgService)
+	r := Router(Server)
 
 	srv := &http.Server{
 		Handler:      r,
@@ -76,6 +90,9 @@ func main() {
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
+	go Server.Serve()
+	fmt.Println("Socket Served")
+	defer Server.Close()
 
 	fmt.Println("Zuri Chat API running on port ", port)
 	log.Fatal(srv.ListenAndServe())
