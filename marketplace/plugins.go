@@ -36,13 +36,6 @@ func GetPlugin(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("success", p, w)
 }
 
-/*
-request = `{
-	"plugin_id": "xxx",
-	"organization_id": "xxx",
-	"user_id": "xxx" //user installing plugin.
-}`
-*/
 // It only installs plugins to an organization, organization has to load the plugins.
 func InstallPluginToOrg(w http.ResponseWriter, r *http.Request) {
 	requestData := make(map[string]string)

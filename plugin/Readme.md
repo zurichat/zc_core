@@ -3,7 +3,7 @@
 Registration of plugins has been implemented.
 
 To create a plugin, go to the following endpoint with the following data
- [POST] /plugin/register
+ [POST] /plugins/register
 
 ```json
 {

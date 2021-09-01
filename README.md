@@ -21,7 +21,7 @@ The plugin_id, organization_id, collection_name fields are important, so it can 
 An internal record is also kept by the core api that validates that this three values are valid, i.e the plugin that is requesting data from this collection for this organization is the one that created it.
 This is to prevent other plugins from accessing collections they didn't create.
 The `bulk_write` field is a boolean indicating if multiple records are to be inserted, updated or deleted, if it is set to `true`, then `payload` should be an array, if it is false, payload should be a simple plain object.
-The object_id and filter fields are used for updating and deleting data.
+The `object_id` and `filter` fields are used for updating and deleting data.
 If `bulk_write` is to be performed, the `filter` field should be set and should contain the query to be matched for an update, else if performing a single document operation, the `object_id` field should be set instead with the id of the object.
 The `payload` contains the actual data the plugin wants to store. The schema is decided by the plugin app. It could be an array of objects or a single object based on if its a bulk_write operation or not.
 
@@ -68,11 +68,13 @@ Successfull installation returns the plugin details, including the template_url 
 Registration of plugins has been implemented.
 
 To create a plugin, go to the following endpoint with the following data
- [POST] /plugin/register
+ [POST] /plugins/register
 
 ```json
 {
 "name": "name of plugin",
+"developer_name": "developer",
+"developer_email": "dev@developer.mail",
 "description": "description",
 "template_url": "index page of the plugin frontend",
 "sidebar_url": "api endpoint to for zuri main to get the plugin sidebar details",

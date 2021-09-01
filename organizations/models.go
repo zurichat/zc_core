@@ -5,7 +5,6 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"zuri.chat/zccore/models"
 	"zuri.chat/zccore/utils"
 )
 
@@ -28,7 +27,7 @@ type Organization struct {
 
 func (o *Organization) PopulatePlugins() {
 	f := bson.M{"organization_id": o.ID.Hex()}
-	docs, err := utils.GetMongoDbDocs(models.InstalledPluginsCollectionName, f)
+	docs, err := utils.GetMongoDbDocs("installed_plugins", f)
 	if err != nil {
 		return
 	}
