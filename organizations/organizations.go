@@ -5,8 +5,27 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"zuri.chat/zccore/utils"
 )
+
+func GetOrganization(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	collection := "organizations"
+
+	orgId := mux.Vars(r)["id"]
+	objId, _ := primitive.ObjectIDFromHex(orgId)
+
+	save, err := utils.GetMongoDbDocs(collection, bson.M{"_id": objId})
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+	utils.GetSuccess("organization retrieved successfully", save, w)
+}
 
 func Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
