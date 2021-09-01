@@ -22,7 +22,7 @@ func remove(slice []interface{}, s int) []interface{} {
 
 func Connect(s socketio.Conn) {
 	s.SetContext("")
-	// fmt.Println("connected:", s.ID())
+	fmt.Println("connected:", s.ID())
 	iid, _ := strconv.Atoi(s.ID())
 	// Server.JoinRoom("/socket.io/", "slack", s)
 	if iid == 1 {
@@ -32,11 +32,11 @@ func Connect(s socketio.Conn) {
 			log.Fatal(er)
 		}
 		Newroom := Room{
-			RoomType:    "channel",
-			RoomName:    "Default",
-			CreatedAt:   fmt.Sprintf("%v", time.Now().Unix()),
-			Archived:    "false",
-			RoomPrivacy: "public",
+			RoomType:  "channel",
+			RoomName:  "Default",
+			CreatedAt: fmt.Sprintf("%v", time.Now().Unix()),
+			Archived:  "false",
+			Private:   "false",
 		}
 		insertResult, err := RoomCollection.InsertOne(context.TODO(), Newroom)
 		if err != nil {
@@ -53,7 +53,7 @@ func Connect(s socketio.Conn) {
 
 }
 
-func EnterConversation(Server *socketio.Server, s socketio.Conn, msg string) {
+func EnterDefaultConversation(Server *socketio.Server, s socketio.Conn, msg string) {
 	q := make(map[string]interface{})
 	e := json.Unmarshal([]byte(msg), &q)
 	if e != nil {
@@ -76,7 +76,7 @@ func EnterConversation(Server *socketio.Server, s socketio.Conn, msg string) {
 			fmt.Println(err)
 		} else {
 			response := GetMessageSuccess("Entered Conversation", filtered)
-			s.Emit("enter_conversation", response)
+			s.Emit("enter_default_conversation", response)
 		}
 	}
 
@@ -99,7 +99,7 @@ func EnterConversation(Server *socketio.Server, s socketio.Conn, msg string) {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 }
 
-func BroadCastToConversation(Server *socketio.Server, s socketio.Conn, msg string) {
+func BroadCastToDefaultConversation(Server *socketio.Server, s socketio.Conn, msg string) {
 	q := make(map[string]interface{})
 	e := json.Unmarshal([]byte(msg), &q)
 	if e != nil {
@@ -128,81 +128,111 @@ func BroadCastToConversation(Server *socketio.Server, s socketio.Conn, msg strin
 		// log.Fatal(err)
 		fmt.Println(err)
 		res := GetCustomMessageError(fmt.Sprintf("%v", err), 400)
-		s.Emit("conversation", res)
+		s.Emit("default_conversation", res)
 	} else {
 
 		// fmt.Println(insertResult.InsertedID)
 		response := GetMessageSuccess("Broadcast Sucessful", NewMessage)
 		// s.Emit("create_todolist", response)
-		Server.BroadcastToRoom("/socket.io/", conversationID, "conversation", response)
+		Server.BroadcastToRoom("/socket.io/", conversationID, "default_conversation", response)
 	}
 
 	// conversation
 }
 
-func Messaging() {
-	// var Server = socketio.NewServer(nil)
-	// go Server.Serve()
-	// defer Server.Close()
-	/////////////////////////////////////////////////started Socket.io server//////////////////////////////////////////////////////////////
+func CreateRoom(Server *socketio.Server, s socketio.Conn, msg string) {
+	q := make(map[string]interface{})
+	e := json.Unmarshal([]byte(msg), &q)
+	if e != nil {
+		fmt.Println(e)
+	}
+	var private string = "true"
+	var members []primitive.ObjectID
+	room_type := fmt.Sprintf("%v", q["room_type"])
+	if room_type != "inbox" || room_type != "group" || room_type != "channel" {
+		response := GetCustomMessageError("Invalid  room type: try inbox/group/channel", 400)
+		s.Emit("create_room", response)
+	} else {
+		var receiverId primitive.ObjectID
+		userid, _ := primitive.ObjectIDFromHex(fmt.Sprintf("%v", q["userId"]))
+		members = append(members, userid)
+		if room_type == "inbox" {
+			recid, _ := primitive.ObjectIDFromHex(fmt.Sprintf("%v", q["receiverId"]))
+			receiverId = recid
+			members = append(members, receiverId)
+		} else if room_type == "group" {
+			// membersArr := make([]string, len( q["members"]))
+			for _, mem := range q["members"].([]string) {
+				memId, _ := primitive.ObjectIDFromHex(fmt.Sprintf("%v", mem))
+				members = append(members, memId)
+			}
+		}
+		if room_type == "channel" {
+			private = "false"
+		}
 
-	/////////////////////////////////////////////////////////////main db///////////////////////////////////////////////////////////////
-	// fmt.Println("Starting db connection")
-	// RoomCollection, er := utils.GetMongoDbCollection("zc_core", "rooms")
-	// if er != nil {
-	// 	fmt.Println(er)
-	// }
-	// // MessageCollection
-	// _, err := utils.GetMongoDbCollection("zc_core", "messages")
-	// if err != nil {
-	// 	fmt.Println(err)
+		newRoom := Room{
+			OwnerId:   userid,
+			RoomName:  fmt.Sprintf("%v", q["room_name"]),
+			RoomType:  room_type,
+			Members:   members,
+			CreatedAt: fmt.Sprintf("%v", time.Now().Unix()),
+			Archived:  "false",
+			Private:   private,
+		}
 
-	// }
-	// fmt.Println("Connected to MongoDB!")
-	// owner, _ := primitive.ObjectIDFromHex("iuwifuouwfobwubuw")
-	// Newroom := Room{
-	// 	OwnerId:     owner,
-	// 	RoomType:    "channel",
-	// 	CreatedAt:   fmt.Sprintf("%v", time.Now().Unix()),
-	// 	Archived:    "false",
-	// 	RoomPrivacy: "public",
-	// }
-	// Result, err := RoomCollection.InsertOne(context.TODO(), Newroom)
-	// if err != nil {
-	// 	// log.Fatal(err)
-	// 	fmt.Println(err)
-	// }
-	// response := GetMessageSuccess("Query Successful", ' ')
-	// fmt.Println(response)
-	// fmt.Println(Result)
-	///////////////////////////////////////////////////////////main db///////////////////////////////////////////////////////////////////////////////
+		Dbname := utils.Env("DB_NAME")
+		RoomCollection, er := utils.GetMongoDbCollection(Dbname, "rooms")
+		if er != nil {
+			// log.Fatal(er)
+			response := GetCustomMessageError(fmt.Sprintf("%v", er), 400)
+			s.Emit("create_room", response)
+		}
+		insertResult, err := RoomCollection.InsertOne(context.TODO(), newRoom)
+		if err != nil {
+			response := GetCustomMessageError(fmt.Sprintf("%v", err), 400)
+			s.Emit("create_room", response)
+		} else {
+			roomid := insertResult.InsertedID.(primitive.ObjectID).Hex()
+			GetMessageSuccess("Created Room successfully", roomid)
+		}
 
-	////////////////////////////////////////////Enter a conversation //////////////////////////////////////////////////////////////
+	}
+}
 
-	// Server.OnEvent("/socket.io/", "enter_converstion", func(s socketio.Conn, msg string) {
-	// 	q := make(map[string]interface{})
-	// 	e := json.Unmarshal([]byte(msg), &q)
-	// 	if e != nil {
-	// 		fmt.Println(e)
-	// 	}
-	// 	var conversation Room
-	// 	// organisationId := fmt.Sprintf("%v", q["organisationId"])
-	// 	converstionType := fmt.Sprintf("%v", q["converstionType"])
-	// 	converstionid := fmt.Sprintf("%v", q["converstionid"])
-	// 	// requesterId := fmt.Sprintf("%v", q["requesterId"])
-	// 	if converstionType == "inbox" {
-	// 		err := RoomCollection.FindOne(context.TODO(), bson.M{"_id": converstionid}).Decode(&conversation)
-	// 		if err != nil {
-	// 			fmt.Println(err)
-	// 			response := GetCustomMessageError(fmt.Sprintf("%v", err), 400)
-	// 			s.Emit("open_todolist", response)
-	// 		}
-	// 	} else {
+func SocketEvents(Server *socketio.Server) {
+	///////////////////////////////////Connection Related Events//////////////////////////////////////////////
+	Server.OnConnect("/socket.io/", func(s socketio.Conn) error {
+		Connect(s)
+		return nil
+	})
+	Server.OnError("/", func(s socketio.Conn, e error) {
+		fmt.Println("meet error:", e)
+	})
 
-	// 	}
+	Server.OnDisconnect("/", func(s socketio.Conn, reason string) {
+		fmt.Println("closed", reason)
+	})
+	///////////////////////////////////Connection Related Events//////////////////////////////////////////////
 
-	// })
+	////////////////////////////////////Default Room Evennts///////////////////////////////////////////
 
-	////////////////////////////////////////////Enter a conversation //////////////////////////////////////////////////////////////
+	Server.OnEvent("/socket.io/", "enter_default_conversation", func(s socketio.Conn, msg string) {
+		EnterDefaultConversation(Server, s, msg)
+	})
+	Server.OnEvent("/socket.io/", "default_conversation", func(s socketio.Conn, msg string) {
+		BroadCastToDefaultConversation(Server, s, msg)
+	})
+	//////////////////////////////////Default Room Events///////////////////////////////////////////////
+	Server.OnEvent("/socket.io/", "create_room", func(s socketio.Conn, msg string) {
+		CreateRoom(Server, s, msg)
+	})
+	/////////////////////////////////Main Events////////////////////////////////////////////////////////
+
+	//------------------------------create room---------------------------------------------------//
+
+	//------------------------------create room---------------------------------------------------//
+
+	/////////////////////////////////Main Events////////////////////////////////////////////////////////
 
 }

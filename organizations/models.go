@@ -13,7 +13,6 @@ const (
 	OrganizationCollectionName = "organizations"
 )
 
-
 type Organization struct {
 	ID        primitive.ObjectID       `bson:"_id"`
 	Name      string                   `bson:"name"`
