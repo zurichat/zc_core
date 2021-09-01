@@ -9,13 +9,14 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"zuri.chat/zccore/models"
+	"zuri.chat/zccore/organizations"
 	"zuri.chat/zccore/utils"
 )
 
 const (
 	_PluginCollectionName            = models.PluginCollectionName
 	_PluginCollectionsCollectionName = models.PluginCollectionsCollectionName
-	_OrganizationCollectionName      = models.OrganizationCollectionName
+	_OrganizationCollectionName      = organizations.OrganizationCollectionName
 )
 
 type writeDataRequest struct {
