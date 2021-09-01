@@ -13,7 +13,7 @@ type Organization struct {
 	LogoUrl  		string		`json:"logo_url" bson:"logo_url"`
 	DateCreated     time.Time	`json:"date_created" bson:"date_created"`
 	DateUpdated     time.Time	`json:"date_updated" bson:"date_updated"`
-	// Apps
+    Apps            [] string   `json:""`
 	// Settings
 	// DateUpdated    time.Time
 }

@@ -1,17 +1,23 @@
 package organizations
 
 import (
-	// "encoding/json"
 	// "fmt"
-	"encoding/json"
-	"net/http"
-	// "os"
+	// "encoding/json"
+	// "net/http"
 
-	"zuri.chat/zccore/utils"
+	// "github.com/gorilla/mux"
+	// "go.mongodb.org/mongo-driver/bson"
+	// "go.mongodb.org/mongo-driver/bson/primitive"
+	// "zuri.chat/zccore/models"
+
+	// "zuri.chat/zccore/utils"
 )
 
-func GetPluginsOrganizations(w http.ResponseWriter, r *http.Request) {
+/* func GetOrganizationsPlugins(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	// orgId := mux.Vars(r)["org_id"]
+	// objId, _ := primitive.ObjectIDFromHex(orgId)
 	
 	plugins_collection := "plugins"
 
@@ -21,11 +27,6 @@ func GetPluginsOrganizations(w http.ResponseWriter, r *http.Request) {
     if err != nil {
 		utils.GetError(err, http.StatusNotFound, w)
     }
-
-
-	/* filter := map[string]interface{}{
-		"organisation_id" : "1",
-	} */
 	
 	result, err := utils.GetMongoDbDocs(plugins_collection, org)
 
@@ -34,7 +35,7 @@ func GetPluginsOrganizations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.GetSuccess("Plugins returned successfully", result, w)
-}
+} */
 
 /* func GetPlugins(w http.ResponseWriter, r *http.Request) {
 	orgId := mux.Vars(r)["org_id"]

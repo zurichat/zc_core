@@ -65,3 +65,8 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	}
 	utils.GetSuccess("organization created", save, w)
 }
+
+
+/* func GetOrganization(w http.ResponseWriter, r *http.Request) {
+
+} */
