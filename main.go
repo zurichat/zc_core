@@ -30,6 +30,7 @@ func Router() *mux.Router {
 	r.HandleFunc("/marketplace/plugins", marketplace.GetAllApprovedPlugins).Methods("GET")
 	r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetOneApprovedPlugin).Methods("GET")
 	r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
+	r.HandleFunc("/user/create", auth.CreateUserRegEndPoint).Methods("POST")
 
 	http.Handle("/", r)
 
@@ -38,7 +39,7 @@ func Router() *mux.Router {
 
 func main() {
 	
-	err := godotenv.Load(".env")
+	err := godotenv.Load("example.env")
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
