@@ -33,7 +33,7 @@ func GetError(err error, StatusCode int, w http.ResponseWriter) {
 	}
 
 	w.WriteHeader(response.StatusCode)
-
+	w.Header().Set("content-type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("Error sending response: %v", err)
 	}
@@ -46,7 +46,7 @@ func GetSuccess(msg string, data interface{}, w http.ResponseWriter) {
 		StatusCode: http.StatusOK,
 		Data:       data,
 	}
-
+	w.Header().Set("content-type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("Error sending response: %v", err)
 	}
