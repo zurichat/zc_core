@@ -18,6 +18,7 @@ type Organization struct {
 	// DateUpdated    time.Time
 }
 
+// Channel Model
 type Channel struct {
 	_id            	string		`json:"id" bson:"_id"`
 	Name			string		`json:"name" bson:"name"`
