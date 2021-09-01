@@ -21,8 +21,8 @@ import (
 func Router(Server *socketio.Server) *mux.Router {
 	r := mux.NewRouter().StrictSlash(true)
 
-	// r.HandleFunc("/", VersionHandler)
-	r.Handle("/", http.FileServer(http.Dir("./views/chat/")))
+	r.HandleFunc("/", VersionHandler)
+	// r.Handle("/", http.FileServer(http.Dir("./views/chat/")))
 	r.HandleFunc("/v1/welcome", Index).Methods("GET")
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
 	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
