@@ -97,9 +97,9 @@ func GetMessageSuccess(msg string, data interface{}) interface{} {
 	return response
 }
 
-func GetRoomMessages(roomId string) {
+/* func GetRoomMessages(roomId string) {
 
-}
+} */
 
 /* Alright,  if you need to write db functions write function that returns all the rooms for a user, 
 one that return all the messages in a room, 

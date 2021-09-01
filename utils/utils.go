@@ -25,6 +25,9 @@ type SuccessResponse struct {
 	Message    string      `json:"message"`
 	Data       interface{} `json:"data"`
 }
+type Response struct {
+	Data       interface{} `json:"data"`
+}
 
 // GetError : This is helper function to prepare error model.
 func GetError(err error, StatusCode int, w http.ResponseWriter) {

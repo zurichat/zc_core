@@ -1,6 +1,7 @@
 package organizations
 
 import (
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -42,7 +43,7 @@ type InstalledPlugin struct {
 	ID             primitive.ObjectID     `bson:"_id"`
 	PluginID       string                 `bson:"plugin_id"`
 	Plugin         map[string]interface{} `bson:"plugin"`
-	OrganizationID string                 `bson:"organization_id"`
+	//  OrganizationID string                 `bson:"organization_id"`
 	AddedBy        string                 `bson:"added_by"`
 	ApprovedBy     string                 `bson:"approved_by"`
 	InstalledAt    time.Time              `bson:"installed_at"`
@@ -55,4 +56,8 @@ type OrganizationAdmin struct {
 	UserID         string             `bson:"user_id"`
 	CreatedAt      time.Time          `bson:"created_at"`
 	UpdatedAt      time.Time          `bson:"updated_at"`
+}
+
+func InstalledPluginsCollectionName(orgName string) string {
+	return strings.ToLower(orgName) + "_" + models.InstalledPluginsCollectionName 
 }
