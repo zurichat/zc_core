@@ -14,12 +14,12 @@ import (
 func GetOrganization(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	collection := "organizations"
-	
-	var org := map[string]interface{}
 
-	orgId := mux.Vars(r)["org_id"]
+	orgId := mux.Vars(r)["id"]
 	objId, _ := primitive.ObjectIDFromHex(orgId)
+
 	save, err := utils.GetMongoDbDocs(collection, bson.M{"_id": objId})
+
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
