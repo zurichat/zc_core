@@ -12,7 +12,6 @@ import (
 func GetPlugins(w http.ResponseWriter, r *http.Request) {
 	// orgId := mux.Vars(r)["org_id"]
 	// objId, _ := primitive.ObjectIDFromHex(orgId)
-
 	// _, err := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": objId})
 	// if err != nil {
 	// 	// org not found.
