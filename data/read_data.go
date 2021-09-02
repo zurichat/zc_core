@@ -11,6 +11,18 @@ import (
 
 type M map[string]interface{}
 
+// The idea is to use certain characters to signify queries
+// we treat the `$` character as a query identifier then the characters that follow before a double underscore
+// or colon is a query modifier e.g gte means greater/equal to. The next character is the field name and that the one after the = sign is the value.
+// e.g ?$gte:first_name="meh" or ($gte__first_name="meh")
+// We will split the field
+type MongoQuery struct {
+	LT  string
+	GT  string
+	GTE string
+	LTE string
+}
+
 func ReadData(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	pluginId, collName, orgId := vars["plugin_id"], vars["coll_name"], vars["org_id"]

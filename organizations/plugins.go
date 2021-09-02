@@ -24,7 +24,7 @@ func GetOrganizationPlugins(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orgName := InstalledPluginsCollectionName(doc["name"].(string))
+	orgName := GetOrgPluginCollectionName(doc["name"].(string))
 
 	docs, err := utils.GetMongoDbDocs(orgName, nil)
 	fmt.Println(orgName)

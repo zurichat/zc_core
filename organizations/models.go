@@ -5,11 +5,11 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"zuri.chat/zccore/models"
 )
 
 const (
 	OrganizationCollectionName = "organizations"
+	InstalledPluginsCollectionName  = "installed_plugins"
 )
 
 type Organization struct {
@@ -44,6 +44,6 @@ type OrganizationAdmin struct {
 	UpdatedAt      time.Time          `bson:"updated_at"`
 }
 
-func InstalledPluginsCollectionName(orgName string) string {
-	return strings.ToLower(orgName) + "_" + models.InstalledPluginsCollectionName 
+func GetOrgPluginCollectionName(orgName string) string {
+	return strings.ToLower(orgName) + "_" + InstalledPluginsCollectionName 
 }
