@@ -97,7 +97,6 @@ func GetOrganizations(w http.ResponseWriter, r *http.Request) {
 }
 
 
-
 func DeleteOrganization(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
     orgId := mux.Vars(r)["id"]
