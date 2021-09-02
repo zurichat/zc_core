@@ -32,9 +32,8 @@ The data read operation occurs at the [GET]  /data/read/{plugin_id}/{collection_
 Once the api receives this request, it checks the internal record to validate that the plugin with this {plugin_id} is the one that created the {collection_name} for the org with this {organization_id}. Once this is established to be true, then access is granted and the api returns the data requested as an array.
 Extra simple mongodb query parameters can be passed as a url query param e.g ?title=this and the api uses it to query the database.
 
-The link for testing is at https://zccore.herokuapp.com
 
 TODO:
-- Extra checks to ensure the plugin and organization records exists in our db before data can be read or written, as at now any plugin_id or org_id can be used to write data.
-- Implement bulk_write functionality, only the single object functionality is implemented.
-- Implement data-write for UPDATE and DELETE, only POST is implemented.
+- Implement data-write for DELETE.
+- Allow zuri main to have read/write access
+- Improve queries for for read.

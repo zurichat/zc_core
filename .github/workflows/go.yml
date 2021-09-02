@@ -1,0 +1,30 @@
+name: Zuri Core Deployment
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+
+    - name: Git Pull on Server
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.ZURI_HOST }}
+        username: ${{ secrets.USERNAME }}
+        password: ${{ secrets.PASSWORD }}
+        script: |
+          cd ~/zc_core
+          git pull
+          go run main.go
