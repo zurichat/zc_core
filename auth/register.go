@@ -11,22 +11,17 @@ import (
 )
 
 type User struct {
-	ID                primitive.ObjectID `bson:"_id"`
 	FirstName         string             `bson:"first_name" validate:"required,min=2,max=100"`
 	LastName          string             `bson:"last_name" validate:"required,min=2,max=100"`
 	Email             string             `bson:"email" validate:"email,required"`
-	Password          string             `bson:"password" validate:"required,min=6"`
+	Password          []byte             `bson:"password" validate:"required,min=6"`
 	Phone             string             `bson:"phone" validate:"required"`
-	Status            Status
 	Company           string `bson:"company"`
-	Settings          *UserSettings
 	Timezone          string
 	CreatedAt         time.Time `bson:"created_at"`
 	UpdatedAt         time.Time `bson:"updated_at"`
 	DeletedAt         time.Time `bson:"deleted_at"`
-	Workspaces        []*UserWorkspace
-	EmailVerification UserEmailVerification
-	PasswordResets    []*UserPasswordReset
+	
 }
 
 func RegisterNewUser(w http.ResponseWriter, r *http.Request){
@@ -41,10 +36,10 @@ func RegisterNewUser(w http.ResponseWriter, r *http.Request){
 	if (!res){
 		utils.GetError(errors.New("user already exists with this email"), http.StatusBadRequest, w)
 	}
-	password, _ := bcrypt.GenerateFromPassword([]byte(user.password), 14)
+	password, _ := bcrypt.GenerateFromPassword([]byte(user.Password), 14)
 	user.Password = password
-	user.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-    user.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+	user.CreatedAt, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+    user.UpdatedAt, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 	doc, _ := utils.StructToMap(user, "bson")
 	result, err := utils.CreateMongoDbDoc("Users", doc)
 
