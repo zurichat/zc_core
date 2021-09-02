@@ -8,7 +8,6 @@ import (
 	"net/mail"
 	"os"
 	"reflect"
-	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -34,7 +33,7 @@ func GetError(err error, StatusCode int, w http.ResponseWriter) {
 	}
 
 	w.WriteHeader(response.StatusCode)
-
+	w.Header().Set("content-type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("Error sending response: %v", err)
 	}
@@ -47,7 +46,7 @@ func GetSuccess(msg string, data interface{}, w http.ResponseWriter) {
 		StatusCode: http.StatusOK,
 		Data:       data,
 	}
-
+	w.Header().Set("content-type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("Error sending response: %v", err)
 	}
@@ -67,56 +66,6 @@ func FileExists(name string) bool {
 // convert map to bson.M for mongoDB docs
 func MapToBson(data map[string]interface{}) bson.M {
 	return bson.M(data) // they have the same underlying type so type conversion is enough
-}
-
-// MapToStruct converts generic map[string]interface{} to a struct, passing a pointer to the struct
-// This uses struct tags instead of field names since StructToMap also uses tags
-// USE AT YOUR RISK
-func MapToStruct(m map[string]interface{}, s interface{}, tag string) error {
-	v := reflect.ValueOf(s)
-
-	if v.Kind() != reflect.Ptr {
-		return fmt.Errorf("s should be a pointer to struct, got: %T", v)
-	}
-
-	v = v.Elem()
-
-	// StructToMap uses tagValue as the map key for a struct field,
-	// A map is used here to store key:value pair of tagValue:fieldName
-	tagToFieldName := mapStructTagValueToFieldName(v, tag)
-
-	for name, value := range m {
-		structFieldValue := v.FieldByName(tagToFieldName[name])
-
-		if !structFieldValue.IsValid() {
-			return fmt.Errorf("No such field: %s in struct", name)
-		}
-		if !structFieldValue.CanSet() {
-			return fmt.Errorf("Cannot set %s field value", name)
-		}
-
-		val := reflect.ValueOf(value)
-
-		if structFieldValue.Type() != val.Type() {
-			return fmt.Errorf("Provided value didn't match struct field type")
-
-		}
-
-		structFieldValue.Set(val)
-	}
-	return nil
-}
-
-func mapStructTagValueToFieldName(v reflect.Value, tag string) map[string]string {
-	sType := v.Type()
-	m := make(map[string]string)
-	for i := 0; i < v.NumField(); i++ {
-		field := sType.Field(i)
-		if tagVal := field.Tag.Get(tag); !shouldOmitTag(tagVal) {
-			m[tagVal] = field.Name
-		}
-	}
-	return m
 }
 
 // StructToMap converts a struct of any type to a map[string]inteface{} based on struct tags
@@ -150,7 +99,7 @@ func StructToMap(inStruct interface{}, tag string) (map[string]interface{}, erro
 }
 
 func shouldOmitTag(tagVal string) bool {
-	return tagVal == "" || tagVal == "-" || strings.Contains(tagVal, "omitempty")
+	return tagVal == "" || tagVal == "-"
 }
 
 func ParseJsonFromRequest(r *http.Request, v interface{}) error {
@@ -158,6 +107,6 @@ func ParseJsonFromRequest(r *http.Request, v interface{}) error {
 }
 
 func IsValidEmail(email string) bool {
-    _, err := mail.ParseAddress(email)
-    return err == nil
+	_, err := mail.ParseAddress(email)
+	return err == nil
 }
