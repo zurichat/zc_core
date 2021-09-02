@@ -49,18 +49,6 @@ A [GET] request to /marketplace/plugins will return the minimal information requ
 #### Marketplace Get Plugin
 This [GET] /marketplace/plugins/{id} retreives an approved plugin with the id, and returns data containing the plugin details including the url to install it.
 
-#### Installing plugins from marketplace to an org
-This endpoint at [POST] /marketplace/install takes a json request in the format
-```json
-{
-"organization_id": "xxxx",
-"plugin_id": "xxxx",
-"user_id": "xxx"
-}
-
-```
-Successfull installation returns the plugin details, including the template_url which can be displayed by the frontend
-
 
 ### Plugins
 
