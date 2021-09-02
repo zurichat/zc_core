@@ -125,6 +125,7 @@ func CreateUser(ctx context.Context, u *User) error {
 	return nil
 }
 
+
 func FindUserProfile(ctx context.Context, userID, orgID string) (*UserWorkspace, error) {
 	return nil, nil
 }
