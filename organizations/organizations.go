@@ -114,6 +114,20 @@ func DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 func UpdateUrl(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	orgId := mux.Vars(r)["id"]
+
+	//check if organization exist
+	objId, _ := primitive.ObjectIDFromHex(orgId)
+
+	org, err := utils.GetMongoDbDocs("organizations", bson.M{"_id": objId})
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+	if org == nil {
+		utils.GetError(errors.New("organization does not exist"), http.StatusNotFound, w)
+		return
+	}
+
 	requestData := make(map[string]string)
 	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
