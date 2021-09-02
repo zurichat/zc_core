@@ -54,10 +54,12 @@ func main() {
 
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+		// Log.Fatal kills the process when deployed live where an .env file may not be present
+		log.Println("Error loading .env file")
+	} else {
 
-	fmt.Println("Environment variables successfully loaded. Starting application...")
+		fmt.Println("Environment variables successfully loaded. Starting application...")
+	}
 
 	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
 		log.Fatal(err)
