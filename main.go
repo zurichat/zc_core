@@ -11,11 +11,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"zuri.chat/zccore/data"
-	"zuri.chat/zccore/marketplace"
 	"zuri.chat/zccore/messaging"
 	"zuri.chat/zccore/organizations"
 	"zuri.chat/zccore/plugin"
-	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 )
 
@@ -26,20 +24,18 @@ func Router(Server *socketio.Server) *mux.Router {
 	// r.Handle("/", http.FileServer(http.Dir("./views/chat/")))
 	r.HandleFunc("/v1/welcome", Index).Methods("GET")
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
-	r.HandleFunc("/organizations/{org_id}/plugins", organizations.GetOrganizationPlugins).Methods("GET")
 	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
 	r.HandleFunc("/organizations", organizations.Create).Methods("POST")
 	r.HandleFunc("/organizations", organizations.GetOrganizations).Methods("GET")
 	r.HandleFunc("/organizations/{id}", organizations.DeleteOrganization).Methods("DELETE")
-  r.HandleFunc("/organizations/{id}/url", organizations.UpdateUrl).Methods("PATCH")
 	r.Handle("/socket.io/", Server)
-	r.HandleFunc("/data/write", data.WriteData)
+	r.HandleFunc("/data/write", data.WriteData).Methods("POST", "PUT", "DELETE")
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
-	r.HandleFunc("/plugins/register", plugin.Register).Methods("POST")
-	r.HandleFunc("/marketplace/plugins", marketplace.GetAllPlugins).Methods("GET")
-	r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetPlugin).Methods("GET")
-	r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
-	r.HandleFunc("/users", user.Create).Methods("POST")
+	r.HandleFunc("/plugin/register", plugin.Register).Methods("POST")
+	r.HandleFunc("/plugin/{id}", plugin.GetByID).Methods("GET")
+	//r.HandleFunc("/marketplace/plugins", marketplace.GetAllApprovedPlugins).Methods("GET")
+	//r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetOneApprovedPlugin).Methods("GET")
+	//r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
 
 	http.Handle("/", r)
 
@@ -56,12 +52,10 @@ func main() {
 
 	err := godotenv.Load(".env")
 	if err != nil {
-		// Log.Fatal kills the process when deployed live where an .env file may not be present
-		log.Println("Error loading .env file")
-	} else {
-
-		fmt.Println("Environment variables successfully loaded. Starting application...")
+		log.Fatal("Error loading .env file")
 	}
+
+	fmt.Println("Environment variables successfully loaded. Starting application...")
 
 	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
 		log.Fatal(err)
