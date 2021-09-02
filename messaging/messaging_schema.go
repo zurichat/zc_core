@@ -7,15 +7,15 @@ import (
 )
 
 type Room struct {
-	OwnerId     primitive.ObjectID   `json:"ownerid,omitempty" bson:"ownerid,omitempty"`
-	RoomName    string               `json:"roomname,omitempty" bson:"roomname,omitempty"`
-	RoomType    string               `json:"roomtype,omitempty" bson:"roomtype,omitempty"` //inbox, group, channel
-	Members     []primitive.ObjectID `json:"members,omitempty" bson:"members,omitempty"`
-	CreatedAt   string               `json:"createat,omitempty" bson:"createat,omitempty"`
-	Archived    string               `json:"archived,omitempty" bson:"archived,omitempty"` // true/false
-	ArchivedBy  primitive.ObjectID   `json:"archivedby,omitempty" bson:"archivedby,omitempty"`
-	ArchiveAt   string               `json:"archiveat,omitempty" bson:"archiveat,omitempty"`
-	RoomPrivacy string               `json:"roomprivacy,omitempty" bson:"roomprivacy,omitempty"` // {public, private} inbox, group is private by default
+	OwnerId    primitive.ObjectID   `json:"ownerid,omitempty" bson:"ownerid,omitempty"`
+	RoomName   string               `json:"roomname,omitempty" bson:"roomname,omitempty"`
+	RoomType   string               `json:"roomtype,omitempty" bson:"roomtype,omitempty"` //inbox, group, channel
+	Members    []primitive.ObjectID `json:"members,omitempty" bson:"members,omitempty"`
+	CreatedAt  string               `json:"createat,omitempty" bson:"createat,omitempty"`
+	Archived   string               `json:"archived,omitempty" bson:"archived,omitempty"` // true/false
+	ArchivedBy primitive.ObjectID   `json:"archivedby,omitempty" bson:"archivedby,omitempty"`
+	ArchiveAt  string               `json:"archiveat,omitempty" bson:"archiveat,omitempty"`
+	Private    string               `json:"roomprivacy,omitempty" bson:"roomprivacy,omitempty"` // {true, false} inbox, group is private by default
 }
 
 type MessageContent struct {

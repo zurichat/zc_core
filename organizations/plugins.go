@@ -2,24 +2,36 @@ package organizations
 
 import (
 	"net/http"
-
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"zuri.chat/zccore/utils"
 )
 
-func GetPlugins(w http.ResponseWriter, r *http.Request) {
+func GetOrganizationPlugins(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	collection := "organizations"
+
 	orgId := mux.Vars(r)["org_id"]
 	objId, _ := primitive.ObjectIDFromHex(orgId)
 
-	_, err := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": objId})
+	doc, err := utils.GetMongoDbDoc(collection, bson.M{"_id": objId})
 	if err != nil {
 		// org not found.
 		utils.GetError(err, http.StatusNotFound, w)
 		return
 	}
-	org := Organization{ID: objId}
-	org.PopulatePlugins()
-	utils.GetSuccess("success", org.Plugins, w)
+
+	orgName := GetOrgPluginCollectionName(doc["name"].(string))
+
+	docs, err := utils.GetMongoDbDocs(orgName, nil)
+  
+	if err != nil {
+		// org plugins not found.
+		utils.GetError(err, http.StatusNotFound, w)
+		return
+	}
+
+	utils.GetSuccess("Plugins returned successfully", docs, w)
 }

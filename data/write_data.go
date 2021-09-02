@@ -1,22 +1,20 @@
 package data
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"zuri.chat/zccore/models"
-	"zuri.chat/zccore/organizations"
+	"zuri.chat/zccore/plugin"
 	"zuri.chat/zccore/utils"
 )
 
 const (
-	_PluginCollectionName            = models.PluginCollectionName
-	_PluginCollectionsCollectionName = models.PluginCollectionsCollectionName
-	_OrganizationCollectionName      = organizations.OrganizationCollectionName
+	_PluginCollectionName            = "plugins"
+	_PluginCollectionsCollectionName = "plugin_collections"
+	_OrganizationCollectionName      = "organizations"
 )
 
 type writeDataRequest struct {
@@ -31,12 +29,12 @@ type writeDataRequest struct {
 
 func WriteData(w http.ResponseWriter, r *http.Request) {
 	reqData := new(writeDataRequest)
-	if err := json.NewDecoder(r.Body).Decode(reqData); err != nil {
+	if err := utils.ParseJsonFromRequest(r, reqData); err != nil {
 		utils.GetError(fmt.Errorf("error processing request: %v", err), http.StatusUnprocessableEntity, w)
 		return
 	}
 
-	if !recordExists(_PluginCollectionName, reqData.PluginID) {
+	if _, err := plugin.FindPluginByID(reqData.PluginID); err != nil {
 		msg := "plugin with this id does not exist"
 		utils.GetError(errors.New(msg), http.StatusNotFound, w)
 		return
@@ -48,7 +46,7 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// if plugin is accessing this collection the first time, we create a record linking this collection to the plugin.
+	// if plugin is writing to this collection the first time, we create a record linking this collection to the plugin.
 	if !pluginHasCollection(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName) {
 		createPluginCollectionRecord(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName)
 	}
@@ -60,6 +58,8 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 		reqData.handlePut(w, r)
 	case "DELETE":
 		reqData.handleDelete(w, r)
+	default:
+		fmt.Fprint(w, "Data write endpoint")
 	}
 }
 
