@@ -42,7 +42,7 @@ type PluginCollections struct {
 
 func CreatePlugin(p *Plugin) error {
 	p.CreatedAt = time.Now().String()
-	doc, _ := utils.StructToMap(p, "bson")
+	doc, _ := utils.StructToMap(p)
 	delete(doc, "_id")
 	res, err := utils.CreateMongoDbDoc(PluginCollectionName, doc)
 	p.ID = res.InsertedID.(primitive.ObjectID)
