@@ -208,3 +208,16 @@ func DeleteManyMongoDoc(collectionName string, filter map[string]interface{}) (*
 
 	return res, nil
 }
+
+// Checks if a MongoDB document exists in collection
+func DocExists(collectionName string, filter map[string]interface{}) bool {
+	ctx := context.Background()
+	collection := defaultMongoHandle.GetCollection(collectionName)
+
+	_, err := collection.CountDocuments(ctx, filter)
+		if err != nil {
+		return false
+	}
+	return true
+
+} 
