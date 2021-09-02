@@ -1,4 +1,4 @@
-package user
+package auth
 
 import (
 	"time"
@@ -67,7 +67,7 @@ type User struct {
 	first_name         string             `bson:"first_name" validate:"required,min=2,max=100"`
 	last_name          string             `bson:"last_name" validate:"required,min=2,max=100"`
 	email              string             `bson:"email" validate:"email,required"`
-	password           string             `bson:"Password" validate:"required,min=6""`
+	password           []byte             `bson:"password" validate:"required,min=6""`
 	phone              string             `bson:"phone" validate:"required"`
 	status             Status
 	company            string `bson:"company"`
