@@ -115,17 +115,6 @@ func FindUsers(ctx context.Context, filter M) ([]*User, error) {
 	return users, nil
 }
 
-func CreateUser(ctx context.Context, u *User) error {
-	collectionName := "users"
-	collection := utils.GetCollection(collectionName)
-	_, err := collection.InsertOne(ctx, u)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-
 func FindUserProfile(ctx context.Context, userID, orgID string) (*UserWorkspace, error) {
 	return nil, nil
 }

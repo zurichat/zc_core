@@ -1,9 +1,6 @@
 package user
 
 import (
-	// "context"
-	// "encoding/json"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"time"
@@ -27,26 +24,20 @@ func UserRegistration(response http.ResponseWriter, request *http.Request) {
 
 	if !isEmail {
 		utils.GetError(errors.New("email address is not valid"), http.StatusBadRequest, response)
-	} else {
+		return
+	} 
 		
-		user.CreatedAt = time.Now()
+	user.CreatedAt = time.Now()
 
-		detail, _ := utils.StructToMap(user, "bson")
+	detail, _ := utils.StructToMap(user, "bson")
 
-		var inInterface map[string]interface{}
-
-		inrec, _ := json.Marshal(detail)
-
-		json.Unmarshal(inrec, &inInterface)
-
-		result, err := utils.CreateMongoDbDoc("user", inInterface)
-
-		
-		if err != nil {
-			utils.GetError(err, http.StatusInternalServerError, response)
-			return
-		}
-
-		utils.GetSuccess("user created", result, response)
+	result, err := utils.CreateMongoDbDoc("users", detail)
+	
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, response)
+		return
 	}
+
+	utils.GetSuccess("user created", result, response)
+
 }
