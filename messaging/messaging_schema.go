@@ -96,14 +96,3 @@ func GetMessageSuccess(msg string, data interface{}) interface{} {
 	}
 	return response
 }
-
-/* func GetRoomMessages(roomId string) {
-
-} */
-
-/* Alright,  if you need to write db functions write function that returns all the rooms for a user, 
-one that return all the messages in a room, 
-and one that returns all the comments for a message. 
-Make use of .env for the db name, 
-and add the collection name as one of the variables for the functions
- */
