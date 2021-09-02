@@ -87,6 +87,9 @@ func main() {
 	orgRepo := organizations.NewOrgRepository(orgCollection)
 	OrgService := organizations.NewOrgService(orgRepo)
 
+	auth.SeedDatabase()
+
+
 	// get PORT from environment variables
 	port, _ := os.LookupEnv("PORT")
 	if port == "" {
@@ -110,6 +113,8 @@ func main() {
 
 	fmt.Println("Zuri Chat API running on port ", port)
 	log.Fatal(srv.ListenAndServe())
+   
+
 }
 
 func LoadApp(w http.ResponseWriter, r *http.Request) {

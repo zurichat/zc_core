@@ -1,24 +1,23 @@
 package auth
 
 import (
-	"context"
+	"errors"
+	"strings"
+
 	"fmt"
-	"log"
 	"net/http"
-	"os"
-	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/crypto/bcrypt"
-	"zuri.chat/zccore/user"
+
 	"zuri.chat/zccore/utils"
+
 )
 
 var SECRET_KEY = []byte("gosecretkey")
 
 type loginResponse struct {
-	UserID string `json:"user_id"`
+	Name string `json:"name"`
 	Email string `json:"email"`
     Token string `json:"token"`
 }
@@ -36,42 +35,56 @@ func GenerateJWT()(string,error){
 
 func UserLogin(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Content-Type","application/json")
-	// loginData := make(map[string]string)
-	var user user.User
-	db_name, _ :=  os.LookupEnv("DB_NAME")
-	err := utils.ParseJsonFromRequest(r, &user);
-	if err != nil {
+
+	loginData := make(map[string]interface{})
+ 
+
+	if err := utils.ParseJsonFromRequest(r, &loginData); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
 
+    
+    user_filter := make(map[string]interface{})
+	user_filter["email"] = loginData["email"]
 
-	collection, err := utils.GetMongoDbCollection(db_name, "users")
-	if err != nil {
-		log.Fatalf("%s", err.Error())
-	}
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	err = collection.FindOne(ctx, bson.M{"email":user.Email}).Decode(&user)
-	if err != nil{
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"message":"`+ err.Error() +`"}`))
+	// Check if email exists
+	userModel, _ := utils.GetMongoDbDoc("users", user_filter)
+	if userModel == nil {
+		utils.GetError(errors.New("invalid email"), http.StatusBadRequest, w)
 		return
 	}
-	userPass := []byte(user.Password)
-  
-	bsp, err := bcrypt.GenerateFromPassword([]byte(userPass),bcrypt.DefaultCost)
-    userPass = bsp
-	if err != nil {
-		log.Println(err)
-	 }
-	 passErr := bcrypt.CompareHashAndPassword([]byte(user.Password),[]byte(userPass))
+
+	// validate required fields
+	// add required params into required array, make an empty array to hold error strings
+   required, empty := []string{ "email", "password"}, make([]string, 0)
+
+
+	
+	// loop through and check for empty required params
+	for _, value := range required {
+		if str, ok := loginData[value].(string); ok {
+			if strings.TrimSpace(str) == "" {
+				empty = append(empty, strings.Join(strings.Split(value, "_"), " "))
+			}
+		} else {
+			empty = append(empty, strings.Join(strings.Split(value, "_"), " "))
+		}
+	}
+	if len(empty) > 0 {
+		utils.GetError(errors.New(strings.Join(empty, ", ")+" required"), http.StatusBadRequest, w)
+		return
+	}
+
+	 passErr := bcrypt.CompareHashAndPassword([]byte(userModel["password"].(string)),[]byte(loginData["password"].(string)))
 	 if passErr != nil {
 		fmt.Println(passErr)
 		w.Write([]byte(`{"response":"Wrong Password!"}`))
 		return
-	 } else {
-		fmt.Println("Passwords match")
-	 }	
+	 }else{
+		 fmt.Println("Passwords match")
+	 }
+	 	
 
 
 	jwtToken, err := GenerateJWT()
@@ -82,21 +95,11 @@ func UserLogin(w http.ResponseWriter, r *http.Request){
 	}
 	w.Write([]byte(`{"token":"`+jwtToken+`"}`))
 
-	// save organization
-	// new_db_coll, err := utils.CreateMongoDbDoc("users", bson.M{
-	// 	"email":       user.Email,
-	// 	"password":    bsp,
-	// })
-	// if err != nil {
-	// 	utils.GetError(err, http.StatusInternalServerError, w)
-	// 	return
-	// }
-	// if err == nil {
-	// 	fmt.Println("Database collection created.")
-	// }
+
+   // Instantiate login response struct 
 	utils.GetSuccess("User Logged in successfully!", loginResponse{
-		UserID: user.UserID,
-		Email: user.Email,
+		Name: userModel["first_name"].(string) + " " + userModel["last_name"].(string),
+		Email: userModel["email"].(string),
 		Token: jwtToken,
 	}, w)
 

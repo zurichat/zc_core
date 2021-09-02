@@ -13,11 +13,11 @@ import (
 
 type User struct {
 	ID                  primitive.ObjectID     `bson:"_id"`
-	Email               string                 `bson:"email" validate:"required"`
+	Email               string                 `bson:"email"`
 	UserID              string                 `bson:"user_id"`
 	FirstName           string                 `bson:"first_name"`
 	LastName            string                 `bson:"last_name"`
-	Password            string                 `bson:"password" validate:"required"`
+	Password            string                 `bson:"password"`
 	Phone               string                 `bson:"phone"`
 	Status              string                 `bson:"status"`
 	OrganizationID      string                 `bson:"organization_id"`
