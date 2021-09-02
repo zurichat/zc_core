@@ -18,7 +18,12 @@ func GetOrganization(w http.ResponseWriter, r *http.Request) {
 	collection := "organizations"
 
 	orgId := mux.Vars(r)["id"]
-	objId, _ := primitive.ObjectIDFromHex(orgId)
+	objId, err := primitive.ObjectIDFromHex(orgId)
+
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
 
 	save, err := utils.GetMongoDbDocs(collection, bson.M{"_id": objId})
 
@@ -34,7 +39,6 @@ func Create(w http.ResponseWriter, r *http.Request) {
 
 	var newOrg Organization
 	collection, user_collection := "organizations", "users"
-	fmt.Println(user_collection)
 
 	// Try to decode the request body into the struct. If there is an error,
 	// respond to the client with the error message and a 400 status code.
@@ -56,15 +60,20 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// confirm if user_id exists
-	user_filter := make(map[string]interface{})
-	user_filter["user_id"] = newOrg.CreatorID
-	user, _ := utils.GetMongoDbDoc(user_collection, user_filter)
-	if user == nil {
-		utils.GetError(errors.New("invalid user id"), http.StatusBadRequest, w)
+	objId, err:= primitive.ObjectIDFromHex(newOrg.CreatorID)
+
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
 		return
 	}
 
-	// save organization
+	user, _ := utils.GetMongoDbDoc(user_collection, bson.M{"_id": objId})
+	if user == nil {
+		fmt.Printf("users with id %s exists!", newOrg.CreatorID)
+		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
+		return
+	}
+
 	newOrg.URL = newOrg.Name + ".zuri.chat"
 	newOrg.CreatedAt = time.Now()
 
@@ -102,13 +111,19 @@ func DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 
 	collection := "organizations"
 
-	save, err := utils.DeleteOneMongoDoc(collection, orgId)
+	response, err := utils.DeleteOneMongoDoc(collection, orgId)
+	
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
+	
+	if response.DeletedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
 
-	utils.GetSuccess("organization deleted successfully", save, w)
+	utils.GetSuccess("organization deleted successfully", nil, w)
 }
 
 func UpdateUrl(w http.ResponseWriter, r *http.Request) {
