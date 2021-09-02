@@ -10,6 +10,7 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
+
 func GetOrganizationPlugins(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	collection := "organizations"
@@ -27,7 +28,7 @@ func GetOrganizationPlugins(w http.ResponseWriter, r *http.Request) {
 	orgName := InstalledPluginsCollectionName(doc["name"].(string))
 
 	docs, err := utils.GetMongoDbDocs(orgName, nil)
-	fmt.Println(orgName)
+  
 	if err != nil {
 		// org plugins not found.
 		utils.GetError(err, http.StatusNotFound, w)
