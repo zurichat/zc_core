@@ -75,7 +75,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request){
 		utils.GetError(errors.New(strings.Join(empty, ", ")+" required"), http.StatusBadRequest, w)
 		return
 	}
-
+    // Compare user inputed password with password gotten from database to confirm it is the same before authentication
 	 passErr := bcrypt.CompareHashAndPassword([]byte(userModel["password"].(string)),[]byte(loginData["password"].(string)))
 	 if passErr != nil {
 		fmt.Println(passErr)
