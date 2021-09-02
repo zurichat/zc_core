@@ -29,7 +29,6 @@ type InstalledPlugin struct {
 	ID             primitive.ObjectID     `bson:"_id"`
 	PluginID       string                 `bson:"plugin_id"`
 	Plugin         map[string]interface{} `bson:"plugin"`
-	//  OrganizationID string                 `bson:"organization_id"`
 	AddedBy        string                 `bson:"added_by"`
 	ApprovedBy     string                 `bson:"approved_by"`
 	InstalledAt    time.Time              `bson:"installed_at"`

@@ -1,7 +1,6 @@
 package organizations
 
 import (
-	"fmt"
 	"net/http"
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
@@ -27,7 +26,7 @@ func GetOrganizationPlugins(w http.ResponseWriter, r *http.Request) {
 	orgName := GetOrgPluginCollectionName(doc["name"].(string))
 
 	docs, err := utils.GetMongoDbDocs(orgName, nil)
-	fmt.Println(orgName)
+  
 	if err != nil {
 		// org plugins not found.
 		utils.GetError(err, http.StatusNotFound, w)
