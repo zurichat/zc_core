@@ -1,9 +1,17 @@
 package user
 
 import (
+	"context"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"zuri.chat/zccore/utils"
+)
+
+const (
+	UserCollectionName        = "users"
+	UserProfileCollectionName = "user_workspace_profiles"
 )
 
 type M map[string]interface{}
@@ -24,30 +32,26 @@ const (
 	Member
 )
 
-// The struct fields should be exported, don't you think? encoding and decoding to JSON might not work.
-type WorkSpaceProfile struct {
-	DisplayPicture string
-	Status         Status
-	Bio            string
-	Timezone       string
-	Password       string `bson:"password" validate:"required,min=6"`
-	PasswordResets []*UserPasswordReset
-	Roles          []*Role
-}
-
-type UserWorkspace struct {
-	ID             primitive.ObjectID `bson:"_id"`
-	OrganizationID string             // should this be an ID instead? Yes, objectID or string
-	Profile        WorkSpaceProfile
+type UserWorkspaceProfile struct {
+	ID             primitive.ObjectID   `bson:"_id"`
+	OrganizationID string               `bson:"organization_id"`
+	DisplayPicture string               `bson:"display_picture"`
+	Status         Status               `bson:"status"`
+	Bio            string               `bson:"bio"`
+	Timezone       string               `bson:"timezone"`
+	Password       string               `bson:"password"`
+	PasswordResets []*UserPasswordReset `bson:"password_resets"`
+	Roles          []*Role              `bson:"roles"`
 }
 
 type UserRole struct {
 	ID   primitive.ObjectID `bson:"_id"`
-	Role Role
+	Role Role               `bson:"role"`
 }
 
 type UserSettings struct {
-	Role []UserRole
+	Role []UserRole `bson:"role"`
+	Role Role
 }
 
 type UserEmailVerification struct {
@@ -58,27 +62,29 @@ type UserEmailVerification struct {
 
 type UserPasswordReset struct {
 	ID        primitive.ObjectID `bson:"_id"`
-	IPAddress string
-	Token     string
-	ExpiredAt time.Time `bson:"expired_at"`
-	UpdatedAt time.Time `bson:"updated_at"`
-	CreatedAt time.Time `bson:"created_at"`
+	IPAddress string             `bson:"ip_address"`
+	Token     string             `bson:"token"`
+	ExpiredAt time.Time          `bson:"expired_at"`
+	UpdatedAt time.Time          `bson:"updated_at"`
+	CreatedAt time.Time          `bson:"created_at"`
 }
 
 type User struct {
-	_id                string 				`bson:"_id" json:"id"`
-	FirstName         string             	`bson:"first_name" validate:"required,min=2,max=100" json:"first_name"`
-	LastName          string             	`bson:"last_name" validate:"required,min=2,max=100" json:"last_name"`
-	Email             string             	`bson:"email" validate:"email,required" json:"email"`
-	Password          string             	`bson:"password" validate:"required,min=6"`
-	Phone             string             	`bson:"phone" validate:"required" json:"phone"`
-	Status            Status			 	`bson:"status" json:"status"`
-	Company           string 			 	`bson:"company" json:"company"`
-	Settings          *UserSettings		 	`bson:"settings" json:"settings"`
-	Timezone          string			 	`bson:"time_zone" json:"time_zone"`
-	CreatedAt         time.Time 		 	`bson:"created_at" json:"created_at"`
-	UpdatedAt         time.Time 		 	`bson:"updated_at" json:"updated_at"`
-	Organizations     []*UserWorkspace	 	`bson:"organizations" json:"organizations"`
-	EmailVerification UserEmailVerification
-	PasswordResets    []*UserPasswordReset
+	_id                string 				        `bson:"_id" json:"id"`
+	FirstName         string             	    `bson:"first_name" validate:"required,min=2,max=100" json:"first_name"`
+	LastName          string             	    `bson:"last_name" validate:"required,min=2,max=100" json:"last_name"`
+	Email             string             	    `bson:"email" validate:"email,required" json:"email"`
+	Password          string             	    `bson:"password" validate:"required,min=6"`
+	Phone             string             	    `bson:"phone" validate:"required" json:"phone"`
+	Status            Status			 	          `bson:"status" json:"status"`
+	Company           string 			 	          `bson:"company" json:"company"`
+	Settings          *UserSettings		 	      `bson:"settings" json:"settings"`
+	Timezone          string			 	          `bson:"time_zone" json:"time_zone"`
+	CreatedAt         time.Time 		 	        `bson:"created_at" json:"created_at"`
+	UpdatedAt         time.Time 		 	        `bson:"updated_at" json:"updated_at"`
+  DeletedAt         time.Time               `bson:"deleted_at"`
+  Organizations     []string                `bson:"workspaces"` // should contain (organization) workspace ids
+	WorkspaceProfiles []*UserWorkspaceProfile `bson:"workspace_profiles"`
+	EmailVerification UserEmailVerification   `bson:"email_verification"`
+	PasswordResets    []*UserPasswordReset    `bson:"password_resets"`
 }
