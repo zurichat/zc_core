@@ -8,14 +8,10 @@ import (
 	"reflect"
 	"time"
 
-	// "github.com/nu7hatch/gouuid"
-	// "go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
-	// "zuri.chat/zccore/user"
-	// "zuri.chat/zccore/utils"
 )
 
 /*
