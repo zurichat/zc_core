@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -103,6 +104,16 @@ func UpdateUser(response http.ResponseWriter, request *http.Request) {
 			utils.GetError(err, http.StatusBadRequest, response)
 			return
 		}
+		fmt.Printf("request body %v", body)
+
+		// 3. Validate request body
+		structValidator := validator.New()
+		err = structValidator.Struct(body)
+
+		if err != nil {
+			utils.GetError(err, http.StatusBadRequest, response)
+			return
+		}
 
 		// Convert body struct to interface
 		var userInterface map[string]interface{}
@@ -112,8 +123,8 @@ func UpdateUser(response http.ResponseWriter, request *http.Request) {
 		}
 		json.Unmarshal(bytes, &userInterface)
 
-		// 3. Update user
-		updateRes, err := utils.UpdateOneMongoDbDoc(collectionName, userID, userInterface)
+		// 4. Update user
+		updateRes, err := utils.UpdateOneMongoDbDoc(collectionName, objID.String(), userInterface)
 		if err != nil {
 			utils.GetError(err, http.StatusInternalServerError, response)
 			return

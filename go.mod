@@ -9,4 +9,5 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/mitchellh/mapstructure v1.4.1
 	go.mongodb.org/mongo-driver v1.7.1
+	gopkg.in/go-playground/validator.v9 v9.31.0 // indirect
 )
