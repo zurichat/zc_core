@@ -29,7 +29,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations", organizations.Create).Methods("POST")
 	r.HandleFunc("/organizations", organizations.GetOrganizations).Methods("GET")
 	r.HandleFunc("/organizations/{id}", organizations.DeleteOrganization).Methods("DELETE")
-	r.HandleFunc("/organizations/{id}", organizations.C).Methods("POST")
+	r.HandleFunc("/organizations/{id}", organizations.ChangeOrganizationName).Methods("POST")
 	r.Handle("/socket.io/", Server)
 	r.HandleFunc("/data/write", data.WriteData).Methods("POST", "PUT", "DELETE")
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
@@ -39,7 +39,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	//r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetOneApprovedPlugin).Methods("GET")
 	//r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
 	r.HandleFunc("/users", user.Create).Methods("POST")
-	
+
 	http.Handle("/", r)
 
 	return r
