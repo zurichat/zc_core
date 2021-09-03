@@ -94,7 +94,7 @@ func Delete(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["user_id"]
 
-	err := db.DeleteOneMongoDoc(collectionName, id)
+	err := utils.DeleteOneMongoDoc(collectionName, id)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
