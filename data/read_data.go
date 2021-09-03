@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"zuri.chat/zccore/utils"
 )
 
@@ -51,6 +52,10 @@ func getPrefixedCollectionName(pluginID, orgID, collName string) string {
 func parseURLQuery(r *http.Request) map[string]interface{} {
 	m := M{}
 	for k, v := range r.URL.Query() {
+		if k == "_id" {
+			m[k], _ = primitive.ObjectIDFromHex(v[0])
+			continue
+		}
 		m[k] = v[0]
 	}
 	return m

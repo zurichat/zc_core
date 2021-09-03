@@ -1,6 +1,7 @@
 package marketplace
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -13,7 +14,7 @@ import (
 type M map[string]interface{}
 
 func GetAllPlugins(w http.ResponseWriter, r *http.Request) {
-	ps, err := plugin.FindPlugins(bson.M{"approved": true})
+	ps, err := plugin.FindPlugins(r.Context(), bson.M{"approved": true})
 	if err != nil {
 		switch err {
 		case mongo.ErrNoDocuments:
@@ -29,9 +30,13 @@ func GetAllPlugins(w http.ResponseWriter, r *http.Request) {
 
 func GetPlugin(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
-	p, err := plugin.FindPluginByID(id)
-	if err != nil || !p.Approved {
+	p, err := plugin.FindPluginByID(r.Context(), id)
+	if err != nil {
 		utils.GetError(err, http.StatusNotFound, w)
+		return
+	}
+	if !p.Approved {
+		utils.GetError(errors.New("plugin is not approved"), http.StatusForbidden, w)
 		return
 	}
 

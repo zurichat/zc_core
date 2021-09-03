@@ -4,18 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"zuri.chat/zccore/plugin"
 	"zuri.chat/zccore/utils"
-)
-
-const (
-	_PluginCollectionName            = "plugins"
-	_PluginCollectionsCollectionName = "plugin_collections"
-	_OrganizationCollectionName      = "organizations"
 )
 
 type writeDataRequest struct {
@@ -35,23 +28,24 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := plugin.FindPluginByID(reqData.PluginID); err != nil {
+	if _, err := plugin.FindPluginByID(r.Context(), reqData.PluginID); err != nil {
 		msg := "plugin with this id does not exist"
 		utils.GetError(errors.New(msg), http.StatusNotFound, w)
 		return
 	}
 
-	if !recordExists(_OrganizationCollectionName, reqData.OrganizationID) {
-		msg := "organization with this id does not exist"
-		utils.GetError(errors.New(msg), http.StatusNotFound, w)
-		return
-	}
+	//if !recordExists(_OrganizationCollectionName, reqData.OrganizationID) {
+	//msg := "organization with this id does not exist"
+	//utils.GetError(errors.New(msg), http.StatusNotFound, w)
+	//return
+	//}
 
 	// if plugin is writing to this collection the first time, we create a record linking this collection to the plugin.
 	if !pluginHasCollection(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName) {
 		createPluginCollectionRecord(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName)
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	switch r.Method {
 	case "POST":
 		reqData.handlePost(w, r)
@@ -185,31 +179,4 @@ func recordExists(collName, id string) bool {
 		return true
 	}
 	return false
-}
-
-func pluginHasCollection(pluginID, orgID, collectionName string) bool {
-	filter := M{
-		"plugin_id":       pluginID,
-		"collection_name": collectionName,
-		"organization_id": orgID,
-	}
-	_, err := utils.GetMongoDbDoc(_PluginCollectionsCollectionName, filter)
-	if err == nil {
-		return true
-	}
-	return false
-}
-
-func createPluginCollectionRecord(pluginID, orgID, collectionName string) error {
-	doc := M{
-		"plugin_id":       pluginID,
-		"organization_id": orgID,
-		"collection_name": collectionName,
-		"created_at":      time.Now(),
-	}
-
-	if _, err := utils.CreateMongoDbDoc(_PluginCollectionsCollectionName, doc); err != nil {
-		return err
-	}
-	return nil
 }
