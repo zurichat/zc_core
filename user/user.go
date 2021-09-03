@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"zuri.chat/zccore/utils"
 )
 
@@ -50,6 +51,39 @@ func Create(response http.ResponseWriter, request *http.Request) {
 
 	utils.GetSuccess("user created", res, response)
 }
+
+func Retrive(response http.ResponseWriter, request *http.Request) {
+	response.Header().Set("Content-Type", "application/json")
+	user_collection := "users"
+
+	params := mux.Vars(request)
+	userId := params["user_id"]
+	objId, err := primitive.ObjectIDFromHex(userId)
+
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, response)
+		return
+	}
+
+	retrive, err := utils.GetMongoDbDoc(user_collection, bson.M{"_id": objId})
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, response)
+		return
+	}
+	utils.GetSuccess("user retrieved successfully", retrive, response)
+}
+
+// func Update(response http.ResponseWriter, request *http.Request) {
+// 	response.Header().Add("content-type", "application/json")
+// 	// user_collection := "users"
+// 	var user User
+// 	err := utils.ParseJsonFromRequest(request, &user)
+// 	if err != nil {
+// 		utils.GetError(err, http.StatusUnprocessableEntity, response)
+// 		return
+// 	}
+// }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
