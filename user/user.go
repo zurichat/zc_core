@@ -91,7 +91,7 @@ func Delete(w http.ResponseWriter, r *http.Request) {
 
 	collectionName := "users"
 	params := mux.Vars(r)
-	id := param["_id"]
+	id := params["user_id"]
 
 	err := db.DeleteOneMongoDoc(collectionName, id)
 
