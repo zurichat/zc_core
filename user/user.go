@@ -57,13 +57,17 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	userId := params["user_id"]
 
-
 	save, err := utils.DeleteOneMongoDoc("users", userId)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
+	if response.DeletedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
 	utils.GetSuccess("User Deleted Succesfully", save, w)
 }
 
