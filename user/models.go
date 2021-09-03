@@ -30,7 +30,7 @@ const (
 )
 
 type UserWorkspaceProfile struct {
-	ID             primitive.ObjectID   `bson:"_id"`
+	ID             primitive.ObjectID   `bson:"_id,omitempty" json:"id,omitempty"`
 	OrganizationID string               `bson:"organization_id"`
 	DisplayPicture string               `bson:"display_picture"`
 	Status         Status               `bson:"status"`
@@ -42,7 +42,7 @@ type UserWorkspaceProfile struct {
 }
 
 type UserRole struct {
-	ID   primitive.ObjectID `bson:"_id"`
+	ID   primitive.ObjectID `bson:"_id,omitempty", json:"id,omitempty"`
 	Role Role               `bson:"role"`
 }
 
@@ -52,22 +52,23 @@ type UserSettings struct {
 }
 
 type UserEmailVerification struct {
-	Verified  bool      `bson:"verified"`
-	Token     string    `bson:"token"`
-	ExpiredAt time.Time `bson:"expired_at"`
+	ID        primitive.ObjectID `bson:"_id" json:"id"`
+	Verified  bool               `bson:"verified"`
+	Token     string             `bson:"token"`
+	ExpiredAt time.Time          `bson:"expired_at"`
 }
 
 type UserPasswordReset struct {
-	ID        primitive.ObjectID `bson:"_id"`
-	IPAddress string             `bson:"ip_address"`
-	Token     string             `bson:"token"`
-	ExpiredAt time.Time          `bson:"expired_at"`
-	UpdatedAt time.Time          `bson:"updated_at"`
-	CreatedAt time.Time          `bson:"created_at"`
+	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	IPAddress string             `bson:"ip_address" json:"ip_address"`
+	Token     string             `bson:"token" json:"token"`
+	ExpiredAt time.Time          `bson:"expired_at" json:"expired_at"`
+	UpdatedAt time.Time          `bson:"updated_at" json:"updated_at"`
+	CreatedAt time.Time          `bson:"created_at" json:"created_at"`
 }
 
 type User struct {
-	_id               string                  `bson:"_id" json:"id"`
+	ID                primitive.ObjectID      `bson:"_id,omitempty" json:"id,omitempty"`
 	FirstName         string                  `bson:"first_name" validate:"required,min=2,max=100" json:"first_name"`
 	LastName          string                  `bson:"last_name" validate:"required,min=2,max=100" json:"last_name"`
 	Email             string                  `bson:"email" validate:"email,required" json:"email"`

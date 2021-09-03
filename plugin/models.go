@@ -3,7 +3,6 @@ package plugin
 import (
 	"time"
 
-	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"zuri.chat/zccore/utils"
@@ -15,7 +14,7 @@ const (
 )
 
 type Plugin struct {
-	ID             primitive.ObjectID `json:"_id,omitempty" bson:"_id"`
+	ID             primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	Name           string             `json:"name" bson:"name" validate:"required"`
 	Description    string             `json:"description" bson:"description" validate:"required"`
 	DeveloperName  string             `json:"developer_name" bson:"developer_name" validate:"required"`
@@ -41,8 +40,11 @@ type PluginCollections struct {
 }
 
 func CreatePlugin(p *Plugin) error {
+	doc := M{}
 	p.CreatedAt = time.Now().String()
-	doc, _ := utils.StructToMap(p)
+	if err := utils.ConvertStructure(p, &doc); err != nil {
+		return err
+	}
 	delete(doc, "_id")
 	res, err := utils.CreateMongoDbDoc(PluginCollectionName, doc)
 	p.ID = res.InsertedID.(primitive.ObjectID)
@@ -56,7 +58,7 @@ func FindPluginByID(id string) (*Plugin, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := MapToStruct(doc, p); err != nil {
+	if err := utils.ConvertStructure(doc, p); err != nil {
 		return nil, err
 	}
 	return p, nil
@@ -67,21 +69,13 @@ func FindPlugins(filter bson.M) ([]*Plugin, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	plugins := make([]*Plugin, len(docs))
 	for i, doc := range docs {
 		p := &Plugin{}
-		if err := MapToStruct(doc, p); err != nil {
+		if err := utils.ConvertStructure(doc, p); err != nil {
 			return nil, err
 		}
 		plugins[i] = p
 	}
 	return plugins, nil
-}
-
-func MapToStruct(m map[string]interface{}, v interface{}) error {
-	config := &mapstructure.DecoderConfig{TagName: "bson"}
-	config.Result = v
-	dec, _ := mapstructure.NewDecoder(config)
-	return dec.Decode(m)
 }
