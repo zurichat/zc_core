@@ -31,11 +31,11 @@ func ReadData(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(errors.New("collection not found"), http.StatusNotFound, w)
 		return
 	}
-	// proceed to perform read operation taking queries passed from request
-	// queries are created via query parameters in the url
+
 	prefixedCollName := getPrefixedCollectionName(pluginId, orgId, collName)
-	filter := parseURLQuery(r)
+	filter := parseURLQuery(r) // queries will have to be sanitized
 	docs, err := utils.GetMongoDbDocs(prefixedCollName, filter)
+
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return

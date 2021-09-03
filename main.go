@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"zuri.chat/zccore/data"
+	"zuri.chat/zccore/marketplace"
 	"zuri.chat/zccore/messaging"
 	"zuri.chat/zccore/organizations"
 	"zuri.chat/zccore/plugin"
@@ -30,15 +31,14 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations", organizations.GetOrganizations).Methods("GET")
 	r.HandleFunc("/organizations/{id}", organizations.DeleteOrganization).Methods("DELETE")
 	r.Handle("/socket.io/", Server)
-	r.HandleFunc("/data/write", data.WriteData).Methods("POST", "PUT", "DELETE")
+	r.HandleFunc("/data/write", data.WriteData)
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
-	r.HandleFunc("/plugin/register", plugin.Register).Methods("POST")
-	r.HandleFunc("/plugin/{id}", plugin.GetByID).Methods("GET")
-	//r.HandleFunc("/marketplace/plugins", marketplace.GetAllApprovedPlugins).Methods("GET")
-	//r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetOneApprovedPlugin).Methods("GET")
-	//r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
+	r.HandleFunc("/plugins/register", plugin.Register).Methods("POST")
+	r.HandleFunc("/plugins/{id}", plugin.GetByID).Methods("GET")
+	r.HandleFunc("/marketplace/plugins", marketplace.GetAllPlugins).Methods("GET")
+	r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetPlugin).Methods("GET")
 	r.HandleFunc("/users", user.Create).Methods("POST")
-	
+
 	http.Handle("/", r)
 
 	return r
