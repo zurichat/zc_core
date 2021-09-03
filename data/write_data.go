@@ -54,7 +54,7 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 	case "DELETE":
 		reqData.handleDelete(w, r)
 	default:
-		fmt.Fprint(w, "Data write endpoint")
+		fmt.Fprint(w, `{"data_write": "Data write request"}`)
 	}
 }
 
