@@ -37,12 +37,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	//r.HandleFunc("/marketplace/plugins", marketplace.GetAllApprovedPlugins).Methods("GET")
 	//r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetOneApprovedPlugin).Methods("GET")
 	//r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
-	r.HandleFunc("/users", user.Create).Methods("POST")
-	r.HandleFunc("/users/{user_id}", user.DeleteUser).Methods("DELETE")
-
-	http.Handle("/", r)
-
-	return r
+	
 }
 
 func main() {
@@ -51,7 +46,7 @@ func main() {
 	messaging.SocketEvents(Server)
 	////////////////////////////////////Socket  events////////////////////////////////////////////////
 
-	// load .env file if it exists
+	// if .env file is present then load up
 
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -99,10 +94,4 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Zuri Chat API - Version 0.0001\n")
 
-}
-
-func Index(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	// http.HandleFunc("/v1/welcome", Index)
-	fmt.Fprintf(w, "Welcome to Zuri Core Index")
 }
