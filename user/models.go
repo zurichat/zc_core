@@ -13,7 +13,7 @@ const (
 
 type M map[string]interface{}
 
-type Status int
+type Presence int
 
 const (
 	Active Status = iota
@@ -33,12 +33,19 @@ type UserWorkspaceProfile struct {
 	ID             primitive.ObjectID   `bson:"_id"`
 	OrganizationID string               `bson:"organization_id"`
 	DisplayPicture string               `bson:"display_picture"`
-	Status         Status               `bson:"status"`
+	Presence       Presence             `bson:"presence_status"`
 	Bio            string               `bson:"bio"`
 	Timezone       string               `bson:"timezone"`
 	Password       string               `bson:"password"`
 	PasswordResets []*UserPasswordReset `bson:"password_resets"`
 	Roles          []*Role              `bson:"roles"`
+}
+
+type Status struct {
+	ID                     primitive.ObjectID `bson:"user_id"`
+	UserWorkspaceProfileId string             `bson:"user_workspace_profile_id"`
+	StatusText             string             `bson:"status_text"`
+	// StatusExpiration int    `bson:"status_expiration"`
 }
 
 type UserRole struct {
