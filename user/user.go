@@ -88,9 +88,9 @@ func Create(response http.ResponseWriter, request *http.Request) {
 
 // helper function perform update workspace profile status
 func SetWorkspaceProfileStatus(ctx context.Context, id string, status string) ([]*WorkSpaceProfile, error) {
-	workspaceProfile := []*WorkSpaceProfile{}
+	userWorkspaceProfile := []*UserWorkspaceProfile{}
 
-	collectionName := "userWorkSpace"
+	collectionName := "userWorkspaceProfile"
 	objID, _ := primitive.ObjectIDFromHex(id)
 	collection := utils.GetCollection(collectionName)
 	filter := bson.M{"_id": objID}
@@ -101,6 +101,6 @@ func SetWorkspaceProfileStatus(ctx context.Context, id string, status string) ([
 		return nil, err
 	}
 
-	return workspaceProfile, nil
+	return userWorkspaceProfile, nil
 
 }
