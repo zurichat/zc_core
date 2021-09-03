@@ -60,7 +60,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// confirm if user_id exists
-	objId, err:= primitive.ObjectIDFromHex(newOrg.CreatorID)
+	objId, err := primitive.ObjectIDFromHex(newOrg.CreatorID)
 
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
@@ -112,12 +112,12 @@ func DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 	collection := "organizations"
 
 	response, err := utils.DeleteOneMongoDoc(collection, orgId)
-	
+
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
-	
+
 	if response.DeletedCount == 0 {
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
