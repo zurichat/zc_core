@@ -28,7 +28,7 @@ func ReadData(w http.ResponseWriter, r *http.Request) {
 	pluginId, collName, orgId := vars["plugin_id"], vars["coll_name"], vars["org_id"]
 
 	if !pluginHasCollection(pluginId, orgId, collName) {
-		utils.GetError(errors.New("record not found"), http.StatusNotFound, w)
+		utils.GetError(errors.New("collection not found"), http.StatusNotFound, w)
 		return
 	}
 	// proceed to perform read operation taking queries passed from request
