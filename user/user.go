@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"zuri.chat/zccore/utils"
 )
@@ -50,6 +51,26 @@ func Create(response http.ResponseWriter, request *http.Request) {
 	utils.GetSuccess("user created", res, response)
 }
 
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	params := mux.Vars(r)
+	userId := params["user_id"]
+
+
+	save, err := utils.DeleteOneMongoDoc("users", userId)
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+	utils.GetSuccess("User Deleted Succesfully", save, w)
+}
+
+
+
+
+
 // helper functions perform CRUD operations on user
 // func FindUserByID(response http.ResponseWriter, request *http.Request) {
 // 	user := &User{}
@@ -85,3 +106,5 @@ func Create(response http.ResponseWriter, request *http.Request) {
 // func CreateUserProfile(ctx context.Context, uw *UserWorkspace) error {
 // 	return nil
 // }
+
+

@@ -10,12 +10,12 @@ import (
 	socketio "github.com/googollee/go-socket.io"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
-	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/data"
 	"zuri.chat/zccore/messaging"
 	"zuri.chat/zccore/organizations"
 	"zuri.chat/zccore/plugin"
 	"zuri.chat/zccore/utils"
+	"zuri.chat/zccore/user"
 )
 
 func Router(Server *socketio.Server) *mux.Router {
@@ -37,7 +37,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	//r.HandleFunc("/marketplace/plugins", marketplace.GetAllApprovedPlugins).Methods("GET")
 	//r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetOneApprovedPlugin).Methods("GET")
 	//r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
-	r.HandleFunc("/auth/login", auth.UserLogin).Methods("Post")
+	r.HandleFunc("/users/{user_id}", user.DeleteUser).Methods("DELETE")
 
 	http.Handle("/", r)
 
