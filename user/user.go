@@ -51,24 +51,23 @@ func Create(response http.ResponseWriter, request *http.Request) {
 	utils.GetSuccess("user created", res, response)
 }
 
-func DeleteUser(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
+// an endpoint to search other users
+func SearchOtherUsers(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	userId := params["user_id"]
-
-	delete, err := utils.DeleteOneMongoDoc("users", userId)
-
+	query := params["query"]
+	filter := bson.M{
+		"$or": []bson.M{
+			{"first_name": query},
+			{"last_name": query},
+			{"email": query},
+			{"display_name": query},
+		},
+	}
+	res, err := utils.GetMongoDbDocs(UserCollectionName, filter)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
-		return
 	}
-	if delete.DeletedCount == 0 {
-		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
-		return
-	}
-
-	utils.GetSuccess("User Deleted Succesfully", nil, w)
+	utils.GetSuccess("successful", res, w)
 }
 
 // helper functions perform CRUD operations on user
