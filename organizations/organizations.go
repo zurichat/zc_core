@@ -147,4 +147,5 @@ func UpdateUrl(w http.ResponseWriter, r *http.Request) {
 
 	utils.GetSuccess("organization url updated successfully", update, w)
 
+	
 }
