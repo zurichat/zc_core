@@ -99,7 +99,7 @@ func GetOrganizationPlugins(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	collection := "organizations"
 
-	orgId := mux.Vars(r)["org_id"]
+	orgId := mux.Vars(r)["id"]
 	objId, _ := primitive.ObjectIDFromHex(orgId)
 
 	doc, err := utils.GetMongoDbDoc(collection, bson.M{"_id": objId})
@@ -120,4 +120,34 @@ func GetOrganizationPlugins(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.GetSuccess("Plugins returned successfully", docs, w)
+}
+
+func GetOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	collection := "organizations"
+
+	orgId := mux.Vars(r)["id"]
+	pluginId := mux.Vars(r)["plugin_id"]
+
+	OrgId, _ := primitive.ObjectIDFromHex(orgId)
+	
+	OrgDoc, err := utils.GetMongoDbDoc(collection, bson.M{"_id": OrgId})
+	if err != nil {
+		// org not found.
+		utils.GetError(err, http.StatusNotFound, w)
+		return
+	}
+
+	orgCollectionName := GetOrgPluginCollectionName(OrgDoc["name"].(string))
+
+	doc, err := utils.GetMongoDbDoc(orgCollectionName, bson.M{"plugin_id": pluginId})
+
+	if err != nil {
+		// plugin not found in organiztion.
+		utils.GetError(err, http.StatusNotFound, w)
+		return
+	}
+
+	utils.GetSuccess("Plugins returned successfully", doc, w)
+
 }
