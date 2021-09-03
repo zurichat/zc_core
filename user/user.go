@@ -68,6 +68,26 @@ func SearchOtherUsers(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(err, http.StatusInternalServerError, w)
 	}
 	utils.GetSuccess("successful", res, w)
+  }
+
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	params := mux.Vars(r)
+	userId := params["user_id"]
+
+	delete, err := utils.DeleteOneMongoDoc("users", userId)
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+	if delete.DeletedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("User Deleted Succesfully", nil, w)
 }
 
 // helper functions perform CRUD operations on user
