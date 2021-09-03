@@ -14,6 +14,7 @@ import (
 	"zuri.chat/zccore/messaging"
 	"zuri.chat/zccore/organizations"
 	"zuri.chat/zccore/plugin"
+	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 	"zuri.chat/zccore/user"
 )
@@ -37,8 +38,10 @@ func Router(Server *socketio.Server) *mux.Router {
 	//r.HandleFunc("/marketplace/plugins", marketplace.GetAllApprovedPlugins).Methods("GET")
 	//r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetOneApprovedPlugin).Methods("GET")
 	//r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
+	r.HandleFunc("/users", user.Create).Methods("POST")
 	r.HandleFunc("/users/{user_id}", user.DeleteUser).Methods("DELETE")
 
+	
 	http.Handle("/", r)
 
 	return r
