@@ -1,16 +1,16 @@
 package user
 
 import (
-	"errors"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"zuri.chat/zccore/utils"
 	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"zuri.chat/zccore/utils"
 )
 
 // An end point to create new users
@@ -25,7 +25,6 @@ func Create(response http.ResponseWriter, request *http.Request) {
 		utils.GetError(err, http.StatusUnprocessableEntity, response)
 		return
 	}
-
 	if !utils.IsValidEmail(user.Email) {
 		utils.GetError(errors.New("email address is not valid"), http.StatusBadRequest, response)
 		return
@@ -60,7 +59,12 @@ func FindUserByID(response http.ResponseWriter, request *http.Request) {
 
 	collectionName := "users"
 	userID := mux.Vars(request)["id"]
-	objID, _ := primitive.ObjectIDFromHex(userID)
+	objID, err := primitive.ObjectIDFromHex(userID)
+
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, response)
+		return
+	}
 
 	res, err := utils.GetMongoDbDoc(collectionName, bson.M{"_id": objID})
 	if err != nil {
@@ -72,32 +76,44 @@ func FindUserByID(response http.ResponseWriter, request *http.Request) {
 }
 
 func UpdateUser(response http.ResponseWriter, request *http.Request) {
-	// Update a user of a given ID
+	// Update a user of a given ID. Only certain fields, detailed in the
+	// UserUpdate struct can be directly updated by a user without additional
+	// functionality or permissions
 	response.Header().Set("content-type", "application/json")
 
 	collectionName := "users"
 	userID := mux.Vars(request)["id"]
-	objID, _ := primitive.ObjectIDFromHex(userID)
+	objID, err := primitive.ObjectIDFromHex(userID)
+	// Validate the user ID provided
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, response)
+		return
+	}
 
 	res, err := utils.GetMongoDbDoc(collectionName, bson.M{"_id": objID})
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, response)
 		return
 	}
-
 	if res != nil {
 		// 2. Get user fields to be updated from request body
-		var body map[string]interface{}
+		var body UserUpdate
 		err := json.NewDecoder(request.Body).Decode(&body)
 		if err != nil {
 			utils.GetError(err, http.StatusBadRequest, response)
 			return
 		}
 
-		// 2'. Do not allow email update
+		// Convert body struct to interface
+		var userInterface map[string]interface{}
+		bytes, err := json.Marshal(body)
+		if err != nil {
+			utils.GetError(err, http.StatusInternalServerError, response)
+		}
+		json.Unmarshal(bytes, &userInterface)
 
 		// 3. Update user
-		updateRes, err := utils.UpdateOneMongoDbDoc(collectionName, userID, body)
+		updateRes, err := utils.UpdateOneMongoDbDoc(collectionName, userID, userInterface)
 		if err != nil {
 			utils.GetError(err, http.StatusInternalServerError, response)
 			return
@@ -106,26 +122,3 @@ func UpdateUser(response http.ResponseWriter, request *http.Request) {
 	}
 
 }
-
-// func FindUsers(ctx context.Context, filter M) ([]*User, error) {
-// 	users := []*User{}
-// 	collectionName := "users"
-// 	collection := utils.GetCollection(collectionName)
-// 	cursor, err := collection.Find(ctx, filter)
-
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	if err = cursor.All(ctx, &users); err != nil {
-// 		return nil, err
-// 	}
-// 	return users, nil
-// }
-
-// func FindUserProfile(ctx context.Context, userID, orgID string) (*UserWorkspace, error) {
-// 	return nil, nil
-// }
-
-// func CreateUserProfile(ctx context.Context, uw *UserWorkspace) error {
-// 	return nil
-// }
