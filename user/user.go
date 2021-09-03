@@ -1,11 +1,16 @@
 package user
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/cloudinary/cloudinary-go"
+	"github.com/cloudinary/cloudinary-go/api/admin"
+	"github.com/cloudinary/cloudinary-go/api/admin/search"
+	"github.com/cloudinary/cloudinary-go/api/uploader"
 	"go.mongodb.org/mongo-driver/bson"
 	"zuri.chat/zccore/utils"
 )
@@ -87,7 +92,7 @@ func Create(response http.ResponseWriter, request *http.Request) {
 // }
 
 // helper function perform update workspace profile status
-func SetWorkspaceProfileStatus(ctx context.Context, id string, status string) ([]*WorkSpaceProfile, error) {
+func SetWorkspaceProfileStatus(ctx context.Context, id string, status string) ([]*UserWorkspaceProfile, error) {
 	userWorkspaceProfile := []*UserWorkspaceProfile{}
 
 	collectionName := "userWorkspaceProfile"
@@ -97,10 +102,33 @@ func SetWorkspaceProfileStatus(ctx context.Context, id string, status string) ([
 	update := bson.M{"$set": bson.M{"status": status}}
 
 	res := collection.FindOneAndUpdate(ctx, filter, update)
-	if err := res.Decode(&workspaceProfile); err != nil {
+	if err := res.Decode(&userWorkspaceProfile); err != nil {
 		return nil, err
 	}
 
 	return userWorkspaceProfile, nil
 
 }
+
+func GenerateImageUrl(ctx context.Background, image string) (ImageUrl string, error) {
+
+	CloudName := utils.Env("CloudName")
+	APIKey := utils.Env("APIKey")
+	APISecret := utils.Env("APISecret")
+
+	var cld, err =  cloudinary.NewFromParams(CloudName, APIKey, APISecret)
+	if err != nil {
+		return err
+	}
+
+	response, err := cld.Upload.Upload(
+        ctx,
+        image,
+        uploader.UploadParams{})
+		
+    if err != nil {
+        return err
+    }
+​
+    return response.SecureURL
+} 
