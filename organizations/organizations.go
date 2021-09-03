@@ -147,5 +147,27 @@ func UpdateUrl(w http.ResponseWriter, r *http.Request) {
 
 	utils.GetSuccess("organization url updated successfully", update, w)
 
-	
+}
+
+func ChangeOrganizationName(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	orgId := mux.Vars(r)["id"]
+	requestData := make(map[string]string)
+	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+	organization_name := requestData["organization_name"]
+
+	collection := "organizations"
+	org_filter := make(map[string]interface{})
+	org_filter["name"] = organization_name
+	change, err := utils.UpdateOneMongoDbDoc(collection, orgId, org_filter)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("organization name successfully changed", change, w)
+
 }
