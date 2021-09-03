@@ -18,7 +18,12 @@ func GetOrganization(w http.ResponseWriter, r *http.Request) {
 	collection := "organizations"
 
 	orgId := mux.Vars(r)["id"]
-	objId, _ := primitive.ObjectIDFromHex(orgId)
+	objId, err := primitive.ObjectIDFromHex(orgId)
+
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
 
 	save, err := utils.GetMongoDbDocs(collection, bson.M{"_id": objId})
 
@@ -55,16 +60,21 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// confirm if user_id exists
-	user_filter := make(map[string]interface{})
-	user_filter["user_id"] = newOrg.CreatorID
-	user, _ := utils.GetMongoDbDoc(user_collection, user_filter)
-	if user == nil {
-		utils.GetError(errors.New("invalid user id"), http.StatusBadRequest, w)
+	objId, err := primitive.ObjectIDFromHex(newOrg.CreatorID)
+
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
 		return
 	}
 
-	// save organization
-	newOrg.ImageURL = newOrg.Name + ".zuri.chat"
+	user, _ := utils.GetMongoDbDoc(user_collection, bson.M{"_id": objId})
+	if user == nil {
+		fmt.Printf("users with id %s exists!", newOrg.CreatorID)
+		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
+		return
+	}
+
+	newOrg.URL = newOrg.Name + ".zuri.chat"
 	newOrg.CreatedAt = time.Now()
 
 	// convert to map object
@@ -101,64 +111,40 @@ func DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 
 	collection := "organizations"
 
-	save, err := utils.DeleteOneMongoDoc(collection, orgId)
+	response, err := utils.DeleteOneMongoDoc(collection, orgId)
+
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
 
-	utils.GetSuccess("organization deleted successfully", save, w)
+	if response.DeletedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("organization deleted successfully", nil, w)
 }
 
-func AddMember(w http.ResponseWriter, r *http.Request) {
+func UpdateUrl(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	var newMember Member
-
 	orgId := mux.Vars(r)["id"]
-	collection, user_collection := "organizations", "users"
-
-	err := json.NewDecoder(r.Body).Decode(&newMember)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	requestData := make(map[string]string)
+	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
+	url := requestData["url"]
 
-	// validate that email is not empty and it meets the format
-	if !utils.IsValidEmail(newMember.Email) {
-		utils.GetError(fmt.Errorf("invalid email format : %s", newMember.Email), http.StatusInternalServerError, w)
-		return
-	}
-
-	// confirm if user_id exists
-	user_filter := make(map[string]interface{})
-	user_filter["email"] = newMember.Email
-	user, _ := utils.GetMongoDbDoc(user_collection, user_filter)
-	if user == nil {
-		utils.GetError(errors.New("invalid user id"), http.StatusBadRequest, w)
-		return
-	}
-
-	// convert to map object
-	response, err := utils.StructToMap(newMember, "bson")
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
-	org, err := utils.GetMongoDbDoc(collection, bson.M{"id": orgId})
-	fmt.Println(org)
+	collection := "organizations"
+	org_filter := make(map[string]interface{})
+	org_filter["url"] = url
+	update, err := utils.UpdateOneMongoDbDoc(collection, orgId, org_filter)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
 
-	// save organization
-	newMember.JoinedAt = time.Now()
-	save, err := utils.UpdateOneMongoDbDoc(collection, orgId, response)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
-	utils.GetSuccess("Member created", save, w)
-
+	utils.GetSuccess("organization url updated successfully", update, w)
 
 }

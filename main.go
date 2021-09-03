@@ -11,10 +11,10 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"zuri.chat/zccore/data"
-	"zuri.chat/zccore/marketplace"
 	"zuri.chat/zccore/messaging"
 	"zuri.chat/zccore/organizations"
 	"zuri.chat/zccore/plugin"
+	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 )
 
@@ -34,9 +34,11 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
 	r.HandleFunc("/plugin/register", plugin.Register).Methods("POST")
 	r.HandleFunc("/plugin/{id}", plugin.GetByID).Methods("GET")
-	r.HandleFunc("/marketplace/plugins", marketplace.GetAllApprovedPlugins).Methods("GET")
-	r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetOneApprovedPlugin).Methods("GET")
-	r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
+	//r.HandleFunc("/marketplace/plugins", marketplace.GetAllApprovedPlugins).Methods("GET")
+	//r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetOneApprovedPlugin).Methods("GET")
+	//r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
+	r.HandleFunc("/users", user.Create).Methods("POST")
+	r.HandleFunc("/users/{user_id}", user.DeleteUser).Methods("DELETE")
 
 	http.Handle("/", r)
 

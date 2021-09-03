@@ -1,82 +1,108 @@
 package user
 
 import (
+	"errors"
+	"fmt"
+	"net/http"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/bson"
+	"zuri.chat/zccore/utils"
 )
 
-type WorkSpaceProfile struct {
-	display_picture string
-	status          Status
-	bio             string
-	timezone        string
-	password        string `bson:"Password" validate:"required,min=6""`
-	password_resets []UserPasswordReset
-	roles           []Role
+// An end point to create new users
+func Create(response http.ResponseWriter, request *http.Request) {
+	response.Header().Add("content-type", "application/json")
+	user_collection := "users"
+
+	var user User
+
+	err := utils.ParseJsonFromRequest(request, &user)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	if !utils.IsValidEmail(user.Email) {
+		utils.GetError(errors.New("email address is not valid"), http.StatusBadRequest, response)
+		return
+	}
+
+	// confirm if user_email exists
+	result, _ := utils.GetMongoDbDoc(user_collection, bson.M{"email": user.Email})
+	if result != nil {
+		fmt.Printf("users with email %s exists!", user.Email)
+		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, response)
+		return
+	}
+
+	user.CreatedAt = time.Now()
+
+	detail, _ := utils.StructToMap(user)
+
+	res, err := utils.CreateMongoDbDoc(user_collection, detail)
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, response)
+		return
+	}
+
+	utils.GetSuccess("user created", res, response)
 }
 
-type UserWorkspace struct {
-	ID           primitive.ObjectID `bson:"_id"`
-	organization int                // should this be an ID instead?
-	profile      WorkSpaceProfile
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	params := mux.Vars(r)
+	userId := params["user_id"]
+
+	delete, err := utils.DeleteOneMongoDoc("users", userId)
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+	if delete.DeletedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("User Deleted Succesfully", nil, w)
 }
 
-type Role int
+// helper functions perform CRUD operations on user
+// func FindUserByID(response http.ResponseWriter, request *http.Request) {
+// 	user := &User{}
+// 	collectionName := "users"
+// 	objID, _ := primitive.ObjectIDFromHex(id)
+// 	collection := utils.GetCollection(collectionName)
+// 	res := collection.FindOne(ctx, bson.M{"_id": objID})
+// 	if err := res.Decode(user); err != nil {
+// 		return nil, err
+// 	}
+// 	return user, nil
+// }
 
-const (
-	Super Role = iota
-	Admin
-	Member
-)
+// func FindUsers(ctx context.Context, filter M) ([]*User, error) {
+// 	users := []*User{}
+// 	collectionName := "users"
+// 	collection := utils.GetCollection(collectionName)
+// 	cursor, err := collection.Find(ctx, filter)
 
-type UserRole struct {
-	ID   primitive.ObjectID `bson:"_id"`
-	role Role
-}
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	if err = cursor.All(ctx, &users); err != nil {
+// 		return nil, err
+// 	}
+// 	return users, nil
+// }
 
-type UserSettings struct {
-	role []UserRole
-}
+// func FindUserProfile(ctx context.Context, userID, orgID string) (*UserWorkspace, error) {
+// 	return nil, nil
+// }
 
-type UserEmailVerification struct {
-	verified   bool      `bson:"verified"`
-	token      string    `bson:"token"`
-	expired_at time.Time `bson:"expired_at"`
-}
-
-type UserPasswordReset struct {
-	ID         primitive.ObjectID `bson:"_id"`
-	ipaddress  string
-	token      string
-	expired_at time.Time `bson:"expired_at"`
-	updated_at time.Time `bson:"updated_at"`
-	created_at time.Time `bson:"created_at"`
-}
-
-type Status int
-
-const (
-	Active Status = iota
-	Suspended
-	Disabled
-)
-
-type User struct {
-	ID                 primitive.ObjectID `bson:"_id"`
-	first_name         string             `bson:"first_name" validate:"required,min=2,max=100"`
-	last_name          string             `bson:"last_name" validate:"required,min=2,max=100"`
-	email              string             `bson:"email" validate:"email,required"`
-	password           string             `bson:"Password" validate:"required,min=6""`
-	phone              string             `bson:"phone" validate:"required"`
-	status             Status
-	company            string `bson:"company"`
-	settings           UserSettings
-	timezone           string
-	created_at         time.Time `bson:"created_at"`
-	updated_at         time.Time `bson:"updated_at"`
-	deleted_at         time.Time `bson:"deleted_at"`
-	workspaces         []UserWorkspace
-	email_verification UserEmailVerification
-	password_resets    []UserPasswordReset
-}
+// func CreateUserProfile(ctx context.Context, uw *UserWorkspace) error {
+// 	return nil
+// }
