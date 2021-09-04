@@ -36,9 +36,15 @@ func Create(response http.ResponseWriter, request *http.Request) {
 		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, response)
 		return
 	}
+/*
+	hashPassword, err := auth.GenerateHashPassword(user.Password)
+	if err != nil {
+		utils.GetError(errors.New("Failed to hashed password"), http.StatusBadRequest, response)
+	}
+	user.Password = hashPassword
+*/
 
 	user.CreatedAt = time.Now()
-
 	detail, _ := utils.StructToMap(user)
 
 	res, err := utils.CreateMongoDbDoc(user_collection, detail)
