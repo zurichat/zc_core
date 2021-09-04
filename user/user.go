@@ -1,13 +1,11 @@
 package user
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -97,59 +95,50 @@ func FindUserByID(response http.ResponseWriter, request *http.Request) {
 }
 
 func UpdateUser(response http.ResponseWriter, request *http.Request) {
-	// Update a user of a given ID. Only certain fields, detailed in the
-	// UserUpdate struct can be directly updated by a user without additional
-	// functionality or permissions
 	response.Header().Set("content-type", "application/json")
-
-	collectionName := "users"
+	// Validate the user ID
 	userID := mux.Vars(request)["id"]
 	objID, err := primitive.ObjectIDFromHex(userID)
-	// Validate the user ID provided
 	if err != nil {
-		utils.GetError(err, http.StatusBadRequest, response)
+		utils.GetError(errors.New("invalid user ID"), http.StatusBadRequest, response)
 		return
 	}
 
-	res, err := utils.GetMongoDbDoc(collectionName, bson.M{"_id": objID})
+	collectionName := "users"
+	userExist, err := utils.GetMongoDbDoc(collectionName, bson.M{"_id": objID})
 	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, response)
+		utils.GetError(errors.New("User does not exist"), http.StatusNotFound, response)
 		return
 	}
-	if res != nil {
-		// 2. Get user fields to be updated from request body
-		var body UserUpdate
-		err := json.NewDecoder(request.Body).Decode(&body)
-		if err != nil {
-			utils.GetError(err, http.StatusBadRequest, response)
-			return
-		}
-		fmt.Printf("request body %v", body)
-
-		// 3. Validate request body
-		structValidator := validator.New()
-		err = structValidator.Struct(body)
-
-		if err != nil {
-			utils.GetError(err, http.StatusBadRequest, response)
+	if userExist != nil {
+		var user UserUpdate
+		if err := utils.ParseJsonFromRequest(request, &user); err != nil {
+			utils.GetError(errors.New("bad update data"), http.StatusUnprocessableEntity, response)
 			return
 		}
 
-		// Convert body struct to interface
-		var userInterface map[string]interface{}
-		bytes, err := json.Marshal(body)
+		userMap, err := utils.StructToMap(user)
 		if err != nil {
 			utils.GetError(err, http.StatusInternalServerError, response)
 		}
-		json.Unmarshal(bytes, &userInterface)
 
-		// 4. Update user
-		updateRes, err := utils.UpdateOneMongoDbDoc(collectionName, objID.String(), userInterface)
-		if err != nil {
-			utils.GetError(err, http.StatusInternalServerError, response)
-			return
+		updateFields := make(map[string]interface{})
+		for key, value := range userMap {
+			if value != "" {
+				updateFields[key] = value
+			}
 		}
-		utils.GetSuccess("User update successful", updateRes, response)
+		if len(updateFields) == 0 {
+			return
+		} else {
+			updateRes, err := utils.UpdateOneMongoDbDoc(collectionName, userID, updateFields)
+			if err != nil {
+				utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, response)
+				return
+			}
+			utils.GetSuccess("user successfully updated", updateRes, response)
+		}
+
 	}
 
 }
