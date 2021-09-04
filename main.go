@@ -10,7 +10,6 @@ import (
 	socketio "github.com/googollee/go-socket.io"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
-	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/data"
 	"zuri.chat/zccore/messaging"
 	"zuri.chat/zccore/organizations"
@@ -29,7 +28,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
 
 	// Authentication
-	r.HandleFunc("/auth/login", auth.LoginIn).Methods("POST")
+	// r.HandleFunc("/auth/login", auth.LoginIn).Methods("POST")
 
 	// Organisation
 	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
