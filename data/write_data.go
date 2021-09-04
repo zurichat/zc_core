@@ -47,6 +47,7 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 		createPluginCollectionRecord(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName)
 	}
 
+	w.Header().Set("content-type", "application/json")
 	switch r.Method {
 	case "POST":
 		reqData.handlePost(w, r)

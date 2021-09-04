@@ -39,7 +39,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
 
 	// Plugins
-	r.HandleFunc("/plugin/register", plugin.Register).Methods("POST")
+	r.HandleFunc("/plugins/register", plugin.Register).Methods("POST")
 
 	// Marketplace
 	r.HandleFunc("/marketplace/plugins", marketplace.GetAllPlugins).Methods("GET")
