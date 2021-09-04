@@ -18,10 +18,20 @@ type M map[string]interface{}
 // e.g ?$gte:first_name="meh" or ($gte__first_name="meh")
 // We will split the field
 type MongoQuery struct {
-	LT  string
-	GT  string
-	GTE string
-	LTE string
+	Lt        string
+	Gt        string
+	Gte       string
+	Lte       string
+	In        string
+	Nin       string
+	Eq        string
+	Ne        string
+	And       string
+	Or        string
+	Not       string
+	Nor       string
+	All       string
+	ElemMatch string
 }
 
 func ReadData(w http.ResponseWriter, r *http.Request) {

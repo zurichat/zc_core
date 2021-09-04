@@ -73,7 +73,7 @@ func main() {
 	r := Router(Server)
 
 	srv := &http.Server{
-		Handler:      r,
+		Handler:      LoggingMiddleware(r),
 		Addr:         ":" + port,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
@@ -105,4 +105,25 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	// http.HandleFunc("/v1/welcome", Index)
 	fmt.Fprintf(w, "Welcome to Zuri Core Index")
+}
+
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (lrw *loggingResponseWriter) WriteHeader(code int) {
+	lrw.statusCode = code
+	lrw.ResponseWriter.WriteHeader(code)
+}
+
+func LoggingMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		lrw := &loggingResponseWriter{w, 200}
+		start := time.Now()
+		h.ServeHTTP(lrw, r)
+		end := time.Now()
+		duration := end.Sub(start)
+		log.Printf("[%s] | %s | %d | %dms\n", r.Method, r.URL.Path, lrw.statusCode, duration.Milliseconds())
+	})
 }
