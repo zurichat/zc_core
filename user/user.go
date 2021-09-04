@@ -70,39 +70,3 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	utils.GetSuccess("User Deleted Succesfully", nil, w)
 }
-
-// helper functions perform CRUD operations on user
-// func FindUserByID(response http.ResponseWriter, request *http.Request) {
-// 	user := &User{}
-// 	collectionName := "users"
-// 	objID, _ := primitive.ObjectIDFromHex(id)
-// 	collection := utils.GetCollection(collectionName)
-// 	res := collection.FindOne(ctx, bson.M{"_id": objID})
-// 	if err := res.Decode(user); err != nil {
-// 		return nil, err
-// 	}
-// 	return user, nil
-// }
-
-// func FindUsers(ctx context.Context, filter M) ([]*User, error) {
-// 	users := []*User{}
-// 	collectionName := "users"
-// 	collection := utils.GetCollection(collectionName)
-// 	cursor, err := collection.Find(ctx, filter)
-
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	if err = cursor.All(ctx, &users); err != nil {
-// 		return nil, err
-// 	}
-// 	return users, nil
-// }
-
-// func FindUserProfile(ctx context.Context, userID, orgID string) (*UserWorkspace, error) {
-// 	return nil, nil
-// }
-
-// func CreateUserProfile(ctx context.Context, uw *UserWorkspace) error {
-// 	return nil
-// }

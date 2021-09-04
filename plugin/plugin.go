@@ -25,7 +25,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
-	if err := CreatePlugin(&p); err != nil {
+	if err := CreatePlugin(r.Context(), &p); err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
@@ -36,7 +36,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 func GetByID(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
-	p, err := FindPluginByID(id)
+	p, err := FindPluginByID(r.Context(), id)
 	if err != nil {
 		utils.GetError(err, http.StatusNotFound, w)
 		return
