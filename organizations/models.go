@@ -44,6 +44,28 @@ type OrganizationAdmin struct {
 	UpdatedAt      time.Time          `bson:"updated_at"`
 }
 
+type OrganizationMember struct {
+    ID          string                   `json:"id" bson:"_id"`
+    Files         []string                  `json:"files" bson:"files"`
+    Logo          string                   `json:"logo" bson:"logo"`
+	Name          string                   `json:"name" bson:"name"`
+	Email         string                   `json:"email" bson:"email"`
+    DisplayName   string                   `json:"display_name" bson:"display_name"`
+    Bio           string                   `json:"bio" bson:"bio"`
+	Pronouns      []string                   `json:"pronouns" bson:"pronouns"`
+	PhoneNumber   string                   `json:"phone_number" bson:"phone_number"`
+	TimeZone      string                   	`json:"time_zone" bson:"time_zone"`
+	Socials   	[]Social 					`json:"socials" bson:"s						ocials"`
+	Preferences   []map[string]interface{} `json:"preferences" bson:"preferences"`
+	IsActive	bool		`json:"is_active" bson:"is_active"`
+}
+
+type Social struct {
+	 ID          	string                  `json:"id" bson:"_id"`
+    Title         	string                  `json:"title" bson:"title"`
+    Url          	string                   `json:"url" bson:"url"`
+}
+
 func GetOrgPluginCollectionName(orgName string) string {
 	return strings.ToLower(orgName) + "_" + InstalledPluginsCollectionName
 }
