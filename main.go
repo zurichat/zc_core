@@ -38,8 +38,10 @@ func Router(Server *socketio.Server) *mux.Router {
 	//r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetOneApprovedPlugin).Methods("GET")
 	//r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
 	r.HandleFunc("/users", user.Create).Methods("POST")
+
 	r.HandleFunc("/users/{id}", user.FindUserByID).Methods("GET")
 	r.HandleFunc("/users/{id}", user.UpdateUser).Methods("PATCH")
+	r.HandleFunc("/users/{user_id}", user.DeleteUser).Methods("DELETE")
 
 	http.Handle("/", r)
 
