@@ -2,10 +2,13 @@ package user
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"zuri.chat/zccore/utils"
 )
 
@@ -39,9 +42,14 @@ type UserWorkspaceProfile struct {
 	Status         Status               `bson:"status"`
 	Bio            string               `bson:"bio"`
 	Timezone       string               `bson:"timezone"`
-	Password       string               `bson:"password"`
+	Password       string               `bson:"-"`
+	PasswordHash   string               `bson:"password_hash"`
 	PasswordResets []*UserPasswordReset `bson:"password_resets"`
 	Roles          []*Role              `bson:"roles"`
+}
+
+func (uw *UserWorkspaceProfile) SetPassword() {
+
 }
 
 type UserRole struct {
@@ -103,6 +111,17 @@ func findUserByID(ctx context.Context, id string) (*User, error) {
 	return user, nil
 }
 
+func findUserByEmail(ctx context.Context, email string) (*User, error) {
+	user := &User{}
+	collectionName := "users"
+	collection := utils.GetCollection(collectionName)
+	res := collection.FindOne(ctx, bson.M{"email": email})
+	if err := res.Decode(user); err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
 func findUsers(ctx context.Context, filter M) ([]*User, error) {
 	users := []*User{}
 	collectionName := "users"
@@ -124,4 +143,17 @@ func findUserProfile(ctx context.Context, userID, orgID string) (*UserWorkspaceP
 
 func createUserProfile(ctx context.Context, uw *UserWorkspaceProfile) error {
 	return nil
+}
+
+func init() {
+	collection := utils.GetCollection("users")
+	indexModel := mongo.IndexModel{
+		Keys:    bson.M{"email": 1},
+		Options: options.Index().SetUnique(true),
+	}
+	indexName, err := collection.Indexes().CreateOne(context.Background(), indexModel)
+	if err != nil {
+		fmt.Println("errror creating unique index on email field in users collection")
+	}
+	fmt.Printf("%s index created", indexName)
 }
