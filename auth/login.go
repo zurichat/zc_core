@@ -170,8 +170,8 @@ func IsUserRegistered(user User) (bool, error) {
 func createToken(ID primitive.ObjectID) (*TokenMetaData, error) {
 	var err error
 	tokenDetails := &TokenMetaData{
-		AtExpires:   time.Now().Add(time.Minute * 15),
-		RtExpires:   time.Now().Add(time.Hour * 24 * 7),
+		AtExpires:   time.Now().Add(time.Minute * 20),
+		RtExpires:   time.Now().Add(time.Hour * 7 * 24),
 		AccessUuid:  uuid.NewV4().String(),
 		RefreshUuid: uuid.NewV4().String(),
 	}
@@ -224,23 +224,15 @@ func saveSessions(ID primitive.ObjectID, tokenDetails TokenMetaData, ctx context
 	if err != nil {
 		return err
 	}
-	now := time.Now()
-	accessTime := tokenDetails.AtExpires.Sub(now)
-	refreshTime := tokenDetails.RtExpires.Sub(now)
 	routineCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	// TTL index
-	indexAT := mongo.IndexModel{
-		Keys:    bsonx.Doc{{Key: "access_token", Value: bsonx.Int32(1)}},
-		Options: options.Index().SetExpireAfterSeconds(int32(accessTime.Seconds())),
+	index := mongo.IndexModel{
+		Keys:    bsonx.Doc{{Key: "expire_on", Value: bsonx.Int32(1)}},
+		Options: options.Index().SetExpireAfterSeconds(0),
 	}
-	indexRT := mongo.IndexModel{
-		Keys:    bsonx.Doc{{Key: "refresh_token", Value: bsonx.Int32(1)}},
-		Options: options.Index().SetExpireAfterSeconds(int32(refreshTime.Seconds())),
-	}
-	multiIndex := []mongo.IndexModel{indexAT, indexRT}
 
-	_, err = sessionCollection.Indexes().CreateMany(routineCtx, multiIndex)
+	_, err = sessionCollection.Indexes().CreateOne(routineCtx, index)
 
 	_, err = sessionCollection.InsertOne(routineCtx, accessTokenSession)
 	if err != nil {
