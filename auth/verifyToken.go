@@ -9,7 +9,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -119,14 +118,5 @@ func FetchAuthSession(authD *AccessDetails) (primitive.ObjectID, error) {
 	result := sessionCollection.FindOne(ctx, filter)
 	err = result.Decode(&session)
 	userid := session.UserID
-	log.Println(userid)
-	now := time.Now().Unix()
-	if session.ExpireOn < now {
-		_, err = sessionCollection.DeleteOne(ctx, filter)
-		if err != nil {
-			return primitive.NilObjectID, err
-		}
-	}
-
 	return userid, nil
 }

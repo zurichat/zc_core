@@ -118,17 +118,20 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if utils.IsValidEmail(user.Email) {
-		err := saveUser(user)
-		if err != nil {
-			utils.GetError(err, http.StatusInternalServerError, w)
-			return
-		}
+	if !utils.IsValidEmail(user.Email) {
+		err = errors.New("Invalid email")
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
 	}
-	_, err = fetchUser(user.Email)
-	if err != nil {
+	u, err := fetchUser(user.Email)
+	if u.Email == user.Email {
 		err = errors.New("This email already exist")
 		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+	err = saveUser(user)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
 	tokenDetail, err := createToken(user.UserID)
@@ -136,7 +139,8 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
-	saveErr := saveSessions(user.UserID, *tokenDetail)
+	ctx := r.Context()
+	saveErr := saveSessions(user.UserID, *tokenDetail, ctx)
 	if saveErr != nil {
 		utils.GetError(saveErr, http.StatusUnprocessableEntity, w)
 		return
@@ -176,8 +180,6 @@ func fetchUser(email string) (*User, error) {
 	ctx := context.TODO()
 	result := userCollection.FindOne(ctx, filter)
 	err = result.Decode(&user)
-	if err != nil {
-		return user, err
-	}
+	log.Println(user.Email)
 	return user, err
 }
