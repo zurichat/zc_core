@@ -166,7 +166,7 @@ func IsUserRegistered(user User) (bool, error) {
 func createToken(ID primitive.ObjectID) (*TokenMetaData, error) {
 	var err error
 	tokenDetails := &TokenMetaData{
-		AtExpires:   time.Now().Add(time.Second * 5).Unix(),
+		AtExpires:   time.Now().Add(time.Minute * 10).Unix(),
 		RtExpires:   time.Now().Add(time.Hour * 24 * 7).Unix(),
 		AccessUuid:  uuid.NewV4().String(),
 		RefreshUuid: uuid.NewV4().String(),
