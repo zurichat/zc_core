@@ -36,7 +36,7 @@ func (mh *MongoDBHandle) Connect(clusterURL string) error {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	err = client.Connect(ctx)
@@ -55,6 +55,11 @@ func (mh *MongoDBHandle) Connect(clusterURL string) error {
 func (mh *MongoDBHandle) GetCollection(collectionName string) *mongo.Collection {
 	DbName := Env("DB_NAME")
 	return mh.client.Database(DbName).Collection(collectionName)
+}
+
+// GetCollection return collection for the db in DB_NAME env variable.
+func GetCollection(collectionName string) *mongo.Collection {
+	return defaultMongoHandle.GetCollection(collectionName)
 }
 
 func (mh *MongoDBHandle) Client() *mongo.Client {

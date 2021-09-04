@@ -11,31 +11,51 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"zuri.chat/zccore/data"
-	"zuri.chat/zccore/marketplace"
 	"zuri.chat/zccore/messaging"
 	"zuri.chat/zccore/organizations"
 	"zuri.chat/zccore/plugin"
+	"zuri.chat/zccore/realtime"
+	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 )
 
 func Router(Server *socketio.Server) *mux.Router {
 	r := mux.NewRouter().StrictSlash(true)
 
+	// Setup and init
 	r.HandleFunc("/", VersionHandler)
-	// r.Handle("/", http.FileServer(http.Dir("./views/chat/")))
 	r.HandleFunc("/v1/welcome", Index).Methods("GET")
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
+
+	// Organisation
+	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
 	r.HandleFunc("/organizations", organizations.Create).Methods("POST")
 	r.HandleFunc("/organizations", organizations.GetOrganizations).Methods("GET")
-	r.Handle("/socket.io/", Server)
+	r.HandleFunc("/organizations/{id}", organizations.DeleteOrganization).Methods("DELETE")
+
+	// Data
 	r.HandleFunc("/data/write", data.WriteData).Methods("POST", "PUT", "DELETE")
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
+
+	// Plugins
 	r.HandleFunc("/plugin/register", plugin.Register).Methods("POST")
 	r.HandleFunc("/plugin/{id}", plugin.GetByID).Methods("GET")
-	r.HandleFunc("/marketplace/plugins", marketplace.GetAllApprovedPlugins).Methods("GET")
-	r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetOneApprovedPlugin).Methods("GET")
-	r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
 
+	// Marketplace
+	//r.HandleFunc("/marketplace/plugins", marketplace.GetAllApprovedPlugins).Methods("GET")
+	//r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetOneApprovedPlugin).Methods("GET")
+	//r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
+
+	// Users
+	r.HandleFunc("/users", user.Create).Methods("POST")
+	r.HandleFunc("/users/{user_id}", user.DeleteUser).Methods("DELETE")
+
+	// Realtime communication
+	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
+	r.HandleFunc("/realtime/auth", realtime.Auth).Methods("POST")
+	r.Handle("/socket.io/", Server)
+
+	// Home
 	http.Handle("/", r)
 
 	return r
@@ -44,24 +64,7 @@ func Router(Server *socketio.Server) *mux.Router {
 func main() {
 	////////////////////////////////////Socket  events////////////////////////////////////////////////
 	var Server = socketio.NewServer(nil)
-	Server.OnConnect("/socket.io/", func(s socketio.Conn) error {
-		messaging.Connect(s)
-		return nil
-	})
-	Server.OnEvent("/socket.io/", "enter_conversation", func(s socketio.Conn, msg string) {
-		messaging.EnterConversation(Server, s, msg)
-	})
-	Server.OnEvent("/socket.io/", "conversation", func(s socketio.Conn, msg string) {
-		messaging.BroadCastToConversation(Server, s, msg)
-	})
-	Server.OnError("/", func(s socketio.Conn, e error) {
-		fmt.Println("meet error:", e)
-	})
-
-	Server.OnDisconnect("/", func(s socketio.Conn, reason string) {
-		fmt.Println("closed", reason)
-	})
-
+	messaging.SocketEvents(Server)
 	////////////////////////////////////Socket  events////////////////////////////////////////////////
 
 	// load .env file if it exists
@@ -70,11 +73,11 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	
+
 	fmt.Println("Environment variables successfully loaded. Starting application...")
 
 	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
-		log.Fatal(err)
+		fmt.Println("Could not connect to MongoDB")
 	}
 
 	// get PORT from environment variables
