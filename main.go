@@ -10,6 +10,7 @@ import (
 	socketio "github.com/googollee/go-socket.io"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/data"
 	"zuri.chat/zccore/messaging"
 	"zuri.chat/zccore/organizations"
@@ -23,7 +24,7 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	r.HandleFunc("/", VersionHandler)
 	// r.Handle("/", http.FileServer(http.Dir("./views/chat/")))
-	r.HandleFunc("/v1/welcome", Index).Methods("GET")
+	r.HandleFunc("/v1/welcome", auth.MiddlewareValidateAccessToken(Index)).Methods("GET")
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
 	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
 	r.HandleFunc("/organizations", organizations.Create).Methods("POST")
@@ -38,7 +39,10 @@ func Router(Server *socketio.Server) *mux.Router {
 	//r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetOneApprovedPlugin).Methods("GET")
 	//r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
 	r.HandleFunc("/users", user.Create).Methods("POST")
-	
+	// login/register endpoint
+	r.HandleFunc("/login", auth.Login)
+	r.HandleFunc("/signup", auth.Register)
+
 	http.Handle("/", r)
 
 	return r
