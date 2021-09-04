@@ -2,9 +2,7 @@ package realtime
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"net/http/httputil"
 
 	uuid "github.com/gofrs/uuid"
 )
@@ -33,26 +31,16 @@ type CentrifugoConnectRequest struct {
 
 func Auth(w http.ResponseWriter, r *http.Request) {
 
-	fmt.Println("Entered Auth")
-
-	// Save a copy of this request for debugging.
-	requestDump, err := httputil.DumpRequest(r, true)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(string(requestDump))
-
+	// Decode the request from centrifugo
 	var creq CentrifugoConnectRequest
-
-	err = json.NewDecoder(r.Body).Decode(&creq)
+	err := json.NewDecoder(r.Body).Decode(&creq)
 	if err != nil {
-		// http.Error(w, err.Error(), http.StatusBadRequest)
-		// return
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
-	// Do something with the Person struct...
-	// fmt.Fprintf(w, "Person: %+v", creq)
-
+	// Generate a response object. In final version you have to
+	// check that this person is authenticated
 	u, _ := uuid.NewV4()
 
 	data := CentrifugoConnectResponse{}
