@@ -25,7 +25,13 @@ func EmojiCreator(writer http.ResponseWriter, request *http.Request) {
 		Emoji:         getFormFile(writer, request),
 	}
 
+<<<<<<< HEAD
+	CreateEmoji(newEmoji)
+
+	utils.GetSuccess("Emoji created", nil, writer)
+=======
 	utils.GetSuccess("erfdsccc", newEmoji, writer)
+>>>>>>> 2baf6599e56be96826d6adcc845800c7246074ad
 }
 
 func getFormFile(writer http.ResponseWriter, request *http.Request) []byte {
@@ -42,7 +48,11 @@ func getFormFile(writer http.ResponseWriter, request *http.Request) []byte {
 	return buff
 }
 
+<<<<<<< HEAD
+func CreateEmoji(e emoji) error {
+=======
 func CreateEmoji(e *emoji) error {
+>>>>>>> 2baf6599e56be96826d6adcc845800c7246074ad
 	collectionName := "emojis"
 	ctx := context.Background()
 	collection := utils.GetCollection(collectionName)
