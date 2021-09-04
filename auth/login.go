@@ -170,8 +170,8 @@ func IsUserRegistered(user User) (bool, error) {
 func createToken(ID primitive.ObjectID) (*TokenMetaData, error) {
 	var err error
 	tokenDetails := &TokenMetaData{
-		AtExpires:   time.Now().Add(time.Minute * 10).Unix(),
-		RtExpires:   time.Now().Add(time.Hour * 24 * 7).Unix(),
+		AtExpires:   time.Now().Add(time.Minute * 20),
+		RtExpires:   time.Now().Add(time.Hour * 7 * 24),
 		AccessUuid:  uuid.NewV4().String(),
 		RefreshUuid: uuid.NewV4().String(),
 	}
@@ -204,14 +204,14 @@ func createToken(ID primitive.ObjectID) (*TokenMetaData, error) {
 
 func saveSessions(ID primitive.ObjectID, tokenDetails TokenMetaData, ctx context.Context) error {
 	// create access token sessions
-	accessTokenSession := &Session{
+	accessTokenSession := &AcessSession{
 		TokenUuid:   tokenDetails.AccessUuid,
 		UserID:      ID,
 		AccessToken: tokenDetails.AccessToken,
 		CreatedAt:   time.Now().UTC(),
 		ExpireOn:    tokenDetails.AtExpires,
 	}
-	refreshTokenSession := &Session{
+	refreshTokenSession := &RefreshSession{
 		TokenUuid:    tokenDetails.RefreshUuid,
 		UserID:       ID,
 		RefreshToken: tokenDetails.RefreshToken,
@@ -224,24 +224,15 @@ func saveSessions(ID primitive.ObjectID, tokenDetails TokenMetaData, ctx context
 	if err != nil {
 		return err
 	}
-	now := time.Now()
-	accessTime := time.Unix(tokenDetails.AtExpires, 0)
-	refreshTime := time.Unix(tokenDetails.RtExpires, 0)
 	routineCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	// TTL index
-	indexAT := mongo.IndexModel{
-		Keys:    bsonx.Doc{{Key: "access_token", Value: bsonx.Int32(1)}},
-		Options: options.Index().SetExpireAfterSeconds(int32(accessTime.Sub(now))),
+	index := mongo.IndexModel{
+		Keys:    bsonx.Doc{{Key: "expire_on", Value: bsonx.Int32(1)}},
+		Options: options.Index().SetExpireAfterSeconds(0),
 	}
-	indexRT := mongo.IndexModel{
-		Keys:    bsonx.Doc{{Key: "refresh_token", Value: bsonx.Int32(1)}},
-		Options: options.Index().SetExpireAfterSeconds(int32(refreshTime.Sub(now))),
-	}
-	multiIndex := []mongo.IndexModel{indexAT, indexRT}
 
-	_, err = sessionCollection.Indexes().CreateMany(routineCtx, multiIndex)
-	err = nil
+	_, err = sessionCollection.Indexes().CreateOne(routineCtx, index)
 
 	_, err = sessionCollection.InsertOne(routineCtx, accessTokenSession)
 	if err != nil {

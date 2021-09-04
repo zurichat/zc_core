@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -73,7 +72,6 @@ func verifyAlgorithm(token *jwt.Token) (interface{}, error) {
 
 // RefineToken extract the token from the request header
 func RefineToken(r *http.Request) string {
-	log.Println("in RefineToken")
 	token := r.Header.Get("Authorization")
 	str := strings.Split(token, " ")
 	if len(str) == 2 {
@@ -109,7 +107,7 @@ func ExtractTokenMetaData(r *http.Request) (*AccessDetails, error) {
 func FetchAuthSession(authD *AccessDetails) (primitive.ObjectID, error) {
 	DbName := os.Getenv("DB_NAME")
 	ctx := context.TODO()
-	session := &Session{}
+	session := &AcessSession{}
 	sessionCollection, err := utils.GetMongoDbCollection(DbName, "Session")
 	if err != nil {
 		return primitive.NilObjectID, err
