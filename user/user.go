@@ -11,8 +11,15 @@ import (
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"golang.org/x/crypto/bcrypt"
 	"zuri.chat/zccore/utils"
 )
+
+// Method to hash password
+func GenerateHashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
+}
 
 // An end point to create new users
 func Create(response http.ResponseWriter, request *http.Request) {
@@ -38,15 +45,15 @@ func Create(response http.ResponseWriter, request *http.Request) {
 		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, response)
 		return
 	}
-/*
-	hashPassword, err := auth.GenerateHashPassword(user.Password)
+
+	hashPassword, err := GenerateHashPassword(user.Password)
 	if err != nil {
 		utils.GetError(errors.New("Failed to hashed password"), http.StatusBadRequest, response)
+		return
 	}
-	user.Password = hashPassword
-*/
 
 	user.CreatedAt = time.Now()
+	user.Password = hashPassword
 	detail, _ := utils.StructToMap(user)
 
 	res, err := utils.CreateMongoDbDoc(user_collection, detail)
