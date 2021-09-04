@@ -74,16 +74,24 @@ func Retrive(response http.ResponseWriter, request *http.Request) {
 	utils.GetSuccess("user retrieved successfully", retrive, response)
 }
 
-// func Update(response http.ResponseWriter, request *http.Request) {
-// 	response.Header().Add("content-type", "application/json")
-// 	// user_collection := "users"
-// 	var user User
-// 	err := utils.ParseJsonFromRequest(request, &user)
-// 	if err != nil {
-// 		utils.GetError(err, http.StatusUnprocessableEntity, response)
-// 		return
-// 	}
-// }
+// an endpoint to search other users
+func SearchOtherUsers(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	query := params["query"]
+	filter := bson.M{
+		"$or": []bson.M{
+			{"first_name": query},
+			{"last_name": query},
+			{"email": query},
+			{"display_name": query},
+		},
+	}
+	res, err := utils.GetMongoDbDocs(UserCollectionName, filter)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+	}
+	utils.GetSuccess("successful", res, w)
+  }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
