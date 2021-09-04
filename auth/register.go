@@ -125,6 +125,12 @@ func Register(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	_, err = fetchUser(user.Email)
+	if err != nil {
+		err = errors.New("This email already exist")
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
 	tokenDetail, err := createToken(user.UserID)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
