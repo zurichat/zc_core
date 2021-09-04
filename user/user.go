@@ -87,10 +87,10 @@ func FindUserByID(response http.ResponseWriter, request *http.Request) {
 
 	res, err := utils.GetMongoDbDoc(collectionName, bson.M{"_id": objID})
 	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, response)
+		utils.GetError(errors.New("user not found"), http.StatusInternalServerError, response)
 		return
 	}
-	utils.GetSuccess("User retrieved successfully", res, response)
+	utils.GetSuccess("user retrieved successfully", res, response)
 
 }
 
