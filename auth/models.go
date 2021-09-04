@@ -19,12 +19,6 @@ type Token struct {
 	OrganizationID string 	`json:"org_id"`
 }
 
-// Method to hash password
-func GenerateHashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-	return string(bytes), err
-}
-
 // Method to compare password
 func CheckPassword(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
@@ -34,12 +28,12 @@ func CheckPassword(password, hash string) bool {
 // Generate JWT
 func GenerateJWT(email, org_id string) (string, error) {
 	var signKey = []byte(secretKey)
-	token := jwt.New(jwt.SigningMethodES256)
+	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 
 	claims["authorized"] = true
 	claims["email"] = email
-	claims["org_id"] = org_id
+	// claims["org_id"] = org_id
 	claims["exp"] = time.Now().Add(time.Minute * 30).Unix()
 
 	tokenString, err := token.SignedString(signKey)

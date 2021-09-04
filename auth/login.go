@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
-	"zuri.chat/zccore/plugin"
 	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 )
@@ -38,17 +38,12 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 
 	// var user user.User
 	user := &user.User{}
-	// check if user exists
 	result, err := utils.GetMongoDbDoc(user_collection, bson.M{"email": authDetails.Email})
-	if result != nil && len(result) > 1 {
-		utils.GetError(err, http.StatusBadRequest, response)
+	if err == nil && len(result) == 0 {
+		utils.GetError(errors.New("User not found!"), http.StatusBadRequest, response)
 		return
 	}
-	if err := plugin.MapToStruct(result, user); err != nil {
-		utils.GetError(err, http.StatusBadRequest, response)
-		return
-	}
-	
+	mapstructure.Decode(result, user)
 	// check password
 	check := CheckPassword(authDetails.Password, user.Password)
 	if !check {
@@ -62,7 +57,7 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 
 	vtoken, err := GenerateJWT(authDetails.Email, "")
 	if err != nil {
-		utils.GetError(errors.New("Failed to generate token"), http.StatusBadRequest, response)
+		utils.GetError(err, http.StatusBadRequest, response)
 		return
 	}
 
