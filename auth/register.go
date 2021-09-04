@@ -10,17 +10,15 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/golang/gddo/httputil/header"
-	"github.com/twinj/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"gopkg.in/mgo.v2/bson"
 	"zuri.chat/zccore/utils"
 )
 
-func Login(w http.ResponseWriter, r *http.Request) {
-	var u User
+func Register(w http.ResponseWriter, r *http.Request) {
+	var user User
 	// If the Content-Type header is present, check that it has the value
 	// application/json. Note that we are using the gddo/httputil/header
 	// package to parse and extract the value here, so the check works
@@ -48,7 +46,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
 
-	err := dec.Decode(&u)
+	err := dec.Decode(&user)
 	if err != nil {
 		var syntaxError *json.SyntaxError
 		var unmarshalTypeError *json.UnmarshalTypeError
@@ -120,17 +118,19 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// check if user password and email is in the database
-	if ok, err := IsUserRegistered(u); ok == false {
-		utils.GetError(err, http.StatusForbidden, w)
-		return
+	if utils.IsValidEmail(user.Email) {
+		err := saveUser(user)
+		if err != nil {
+			utils.GetError(err, http.StatusInternalServerError, w)
+			return
+		}
 	}
-	tokenDetail, err := createToken(u.UserID)
+	tokenDetail, err := createToken(user.UserID)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
-	saveErr := saveSessions(u.UserID, *tokenDetail)
+	saveErr := saveSessions(user.UserID, *tokenDetail)
 	if saveErr != nil {
 		utils.GetError(saveErr, http.StatusUnprocessableEntity, w)
 		return
@@ -143,94 +143,35 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.GetSuccess("okay", tokens, w)
+
 }
 
-// IsUserRegistered checks if user password and email are in the database. i.e user
-// is already registerd.
-
-func IsUserRegistered(user User) (bool, error) {
-	userDB, err := fetchUser(user.Email)
-	if err != nil {
-		err = errors.New("No result for this credentials")
-		return false, err
-	}
-	//find user in database with user info
-	if user.Email == userDB.Email && user.Password == userDB.Password {
-		return true, nil
-	}
-	err = errors.New("Invalid Login details")
-	return false, err
-}
-
-// createToken creates access token for authenticated users
-func createToken(ID primitive.ObjectID) (*TokenMetaData, error) {
-	var err error
-	tokenDetails := &TokenMetaData{
-		AtExpires:   time.Now().Add(time.Second * 5).Unix(),
-		RtExpires:   time.Now().Add(time.Hour * 24 * 7).Unix(),
-		AccessUuid:  uuid.NewV4().String(),
-		RefreshUuid: uuid.NewV4().String(),
-	}
-
-	// Get access token
-	accessClaims := jwt.MapClaims{}
-	accessClaims["user_id"] = ID
-	accessClaims["authorized"] = true
-	accessClaims["access_uuid"] = tokenDetails.AccessUuid
-	accessClaims["IAt"] = time.Now()
-	accessClaims["exp"] = tokenDetails.AtExpires
-	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
-	tokenDetails.AccessToken, err = accessToken.SignedString([]byte(os.Getenv("HMAC_SECRET")))
-	if err != nil {
-		return nil, err
-	}
-
-	// Create Refresh token
-	rtClaims := jwt.MapClaims{}
-	rtClaims["refresh_uuid"] = tokenDetails.RefreshUuid
-	rtClaims["user_id"] = ID
-	rtClaims["exp"] = tokenDetails.RtExpires
-	rt := jwt.NewWithClaims(jwt.SigningMethodHS256, rtClaims)
-	tokenDetails.RefreshToken, err = rt.SignedString([]byte(os.Getenv("HMAC_REFRESH_SECRET")))
-	if err != nil {
-		return nil, err
-	}
-	return tokenDetails, nil
-}
-
-func saveSessions(ID primitive.ObjectID, tokenDetails TokenMetaData) error {
-	// create access token sessions
-	accessTokenSession := &Session{
-		TokenUuid:   tokenDetails.AccessUuid,
-		UserID:      ID,
-		AccessToken: tokenDetails.AccessToken,
-		CreatedAt:   time.Now().UTC(),
-		ExpireOn:    tokenDetails.AtExpires,
-	}
-	refreshTokenSession := &Session{
-		TokenUuid:    tokenDetails.RefreshUuid,
-		UserID:       ID,
-		RefreshToken: tokenDetails.RefreshToken,
-		CreatedAt:    time.Now().UTC(),
-		ExpireOn:     tokenDetails.RtExpires,
-	}
-
+// save a user in Authentication database
+func saveUser(user User) error {
+	user.UserID = primitive.NewObjectID()
 	DbName := os.Getenv("AUTH_DB_NAME")
-	sessionCollection, err := utils.GetMongoDbCollection(DbName, "Session")
+	userCollection, err := utils.GetMongoDbCollection(DbName, "user")
 	if err != nil {
 		return err
 	}
 	ctx := context.TODO()
-
-	_, err = sessionCollection.InsertOne(ctx, accessTokenSession)
-	if err != nil {
-		return err
-	}
-
-	_, err = sessionCollection.InsertOne(ctx, refreshTokenSession)
-	if err != nil {
-		return err
-	}
-
+	_, err = userCollection.InsertOne(ctx, user)
 	return nil
+}
+
+func fetchUser(email string) (*User, error) {
+	user := &User{}
+	DbName := os.Getenv("AUTH_DB_NAME")
+	userCollection, err := utils.GetMongoDbCollection(DbName, "user")
+	if err != nil {
+		return user, err
+	}
+	filter := bson.M{"email": email}
+	ctx := context.TODO()
+	result := userCollection.FindOne(ctx, filter)
+	err = result.Decode(&user)
+	if err != nil {
+		return user, err
+	}
+	return user, err
 }
