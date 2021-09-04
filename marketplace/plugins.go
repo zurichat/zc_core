@@ -18,8 +18,7 @@ func GetAllPlugins(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch err {
 		case mongo.ErrNoDocuments:
-			w.WriteHeader(http.StatusNotFound)
-			utils.GetSuccess("No plugin found", nil, w)
+			utils.GetError(errors.New("no plugin available"), http.StatusNotFound, w)
 		default:
 			utils.GetError(err, http.StatusNotFound, w)
 		}

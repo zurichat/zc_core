@@ -29,6 +29,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
+	w.Header().Set("content-type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	utils.GetSuccess("success", M{"plugin_id": p.ID.Hex()}, w)
 	go approvePlugin(p.ID.Hex())

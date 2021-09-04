@@ -2,13 +2,10 @@ package user
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"zuri.chat/zccore/utils"
 )
 
@@ -143,17 +140,4 @@ func findUserProfile(ctx context.Context, userID, orgID string) (*UserWorkspaceP
 
 func createUserProfile(ctx context.Context, uw *UserWorkspaceProfile) error {
 	return nil
-}
-
-func init() {
-	collection := utils.GetCollection("users")
-	indexModel := mongo.IndexModel{
-		Keys:    bson.M{"email": 1},
-		Options: options.Index().SetUnique(true),
-	}
-	indexName, err := collection.Indexes().CreateOne(context.Background(), indexModel)
-	if err != nil {
-		fmt.Println("errror creating unique index on email field in users collection")
-	}
-	fmt.Printf("%s index created", indexName)
 }

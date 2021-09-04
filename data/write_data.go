@@ -22,7 +22,9 @@ type writeDataRequest struct {
 }
 
 func WriteData(w http.ResponseWriter, r *http.Request) {
+
 	reqData := new(writeDataRequest)
+
 	if err := utils.ParseJsonFromRequest(r, reqData); err != nil {
 		utils.GetError(fmt.Errorf("error processing request: %v", err), http.StatusUnprocessableEntity, w)
 		return
@@ -45,7 +47,7 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 		createPluginCollectionRecord(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("content-type", "application/json")
 	switch r.Method {
 	case "POST":
 		reqData.handlePost(w, r)
