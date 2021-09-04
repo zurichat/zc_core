@@ -9,8 +9,15 @@ import (
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"golang.org/x/crypto/bcrypt"
 	"zuri.chat/zccore/utils"
 )
+
+// Method to hash password
+func GenerateHashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
+}
 
 // An end point to create new users
 func Create(response http.ResponseWriter, request *http.Request) {
@@ -37,8 +44,14 @@ func Create(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	user.CreatedAt = time.Now()
+	hashPassword, err := GenerateHashPassword(user.Password)
+	if err != nil {
+		utils.GetError(errors.New("Failed to hashed password"), http.StatusBadRequest, response)
+		return
+	}
 
+	user.CreatedAt = time.Now()
+	user.Password = hashPassword
 	detail, _ := utils.StructToMap(user)
 
 	res, err := utils.CreateMongoDbDoc(user_collection, detail)
@@ -50,6 +63,47 @@ func Create(response http.ResponseWriter, request *http.Request) {
 
 	utils.GetSuccess("user created", res, response)
 }
+
+func Retrive(response http.ResponseWriter, request *http.Request) {
+	response.Header().Set("Content-Type", "application/json")
+	user_collection := "users"
+
+	params := mux.Vars(request)
+	userId := params["user_id"]
+	objId, err := primitive.ObjectIDFromHex(userId)
+
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, response)
+		return
+	}
+
+	retrive, err := utils.GetMongoDbDoc(user_collection, bson.M{"_id": objId})
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, response)
+		return
+	}
+	utils.GetSuccess("user retrieved successfully", retrive, response)
+}
+
+// an endpoint to search other users
+func SearchOtherUsers(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	query := params["query"]
+	filter := bson.M{
+		"$or": []bson.M{
+			{"first_name": query},
+			{"last_name": query},
+			{"email": query},
+			{"display_name": query},
+		},
+	}
+	res, err := utils.GetMongoDbDocs(UserCollectionName, filter)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+	}
+	utils.GetSuccess("successful", res, w)
+  }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
