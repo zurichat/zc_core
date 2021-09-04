@@ -29,6 +29,9 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/v1/welcome", auth.MiddlewareValidateAccessToken(Index)).Methods("GET")
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
 
+	// Authentication
+	//r.HandleFunc("/auth/login", auth.LoginIn).Methods("POST")
+
 	// Organisation
 	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
 	r.HandleFunc("/organizations", organizations.Create).Methods("POST")
