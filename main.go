@@ -14,6 +14,7 @@ import (
 	"zuri.chat/zccore/messaging"
 	"zuri.chat/zccore/organizations"
 	"zuri.chat/zccore/plugin"
+	"zuri.chat/zccore/realtime"
 	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 )
@@ -40,6 +41,8 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/users", user.Create).Methods("POST")
 	r.HandleFunc("/users/{user_id}", user.DeleteUser).Methods("DELETE")
 
+	r.HandleFunc("/realtime/auth", realtime.Auth).Methods("GET")
+
 	http.Handle("/", r)
 
 	return r
@@ -61,7 +64,7 @@ func main() {
 	fmt.Println("Environment variables successfully loaded. Starting application...")
 
 	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
-		log.Fatal(err)
+		fmt.Println("Could not connect to MongoDB")
 	}
 
 	// get PORT from environment variables
