@@ -129,6 +129,7 @@ func UpdateUser(response http.ResponseWriter, request *http.Request) {
 			}
 		}
 		if len(updateFields) == 0 {
+			utils.GetError(errors.New("empty/invalid user input data"), http.StatusBadRequest, response)
 			return
 		} else {
 			updateRes, err := utils.UpdateOneMongoDbDoc(collectionName, userID, updateFields)
