@@ -10,6 +10,7 @@ import (
 	socketio "github.com/googollee/go-socket.io"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/data"
 	"zuri.chat/zccore/marketplace"
 	"zuri.chat/zccore/messaging"
@@ -27,6 +28,9 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/", VersionHandler)
 	r.HandleFunc("/v1/welcome", Index).Methods("GET")
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
+
+	// Authentication
+	r.HandleFunc("/auth/login", auth.LoginIn).Methods("POST")
 
 	// Organisation
 	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
@@ -47,7 +51,11 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	// Users
 	r.HandleFunc("/users", user.Create).Methods("POST")
+	// r.HandleFunc("/users/{id}", user.FindUserByID).Methods("GET")
+	r.HandleFunc("/users/{id}", user.UpdateUser).Methods("PATCH")
+	r.HandleFunc("/users/{user_id}", user.Retrive).Methods("GET")
 	r.HandleFunc("/users/{user_id}", user.DeleteUser).Methods("DELETE")
+	r.HandleFunc("/users/search/{query}", user.SearchOtherUsers).Methods("GET")
 
 	// Realtime communication
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")

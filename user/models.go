@@ -79,6 +79,7 @@ type User struct {
 	ID                primitive.ObjectID      `bson:"_id,omitempty" json:"id,omitempty"`
 	FirstName         string                  `bson:"first_name" validate:"required,min=2,max=100" json:"first_name"`
 	LastName          string                  `bson:"last_name" validate:"required,min=2,max=100" json:"last_name"`
+	DisplayName       string                  `bson:"display_name" validate:"required,min=2,max=100" json:"display_name"`
 	Email             string                  `bson:"email" validate:"email,required" json:"email"`
 	Password          string                  `bson:"password" validate:"required,min=6"`
 	Phone             string                  `bson:"phone" validate:"required" json:"phone"`
@@ -140,4 +141,12 @@ func findUserProfile(ctx context.Context, userID, orgID string) (*UserWorkspaceP
 
 func createUserProfile(ctx context.Context, uw *UserWorkspaceProfile) error {
 	return nil
+}
+
+// Struct that user can update directly
+type UserUpdate struct {
+	FirstName string `bson:"first_name" validate:"required,min=2,max=100" json:"first_name"`
+	LastName  string `bson:"last_name" validate:"required,min=2,max=100" json:"last_name"`
+	Phone     string `bson:"phone" validate:"required" json:"phone"`
+	Company   string `bson:"company" json:"company"`
 }
