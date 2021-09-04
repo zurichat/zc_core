@@ -16,6 +16,9 @@ import (
 	"github.com/golang/gddo/httputil/header"
 	"github.com/twinj/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/x/bsonx"
 	"zuri.chat/zccore/utils"
 )
 
@@ -130,7 +133,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
-	saveErr := saveSessions(u.UserID, *tokenDetail)
+	ctx := r.Context()
+	saveErr := saveSessions(u.UserID, *tokenDetail, ctx)
 	if saveErr != nil {
 		utils.GetError(saveErr, http.StatusUnprocessableEntity, w)
 		return
@@ -198,7 +202,7 @@ func createToken(ID primitive.ObjectID) (*TokenMetaData, error) {
 	return tokenDetails, nil
 }
 
-func saveSessions(ID primitive.ObjectID, tokenDetails TokenMetaData) error {
+func saveSessions(ID primitive.ObjectID, tokenDetails TokenMetaData, ctx context.Context) error {
 	// create access token sessions
 	accessTokenSession := &Session{
 		TokenUuid:   tokenDetails.AccessUuid,
@@ -220,9 +224,26 @@ func saveSessions(ID primitive.ObjectID, tokenDetails TokenMetaData) error {
 	if err != nil {
 		return err
 	}
-	ctx := context.TODO()
+	now := time.Now()
+	accessTime := time.Unix(tokenDetails.AtExpires, 0)
+	refreshTime := time.Unix(tokenDetails.RtExpires, 0)
+	routineCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	// TTL index
+	indexAT := mongo.IndexModel{
+		Keys:    bsonx.Doc{{Key: "access_token", Value: bsonx.Int32(1)}},
+		Options: options.Index().SetExpireAfterSeconds(int32(accessTime.Sub(now))),
+	}
+	indexRT := mongo.IndexModel{
+		Keys:    bsonx.Doc{{Key: "refresh_token", Value: bsonx.Int32(1)}},
+		Options: options.Index().SetExpireAfterSeconds(int32(refreshTime.Sub(now))),
+	}
+	multiIndex := []mongo.IndexModel{indexAT, indexRT}
 
-	_, err = sessionCollection.InsertOne(ctx, accessTokenSession)
+	_, err = sessionCollection.Indexes().CreateMany(routineCtx, multiIndex)
+	err = nil
+
+	_, err = sessionCollection.InsertOne(routineCtx, accessTokenSession)
 	if err != nil {
 		return err
 	}
