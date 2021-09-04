@@ -14,12 +14,20 @@ type User struct {
 }
 
 // Session holds data of a particular user session
-type Session struct {
+type AcessSession struct {
+	TokenUuid   string             `json:"token_uuid,omitempty" bson:"token_uuid,omitempty"`
+	UserID      primitive.ObjectID `json:"user_id,omitempty" bson:"user_id,omitempty"`
+	AccessToken string             `json:"access_token" bson:"access_token"`
+	ExpireOn    time.Time          `json:"expire_on" bson:"expire_on"`
+	CreatedAt   time.Time          `json:"" bson:"created_at"`
+}
+
+// Session holds data of a particular user session
+type RefreshSession struct {
 	TokenUuid    string             `json:"token_uuid,omitempty" bson:"token_uuid,omitempty"`
 	UserID       primitive.ObjectID `json:"user_id,omitempty" bson:"user_id,omitempty"`
-	AccessToken  string             `json:"access_token" bson:"access_token"`
 	RefreshToken string             `json:"refresh_token,omitempty" bson:"refresh_token"`
-	ExpireOn     int64              `json:"expire_on" bson:"expire_on"`
+	ExpireOn     time.Time          `json:"expire_on" bson:"expire_on"`
 	CreatedAt    time.Time          `json:"" bson:"created_at"`
 }
 
@@ -33,8 +41,8 @@ type TokenMetaData struct {
 	RefreshToken string
 	AccessUuid   string
 	RefreshUuid  string
-	AtExpires    int64
-	RtExpires    int64
+	AtExpires    time.Time
+	RtExpires    time.Time
 }
 
 type AccessDetails struct {

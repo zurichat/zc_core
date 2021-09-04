@@ -180,6 +180,5 @@ func fetchUser(email string) (*User, error) {
 	ctx := context.TODO()
 	result := userCollection.FindOne(ctx, filter)
 	err = result.Decode(&user)
-	log.Println(user.Email)
 	return user, err
 }
