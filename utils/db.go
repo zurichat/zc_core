@@ -36,7 +36,7 @@ func (mh *MongoDBHandle) Connect(clusterURL string) error {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	err = client.Connect(ctx)
