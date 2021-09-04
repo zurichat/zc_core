@@ -39,7 +39,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	//r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
 	r.HandleFunc("/users", user.Create).Methods("POST")
 	r.HandleFunc("/users/{user_id}", user.DeleteUser).Methods("DELETE")
-
+	r.HandleFunc("/users/emoji", user.EmojiCreator).Methods("POST")
 	http.Handle("/", r)
 
 	return r
