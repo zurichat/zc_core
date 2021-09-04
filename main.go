@@ -23,28 +23,43 @@ import (
 func Router(Server *socketio.Server) *mux.Router {
 	r := mux.NewRouter().StrictSlash(true)
 
+	// Setup and init
 	r.HandleFunc("/", VersionHandler)
-	r.HandleFunc("/auth/login", auth.LoginIn).Methods("POST")
-	// r.Handle("/", http.FileServer(http.Dir("./views/chat/")))
 	r.HandleFunc("/v1/welcome", Index).Methods("GET")
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
+
+	// Authentication
+	r.HandleFunc("/auth/login", auth.LoginIn).Methods("POST")
+
+	// Organisation
 	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
 	r.HandleFunc("/organizations", organizations.Create).Methods("POST")
 	r.HandleFunc("/organizations", organizations.GetOrganizations).Methods("GET")
 	r.HandleFunc("/organizations/{id}", organizations.DeleteOrganization).Methods("DELETE")
-	r.Handle("/socket.io/", Server)
+
+	// Data
 	r.HandleFunc("/data/write", data.WriteData).Methods("POST", "PUT", "DELETE")
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
+
+	// Plugins
 	r.HandleFunc("/plugin/register", plugin.Register).Methods("POST")
 	r.HandleFunc("/plugin/{id}", plugin.GetByID).Methods("GET")
+
+	// Marketplace
 	//r.HandleFunc("/marketplace/plugins", marketplace.GetAllApprovedPlugins).Methods("GET")
 	//r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetOneApprovedPlugin).Methods("GET")
 	//r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
+
+	// Users
 	r.HandleFunc("/users", user.Create).Methods("POST")
 	r.HandleFunc("/users/{user_id}", user.DeleteUser).Methods("DELETE")
 
-	r.HandleFunc("/realtime/auth", realtime.Auth).Methods("GET")
+	// Realtime communication
+	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
+	r.HandleFunc("/realtime/auth", realtime.Auth).Methods("POST")
+	r.Handle("/socket.io/", Server)
 
+	// Home
 	http.Handle("/", r)
 
 	return r
