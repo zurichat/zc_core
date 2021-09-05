@@ -31,7 +31,7 @@ func GetError(err error, StatusCode int, w http.ResponseWriter) {
 	}
 
 	w.WriteHeader(response.StatusCode)
-	w.Header().Set("content-type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("Error sending response: %v", err)
 	}
@@ -44,7 +44,7 @@ func GetSuccess(msg string, data interface{}, w http.ResponseWriter) {
 		StatusCode: http.StatusOK,
 		Data:       data,
 	}
-	w.Header().Set("content-type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("Error sending response: %v", err)
 	}
@@ -63,7 +63,7 @@ func FileExists(name string) bool {
 
 // convert map to bson.M for mongoDB docs
 func MapToBson(data map[string]interface{}) bson.M {
-	return bson.M(data) // they have the same underlying type so type conversion is enough
+	return bson.M(data)
 }
 
 // StructToMap converts a struct of any type to a map[string]inteface{}
@@ -72,6 +72,16 @@ func StructToMap(inStruct interface{}) (map[string]interface{}, error) {
 	inrec, _ := json.Marshal(inStruct)
 	json.Unmarshal(inrec, &out)
 	return out, nil
+}
+
+// ConvertStructure does map to struct conversion and vice versa.
+// The input structure will be converted to the output
+func ConvertStructure(input interface{}, output interface{}) error {
+	data, err := json.Marshal(input)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(data, output)
 }
 
 func ParseJsonFromRequest(r *http.Request, v interface{}) error {
