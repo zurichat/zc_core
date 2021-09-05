@@ -23,7 +23,7 @@ func UserForm(response http.ResponseWriter, request *http.Request) {
 
 func Processor(response http.ResponseWriter, request *http.Request) {
 	if request.Method != "POST" {
-		http.Redirect(response, request, "/userform", http.StatusSeeOther)
+		http.Redirect(response, request, "/usersform", http.StatusSeeOther)
 		return
 	}
 

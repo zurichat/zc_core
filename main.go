@@ -63,6 +63,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/users/{user_id}", user.FindUserByID).Methods("GET")
 	r.HandleFunc("/users/{user_id}", user.DeleteUser).Methods("DELETE")
 	r.HandleFunc("/users/search/{query}", user.SearchOtherUsers).Methods("GET")
+	r.HandleFunc("/users", user.GetUsers).Methods("GET")
 
 	// Realtime communication
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
