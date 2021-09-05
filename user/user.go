@@ -64,7 +64,6 @@ func Create(response http.ResponseWriter, request *http.Request) {
 	utils.GetSuccess("user created", res, response)
 }
 
-
 // an endpoint to search other users
 func SearchOtherUsers(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
@@ -111,15 +110,17 @@ func FindUserByID(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("content-type", "application/json")
 
 	collectionName := "users"
-	userID := mux.Vars(request)["id"]
-	objID, err := primitive.ObjectIDFromHex(userID)
+
+	params := mux.Vars(request)
+	userId := params["user_id"]
+	objId, err := primitive.ObjectIDFromHex(userId)
 
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, response)
 		return
 	}
 
-	res, err := utils.GetMongoDbDoc(collectionName, bson.M{"_id": objID})
+	res, err := utils.GetMongoDbDoc(collectionName, bson.M{"_id": objId})
 	if err != nil {
 		utils.GetError(errors.New("user not found"), http.StatusInternalServerError, response)
 		return
@@ -133,7 +134,7 @@ func FindUserByID(response http.ResponseWriter, request *http.Request) {
 func UpdateUser(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("content-type", "application/json")
 	// Validate the user ID
-	userID := mux.Vars(request)["id"]
+	userID := mux.Vars(request)["user_id"]
 	objID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		utils.GetError(errors.New("invalid user ID"), http.StatusBadRequest, response)
