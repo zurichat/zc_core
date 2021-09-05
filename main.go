@@ -36,7 +36,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations", organizations.GetOrganizations).Methods("GET")
 	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
 	r.HandleFunc("/organizations/{id}", organizations.DeleteOrganization).Methods("DELETE")
-	r.HandleFunc("/organizations/{id}/plugin", organizations.AddOrganizationPlugin).Methods("POST")
+	r.HandleFunc("/organizations/{id}/plugins", organizations.AddOrganizationPlugin).Methods("POST")
 	r.HandleFunc("/organizations/{id}/plugins", organizations.GetOrganizationPlugins).Methods("GET")
 	r.HandleFunc("/organizations/{id}/url", organizations.UpdateUrl).Methods("PATCH")
 
@@ -55,9 +55,8 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	// Users
 	r.HandleFunc("/users", user.Create).Methods("POST")
-	// r.HandleFunc("/users/{id}", user.FindUserByID).Methods("GET")
 	r.HandleFunc("/users/{id}", user.UpdateUser).Methods("PATCH")
-	r.HandleFunc("/users/{user_id}", user.Retrive).Methods("GET")
+	r.HandleFunc("/users/{user_id}", user.FindUserByID).Methods("GET")
 	r.HandleFunc("/users/{user_id}", user.DeleteUser).Methods("DELETE")
 	r.HandleFunc("/users/search/{query}", user.SearchOtherUsers).Methods("GET")
 
