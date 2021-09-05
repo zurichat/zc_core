@@ -86,3 +86,13 @@ type User struct {
 	EmailVerification UserEmailVerification   `bson:"email_verification"`
 	PasswordResets    []*UserPasswordReset    `bson:"password_resets"`
 }
+
+// UserPresence contains details about a user online status
+type UserPresence struct {
+	Presence        string    `json:"presence,omitempty"`
+	Online          bool      `json:"online,omitempty"`
+	AutoAway        bool      `json:"auto_away,omitempty"`
+	ManualAway      bool      `json:"manual_away,omitempty"`
+	ConnectionCount int       `json:"connection_count,omitempty"`
+	LastActivity    time.Time `json:"last_activity,omitempty"`
+}
