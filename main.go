@@ -41,8 +41,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/plugins", organizations.AddOrganizationPlugin).Methods("POST")
 	r.HandleFunc("/organizations/{id}/plugins", organizations.GetOrganizationPlugins).Methods("GET")
 	r.HandleFunc("/organizations/{id}/url", organizations.UpdateUrl).Methods("PATCH")
-  	r.HandleFunc("/organizations/{id}/name", organizations.ChangeOrganizationName).Methods("PATCH")
-
+	r.HandleFunc("/organizations/{id}/name", organizations.ChangeOrganizationName).Methods("PATCH")
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
@@ -61,6 +60,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/users/{user_id}", user.FindUserByID).Methods("GET")
 	r.HandleFunc("/users/{user_id}", user.DeleteUser).Methods("DELETE")
 	r.HandleFunc("/users/search/{query}", user.SearchOtherUsers).Methods("GET")
+	r.HandleFunc("/users", user.GetUsers).Methods("GET")
 
 	// Realtime communication
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
