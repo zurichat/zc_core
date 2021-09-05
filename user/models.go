@@ -70,6 +70,7 @@ type User struct {
 	_id               string                  `bson:"_id" json:"id"`
 	FirstName         string                  `bson:"first_name" validate:"required,min=2,max=100" json:"first_name"`
 	LastName          string                  `bson:"last_name" validate:"required,min=2,max=100" json:"last_name"`
+	DisplayName       string                  `bson:"display_name" validate:"required,min=2,max=100" json:"display_name"`
 	Email             string                  `bson:"email" validate:"email,required" json:"email"`
 	Password          string                  `bson:"password" validate:"required,min=6"`
 	Phone             string                  `bson:"phone" validate:"required" json:"phone"`
@@ -84,4 +85,12 @@ type User struct {
 	WorkspaceProfiles []*UserWorkspaceProfile `bson:"workspace_profiles"`
 	EmailVerification UserEmailVerification   `bson:"email_verification"`
 	PasswordResets    []*UserPasswordReset    `bson:"password_resets"`
+}
+
+// Struct that user can update directly
+type UserUpdate struct {
+	FirstName string `bson:"first_name" validate:"required,min=2,max=100" json:"first_name"`
+	LastName  string `bson:"last_name" validate:"required,min=2,max=100" json:"last_name"`
+	Phone     string `bson:"phone" validate:"required" json:"phone"`
+	Company   string `bson:"company" json:"company"`
 }
