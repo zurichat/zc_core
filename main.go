@@ -32,10 +32,13 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/auth/login", auth.LoginIn).Methods("POST")
 
 	// Organisation
-	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
 	r.HandleFunc("/organizations", organizations.Create).Methods("POST")
 	r.HandleFunc("/organizations", organizations.GetOrganizations).Methods("GET")
+	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
 	r.HandleFunc("/organizations/{id}", organizations.DeleteOrganization).Methods("DELETE")
+	r.HandleFunc("/organizations/{id}/plugins", organizations.AddOrganizationPlugin).Methods("POST")
+	r.HandleFunc("/organizations/{id}/plugins", organizations.GetOrganizationPlugins).Methods("GET")
+	r.HandleFunc("/organizations/{id}/url", organizations.UpdateUrl).Methods("PATCH")
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData).Methods("POST", "PUT", "DELETE")
@@ -54,7 +57,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/users", user.Create).Methods("POST")
 	// r.HandleFunc("/users/{id}", user.FindUserByID).Methods("GET")
 	r.HandleFunc("/users/{user_id}", user.UpdateUser).Methods("PATCH")
-	r.HandleFunc("/users/{user_id}", user.Retrive).Methods("GET")
+	r.HandleFunc("/users/{user_id}", user.FindUserByID).Methods("GET")
 	r.HandleFunc("/users/{user_id}", user.DeleteUser).Methods("DELETE")
 	r.HandleFunc("/users/search/{query}", user.SearchOtherUsers).Methods("GET")
 
@@ -62,6 +65,9 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
 	r.HandleFunc("/realtime/auth", realtime.Auth).Methods("POST")
 	r.Handle("/socket.io/", Server)
+
+	//api documentation
+	r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.FileServer(http.Dir("./api/"))))
 
 	// Home
 	http.Handle("/", r)

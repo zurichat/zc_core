@@ -64,27 +64,6 @@ func Create(response http.ResponseWriter, request *http.Request) {
 	utils.GetSuccess("user created", res, response)
 }
 
-func Retrive(response http.ResponseWriter, request *http.Request) {
-	response.Header().Set("Content-Type", "application/json")
-	user_collection := "users"
-
-	params := mux.Vars(request)
-	userId := params["user_id"]
-	objId, err := primitive.ObjectIDFromHex(userId)
-
-	if err != nil {
-		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, response)
-		return
-	}
-
-	retrive, err := utils.GetMongoDbDoc(user_collection, bson.M{"_id": objId})
-
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, response)
-		return
-	}
-	utils.GetSuccess("user retrieved successfully", retrive, response)
-}
 
 // an endpoint to search other users
 func SearchOtherUsers(w http.ResponseWriter, r *http.Request) {
@@ -103,8 +82,9 @@ func SearchOtherUsers(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(err, http.StatusInternalServerError, w)
 	}
 	utils.GetSuccess("successful", res, w)
-  }
+}
 
+// an endpoint to delete a user record
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -125,7 +105,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("User Deleted Succesfully", nil, w)
 }
 
-// helper functions perform CRUD operations on user
+// endpoint to find user by ID
 func FindUserByID(response http.ResponseWriter, request *http.Request) {
 	// Find a user by user ID
 	response.Header().Set("content-type", "application/json")
@@ -135,7 +115,7 @@ func FindUserByID(response http.ResponseWriter, request *http.Request) {
 	objID, err := primitive.ObjectIDFromHex(userID)
 
 	if err != nil {
-		utils.GetError(err, http.StatusBadRequest, response)
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, response)
 		return
 	}
 
@@ -147,6 +127,8 @@ func FindUserByID(response http.ResponseWriter, request *http.Request) {
 	utils.GetSuccess("user retrieved successfully", res, response)
 
 }
+
+// an endpoint to update a user record
 
 func UpdateUser(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("content-type", "application/json")
@@ -195,5 +177,4 @@ func UpdateUser(response http.ResponseWriter, request *http.Request) {
 		}
 
 	}
-
 }
