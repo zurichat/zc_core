@@ -66,7 +66,8 @@ func Create(response http.ResponseWriter, request *http.Request) {
 	utils.GetSuccess("user created", res, response)
 }
 
-func Retrive(response http.ResponseWriter, request *http.Request) {
+// An end point to create new users
+func FindUserByID(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Content-Type", "application/json")
 	user_collection := "users"
 
@@ -105,8 +106,9 @@ func SearchOtherUsers(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(err, http.StatusInternalServerError, w)
 	}
 	utils.GetSuccess("successful", res, w)
-  }
+}
 
+// an endpoint to delete a user record
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -127,29 +129,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("User Deleted Succesfully", nil, w)
 }
 
-// helper functions perform CRUD operations on user
-func FindUserByID(response http.ResponseWriter, request *http.Request) {
-	// Find a user by user ID
-	response.Header().Set("content-type", "application/json")
-
-	collectionName := "users"
-	userID := mux.Vars(request)["id"]
-	objID, err := primitive.ObjectIDFromHex(userID)
-
-	if err != nil {
-		utils.GetError(err, http.StatusBadRequest, response)
-		return
-	}
-
-	res, err := utils.GetMongoDbDoc(collectionName, bson.M{"_id": objID})
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, response)
-		return
-	}
-	utils.GetSuccess("User retrieved successfully", res, response)
-
-}
-
+// an endpoint to update a user record
 func UpdateUser(response http.ResponseWriter, request *http.Request) {
 	// Update a user of a given ID. Only certain fields, detailed in the
 	// UserUpdate struct can be directly updated by a user without additional
@@ -170,6 +150,7 @@ func UpdateUser(response http.ResponseWriter, request *http.Request) {
 		utils.GetError(err, http.StatusInternalServerError, response)
 		return
 	}
+
 	if res != nil {
 		// 2. Get user fields to be updated from request body
 		var body UserUpdate
@@ -178,7 +159,6 @@ func UpdateUser(response http.ResponseWriter, request *http.Request) {
 			utils.GetError(err, http.StatusBadRequest, response)
 			return
 		}
-		fmt.Printf("request body %v", body)
 
 		// 3. Validate request body
 		structValidator := validator.New()
@@ -205,5 +185,4 @@ func UpdateUser(response http.ResponseWriter, request *http.Request) {
 		}
 		utils.GetSuccess("User update successful", updateRes, response)
 	}
-
 }
