@@ -96,3 +96,11 @@ type UserPresence struct {
 	ConnectionCount int       `json:"connection_count,omitempty"`
 	LastActivity    time.Time `json:"last_activity,omitempty"`
 }
+
+// Struct that user can update directly
+type UserUpdate struct {
+	FirstName string `bson:"first_name" validate:"required,min=2,max=100" json:"first_name"`
+	LastName  string `bson:"last_name" validate:"required,min=2,max=100" json:"last_name"`
+	Phone     string `bson:"phone" validate:"required" json:"phone"`
+	Company   string `bson:"company" json:"company"`
+}
