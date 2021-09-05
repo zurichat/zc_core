@@ -29,11 +29,16 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/v1/welcome", auth.MiddlewareValidateAccessToken(Index)).Methods("GET")
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
 
+	// Authentication
+	r.HandleFunc("/auth/login", auth.LoginIn).Methods("POST")
+
 	// Organisation
-	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
 	r.HandleFunc("/organizations", organizations.Create).Methods("POST")
 	r.HandleFunc("/organizations", organizations.GetOrganizations).Methods("GET")
+	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
 	r.HandleFunc("/organizations/{id}", organizations.DeleteOrganization).Methods("DELETE")
+	r.HandleFunc("/organizations/{id}/plugin", organizations.AddOrganizationPlugin).Methods("POST")
+	r.HandleFunc("/organizations/{id}/plugins", organizations.GetOrganizationPlugins).Methods("GET")
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData).Methods("POST", "PUT", "DELETE")
@@ -50,14 +55,19 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	// Users
 	r.HandleFunc("/users", user.Create).Methods("POST")
-	// login/register endpoint
-	r.HandleFunc("/login", auth.Login)
-	r.HandleFunc("/signup", auth.Register)
+	// r.HandleFunc("/users/{id}", user.FindUserByID).Methods("GET")
+	r.HandleFunc("/users/{id}", user.UpdateUser).Methods("PATCH")
+	r.HandleFunc("/users/{user_id}", user.Retrive).Methods("GET")
+	r.HandleFunc("/users/{user_id}", user.DeleteUser).Methods("DELETE")
+	r.HandleFunc("/users/search/{query}", user.SearchOtherUsers).Methods("GET")
 
 	// Realtime communication
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
 	r.HandleFunc("/realtime/auth", realtime.Auth).Methods("POST")
 	r.Handle("/socket.io/", Server)
+
+	//api documentation
+	r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.FileServer(http.Dir("./api/"))))
 
 	// Home
 	http.Handle("/", r)

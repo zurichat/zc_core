@@ -14,4 +14,5 @@ require (
 	github.com/twinj/uuid v1.0.0
 	go.mongodb.org/mongo-driver v1.7.1
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
+	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
 )
