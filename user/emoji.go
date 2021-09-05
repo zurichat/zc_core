@@ -2,15 +2,16 @@ package user
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"zuri.chat/zccore/utils"
 )
 
 type emoji struct {
-	UserFirstName string `bson:"first_name"`
-	UserLastName  string `bson:"last_name"`
-	Emoji         []byte `bson:"emoji"`
+	UserID string `bson:"user_id"`
+	OrgID  string `bson:"organization_id"`
+	Emoji  []byte `bson:"emoji"`
 }
 
 func EmojiCreator(writer http.ResponseWriter, request *http.Request) {
@@ -19,10 +20,35 @@ func EmojiCreator(writer http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, writer)
 	}
+
+	filter := make(map[string]interface{})
+	filter["_id"] = request.FormValue("user_id")
+
+	res, err := utils.GetMongoDbDoc("users", filter)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, writer)
+		return
+	}
+	if res == nil {
+		utils.GetError(errors.New("There is no user here"), http.StatusBadRequest, writer)
+		return
+	}
+
+	workspaceId := request.FormValue("organization_id")
+	workspacesInter := res["workspace_profiles"]
+	workspaces := workspacesInter.([]*UserWorkspaceProfile)
+	for _, wp := range workspaces {
+		if wp.OrganizationID == workspaceId {
+			break
+		}
+		utils.GetError(errors.New("There is no you are not here"), http.StatusBadRequest, writer)
+		return
+	}
+
 	newEmoji := emoji{
-		UserFirstName: request.FormValue("first_name"),
-		UserLastName:  request.FormValue("last_name"),
-		Emoji:         getFormFile(writer, request),
+		UserID: request.FormValue("user_id"),
+		OrgID:  workspaceId,
+		Emoji:  getFormFile(writer, request),
 	}
 
 	CreateEmoji(newEmoji)
