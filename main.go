@@ -33,10 +33,13 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/auth/login", auth.LoginIn).Methods("POST")
 
 	// Organisation
-	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
 	r.HandleFunc("/organizations", organizations.Create).Methods("POST")
 	r.HandleFunc("/organizations", organizations.GetOrganizations).Methods("GET")
+	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
 	r.HandleFunc("/organizations/{id}", organizations.DeleteOrganization).Methods("DELETE")
+	r.HandleFunc("/organizations/{id}/plugin", organizations.AddOrganizationPlugin).Methods("POST")
+	r.HandleFunc("/organizations/{id}/plugins", organizations.GetOrganizationPlugins).Methods("GET")
+
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)

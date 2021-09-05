@@ -96,6 +96,16 @@ type User struct {
 	PasswordResets    []*UserPasswordReset    `bson:"password_resets"`
 }
 
+
+
+// Struct that user can update directly
+type UserUpdate struct {
+	FirstName string `bson:"first_name" validate:"required,min=2,max=100" json:"first_name"`
+	LastName  string `bson:"last_name" validate:"required,min=2,max=100" json:"last_name"`
+	Phone     string `bson:"phone" validate:"required" json:"phone"`
+	Company   string `bson:"company" json:"company"`
+}
+
 // helper functions perform CRUD operations on user
 func findUserByID(ctx context.Context, id string) (*User, error) {
 	user := &User{}
@@ -141,12 +151,4 @@ func findUserProfile(ctx context.Context, userID, orgID string) (*UserWorkspaceP
 
 func createUserProfile(ctx context.Context, uw *UserWorkspaceProfile) error {
 	return nil
-}
-
-// Struct that user can update directly
-type UserUpdate struct {
-	FirstName string `bson:"first_name" validate:"required,min=2,max=100" json:"first_name"`
-	LastName  string `bson:"last_name" validate:"required,min=2,max=100" json:"last_name"`
-	Phone     string `bson:"phone" validate:"required" json:"phone"`
-	Company   string `bson:"company" json:"company"`
 }
