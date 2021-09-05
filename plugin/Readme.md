@@ -19,4 +19,4 @@ To create a plugin, go to the following endpoint with the following data
 
 ```
 Every field here is required, else validation error will occur.
-After a success message is received, i created a mock fucnction to simulate time it takes to approve a plugin. It takes 10 seconds before the plugin can be listed in the marketplace.
+After a success message is received, the plugin is the approved to be listed on marketplace. It takes 10 seconds before the plugin can be listed in the marketplace.
