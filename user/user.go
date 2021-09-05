@@ -144,38 +144,40 @@ func UpdateUser(response http.ResponseWriter, request *http.Request) {
 	collectionName := "users"
 	userExist, err := utils.GetMongoDbDoc(collectionName, bson.M{"_id": objID})
 	if err != nil {
-		utils.GetError(errors.New("User does not exist"), http.StatusNotFound, response)
+		utils.GetError(errors.New("user does not exist"), http.StatusNotFound, response)
 		return
 	}
-	if userExist != nil {
-		var user UserUpdate
-		if err := utils.ParseJsonFromRequest(request, &user); err != nil {
-			utils.GetError(errors.New("bad update data"), http.StatusUnprocessableEntity, response)
-			return
-		}
+	if userExist == nil {
+		utils.GetError(errors.New("user does not exist"), http.StatusBadRequest, response)
+		return
+	}
 
-		userMap, err := utils.StructToMap(user)
+	var user UserUpdate
+	if err := utils.ParseJsonFromRequest(request, &user); err != nil {
+		utils.GetError(errors.New("bad update data"), http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	userMap, err := utils.StructToMap(user)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, response)
+	}
+
+	updateFields := make(map[string]interface{})
+	for key, value := range userMap {
+		if value != "" {
+			updateFields[key] = value
+		}
+	}
+	if len(updateFields) == 0 {
+		utils.GetError(errors.New("empty/invalid user input data"), http.StatusBadRequest, response)
+		return
+	} else {
+		updateRes, err := utils.UpdateOneMongoDbDoc(collectionName, userID, updateFields)
 		if err != nil {
-			utils.GetError(err, http.StatusInternalServerError, response)
-		}
-
-		updateFields := make(map[string]interface{})
-		for key, value := range userMap {
-			if value != "" {
-				updateFields[key] = value
-			}
-		}
-		if len(updateFields) == 0 {
-			utils.GetError(errors.New("empty/invalid user input data"), http.StatusBadRequest, response)
+			utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, response)
 			return
-		} else {
-			updateRes, err := utils.UpdateOneMongoDbDoc(collectionName, userID, updateFields)
-			if err != nil {
-				utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, response)
-				return
-			}
-			utils.GetSuccess("user successfully updated", updateRes, response)
 		}
-
+		utils.GetSuccess("user successfully updated", updateRes, response)
 	}
 }
