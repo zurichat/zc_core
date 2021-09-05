@@ -12,6 +12,7 @@ import (
 	"github.com/joho/godotenv"
 	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/data"
+	"zuri.chat/zccore/marketplace"
 	"zuri.chat/zccore/messaging"
 	"zuri.chat/zccore/organizations"
 	"zuri.chat/zccore/plugin"
@@ -42,18 +43,17 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/url", organizations.UpdateUrl).Methods("PATCH")
   r.HandleFunc("/organizations/{id}/name", organizations.ChangeOrganizationName).Methods("PATCH")
 
+
 	// Data
-	r.HandleFunc("/data/write", data.WriteData).Methods("POST", "PUT", "DELETE")
+	r.HandleFunc("/data/write", data.WriteData)
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
 
 	// Plugins
-	r.HandleFunc("/plugin/register", plugin.Register).Methods("POST")
-	r.HandleFunc("/plugin/{id}", plugin.GetByID).Methods("GET")
+	r.HandleFunc("/plugins/register", plugin.Register).Methods("POST")
 
 	// Marketplace
-	//r.HandleFunc("/marketplace/plugins", marketplace.GetAllApprovedPlugins).Methods("GET")
-	//r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetOneApprovedPlugin).Methods("GET")
-	//r.HandleFunc("/marketplace/install", marketplace.InstallPluginToOrg).Methods("POST")
+	r.HandleFunc("/marketplace/plugins", marketplace.GetAllPlugins).Methods("GET")
+	r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetPlugin).Methods("GET")
 
 	// Users
 	r.HandleFunc("/users", user.Create).Methods("POST")
@@ -87,7 +87,7 @@ func main() {
 
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Printf("Error loading .env file: %v", err)
 	}
 
 	fmt.Println("Environment variables successfully loaded. Starting application...")
@@ -105,7 +105,7 @@ func main() {
 	r := Router(Server)
 
 	srv := &http.Server{
-		Handler:      r,
+		Handler:      LoggingMiddleware(r),
 		Addr:         ":" + port,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
@@ -137,4 +137,25 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	// http.HandleFunc("/v1/welcome", Index)
 	fmt.Fprintf(w, "Welcome to Zuri Core Index")
+}
+
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (lrw *loggingResponseWriter) WriteHeader(code int) {
+	lrw.statusCode = code
+	lrw.ResponseWriter.WriteHeader(code)
+}
+
+func LoggingMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		lrw := &loggingResponseWriter{w, 200}
+		start := time.Now()
+		h.ServeHTTP(lrw, r)
+		end := time.Now()
+		duration := end.Sub(start)
+		log.Printf("[%s] | %s | %d | %dms\n", r.Method, r.URL.Path, lrw.statusCode, duration.Milliseconds())
+	})
 }
