@@ -1,0 +1,890 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Zuri Chat Core API
+  description: Zuri Chat is an open source slack clone. However, it offers a lot more functionality via a plugin system where each room can be provided by a different plugin provider.
+  contact:
+    email: developer@zuri.chat
+servers:
+  - description: Zuri Chat Core API
+    url: 'https://api.zuri.chat/v1'
+tags:
+- name: auth
+  description: Controls user registration, login and password recovery
+paths:
+  /auth/register:
+    post:
+      tags:
+      - auth
+      description: Gets user details and creates a record for the user in the database
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      responses:
+        "201":
+          description: User successfully registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      tags:
+      - auth
+      description: Checks if user is registered and is using the right credentials, and returns user data and token on success
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/login_data'
+        required: true
+      responses:
+        "200":
+          description: User logged in successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        default:
+          description: Login attempt unsuccessful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+
+  /users/{user_id}:
+    put:
+      summary: Updates the details of a user
+      security:
+        - bearerAuth: [] 
+      parameters:
+        - $ref: '#/components/parameters/user_id'
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+
+      tags:
+        - Users
+
+      responses:
+        '200':
+          description: User was successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+        '404':
+          description: No user with the specified user_id was found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '500':
+          description: Someting went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      summary: Retrieves the information about a user
+      security:
+        - bearerAuth: [] 
+      parameters:
+        - $ref: '#/components/parameters/user_id'
+
+      responses:
+        '200':
+          description: Returns the full info about a user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+        '404':
+          description: No user with the specified user_id was found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '500':
+          description: Something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+      tags:
+        - Users
+
+    delete:
+      summary: Deactivates a user's account
+      security:
+        - bearerAuth: [] 
+      parameters:
+        - $ref: '#/components/parameters/user_id'
+
+      tags:
+        - Users
+
+      responses:
+        '204':
+          description: User was successfully deactivated
+
+        '404':
+          description: No user with the specified user_id was found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '500':
+          description: Something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/{user_id}/verify:
+    get:
+      summary: Sends an email verification link to a user
+      security:
+        - bearerAuth: [] 
+      parameters:
+        - $ref: '#/components/parameters/user_id'
+
+      responses:
+        '204':
+          description: Email verification code successfully sent
+
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '403':
+          description: Forbidden, the requesting user's _id doesn't match the provided user_id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+      tags:
+        - Users
+
+    patch:
+      summary: Verifies a user's email address and updates their verification status
+      description: Code should be the otp in the email verification link recieved by the user
+      security:
+        - bearerAuth: [] 
+      parameters:
+        - $ref: '#/components/parameters/user_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmail'
+
+      responses:
+        '200':
+          description: The user's email has been verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+        '400':
+          description: Invalid email verification code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+      tags:
+        - Users
+
+
+  /organizations:
+    get:
+      tags:
+        - Organisations
+      summary: Displays a list of organizations
+      security:
+        - bearerAuth: [] 
+      responses:
+        '200':
+          description: Successfuly returned list of organizations, including an empty array if there are no organizations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Organization'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+        - Organisations
+      summary: Create an organization
+      security:
+        - bearerAuth: [] 
+      requestBody:
+        description: The structure for the entire request
+        content:
+          'application/json':
+            schema:
+              properties:
+                user_id:
+                  type: integer
+                  description: This is the id of the owner(creator) of the organization
+                  example: 2
+                name:
+                  type: string
+                  description: Name of the organization
+                  example: 'hng@email.com'
+                email:
+                  type: string
+                  description: Email of the organization
+                  example: 'hng@email.com'
+                organization_logo_url:
+                  type: string
+                  description: Url of organization logo
+                  example: 'http://api.zuri.chat/media/fddpofdg.svg'
+                organization_settings:
+                  type: string
+                  description: Json object of organization settings
+                  example: {"global_settings": {"allow_user_add_plugins": true, "allow_only_admin_invite": true}, "plugin_settings": {"chess_plugin": {"allow_in_every_channel": false}}}
+
+      responses:
+        '201':
+          description: Organization successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+
+        '401':
+          description: Unauthorized
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Bad Request, e.g wrong user id
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /organizations/{organization_id}:
+    get: 
+      tags:
+        - Organisations
+      summary: Get an organization
+      security:
+        - bearerAuth: [] 
+      parameters:
+        - $ref: '#/components/parameters/organization_id'
+      responses:
+        '200':
+          description: Organization successfully returned
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '401':
+          description: Unauthorized
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Bad Request, e.g wrong user id
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+    put: 
+      tags:
+        - Organisations
+      summary: Update organization information
+      security:
+        - bearerAuth: [] 
+      parameters:
+        - $ref: '#/components/parameters/organization_id'
+      requestBody:
+        description: The structure for the entire request
+        content:
+          'application/json':
+              schema:
+                $ref: '#/components/schemas/Organization'
+
+      responses:
+        '200':
+          description: Organization successfully returned
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '401':
+          description: Unauthorized
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Bad Request, e.g wrong user id
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /organizations/{organization_id}/users:
+    get: 
+      tags:
+        - Organisations
+      summary: Get a list of users in an organization
+      security:
+        - bearerAuth: [] 
+      parameters:
+        - $ref: '#/components/parameters/organization_id'
+      responses:
+        '200':
+          description: Organization successfully returned
+          content:
+              'application/json':
+                schema:
+                  type: array
+                  $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Organization with organization_id not found
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+    post: 
+      tags:
+        - Organisations
+      summary: Add user to an organization
+      security:
+        - bearerAuth: [] 
+      parameters:
+        - $ref: '#/components/parameters/organization_id'
+      requestBody:
+        description: The structure for the entire request
+        content:
+          'application/json':
+            schema:
+              properties:
+                user_id:
+                  type: integer
+                  description: This is the id of the user to be added to the organization
+                  example: 2
+      responses:
+        '201':
+          description: Organization successfully returned
+          content:
+              'application/json':
+                schema:
+                  $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Bad Request
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /organizations/{organization_id}/users/{user_id}:
+    put:
+      tags:
+        - Organisations
+      summary: Update user
+      description: This endpoint will be used to update the user's organization information. e.g user roles and permissions
+      security:
+        - bearerAuth: [] 
+      parameters:
+        - $ref: '#/components/parameters/organization_id'
+        - $ref: '#/components/parameters/user_id'
+      requestBody:
+        description: The structure for the entire request
+        required: true
+        content:
+          'application/json':
+            schema:
+              properties:
+                data:
+                  type: string
+                  description: Data to be updated
+                  example: 2
+      responses:
+        '200':
+          description: User successfully updated
+          content:
+              'application/json':
+                schema:
+                  $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Bad Request
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete: 
+      tags:
+        - Organisations
+      summary: Delete user
+      description: Remove a user from an organization
+      security:
+        - bearerAuth: [] 
+      parameters:
+        - $ref: '#/components/parameters/organization_id'
+        - $ref: '#/components/parameters/user_id'
+      responses:
+        '200':
+          description: User successfully deleted
+          content:
+              'application/json':
+                schema:
+                  $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Bad Request
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+
+
+  /marketplace/apps:
+    get:
+      summary: Returns a paginated list of apps on the marketplace
+      operationId: listApps
+      tags:
+        - marketplace
+      parameters:
+        - name: search
+          in: query
+          description: use to filter by app names
+          required: false
+          schema:
+            type: string
+        - name: category
+          in: query
+          description: filter by category slug
+          required: false
+          schema:
+            type: string
+        - name: page-number
+          in: query
+          description: page to return
+          required: false
+          schema:
+            type: integer
+            format: int64
+            default: 1
+      responses:
+        '200':
+          description: List of Apps on marketplace
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - total
+                  - current_page
+                  - last_page
+                properties:
+                  data:      
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MarketplaceAppList'
+                  total:
+                    type: integer
+                    format: int64
+                  current_page:
+                    type: integer
+                    format: int64
+                  last_page:
+                    type: integer
+                    format: int64
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /marketplace/apps/{app_id}:
+    get:
+      summary: get single marketplace app details
+      operationId: singleApp
+      tags:
+        - marketplace
+      parameters:
+        - name: app_id
+          in: path
+          description: App Id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User was successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketplaceApp'
+
+        '404':
+          description: App not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /data:
+    post:
+      tags:
+      - Data
+      description: Saves data to the database
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/data'
+        required: true
+      responses:
+        "201":
+          description: Data save successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataSavedResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags:
+      - Data
+      description: Retrieves data from the database
+      parameters:
+        - in: path
+          name: dataID
+          description: provide the ID of the data to be retrieved. 
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataSavedResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+
+  parameters:
+    user_id:
+      in: path
+      name: user_id
+      required: true
+      schema:
+        type: string
+
+    organization_id:
+      in: path
+      name: organization_id
+      required: true
+      schema:
+        type: integer
+
+  schemas:
+    User:
+      type: object
+      properties:
+         first_name:
+           type: string
+         last_name:
+           type: string
+         phone_number:
+           type: number
+         password:
+           type: string
+         email:
+           type: string
+         email_verified:
+           type: boolean
+
+    Organization:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          example: 12
+        name:
+          type: string
+          example: 'HNG'
+        email:
+          type: string
+          example: 'hng@email.com'
+        organization_logo_url:
+          type: integer
+          example: 12
+        organization_settings:
+          type: string
+          example: {"global_settings": {"allow_user_add_plugins": true, "allow_only_admin_invite": true}, "plugin_settings": {"chess_plugin": {"allow_in_every_channel": false}}}
+
+    Error:
+      required:
+      - code
+      - message
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        metadata:
+          type: object
+
+    VerifyEmail:
+      type: object
+      properties:
+        code:
+          type: string
+
+    login_data:
+      required:
+      - email
+      - password
+      type: object
+      properties:
+        email:
+          type: string
+          pattern: ^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$
+          example: email@example.com
+        password:
+          type: string
+          example: Tgf23@E!yF0$
+
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          $ref:  "#/components/schemas/User"
+        token:
+          type: string
+          example: 3djfb313fi71ibrf9278754b2cbjhwbjab8e78873bcbjsbcjemwnenvrwejvVSGJWVjavibkwrejbvjiwu5793489t3fibjsbac
+
+
+    RegistrationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+
+    MarketplaceAppList:
+      type: object
+      required:
+        - id
+        - name
+        - slug
+        - short_description
+        - categories
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+          pattern: '^[a-z0-9-]+$'
+        short_description:
+          type: string
+        categories:
+          type: array
+          items:
+              type: string
+              description: category slug
+
+    MarketplaceApp:
+      type: object
+      required:
+        - id
+        - name
+        - slug
+        - description
+        - categories
+        - features
+        - permissions
+        - security_compliace
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+          pattern: '^[a-z0-9-]+$'
+        description:
+          type: string
+        categories:
+          type: array
+          items:
+              type: string
+              description: category slug
+        features:
+          type: array
+        permissions:
+          type: object
+          description: what the app will be able to do on zuri chat
+        security_compliace:
+          type: array
+          items:
+            type: object
+            description: 'would contain keys like: general, privacy and data governance, certifications and compliance, security, 0auth scopes'
+
+    data:
+        type: object
+
+
+    DataSavedResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
