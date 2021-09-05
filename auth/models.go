@@ -9,14 +9,14 @@ import (
 )
 
 type Authentication struct {
-	Email		string		`json:"email" validate:"required,email"`
-	Password	string		`json:"password" validate:"required"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
 }
 
 type Token struct {
-	Email		string		`json:"email"`
-	TokenString string		`json:"token"`
-	OrganizationID string 	`json:"org_id"`
+	Email          string `json:"email"`
+	TokenString    string `json:"token"`
+	OrganizationID string `json:"org_id"`
 }
 
 // Method to compare password
