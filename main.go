@@ -65,6 +65,9 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/realtime/auth", realtime.Auth).Methods("POST")
 	r.Handle("/socket.io/", Server)
 
+	//api documentation
+	r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.FileServer(http.Dir("./api/"))))
+
 	// Home
 	http.Handle("/", r)
 
