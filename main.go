@@ -41,7 +41,9 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/plugins", organizations.AddOrganizationPlugin).Methods("POST")
 	r.HandleFunc("/organizations/{id}/plugins", organizations.GetOrganizationPlugins).Methods("GET")
 	r.HandleFunc("/organizations/{id}/url", organizations.UpdateUrl).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/name", organizations.ChangeOrganizationName).Methods("PATCH")
+    r.HandleFunc("/organizations/{id}/name", organizations.ChangeOrganizationName).Methods("PATCH")
+    r.HandleFunc("/organizations/{id}/members", organizations.CreateMember).Methods("POST")
+    r.HandleFunc("/organizations/{id}/members", organizations.GetMembers).Methods("GET")
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
@@ -57,7 +59,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	// Users
 	r.HandleFunc("/users", user.Create).Methods("POST")
 	r.HandleFunc("/users/{user_id}", user.UpdateUser).Methods("PATCH")
-	r.HandleFunc("/users/{user_id}", user.FindUserByID).Methods("GET")
+	r.HandleFunc("/users/{user_id}", user.GetUser).Methods("GET")
 	r.HandleFunc("/users/{user_id}", user.DeleteUser).Methods("DELETE")
 	r.HandleFunc("/users/search/{query}", user.SearchOtherUsers).Methods("GET")
 	r.HandleFunc("/users", user.GetUsers).Methods("GET")
@@ -132,9 +134,9 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// should redirect permanently to the docs page
 func Index(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	// http.HandleFunc("/v1/welcome", Index)
 	fmt.Fprintf(w, "Welcome to Zuri Core Index")
 }
 

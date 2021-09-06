@@ -13,7 +13,7 @@ const (
 )
 
 type Organization struct {
-	_id       string                   `json:"id" bson:"_id"`
+	ID        string                   `json:"id" bson:"_id"`
 	Name      string                   `json:"name" bson:"name"`
 	Email     string                   `json:"email" bson:"email"`
 	CreatorID string                   `json:"creator_id" bson:"creator_id"`
@@ -51,4 +51,26 @@ type OrganizationAdmin struct {
 
 func GetOrgPluginCollectionName(orgName string) string {
 	return strings.ToLower(orgName) + "_" + InstalledPluginsCollectionName
+}
+
+// type Social struct {
+// 	ID    primitive.ObjectID `json:"id" bson:"id"`
+// 	url   string             `json:"url" bson:"url"`
+// 	title string             `json:"title" bson:"title"`
+// }
+
+type Member struct {
+	ID          string    `json:"id" bson:"_id"`
+	OrgId		primitive.ObjectID `json:"org_id" bson:"org_id"`
+	Files       []string  `json:"files" bson:"files"`
+	ImageURL    string    `json:"image_url" bson:"image_url"`
+	Name        string    `json:"name" bson:"name"`
+	Email       string    `json:"email" bson:"email"`
+	DisplayName string    `json:"display_name" bson:"display_name"`
+	Bio         string    `json:"bio" bson:"bio"`
+	Pronouns    string    `json:"pronouns" bson:"pronouns"`
+	Phone       string    `json:"phone" bson:"phone"`
+	TimeZone    string    `json:"time_zone" bson:"time_zone"`
+	JoinedAt    time.Time `json:"joined_at" bson:"joined_at"`
+	// Socials     Social    `json:"socials" bson:"socials"`
 }
