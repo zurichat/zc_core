@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -8,8 +9,10 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
+	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 )
 
@@ -28,13 +31,26 @@ type Token struct {
 	Email			string					`json:"email"`
 	TokenString 	string					`json:"token"`
 	UserID			primitive.ObjectID		`json:"user_id"`
-	OrganizationID 	primitive.ObjectID		`json:"org_id,omitempty"`
 }
 
 // Method to compare password
 func CheckPassword(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
+}
+
+func fetchUserByEmail(email string) (*user.User, error) {
+	user := &user.User{}
+	DbName := os.Getenv("DB_NAME")
+	userCollection, err := utils.GetMongoDbCollection(DbName, user_collection)
+	if err != nil {
+		return user, err
+	}
+	filter := bson.M{"email": email}
+	ctx := context.TODO()
+	result := userCollection.FindOne(ctx, filter)
+	err = result.Decode(&user)
+	return user, err
 }
 
 // Generate token
