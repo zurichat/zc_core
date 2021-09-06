@@ -39,7 +39,7 @@ func CheckPassword(password, hash string) bool {
 
 // Generate token
 func GenerateJWT(email, org_id string) (string, error) {
-	SECRET_KEY, _ := os.LookupEnv("SECRET_KEY")
+	SECRET_KEY, _ := os.LookupEnv("AUTH_SECRET_KEY")
 	if SECRET_KEY == "" { SECRET_KEY = secretKey }
 	
 	var signKey = []byte(SECRET_KEY)
@@ -70,7 +70,7 @@ func IsAuthorized(nextHandler http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 				
-		SECRET_KEY, _ := os.LookupEnv("SECRET_KEY")
+		SECRET_KEY, _ := os.LookupEnv("AUTH_SECRET_KEY")
 		if SECRET_KEY == "" { SECRET_KEY = secretKey }
 
 		var signKey = []byte(SECRET_KEY)
