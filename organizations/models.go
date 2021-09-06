@@ -28,11 +28,11 @@ type Organization struct {
 
 type OrgPluginBody struct {
 	PluginId string `json:"plugin_id"`
-	UserId string   `json:"user_id"`
+	UserId   string `json:"user_id"`
 }
 
 type InstalledPlugin struct {
-	_id         string    			   `json:"id" bson:"_id"`
+	_id         string                 `json:"id" bson:"_id"`
 	PluginID    string                 `json:"plugin_id" bson:"plugin_id"`
 	Plugin      map[string]interface{} `json:"plugin" bson:"plugin"`
 	AddedBy     string                 `json:"added_by" bson:"added_by"`

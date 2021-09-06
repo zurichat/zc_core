@@ -1,10 +1,11 @@
-package user
+package organizations
 
 import (
 	"context"
 	"errors"
 	"net/http"
 
+	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 )
 
@@ -36,7 +37,7 @@ func EmojiCreator(writer http.ResponseWriter, request *http.Request) {
 
 	workspaceId := request.FormValue("organization_id")
 	workspacesInter := res["workspace_profiles"]
-	workspaces := workspacesInter.([]*UserWorkspaceProfile)
+	workspaces := workspacesInter.([]*user.UserWorkspaceProfile)
 	for _, wp := range workspaces {
 		if wp.OrganizationID == workspaceId {
 			break
