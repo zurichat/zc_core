@@ -105,7 +105,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // endpoint to find user by ID
-func FindUserByID(response http.ResponseWriter, request *http.Request) {
+func GetUser(response http.ResponseWriter, request *http.Request) {
 	// Find a user by user ID
 	response.Header().Set("content-type", "application/json")
 
@@ -184,13 +184,8 @@ func UpdateUser(response http.ResponseWriter, request *http.Request) {
 
 // get all users
 func GetUsers(response http.ResponseWriter, request *http.Request) {
-	// Find a user by user ID
 	response.Header().Set("content-type", "application/json")
 	collectionName := "users"
-	res, err := utils.GetMongoDbDoc(collectionName, nil)
-	if err != nil {
-		utils.GetError(errors.New("user not found"), http.StatusInternalServerError, response)
-		return
-	}
-	utils.GetSuccess("user retrieved successfully", res, response)
+	res, _ := utils.GetMongoDbDocs(collectionName, nil)
+	utils.GetSuccess("users retrieved successfully", res, response)
 }
