@@ -101,7 +101,8 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("User Deleted Succesfully", nil, w
+	utils.GetSuccess("User Deleted Succesfully", nil, w)
+}
 
 // endpoint to find user by ID
 func FindUserByID(response http.ResponseWriter, request *http.Request) {

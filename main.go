@@ -42,6 +42,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/plugins", organizations.GetOrganizationPlugins).Methods("GET")
 	r.HandleFunc("/organizations/{id}/url", organizations.UpdateUrl).Methods("PATCH")
   r.HandleFunc("/organizations/{id}/name", organizations.ChangeOrganizationName).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/administrators", organizations.CreateAdmin).Methods("POST")
 
 
 	// Data

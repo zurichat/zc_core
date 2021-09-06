@@ -45,6 +45,7 @@ type OrganizationAdmin struct {
 	ID             primitive.ObjectID `bson:"id"`
 	OrganizationID string             `bson:"organization_id"`
 	UserID         string             `bson:"user_id"`
+	Permission     string         `bson:"permission"`
 	CreatedAt      time.Time          `bson:"created_at"`
 	UpdatedAt      time.Time          `bson:"updated_at"`
 }
