@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -188,4 +189,52 @@ func GetUsers(response http.ResponseWriter, request *http.Request) {
 	collectionName := "users"
 	res, _ := utils.GetMongoDbDocs(collectionName, nil)
 	utils.GetSuccess("users retrieved successfully", res, response)
+}
+
+func AddAvater(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	collName := "Profile_pics"
+
+	params := mux.Vars(r)
+	userID := params["user_id"]
+	filter := make(map[string]interface{})
+	filter["user_id"] = userID
+
+	result, err := utils.GetMongoDbDoc(userID, filter)
+	workspaceId := params["org_id"]
+	workspaces := result["workspace_profiles"].(map[string]interface{})
+	for _, wpi := range workspaces {
+		wp := wpi.(UserWorkspaceProfile)
+		if wp.OrganizationID == workspaceId {
+			break
+		}
+		utils.GetError(errors.New("Workspace Id not found"), http.StatusNotFound, w)
+	}
+	file, _, err := r.FormFile("emoji")
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	buff := make([]byte, 1024)
+	_, err = file.Read(buff)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+	pic := ProfilePicture{
+		userId:      userID,
+		workspaceId: workspaceId,
+		pic:         buff,
+	}
+
+	coll := utils.GetCollection(collName)
+	data, _ := bson.Marshal(pic)
+	_, err = coll.InsertOne(context.Background(), data)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+	utils.GetSuccess("Picture added Succesfully", nil, w)
 }

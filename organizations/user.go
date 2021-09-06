@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+
 	"zuri.chat/zccore/user"
 
 	"github.com/gorilla/mux"
@@ -17,8 +18,8 @@ func GetMembers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	member_collection, org_collection := "members", "organizations"
-	orgId:= mux.Vars(r)["id"]
-	
+	orgId := mux.Vars(r)["id"]
+
 	pOrgId, err := primitive.ObjectIDFromHex(orgId)
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
@@ -101,7 +102,7 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check that member isn't already in the organization
-	memDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "email":newMember.Email})
+	memDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "email": newMember.Email})
 	if memDoc != nil {
 		fmt.Printf("organization %s has member with email %s!", orgId.String(), newMember.Email)
 		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)

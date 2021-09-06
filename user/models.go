@@ -14,6 +14,13 @@ const (
 	UserProfileCollectionName = "user_workspace_profiles"
 )
 
+type ProfilePicture struct {
+	ID          primitive.ObjectID
+	userId      string
+	workspaceId string
+	pic         []byte
+}
+
 type M map[string]interface{}
 
 type Status int
@@ -95,8 +102,6 @@ type User struct {
 	EmailVerification UserEmailVerification   `bson:"email_verification"`
 	PasswordResets    []*UserPasswordReset    `bson:"password_resets"`
 }
-
-
 
 // Struct that user can update directly
 type UserUpdate struct {
