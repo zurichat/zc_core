@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	NoAuthToken = errors.New("No Authorization header provided.")
-	TokenExp = errors.New("Token expired.")
+	NoAuthToken   = errors.New("No Authorization header provided.")
+	TokenExp      = errors.New("Token expired.")
 	NotAuthorized = errors.New("Not Authorized.")
 )
 
@@ -27,9 +27,9 @@ type Authentication struct {
 }
 
 type Token struct {
-	Email			string					`json:"email"`
-	TokenString 	string					`json:"token"`
-	UserID			primitive.ObjectID		`json:"user_id"`
+	Email       string             `json:"email"`
+	TokenString string             `json:"token"`
+	UserID      primitive.ObjectID `json:"user_id"`
 }
 
 // Method to compare password
@@ -52,8 +52,10 @@ func fetchUserByEmail(filter map[string]interface{}) (*user.User, error) {
 // Generate token
 func GenerateJWT(email, org_id string) (string, error) {
 	SECRET_KEY, _ := os.LookupEnv("AUTH_SECRET_KEY")
-	if SECRET_KEY == "" { SECRET_KEY = secretKey }
-	
+	if SECRET_KEY == "" {
+		SECRET_KEY = secretKey
+	}
+
 	var signKey = []byte(SECRET_KEY)
 
 	token := jwt.New(jwt.SigningMethodHS256)
@@ -81,16 +83,18 @@ func IsAuthorized(nextHandler http.HandlerFunc) http.HandlerFunc {
 			utils.GetError(NoAuthToken, http.StatusForbidden, w)
 			return
 		}
-				
+
 		SECRET_KEY, _ := os.LookupEnv("AUTH_SECRET_KEY")
-		if SECRET_KEY == "" { SECRET_KEY = secretKey }
+		if SECRET_KEY == "" {
+			SECRET_KEY = secretKey
+		}
 
 		var signKey = []byte(SECRET_KEY)
 		token, err := jwt.Parse(r.Header["Bearer"][0], func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 			}
-			return signKey, nil			
+			return signKey, nil
 		})
 
 		if err != nil {
@@ -100,7 +104,7 @@ func IsAuthorized(nextHandler http.HandlerFunc) http.HandlerFunc {
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 			// @TODO: work on this later.
-			fmt.Println(claims["authorized"], claims["email"], claims["user_id"]) 
+			fmt.Println(claims["authorized"], claims["email"], claims["user_id"])
 			nextHandler(w, r)
 		} else {
 			utils.GetError(NotAuthorized, http.StatusBadRequest, w)
