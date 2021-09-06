@@ -5,9 +5,7 @@ import (
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
-	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 )
 const (
@@ -35,14 +33,11 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	// var user user.User
-	user := &user.User{}
-	result, err := utils.GetMongoDbDoc(user_collection, bson.M{"email": authDetails.Email})
-	if err == nil && len(result) == 0 {
+	user, err := fetchUserByEmail(bson.M{"email": authDetails.Email})
+	if err != nil {
 		utils.GetError(UserNotFound, http.StatusBadRequest, response)
 		return
 	}
-	mapstructure.Decode(result, user)
 	// check password
 	check := CheckPassword(authDetails.Password, user.Password)
 	if !check {
@@ -56,11 +51,9 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-
 	token := &Token{
 		Email: user.Email,
 		UserID: user.ID,
-		// OrganizationID: "",
 		TokenString: vtoken,		
 	}
 	utils.GetSuccess("login successful", token, response)

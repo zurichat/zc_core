@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 	"zuri.chat/zccore/user"
@@ -39,16 +38,13 @@ func CheckPassword(password, hash string) bool {
 	return err == nil
 }
 
-func fetchUserByEmail(email string) (*user.User, error) {
+func fetchUserByEmail(filter map[string]interface{}) (*user.User, error) {
 	user := &user.User{}
-	DbName := os.Getenv("DB_NAME")
-	userCollection, err := utils.GetMongoDbCollection(DbName, user_collection)
+	userCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), user_collection)
 	if err != nil {
 		return user, err
 	}
-	filter := bson.M{"email": email}
-	ctx := context.TODO()
-	result := userCollection.FindOne(ctx, filter)
+	result := userCollection.FindOne(context.TODO(), filter)
 	err = result.Decode(&user)
 	return user, err
 }
