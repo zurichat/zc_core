@@ -2,7 +2,6 @@ package auth
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -16,11 +15,11 @@ const (
 	user_collection = "users"
 )
 
-var validate = validator.New()
-
-func printStruct(v interface{}) {
-	fmt.Printf("%+v\n", v)
-}
+var (
+	validate = validator.New()
+	UserNotFound = errors.New("User not found!")
+	InvalidCredentials = errors.New("Invalid login credentials, confirm and try again")
+)
 
 func LoginIn(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
@@ -40,18 +39,14 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 	user := &user.User{}
 	result, err := utils.GetMongoDbDoc(user_collection, bson.M{"email": authDetails.Email})
 	if err == nil && len(result) == 0 {
-		utils.GetError(errors.New("User not found!"), http.StatusBadRequest, response)
+		utils.GetError(UserNotFound, http.StatusBadRequest, response)
 		return
 	}
 	mapstructure.Decode(result, user)
 	// check password
 	check := CheckPassword(authDetails.Password, user.Password)
 	if !check {
-		utils.GetError(
-			errors.New("Invalid login credentials, confirm and try again"), 
-			http.StatusBadRequest, 
-			response,
-		)
+		utils.GetError(InvalidCredentials, http.StatusBadRequest, response)
 		return		
 	}
 
@@ -61,9 +56,11 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+
 	token := &Token{
 		Email: user.Email,
-		OrganizationID: "",
+		UserID: user.ID,
+		// OrganizationID: "",
 		TokenString: vtoken,		
 	}
 	utils.GetSuccess("login successful", token, response)
