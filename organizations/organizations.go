@@ -172,59 +172,59 @@ func ChangeOrganizationName(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// Create Organization Admin
 func CreateAdmin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	var newOrg Organization
-	collection, user_collection := "organizations", "users"
+	var newOrgAdmin OrganizationAdmin
+	admin_collection, user_collection := "admins", "users"
 
 	// Try to decode the request body into the struct. If there is an error,
 	// respond to the client with the error message and a 400 status code.
-	err := json.NewDecoder(r.Body).Decode(&newOrg)
+	err := json.NewDecoder(r.Body).Decode(&newOrgAdmin)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// validate that email is not empty and it meets the format
-	if !utils.IsValidEmail(newOrg.Email) {
-		utils.GetError(fmt.Errorf("invalid email format : %s", newOrg.Email), http.StatusInternalServerError, w)
-		return
-	}
-
-	// set default name if name is empty
-	if newOrg.Name == "" {
-		newOrg.Name = "ZuriWorkspace"
-	}
-
 	// confirm if user_id exists
-	objId, err := primitive.ObjectIDFromHex(newOrg.CreatorID)
+	objId, err := primitive.ObjectIDFromHex(newOrgAdmin.UserID)
 
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
 		return
 	}
 
+	// check if user does not exist
 	user, _ := utils.GetMongoDbDoc(user_collection, bson.M{"_id": objId})
 	if user == nil {
-		fmt.Printf("users with id %s exists!", newOrg.CreatorID)
+		fmt.Printf("user with id %s does not exists!", newOrgAdmin.UserID)
 		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
 		return
 	}
 
-	newOrg.URL = newOrg.Name + ".zuri.chat"
-	newOrg.CreatedAt = time.Now()
+
+	// confirm if user_id exists as an admin
+	result, _ := utils.GetMongoDbDoc(admin_collection, bson.M{"user_id": newOrgAdmin.UserID})
+	if result != nil {
+		fmt.Printf("user with id %s exists as an admin!", newOrgAdmin.UserID)
+		utils.GetError(errors.New("operation failed"), http.StatusBadRequest,w)
+		return
+	}
+
+	newOrgAdmin.CreatedAt = time.Now()
+	newOrgAdmin.Permission = "admin"
 
 	// convert to map object
 	var inInterface map[string]interface{}
-	inrec, _ := json.Marshal(newOrg)
+	inrec, _ := json.Marshal(newOrgAdmin)
 	json.Unmarshal(inrec, &inInterface)
 
 	// save organization
-	save, err := utils.CreateMongoDbDoc(collection, inInterface)
+	save, err := utils.CreateMongoDbDoc(admin_collection, inInterface)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
-	utils.GetSuccess("organization created", save, w)
+	utils.GetSuccess("organization admin created", save, w)
 }

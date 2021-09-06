@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	//"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 const (
@@ -42,12 +42,12 @@ type InstalledPlugin struct {
 }
 
 type OrganizationAdmin struct {
-	ID             primitive.ObjectID `bson:"id"`
-	OrganizationID string             `bson:"organization_id"`
-	UserID         string             `bson:"user_id"`
-	Permission     string         `bson:"permission"`
-	CreatedAt      time.Time          `bson:"created_at"`
-	UpdatedAt      time.Time          `bson:"updated_at"`
+	ID             string 			`json:"id" bson:"_id"`
+	OrganizationID string             `json:"organization_id" bson:"organization_id"`
+	UserID         string             `json:"user_id" bson:"user_id"`
+	Permission     string         `json:"permission" bson:"permission"`
+	CreatedAt      time.Time          `json:"created_at" bson:"created_at"`
+	UpdatedAt      time.Time          `json:"updated_at" bson:"updated_at"`
 }
 
 func GetOrgPluginCollectionName(orgName string) string {
