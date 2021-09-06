@@ -181,3 +181,16 @@ func UpdateUser(response http.ResponseWriter, request *http.Request) {
 		utils.GetSuccess("user successfully updated", updateRes, response)
 	}
 }
+
+// get all users
+func GetUsers(response http.ResponseWriter, request *http.Request) {
+	// Find a user by user ID
+	response.Header().Set("content-type", "application/json")
+	collectionName := "users"
+	res, err := utils.GetMongoDbDoc(collectionName, nil)
+	if err != nil {
+		utils.GetError(errors.New("user not found"), http.StatusInternalServerError, response)
+		return
+	}
+	utils.GetSuccess("user retrieved successfully", res, response)
+}

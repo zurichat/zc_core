@@ -1,22 +1,35 @@
 package auth
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"net/http"
+	"os"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
+	"zuri.chat/zccore/user"
+	"zuri.chat/zccore/utils"
+)
+
+var (
+	NoAuthToken = errors.New("No Authorization header provided.")
+	TokenExp = errors.New("Token expired.")
+	NotAuthorized = errors.New("Not Authorized.")
 )
 
 type Authentication struct {
-	Email		string		`json:"email" validate:"required,email"`
-	Password	string		`json:"password" validate:"required"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
 }
 
 type Token struct {
-	Email		string		`json:"email"`
-	TokenString string		`json:"token"`
-	OrganizationID string 	`json:"org_id"`
+	Email			string					`json:"email"`
+	TokenString 	string					`json:"token"`
+	UserID			primitive.ObjectID		`json:"user_id"`
 }
 
 // Method to compare password
@@ -25,9 +38,24 @@ func CheckPassword(password, hash string) bool {
 	return err == nil
 }
 
-// Generate JWT
+func fetchUserByEmail(filter map[string]interface{}) (*user.User, error) {
+	user := &user.User{}
+	userCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), user_collection)
+	if err != nil {
+		return user, err
+	}
+	result := userCollection.FindOne(context.TODO(), filter)
+	err = result.Decode(&user)
+	return user, err
+}
+
+// Generate token
 func GenerateJWT(email, org_id string) (string, error) {
-	var signKey = []byte(secretKey)
+	SECRET_KEY, _ := os.LookupEnv("AUTH_SECRET_KEY")
+	if SECRET_KEY == "" { SECRET_KEY = secretKey }
+	
+	var signKey = []byte(SECRET_KEY)
+
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 
@@ -44,4 +72,39 @@ func GenerateJWT(email, org_id string) (string, error) {
 	}
 
 	return tokenString, nil
+}
+
+// middleware to check if user is authorized
+func IsAuthorized(nextHandler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Header["Bearer"] == nil {
+			utils.GetError(NoAuthToken, http.StatusForbidden, w)
+			return
+		}
+				
+		SECRET_KEY, _ := os.LookupEnv("AUTH_SECRET_KEY")
+		if SECRET_KEY == "" { SECRET_KEY = secretKey }
+
+		var signKey = []byte(SECRET_KEY)
+		token, err := jwt.Parse(r.Header["Bearer"][0], func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+			}
+			return signKey, nil			
+		})
+
+		if err != nil {
+			utils.GetError(TokenExp, http.StatusBadRequest, w)
+			return
+		}
+
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			// @TODO: work on this later.
+			fmt.Println(claims["authorized"], claims["email"], claims["user_id"]) 
+			nextHandler(w, r)
+		} else {
+			utils.GetError(NotAuthorized, http.StatusBadRequest, w)
+			return
+		}
+	}
 }

@@ -26,7 +26,7 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	// Setup and init
 	r.HandleFunc("/", VersionHandler)
-	r.HandleFunc("/v1/welcome", Index).Methods("GET")
+	r.HandleFunc("/v1/welcome", auth.IsAuthorized(Index)).Methods("GET")
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
 
 	// Authentication
@@ -44,6 +44,7 @@ func Router(Server *socketio.Server) *mux.Router {
   r.HandleFunc("/organizations/{id}/name", organizations.ChangeOrganizationName).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/administrators", organizations.CreateAdmin).Methods("POST")
 
+	r.HandleFunc("/organizations/{id}/name", organizations.ChangeOrganizationName).Methods("PATCH")
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
@@ -58,11 +59,11 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	// Users
 	r.HandleFunc("/users", user.Create).Methods("POST")
-	// r.HandleFunc("/users/{id}", user.FindUserByID).Methods("GET")
 	r.HandleFunc("/users/{user_id}", user.UpdateUser).Methods("PATCH")
 	r.HandleFunc("/users/{user_id}", user.FindUserByID).Methods("GET")
 	r.HandleFunc("/users/{user_id}", user.DeleteUser).Methods("DELETE")
 	r.HandleFunc("/users/search/{query}", user.SearchOtherUsers).Methods("GET")
+	r.HandleFunc("/users", user.GetUsers).Methods("GET")
 
 	// Realtime communication
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
