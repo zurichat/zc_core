@@ -26,7 +26,7 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	// Setup and init
 	r.HandleFunc("/", VersionHandler)
-	r.HandleFunc("/v1/welcome", Index).Methods("GET")
+	r.HandleFunc("/v1/welcome", auth.IsAuthorized(Index)).Methods("GET")
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
 
 	// Authentication
