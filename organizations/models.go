@@ -47,14 +47,19 @@ type Organization struct {
 	UpdatedAt time.Time                `json:"updated_at" bson:"updated_at"`
 }
 
+type OrgPluginBody struct {
+	PluginId string `json:"plugin_id"`
+	UserId string   `json:"user_id"`
+}
+
 type InstalledPlugin struct {
-	ID          primitive.ObjectID     `bson:"_id"`
-	PluginID    string                 `bson:"plugin_id"`
-	Plugin      map[string]interface{} `bson:"plugin"`
-	AddedBy     string                 `bson:"added_by"`
-	ApprovedBy  string                 `bson:"approved_by"`
-	InstalledAt time.Time              `bson:"installed_at"`
-	UpdatedAt   time.Time              `bson:"updated_at"`
+	_id         string    			   `json:"id" bson:"_id"`
+	PluginID    string                 `json:"plugin_id" bson:"plugin_id"`
+	Plugin      map[string]interface{} `json:"plugin" bson:"plugin"`
+	AddedBy     string                 `json:"added_by" bson:"added_by"`
+	ApprovedBy  string                 `json:"approved_by" bson:"approved_by"`
+	InstalledAt time.Time              `json:"installed_at" bson:"installed_at"`
+	UpdatedAt   time.Time              `json:"updated_at" bson:"updated_at"`
 }
 
 type OrganizationAdmin struct {

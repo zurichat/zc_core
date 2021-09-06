@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"zuri.chat/zccore/utils"
 )
 
@@ -17,10 +18,20 @@ type M map[string]interface{}
 // e.g ?$gte:first_name="meh" or ($gte__first_name="meh")
 // We will split the field
 type MongoQuery struct {
-	LT  string
-	GT  string
-	GTE string
-	LTE string
+	Lt        string
+	Gt        string
+	Gte       string
+	Lte       string
+	In        string
+	Nin       string
+	Eq        string
+	Ne        string
+	And       string
+	Or        string
+	Not       string
+	Nor       string
+	All       string
+	ElemMatch string
 }
 
 func ReadData(w http.ResponseWriter, r *http.Request) {
@@ -28,14 +39,14 @@ func ReadData(w http.ResponseWriter, r *http.Request) {
 	pluginId, collName, orgId := vars["plugin_id"], vars["coll_name"], vars["org_id"]
 
 	if !pluginHasCollection(pluginId, orgId, collName) {
-		utils.GetError(errors.New("record not found"), http.StatusNotFound, w)
+		utils.GetError(errors.New("collection not found"), http.StatusNotFound, w)
 		return
 	}
-	// proceed to perform read operation taking queries passed from request
-	// queries are created via query parameters in the url
+
 	prefixedCollName := getPrefixedCollectionName(pluginId, orgId, collName)
-	filter := parseURLQuery(r)
+	filter := parseURLQuery(r) // queries will have to be sanitized
 	docs, err := utils.GetMongoDbDocs(prefixedCollName, filter)
+
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
@@ -51,6 +62,10 @@ func getPrefixedCollectionName(pluginID, orgID, collName string) string {
 func parseURLQuery(r *http.Request) map[string]interface{} {
 	m := M{}
 	for k, v := range r.URL.Query() {
+		if k == "_id" {
+			m[k], _ = primitive.ObjectIDFromHex(v[0])
+			continue
+		}
 		m[k] = v[0]
 	}
 	return m
