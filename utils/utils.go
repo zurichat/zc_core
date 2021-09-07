@@ -114,6 +114,28 @@ func TokenIsValid(utoken string, user_id string) (bool, string, error) {
 
 	claims, _ := token.Claims.(jwt.MapClaims)
 	fmt.Println(claims["user_id"])
+	return true, user_id, nil
+
+}
+
+func TokenAgainstUserId(utoken string, user_id string) (bool, string, error) {
+	SECRET_KEY, _ := os.LookupEnv("AUTH_SECRET_KEY")
+
+	var signKey = []byte(SECRET_KEY)
+	token, err := jwt.Parse(utoken, func(token *jwt.Token) (interface{}, error) {
+
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+		return signKey, nil
+	})
+
+	if err != nil {
+		return false, "Token Expired", err
+	}
+
+	claims, _ := token.Claims.(jwt.MapClaims)
+	fmt.Println(claims["user_id"])
 
 	if user_id == claims["user_id"] {
 		return true, user_id, nil
