@@ -114,7 +114,7 @@ func TokenIsValid(utoken string) (bool, string, error) {
 
 	claims, _ := token.Claims.(jwt.MapClaims)
 	fmt.Println(claims["user_id"])
-	return true, claims["user_id"], nil
+	return true, fmt.Sprintf("%v", claims["user_id"]), nil
 
 }
 
