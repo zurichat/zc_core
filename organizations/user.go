@@ -117,3 +117,34 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 
 	utils.GetSuccess("Member created successfully", createdMember, w)
 }
+
+// Delete a member from an organizatin
+func DeleteMember(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	member_collection, org_collection := "members", "organizations"
+	orgId:= mux.Vars(r)["id"]
+	
+	pOrgId, err := primitive.ObjectIDFromHex(orgId)
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+	
+	// get organization
+	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": pOrgId})
+	if orgDoc == nil {
+		fmt.Printf("org with id %s doesn't exist!", orgId)
+		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
+		return
+	}
+	
+	memberId:= mux.Vars(r)["id"]
+	orgMembers, err := utils.DeleteOneMongoDoc(member_collection, memberId)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("Members deleted successfully", orgMembers, w)
+}
