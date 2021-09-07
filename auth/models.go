@@ -63,7 +63,7 @@ func GenerateJWT(user_id, email, org_id string) (string, error) {
 	claims["email"] = email
 	claims["user_id"] = user_id
 	// claims["org_id"] = org_id
-	claims["exp"] = time.Now().Add(time.Minute * 30).Unix()
+	claims["exp"] = time.Now().Add(time.Hour * 12).Unix()
 
 	tokenString, err := token.SignedString(signKey)
 

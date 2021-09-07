@@ -8,14 +8,15 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"zuri.chat/zccore/utils"
 )
+
 const (
-	secretKey = "5d5c7f94e29ba11f6822a2be310d3af4"
+	secretKey       = "5d5c7f94e29ba11f6822a2be310d3af4"
 	user_collection = "users"
 )
 
 var (
-	validate = validator.New()
-	UserNotFound = errors.New("User not found!")
+	validate           = validator.New()
+	UserNotFound       = errors.New("User not found!")
 	InvalidCredentials = errors.New("Invalid login credentials, confirm and try again")
 )
 
@@ -27,7 +28,7 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 		utils.GetError(err, http.StatusUnprocessableEntity, response)
 		return
 	}
-	
+
 	if err := validate.Struct(authDetails); err != nil {
 		utils.GetError(err, http.StatusBadRequest, response)
 		return
@@ -42,7 +43,7 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 	check := CheckPassword(authDetails.Password, user.Password)
 	if !check {
 		utils.GetError(InvalidCredentials, http.StatusBadRequest, response)
-		return		
+		return
 	}
 
 	vtoken, err := GenerateJWT(user.ID.Hex(), authDetails.Email, "")
@@ -52,9 +53,9 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 	}
 
 	token := &Token{
-		Email: user.Email,
-		UserID: user.ID,
-		TokenString: vtoken,		
+		Email:       user.Email,
+		UserID:      user.ID,
+		TokenString: vtoken,
 	}
 	utils.GetSuccess("login successful", token, response)
 }
