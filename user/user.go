@@ -1,134 +1,198 @@
 package user
 
 import (
-	"context"
+	"errors"
+	"fmt"
+	"net/http"
 	"time"
 
+	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"golang.org/x/crypto/bcrypt"
 	"zuri.chat/zccore/utils"
 )
 
-type M map[string]interface{}
-
-type Status int
-
-const (
-	Active Status = iota
-	Suspended
-	Disabled
+var (
+	EMAIL_NOT_VALID = errors.New("Email address is not valid")
+	HASHING_FAILED = errors.New("Failed to hashed password")
 )
 
-type Role int
-
-const (
-	Super Role = iota
-	Admin
-	Member
-)
-
-// The struct fields should be exported, don't you think? encoding and decoding to JSON might not work.
-type WorkSpaceProfile struct {
-	DisplayPicture string
-	Status         Status
-	Bio            string
-	Timezone       string
-	Password       string `bson:"password" validate:"required,min=6"`
-	PasswordResets []*UserPasswordReset
-	Roles          []*Role
+// Method to hash password
+func GenerateHashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
 }
 
-type UserWorkspace struct {
-	ID             primitive.ObjectID `bson:"_id"`
-	OrganizationID string             // should this be an ID instead? Yes, objectID or string
-	Profile        WorkSpaceProfile
-}
+// An end point to create new users
+func Create(response http.ResponseWriter, request *http.Request) {
+	response.Header().Add("content-type", "application/json")
+	user_collection := "users"
 
-type UserRole struct {
-	ID   primitive.ObjectID `bson:"_id"`
-	Role Role
-}
+	var user User
 
-type UserSettings struct {
-	Role []UserRole
-}
-
-type UserEmailVerification struct {
-	Verified  bool      `bson:"verified"`
-	Token     string    `bson:"token"`
-	ExpiredAt time.Time `bson:"expired_at"`
-}
-
-type UserPasswordReset struct {
-	ID        primitive.ObjectID `bson:"_id"`
-	IPAddress string
-	Token     string
-	ExpiredAt time.Time `bson:"expired_at"`
-	UpdatedAt time.Time `bson:"updated_at"`
-	CreatedAt time.Time `bson:"created_at"`
-}
-
-type User struct {
-	ID                primitive.ObjectID `bson:"_id"`
-	FirstName         string             `bson:"first_name" validate:"required,min=2,max=100"`
-	LastName          string             `bson:"last_name" validate:"required,min=2,max=100"`
-	Email             string             `bson:"email" validate:"email,required"`
-	Password          string             `bson:"password" validate:"required,min=6"`
-	Phone             string             `bson:"phone" validate:"required"`
-	Status            Status
-	Company           string `bson:"company"`
-	Settings          *UserSettings
-	Timezone          string
-	CreatedAt         time.Time `bson:"created_at"`
-	UpdatedAt         time.Time `bson:"updated_at"`
-	DeletedAt         time.Time `bson:"deleted_at"`
-	Workspaces        []*UserWorkspace
-	EmailVerification UserEmailVerification
-	PasswordResets    []*UserPasswordReset
-}
-
-// helper functions perform CRUD operations on user
-func FindUserByID(ctx context.Context, id string) (*User, error) {
-	user := &User{}
-	collectionName := "users"
-	objID, _ := primitive.ObjectIDFromHex(id)
-	collection := utils.GetCollection(collectionName)
-	res := collection.FindOne(ctx, bson.M{"_id": objID})
-	if err := res.Decode(user); err != nil {
-		return nil, err
+	err := utils.ParseJsonFromRequest(request, &user)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, response)
+		return
 	}
-	return user, nil
-}
+	if !utils.IsValidEmail(user.Email) {
+		utils.GetError(EMAIL_NOT_VALID, http.StatusBadRequest, response)
+		return
+	}
+	// confirm if user_email exists
+	result, _ := utils.GetMongoDbDoc(user_collection, bson.M{"email": user.Email})
+	if result != nil {
+		utils.GetError(
+			errors.New(fmt.Sprintf("Users with email %s exists!", user.Email)),
+			http.StatusBadRequest, 
+			response,
+		)
+		return
+	}
 
-func FindUsers(ctx context.Context, filter M) ([]*User, error) {
-	users := []*User{}
-	collectionName := "users"
-	collection := utils.GetCollection(collectionName)
-	cursor, err := collection.Find(ctx, filter)
+	hashPassword, err := GenerateHashPassword(user.Password)
+	if err != nil {
+		utils.GetError(HASHING_FAILED, http.StatusBadRequest, response)
+		return
+	}
+
+	user.CreatedAt = time.Now()
+	user.Password = hashPassword
+	detail, _ := utils.StructToMap(user)
+
+	res, err := utils.CreateMongoDbDoc(user_collection, detail)
 
 	if err != nil {
-		return nil, err
+		utils.GetError(err, http.StatusInternalServerError, response)
+		return
 	}
-	if err = cursor.All(ctx, &users); err != nil {
-		return nil, err
-	}
-	return users, nil
+
+	utils.GetSuccess("user created", res, response)
 }
 
-func CreateUser(ctx context.Context, u *User) error {
-	collectionName := "users"
-	collection := utils.GetCollection(collectionName)
-	_, err := collection.InsertOne(ctx, u)
+// an endpoint to search other users
+func SearchOtherUsers(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	query := params["query"]
+	filter := bson.M{
+		"$or": []bson.M{
+			{"first_name": query},
+			{"last_name": query},
+			{"email": query},
+			{"display_name": query},
+		},
+	}
+	res, err := utils.GetMongoDbDocs(UserCollectionName, filter)
 	if err != nil {
-		return err
+		utils.GetError(err, http.StatusInternalServerError, w)
 	}
-	return nil
+	utils.GetSuccess("successful", res, w)
 }
 
-func FindUserProfile(ctx context.Context, userID, orgID string) (*UserWorkspace, error) {
-	return nil, nil
+// an endpoint to delete a user record
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	params := mux.Vars(r)
+	userId := params["user_id"]
+
+	delete, err := utils.DeleteOneMongoDoc("users", userId)
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+	if delete.DeletedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("User Deleted Succesfully", nil, w)
 }
 
-func CreateUserProfile(ctx context.Context, uw *UserWorkspace) error {
-	return nil
+// endpoint to find user by ID
+func GetUser(response http.ResponseWriter, request *http.Request) {
+	// Find a user by user ID
+	response.Header().Set("content-type", "application/json")
+
+	collectionName := "users"
+
+	params := mux.Vars(request)
+	userId := params["user_id"]
+	objId, err := primitive.ObjectIDFromHex(userId)
+
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, response)
+		return
+	}
+
+	res, err := utils.GetMongoDbDoc(collectionName, bson.M{"_id": objId})
+	if err != nil {
+		utils.GetError(errors.New("user not found"), http.StatusInternalServerError, response)
+		return
+	}
+	utils.GetSuccess("user retrieved successfully", res, response)
+
+}
+
+// an endpoint to update a user record
+
+func UpdateUser(response http.ResponseWriter, request *http.Request) {
+	response.Header().Set("content-type", "application/json")
+	// Validate the user ID
+	userID := mux.Vars(request)["user_id"]
+	objID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		utils.GetError(errors.New("invalid user ID"), http.StatusBadRequest, response)
+		return
+	}
+
+	collectionName := "users"
+	userExist, err := utils.GetMongoDbDoc(collectionName, bson.M{"_id": objID})
+	if err != nil {
+		utils.GetError(errors.New("user does not exist"), http.StatusNotFound, response)
+		return
+	}
+	if userExist == nil {
+		utils.GetError(errors.New("user does not exist"), http.StatusBadRequest, response)
+		return
+	}
+
+	var user UserUpdate
+	if err := utils.ParseJsonFromRequest(request, &user); err != nil {
+		utils.GetError(errors.New("bad update data"), http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	userMap, err := utils.StructToMap(user)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, response)
+	}
+
+	updateFields := make(map[string]interface{})
+	for key, value := range userMap {
+		if value != "" {
+			updateFields[key] = value
+		}
+	}
+	if len(updateFields) == 0 {
+		utils.GetError(errors.New("empty/invalid user input data"), http.StatusBadRequest, response)
+		return
+	} else {
+		updateRes, err := utils.UpdateOneMongoDbDoc(collectionName, userID, updateFields)
+		if err != nil {
+			utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, response)
+			return
+		}
+		utils.GetSuccess("user successfully updated", updateRes, response)
+	}
+}
+
+// get all users
+func GetUsers(response http.ResponseWriter, request *http.Request) {
+	response.Header().Set("content-type", "application/json")
+	collectionName := "users"
+	res, _ := utils.GetMongoDbDocs(collectionName, nil)
+	utils.GetSuccess("users retrieved successfully", res, response)
 }
