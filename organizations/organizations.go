@@ -149,7 +149,7 @@ func UpdateUrl(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func ChangeOrganizationName(w http.ResponseWriter, r *http.Request) {
+func UpdateName(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	orgId := mux.Vars(r)["id"]
 	requestData := make(map[string]string)
@@ -169,5 +169,34 @@ func ChangeOrganizationName(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.GetSuccess("organization name successfully changed", change, w)
+
+}
+
+func UpdateLogo(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	orgId := mux.Vars(r)["id"]
+	image_url := ""
+
+	file, handler, err := r.FormFile("file")
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	fileName := handler.Filename
+	defer file.Close()
+
+	image_url = "https://www.3rdpartybackend.com/" + fileName
+
+	collection := "organizations"
+	org_filter := make(map[string]interface{})
+	org_filter["image_url"] = image_url
+	change, err := utils.UpdateOneMongoDbDoc(collection, orgId, org_filter)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("organization logo successfully changed with image "+fileName, change, w)
 
 }
