@@ -96,7 +96,7 @@ func IsValidEmail(email string) bool {
 	return err == nil
 }
 
-func TokenIsVaid(utoken string, user_id string) (bool, string, error) {
+func TokenIsValid(utoken string, user_id string) (bool, string, error) {
 	SECRET_KEY, _ := os.LookupEnv("AUTH_SECRET_KEY")
 
 	var signKey = []byte(SECRET_KEY)
