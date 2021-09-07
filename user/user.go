@@ -13,6 +13,11 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
+var (
+	EMAIL_NOT_VALID = errors.New("Email address is not valid")
+	HASHING_FAILED = errors.New("Failed to hashed password")
+)
+
 // Method to hash password
 func GenerateHashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
@@ -32,21 +37,23 @@ func Create(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 	if !utils.IsValidEmail(user.Email) {
-		utils.GetError(errors.New("email address is not valid"), http.StatusBadRequest, response)
+		utils.GetError(EMAIL_NOT_VALID, http.StatusBadRequest, response)
 		return
 	}
-
 	// confirm if user_email exists
 	result, _ := utils.GetMongoDbDoc(user_collection, bson.M{"email": user.Email})
 	if result != nil {
-		fmt.Printf("users with email %s exists!", user.Email)
-		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, response)
+		utils.GetError(
+			errors.New(fmt.Sprintf("Users with email %s exists!", user.Email)),
+			http.StatusBadRequest, 
+			response,
+		)
 		return
 	}
 
 	hashPassword, err := GenerateHashPassword(user.Password)
 	if err != nil {
-		utils.GetError(errors.New("Failed to hashed password"), http.StatusBadRequest, response)
+		utils.GetError(HASHING_FAILED, http.StatusBadRequest, response)
 		return
 	}
 
