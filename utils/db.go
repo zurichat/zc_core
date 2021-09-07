@@ -182,11 +182,13 @@ func ReplaceMongoDbDoc(collectionName string, filter map[string]interface{}, dat
 }
 
 // Delete single MongoDb document for a collection
-func DeleteOneMongoDoc(collectionName string, filter map[string]interface{}) (*mongo.DeleteResult, error) {
+func DeleteOneMongoDoc(collectionName string, ID string) (*mongo.DeleteResult, error) {
 	ctx := context.Background()
 	collection := defaultMongoHandle.GetCollection(collectionName)
 
-	res, err := collection.DeleteOne(ctx,  MapToBson(filter))
+	id, _ := primitive.ObjectIDFromHex(ID)
+	filter := bson.M{"_id": id}
+	res, err := collection.DeleteOne(ctx, filter)
 
 	if err != nil {
 		return nil, err
