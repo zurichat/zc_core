@@ -173,30 +173,25 @@ func UpdateName(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateLogo(w http.ResponseWriter, r *http.Request) {
+
 	w.Header().Set("Content-Type", "application/json")
 	orgId := mux.Vars(r)["id"]
-	image_url := ""
-
-	file, handler, err := r.FormFile("file")
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
+	requestData := make(map[string]string)
+	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
-
-	fileName := handler.Filename
-	defer file.Close()
-
-	image_url = "https://www.3rdpartybackend.com/" + fileName
+	organization_logo := requestData["organization_logo"]
 
 	collection := "organizations"
 	org_filter := make(map[string]interface{})
-	org_filter["image_url"] = image_url
+	org_filter["image_url"] = organization_logo
 	change, err := utils.UpdateOneMongoDbDoc(collection, orgId, org_filter)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
 
-	utils.GetSuccess("organization logo successfully changed with image "+fileName, change, w)
+	utils.GetSuccess("organization logo successfully changed", change, w)
 
 }
