@@ -139,12 +139,12 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	memberId:= mux.Vars(r)["id"]
-	orgMembers, err := utils.DeleteOneMongoDoc(member_collection, memberId)
+	memberId, err := primitive.ObjectIDFromHex(orgId)
+	orgMembers, err := utils.DeleteOneMongoDoc(member_collection, bson.M{"org_id": memberId})
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
 
-	utils.GetSuccess("Members deleted successfully", orgMembers, w)
+	utils.GetSuccess("Successfully Deleted Member", orgMembers.DeletedCount, w)
 }
