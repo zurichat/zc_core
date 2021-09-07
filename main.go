@@ -10,6 +10,7 @@ import (
 	socketio "github.com/googollee/go-socket.io"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	"github.com/rs/cors"
 	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/data"
 	"zuri.chat/zccore/marketplace"
@@ -106,8 +107,13 @@ func main() {
 
 	r := Router(Server)
 
+    c := cors.New(cors.Options{
+        AllowedOrigins: []string{"*"},
+        AllowCredentials: true,
+    })	
+
 	srv := &http.Server{
-		Handler:      LoggingMiddleware(r),
+		Handler:      LoggingMiddleware(c.Handler(r)),
 		Addr:         ":" + port,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
