@@ -50,7 +50,7 @@ func fetchUserByEmail(filter map[string]interface{}) (*user.User, error) {
 }
 
 // Generate token
-func GenerateJWT(email, org_id string) (string, error) {
+func GenerateJWT(user_id, email, org_id string) (string, error) {
 	SECRET_KEY, _ := os.LookupEnv("AUTH_SECRET_KEY")
 	if SECRET_KEY == "" { SECRET_KEY = secretKey }
 	
@@ -61,6 +61,7 @@ func GenerateJWT(email, org_id string) (string, error) {
 
 	claims["authorized"] = true
 	claims["email"] = email
+	claims["user_id"] = user_id
 	// claims["org_id"] = org_id
 	claims["exp"] = time.Now().Add(time.Minute * 30).Unix()
 

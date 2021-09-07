@@ -45,7 +45,7 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 		return		
 	}
 
-	vtoken, err := GenerateJWT(authDetails.Email, "")
+	vtoken, err := GenerateJWT(user.ID.Hex(), authDetails.Email, "")
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, response)
 		return
