@@ -96,7 +96,7 @@ func IsValidEmail(email string) bool {
 	return err == nil
 }
 
-func TokenIsValid(utoken string, user_id string) (bool, string, error) {
+func TokenIsValid(utoken string) (bool, string, error) {
 	SECRET_KEY, _ := os.LookupEnv("AUTH_SECRET_KEY")
 
 	var signKey = []byte(SECRET_KEY)
@@ -114,7 +114,7 @@ func TokenIsValid(utoken string, user_id string) (bool, string, error) {
 
 	claims, _ := token.Claims.(jwt.MapClaims)
 	fmt.Println(claims["user_id"])
-	return true, user_id, nil
+	return true, claims["user_id"], nil
 
 }
 
