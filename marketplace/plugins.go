@@ -1,41 +1,43 @@
 package marketplace
 
 import (
-	"context"
-	"encoding/json"
+	"errors"
 	"net/http"
-	"time"
 
+	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"zuri.chat/zccore/plugin"
 	"zuri.chat/zccore/utils"
 )
 
-func Plugins(response http.ResponseWriter, request *http.Request) {
-	response.WriteHeader(http.StatusOK)
-	var plugins []Plugins
+type M map[string]interface{}
 
-	response.Header().Set("Content-Type", "application/json")
-
-	DbName, CollectionName := utils.Env("DB_NAME"), "plugins"
-	collection, err := utils.GetMongoDbCollection(DbName, CollectionName)
+func GetAllPlugins(w http.ResponseWriter, r *http.Request) {
+	ps, err := plugin.FindPlugins(r.Context(), bson.M{"approved": true})
 	if err != nil {
-		utils.GetError(err, 500, response)
+		switch err {
+		case mongo.ErrNoDocuments:
+			utils.GetError(errors.New("no plugin available"), http.StatusNotFound, w)
+		default:
+			utils.GetError(err, http.StatusNotFound, w)
+		}
+		return
 	}
-	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
-	cursor, err := collection.Find(ctx, bson.M{})
+	utils.GetSuccess("success", ps, w)
+}
+
+func GetPlugin(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+	p, err := plugin.FindPluginByID(r.Context(), id)
 	if err != nil {
-		utils.GetError(err, 400, response)
+		utils.GetError(err, http.StatusNotFound, w)
+		return
+	}
+	if !p.Approved {
+		utils.GetError(errors.New("plugin is not approved"), http.StatusForbidden, w)
 		return
 	}
 
-	defer cursor.Close(ctx)
-
-	plugins = make([]Plugins, 0)
-	for cursor.Next(ctx) {
-		var plugin Plugins
-		cursor.Decode(&plugin)
-		plugins = append(plugins, plugin)
-	}
-
-	json.NewEncoder(response).Encode(plugins)
+	utils.GetSuccess("success", p, w)
 }

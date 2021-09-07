@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"net/mail"
 	"os"
 
-	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -18,9 +18,9 @@ type ErrorResponse struct {
 
 // SuccessResponse : This is success model.
 type SuccessResponse struct {
-	StatusCode   int    `json:"status"`
-	Message string `json:"message"`
-	Data	interface{} `json:"data"`
+	StatusCode int         `json:"status"`
+	Message    string      `json:"message"`
+	Data       interface{} `json:"data"`
 }
 
 // GetError : This is helper function to prepare error model.
@@ -30,47 +30,32 @@ func GetError(err error, StatusCode int, w http.ResponseWriter) {
 		StatusCode:   StatusCode,
 	}
 
-	message, _ := json.Marshal(response)
-
 	w.WriteHeader(response.StatusCode)
-	w.Write(message)
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Error sending response: %v", err)
+	}
 }
 
 // GetSuccess : This is helper function to prepare success model.
 func GetSuccess(msg string, data interface{}, w http.ResponseWriter) {
 	var response = SuccessResponse{
-		Message: msg,
+		Message:    msg,
 		StatusCode: http.StatusOK,
-		Data: data,
+		Data:       data,
 	}
-
-	message, _ := json.Marshal(response)
-
-	w.WriteHeader(response.StatusCode)
-	w.Write(message)
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Error sending response: %v", err)
+	}
 }
 
 // get env vars; return empty string if not found
 func Env(key string) string {
-	if !FileExists(".env") {
-		log.Fatal("error loading .env file")
-	}
-
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("error loading .env file")
-	}
-
-	env, ok := os.LookupEnv(key)
-
-	if ok {
-		return env
-	}
-
-	return ""
+	return os.Getenv(key)
 }
 
-// check if a file exists, usefull in checking for .env
+// check if a file exists, useful in checking for .env
 func FileExists(name string) bool {
 	_, err := os.Stat(name)
 	return !os.IsNotExist(err)
@@ -78,11 +63,32 @@ func FileExists(name string) bool {
 
 // convert map to bson.M for mongoDB docs
 func MapToBson(data map[string]interface{}) bson.M {
-	bsonM := bson.M{}
+	return bson.M(data)
+}
 
-	for k, v := range data {
-		bsonM[k] = v
+// StructToMap converts a struct of any type to a map[string]inteface{}
+func StructToMap(inStruct interface{}) (map[string]interface{}, error) {
+	out := make(map[string]interface{})
+	inrec, _ := json.Marshal(inStruct)
+	json.Unmarshal(inrec, &out)
+	return out, nil
+}
+
+// ConvertStructure does map to struct conversion and vice versa.
+// The input structure will be converted to the output
+func ConvertStructure(input interface{}, output interface{}) error {
+	data, err := json.Marshal(input)
+	if err != nil {
+		return err
 	}
+	return json.Unmarshal(data, output)
+}
 
-	return bsonM
+func ParseJsonFromRequest(r *http.Request, v interface{}) error {
+	return json.NewDecoder(r.Body).Decode(v)
+}
+
+func IsValidEmail(email string) bool {
+	_, err := mail.ParseAddress(email)
+	return err == nil
 }
