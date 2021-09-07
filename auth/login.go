@@ -3,6 +3,7 @@ package auth
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
@@ -34,7 +35,7 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	user, err := fetchUserByEmail(bson.M{"email": authDetails.Email})
+	user, err := fetchUserByEmail(bson.M{"email":  strings.ToLower(authDetails.Email)})
 	if err != nil {
 		utils.GetError(UserNotFound, http.StatusBadRequest, response)
 		return
@@ -46,16 +47,15 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	vtoken, err := GenerateJWT(user.ID.Hex(), authDetails.Email, "")
+	vtoken, err := GenerateJWT(user.ID.Hex(), authDetails.Email)
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, response)
 		return
 	}
 
 	token := &Token{
-		Email:       user.Email,
-		UserID:      user.ID,
 		TokenString: vtoken,
+		User: *user,
 	}
 	utils.GetSuccess("login successful", token, response)
 }

@@ -6,14 +6,18 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 )
+
+type contextKey int
+const authUserKey contextKey = 0
 
 var (
 	NoAuthToken = errors.New("No Authorization header provided.")
@@ -27,9 +31,19 @@ type Authentication struct {
 }
 
 type Token struct {
-	Email			string					`json:"email"`
 	TokenString 	string					`json:"token"`
-	UserID			primitive.ObjectID		`json:"user_id"`
+	User			user.User				`json:"user"`
+}
+
+type AuthUser struct {
+	ID                primitive.ObjectID      `json:"id"`
+	Email             string                  `json:"email"`	
+}
+
+type MyCustomClaims struct {
+	Authorized 			bool 		`json:"authorized"`
+	User 				AuthUser
+	jwt.StandardClaims
 }
 
 // Method to compare password
@@ -50,21 +64,29 @@ func fetchUserByEmail(filter map[string]interface{}) (*user.User, error) {
 }
 
 // Generate token
-func GenerateJWT(user_id, email, org_id string) (string, error) {
+func GenerateJWT(userID, email string) (string, error) {
 	SECRET_KEY, _ := os.LookupEnv("AUTH_SECRET_KEY")
 	if SECRET_KEY == "" { SECRET_KEY = secretKey }
 	
 	var signKey = []byte(SECRET_KEY)
 
-	token := jwt.New(jwt.SigningMethodHS256)
-	claims := token.Claims.(jwt.MapClaims)
+	objID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil { return "", errors.New("Invalid user ObjectID") }	
 
-	claims["authorized"] = true
-	claims["email"] = email
-	claims["user_id"] = user_id
-	// claims["org_id"] = org_id
-	claims["exp"] = time.Now().Add(time.Hour * 12).Unix()
 
+	claims := MyCustomClaims{
+		true,
+		AuthUser{
+			ID: objID,
+			Email: email,
+		},
+		jwt.StandardClaims{ 
+			ExpiresAt: time.Now().Add(time.Hour * 12).Unix(), // 12 hours
+			Issuer: "api.zuri.chat",
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(signKey)
 
 	if err != nil {
@@ -77,33 +99,30 @@ func GenerateJWT(user_id, email, org_id string) (string, error) {
 
 // middleware to check if user is authorized
 func IsAuthorized(nextHandler http.HandlerFunc) http.HandlerFunc {
+	// token format "Authorization": "Bearer token"
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Header["Bearer"] == nil {
-			utils.GetError(NoAuthToken, http.StatusForbidden, w)
+		w.Header().Add("content-type", "application/json")
+
+		if r.Header["Authorization"] == nil {
+			utils.GetError(NoAuthToken, http.StatusUnauthorized, w)
 			return
 		}
 				
 		SECRET_KEY, _ := os.LookupEnv("AUTH_SECRET_KEY")
 		if SECRET_KEY == "" { SECRET_KEY = secretKey }
-
-		var signKey = []byte(SECRET_KEY)
-		token, err := jwt.Parse(r.Header["Bearer"][0], func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-			}
-			return signKey, nil			
+		
+		authToken := strings.Split(r.Header["Authorization"][0], " ")[1]
+		
+		token, err := jwt.ParseWithClaims(authToken, &MyCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+			return []byte(SECRET_KEY), nil
 		})
 
-		if err != nil {
-			utils.GetError(TokenExp, http.StatusBadRequest, w)
-			return
-		}
-
-		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			// @TODO: work on this later.
-			fmt.Println(claims["authorized"], claims["email"], claims["user_id"]) 
-			nextHandler(w, r)
+		if claims, ok := token.Claims.(*MyCustomClaims); ok && token.Valid {
+			// Extract user information and add it to request context.
+			ctx := context.WithValue(r.Context(), "user", claims.User)
+			nextHandler.ServeHTTP(w, r.WithContext(ctx))
 		} else {
+			fmt.Print(err)
 			utils.GetError(NotAuthorized, http.StatusBadRequest, w)
 			return
 		}
