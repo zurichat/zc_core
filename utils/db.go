@@ -3,7 +3,6 @@ package utils
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
@@ -28,7 +27,6 @@ func ConnectToDB(clusterURL string) error {
 		err = defaultMongoHandle.Connect(clusterURL)
 		CreateUniqueIndex("users", "email", 1)
 	})
-	log.Println("Database connected")
 	return err
 }
 
