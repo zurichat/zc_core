@@ -9,38 +9,14 @@ servers:
   - description: Zuri Chat Core API
     url: 'https://api.zuri.chat/v1'
 tags:
-- name: auth
-  description: Controls user registration, login and password recovery
+  - name: auth
+    description: Controls user registration, login and password recovery
 paths:
-  /auth/register:
-    post:
-      tags:
-      - auth
-      description: Gets user details and creates a record for the user in the database
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/User'
-        required: true
-      responses:
-        "201":
-          description: User successfully registered
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RegistrationResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
   /auth/login:
+    summary: Allows a registered user login
     post:
       tags:
-      - auth
+        - auth
       description: Checks if user is registered and is using the right credentials, and returns user data and token on success
       requestBody:
         content:
@@ -49,14 +25,92 @@ paths:
               $ref: '#/components/schemas/login_data'
         required: true
       responses:
-        "200":
+        '200':
           description: User logged in successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Bad login request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidLoginData'
+
+        '401':
+          description: Invalid authentication credentials. Login failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginFailed'
+
         default:
-          description: Login attempt unsuccessful
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users:
+    get:
+      summary: Retrieves all users
+      description: Retrieves all created users saved to the DB
+      tags:
+        - Users
+      responses:
+        '200':
+          description: Returns information about all users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsersResponse'
+
+    post:
+      summary: Create a new user
+      description: Creates a new user given a request body of required key-value pairs. Returns ID of created user
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+
+      responses:
+        '201':
+          description: Returns ID of created user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUserResponse'
+          links:
+            UserID:
+              operationId: getUserID
+              parameters:
+                user_id: $response.body#/data/InsertedID
+        '400':
+          description: Invalid user email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyEmail'
+        '422':
+          description: Unprocessable entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: number
+                    example: 422
+                  message:
+                    type: string
+                    example: EOF
+        default:
+          description: Default error response
           content:
             application/json:
               schema:
@@ -64,10 +118,12 @@ paths:
 
 
   /users/{user_id}:
-    put:
+    patch:
       summary: Updates the details of a user
+      description: Updates existing user fields - first_name, last_name, phone, company
+      operationId: getUserID
       security:
-        - bearerAuth: [] 
+        - BearerAuth: []
       parameters:
         - $ref: '#/components/parameters/user_id'
 
@@ -77,7 +133,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/User'
-
       tags:
         - Users
 
@@ -87,7 +142,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/UpdateUser'
 
         '404':
           description: No user with the specified user_id was found
@@ -106,7 +161,7 @@ paths:
     get:
       summary: Retrieves the information about a user
       security:
-        - bearerAuth: [] 
+        - BearerAuth: []
       parameters:
         - $ref: '#/components/parameters/user_id'
 
@@ -116,7 +171,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/FullUser'
 
         '404':
           description: No user with the specified user_id was found
@@ -138,7 +193,7 @@ paths:
     delete:
       summary: Deactivates a user's account
       security:
-        - bearerAuth: [] 
+        - BearerAuth: []
       parameters:
         - $ref: '#/components/parameters/user_id'
 
@@ -146,9 +201,12 @@ paths:
         - Users
 
       responses:
-        '204':
+        '200':
           description: User was successfully deactivated
-
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteUser'
         '404':
           description: No user with the specified user_id was found
           content:
@@ -163,87 +221,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /users/{user_id}/verify:
-    get:
-      summary: Sends an email verification link to a user
-      security:
-        - bearerAuth: [] 
-      parameters:
-        - $ref: '#/components/parameters/user_id'
-
-      responses:
-        '204':
-          description: Email verification code successfully sent
-
-        '404':
-          description: User not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-        '403':
-          description: Forbidden, the requesting user's _id doesn't match the provided user_id
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-      tags:
-        - Users
-
-    patch:
-      summary: Verifies a user's email address and updates their verification status
-      description: Code should be the otp in the email verification link recieved by the user
-      security:
-        - bearerAuth: [] 
-      parameters:
-        - $ref: '#/components/parameters/user_id'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/VerifyEmail'
-
-      responses:
-        '200':
-          description: The user's email has been verified successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-
-        '400':
-          description: Invalid email verification code
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-      tags:
-        - Users
-
-
   /organizations:
     get:
       tags:
         - Organisations
       summary: Displays a list of organizations
       security:
-        - bearerAuth: [] 
+        - bearerAuth: []
       responses:
         '200':
           description: Successfuly returned list of organizations, including an empty array if there are no organizations
@@ -270,7 +254,7 @@ paths:
         - Organisations
       summary: Create an organization
       security:
-        - bearerAuth: [] 
+        - bearerAuth: []
       requestBody:
         description: The structure for the entire request
         content:
@@ -296,7 +280,16 @@ paths:
                 organization_settings:
                   type: string
                   description: Json object of organization settings
-                  example: {"global_settings": {"allow_user_add_plugins": true, "allow_only_admin_invite": true}, "plugin_settings": {"chess_plugin": {"allow_in_every_channel": false}}}
+                  example:
+                    {
+                      'global_settings':
+                        {
+                          'allow_user_add_plugins': true,
+                          'allow_only_admin_invite': true,
+                        },
+                      'plugin_settings':
+                        { 'chess_plugin': { 'allow_in_every_channel': false } },
+                    }
 
       responses:
         '201':
@@ -326,12 +319,12 @@ paths:
                 $ref: '#/components/schemas/Error'
 
   /organizations/{organization_id}:
-    get: 
+    get:
       tags:
         - Organisations
       summary: Get an organization
       security:
-        - bearerAuth: [] 
+        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/organization_id'
       responses:
@@ -359,20 +352,20 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/Error'
-    put: 
+    put:
       tags:
         - Organisations
       summary: Update organization information
       security:
-        - bearerAuth: [] 
+        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/organization_id'
       requestBody:
         description: The structure for the entire request
         content:
           'application/json':
-              schema:
-                $ref: '#/components/schemas/Organization'
+            schema:
+              $ref: '#/components/schemas/Organization'
 
       responses:
         '200':
@@ -401,22 +394,22 @@ paths:
                 $ref: '#/components/schemas/Error'
 
   /organizations/{organization_id}/users:
-    get: 
+    get:
       tags:
         - Organisations
       summary: Get a list of users in an organization
       security:
-        - bearerAuth: [] 
+        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/organization_id'
       responses:
         '200':
           description: Organization successfully returned
           content:
-              'application/json':
-                schema:
-                  type: array
-                  $ref: '#/components/schemas/User'
+            'application/json':
+              schema:
+                type: array
+                $ref: '#/components/schemas/User'
         '401':
           description: Unauthorized
           content:
@@ -435,12 +428,12 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/Error'
-    post: 
+    post:
       tags:
         - Organisations
       summary: Add user to an organization
       security:
-        - bearerAuth: [] 
+        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/organization_id'
       requestBody:
@@ -457,9 +450,9 @@ paths:
         '201':
           description: Organization successfully returned
           content:
-              'application/json':
-                schema:
-                  $ref: '#/components/schemas/User'
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/User'
         '401':
           description: Unauthorized
           content:
@@ -486,7 +479,7 @@ paths:
       summary: Update user
       description: This endpoint will be used to update the user's organization information. e.g user roles and permissions
       security:
-        - bearerAuth: [] 
+        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/organization_id'
         - $ref: '#/components/parameters/user_id'
@@ -505,9 +498,9 @@ paths:
         '200':
           description: User successfully updated
           content:
-              'application/json':
-                schema:
-                  $ref: '#/components/schemas/User'
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/User'
         '401':
           description: Unauthorized
           content:
@@ -526,13 +519,13 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/Error'
-    delete: 
+    delete:
       tags:
         - Organisations
       summary: Delete user
       description: Remove a user from an organization
       security:
-        - bearerAuth: [] 
+        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/organization_id'
         - $ref: '#/components/parameters/user_id'
@@ -540,9 +533,9 @@ paths:
         '200':
           description: User successfully deleted
           content:
-              'application/json':
-                schema:
-                  $ref: '#/components/schemas/User'
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/User'
         '401':
           description: Unauthorized
           content:
@@ -561,7 +554,6 @@ paths:
             'application/json':
               schema:
                 $ref: '#/components/schemas/Error'
-
 
   /marketplace/apps:
     get:
@@ -603,7 +595,7 @@ paths:
                   - current_page
                   - last_page
                 properties:
-                  data:      
+                  data:
                     type: array
                     items:
                       $ref: '#/components/schemas/MarketplaceAppList'
@@ -660,7 +652,7 @@ paths:
   /data:
     post:
       tags:
-      - Data
+        - Data
       description: Saves data to the database
       requestBody:
         content:
@@ -669,7 +661,7 @@ paths:
               $ref: '#/components/schemas/data'
         required: true
       responses:
-        "201":
+        '201':
           description: Data save successfully
           content:
             application/json:
@@ -684,17 +676,17 @@ paths:
 
     get:
       tags:
-      - Data
+        - Data
       description: Retrieves data from the database
       parameters:
         - in: path
           name: dataID
-          description: provide the ID of the data to be retrieved. 
+          description: provide the ID of the data to be retrieved.
           required: true
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Data retrieved successfully
           content:
             application/json:
@@ -708,7 +700,6 @@ paths:
                 $ref: '#/components/schemas/Error'
 
 components:
-
   parameters:
     user_id:
       in: path
@@ -728,18 +719,154 @@ components:
     User:
       type: object
       properties:
-         first_name:
-           type: string
-         last_name:
-           type: string
-         phone_number:
-           type: number
-         password:
-           type: string
-         email:
-           type: string
-         email_verified:
-           type: boolean
+        first_name:
+          type: string
+        last_name:
+          type: string
+        phone_number:
+          type: number
+        password:
+          type: string
+        email:
+          type: string
+        email_verified:
+          type: boolean
+
+    UsersResponse:
+      type: object
+      properties:
+        status:
+          type: number
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FullUser'
+
+    FullUser:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 61374b5e7ccea12370c5adec
+        first_name:
+          type: string
+          example: Jane
+        last_name:
+          type: string
+          example: Doe
+        display_name:
+          type: string
+          example: jane_d
+        email:
+          type: string
+          example: janedoe@email.com
+        password:
+          type: string
+          example: $2a$14$Nem0fMPQbLUOOcZgaLt/WOUoQDs/Cb9EhX71440ROLanZAom0Da5G
+        phone:
+          type: string
+          example: 0123456789
+        status:
+          type: number
+          example: 0
+        company:
+          type: string
+          example: Unidentified Inc
+        settings:
+          type: string
+          example: null
+        time_zone:
+          type: string
+          example: ""
+        created_at:
+          type: string
+          example: 2021-09-07T12:22:06.932180616+01:00
+        updated_at:
+          type: string
+          example: 0001-01-01T00:00:00Z
+        deleted_at:
+          type: string
+          example: 0001-01-01T00:00:00Z
+        workspaces:
+          type: string
+          example: null
+        workspace_profiles:
+          type: string
+          example: null
+        email_verification:
+          type: object
+          properties:
+            expired_at:
+              type: string
+              example: 0001-01-01T00:00:00Z
+            token:
+              type: string
+              example: null
+            verified:
+              type: boolean
+              example: false
+            id:
+              type: string
+              example: 61374b5e7ccea12370c5adec
+        password_resets:
+          type: string
+          example: null
+
+    CreateUserResponse:
+      type: object
+      properties:
+        status:
+          type: number
+          example: 200
+        message:
+          type: string
+          example: user created
+        data:
+          type: object
+          properties:
+            InsertedID:
+              type: string
+              example: 6137a5af52efebbea2739c71
+
+    UpdateUser:
+      type: object
+      properties:
+        status:
+          type: number
+          example: 200
+        message:
+          type: string
+          example: user created
+        data:
+          type: object
+          properties:
+            MatchedCount:
+              type: integer
+              example: 1
+            ModifiedCount:
+              type: integer
+              example: 1
+            UpsertedCount:
+              type: integer
+              example: 0
+            UpsertedID:
+              type: string
+              example: null
+
+    DeleteUser:
+      type: object
+      properties:
+        status:
+          type: number
+          example: 200
+        message:
+          type: string
+          example: user deleted successfully
+        data:
+          type: string
+          example: null
 
     Organization:
       type: object
@@ -758,32 +885,43 @@ components:
           example: 12
         organization_settings:
           type: string
-          example: {"global_settings": {"allow_user_add_plugins": true, "allow_only_admin_invite": true}, "plugin_settings": {"chess_plugin": {"allow_in_every_channel": false}}}
+          example:
+            {
+              'global_settings':
+                {
+                  'allow_user_add_plugins': true,
+                  'allow_only_admin_invite': true,
+                },
+              'plugin_settings':
+                { 'chess_plugin': { 'allow_in_every_channel': false } },
+            }
 
     Error:
       required:
-      - code
-      - message
+        - status
+        - message
       type: object
       properties:
-        code:
+        status:
           type: integer
           format: int32
         message:
           type: string
-        metadata:
-          type: object
 
     VerifyEmail:
       type: object
       properties:
-        code:
+        status:
+          type: number
+          example: 400
+        message:
           type: string
+          example: email address is not valid
 
     login_data:
       required:
-      - email
-      - password
+        - email
+        - password
       type: object
       properties:
         email:
@@ -797,16 +935,47 @@ components:
     LoginResponse:
       type: object
       properties:
-        success:
-          type: boolean
-          example: true
+        status:
+          type: number
+          example: 200
+        message:
+          type: string
+          example: user login successful
         data:
-          type: object
-          $ref:  "#/components/schemas/User"
+          $ref: '#/components/schemas/LoginData'
+
+    LoginFailed:
+      type: object
+      properties:
+        status:
+          type: number
+          example: 401
+        message:
+          type: string
+          example: Invalid login credentials, confirm and try again
+
+    LoginData:
+      type: object
+      properties:
+        email:
+          type: string
+          example: email@example.com
         token:
           type: string
-          example: 3djfb313fi71ibrf9278754b2cbjhwbjab8e78873bcbjsbcjemwnenvrwejvVSGJWVjavibkwrejbvjiwu5793489t3fibjsbac
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemVkIjp0cnVlLCJlbWFpbCI6ImphbmVkb2VAZW1haWwuY29tIiwiZXhwIjoxNjMxMDMyMTczLCJ1c2VyX2lkIjoiNjEzNzRiNWU3Y2NlYTEyMzcwYzVhZGVjIn0.eY2hTlf1kbKZndrjAGsDTzaZD3OmYT9KbbGMNs6xECs
+        user_id:
+          type: string
+          example: 61374b5e7ccea12370c5adec
 
+    InvalidLoginData:
+      type: object
+      properties:
+        status:
+          type: number
+          example: 401
+        message:
+          type: string
+          example: Field validation for email/password failed
 
     RegistrationResponse:
       type: object
@@ -837,8 +1006,8 @@ components:
         categories:
           type: array
           items:
-              type: string
-              description: category slug
+            type: string
+            description: category slug
 
     MarketplaceApp:
       type: object
@@ -865,8 +1034,8 @@ components:
         categories:
           type: array
           items:
-              type: string
-              description: category slug
+            type: string
+            description: category slug
         features:
           type: array
         permissions:
@@ -879,8 +1048,7 @@ components:
             description: 'would contain keys like: general, privacy and data governance, certifications and compliance, security, 0auth scopes'
 
     data:
-        type: object
-
+      type: object
 
     DataSavedResponse:
       type: object
@@ -888,3 +1056,8 @@ components:
         success:
           type: boolean
           example: true
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
