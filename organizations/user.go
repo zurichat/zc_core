@@ -142,11 +142,12 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	checkMember, err := utils.GetMongoDbDoc(member_collection, bson.M{"_id": memberId})
-	if err != nil {
+	if checkMember == nil {
+		fmt.Printf("Member with ID: %s does not exists ", memberId)
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
-	fmt.Println("Member exists ", checkMember)
+	fmt.Printf("Member with ID: %s exists ", memberId)
 
 	delOrgMember, err := utils.DeleteOneMongoDoc(member_collection, memberId)
 	if err != nil {

@@ -109,10 +109,10 @@ func main() {
 
 	r := Router(Server)
 
-    c := cors.New(cors.Options{
-        AllowedOrigins: []string{"*"},
-        AllowCredentials: true,
-    })	
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowCredentials: true,
+	})
 
 	srv := &http.Server{
 		Handler:      LoggingMiddleware(c.Handler(r)),
