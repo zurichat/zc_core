@@ -8,7 +8,7 @@ swagger: '2.0'
 info:
   description: This is a Zuri Chat API. You can find out more about the API at https://github.com/zurichat/zc_core.
   title: Zuri Chat API
-  version: 1.0.0
+  version: 3.0.0
 host: localhost:8080
 basePath: /
 paths:
