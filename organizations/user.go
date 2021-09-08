@@ -185,8 +185,7 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
 		return
 	}
-
-	// get organization
+	
 	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": pOrgId})
 	if orgDoc == nil {
 		fmt.Printf("org with id %s doesn't exist!", orgId)
@@ -194,18 +193,24 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query, _ := primitive.ObjectIDFromHex(memberId)
-	checkMember, err := utils.GetMongoDbDoc(member_collection, bson.M{"_id": query})
-	if checkMember == nil {
-		fmt.Printf("Member with ID: %s does not exists ", memberId)
-		utils.GetError(err, http.StatusBadRequest, w)
+	query, err := primitive.ObjectIDFromHex(memberId)
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
 		return
 	}
 
-	delOrgMember, err := utils.DeleteOneMongoDoc(member_collection, memberId)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
+	member, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": query})
+	if member == nil {
+		fmt.Printf("Member with ID: %s does not exists ", memberId)
+		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
 		return
 	}
-	utils.GetSuccess("Successfully Deleted Member", delOrgMember.DeletedCount, w)
+	
+	delMember, _ := utils.DeleteOneMongoDoc(member_collection, memberId)
+	if delMember.DeletedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
+		return
+	}
+
+	utils.GetSuccess("Successfully Deleted Member", nil, w)
 }
