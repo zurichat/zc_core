@@ -32,7 +32,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	// Authentication
 	r.HandleFunc("/auth/login", auth.LoginIn).Methods("POST")
 
-	// Organisation
+	// Organization
 	r.HandleFunc("/organizations", organizations.Create).Methods("POST")
 	r.HandleFunc("/organizations", organizations.GetOrganizations).Methods("GET")
 	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
@@ -41,9 +41,10 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/plugins", organizations.AddOrganizationPlugin).Methods("POST")
 	r.HandleFunc("/organizations/{id}/plugins", organizations.GetOrganizationPlugins).Methods("GET")
 	r.HandleFunc("/organizations/{id}/url", organizations.UpdateUrl).Methods("PATCH")
-    r.HandleFunc("/organizations/{id}/name", organizations.ChangeOrganizationName).Methods("PATCH")
-    r.HandleFunc("/organizations/{id}/members", organizations.CreateMember).Methods("POST")
-    r.HandleFunc("/organizations/{id}/members", organizations.GetMembers).Methods("GET")
+	r.HandleFunc("/organizations/{id}/name", organizations.ChangeOrganizationName).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members", organizations.CreateMember).Methods("POST")
+	r.HandleFunc("/organizations/{id}/members", organizations.GetMembers).Methods("GET")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/photo", organizations.UpdateProfilePicture).Methods("PATCH")
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
@@ -64,7 +65,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/users/search/{query}", user.SearchOtherUsers).Methods("GET")
 	r.HandleFunc("/users", user.GetUsers).Methods("GET")
 
-	// Realtime communication
+	// Realtime communications
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
 	r.HandleFunc("/realtime/auth", realtime.Auth).Methods("POST")
 	r.Handle("/socket.io/", Server)
