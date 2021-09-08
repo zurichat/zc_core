@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -30,21 +31,22 @@ func Create(response http.ResponseWriter, request *http.Request) {
 	user_collection := "users"
 
 	var user User
-
 	err := utils.ParseJsonFromRequest(request, &user)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, response)
 		return
 	}
-	if !utils.IsValidEmail(user.Email) {
+
+	userEmail := strings.ToLower(user.Email)
+	if !utils.IsValidEmail(userEmail) {
 		utils.GetError(EMAIL_NOT_VALID, http.StatusBadRequest, response)
 		return
 	}
 	// confirm if user_email exists
-	result, _ := utils.GetMongoDbDoc(user_collection, bson.M{"email": user.Email})
+	result, _ := utils.GetMongoDbDoc(user_collection, bson.M{"email": userEmail})
 	if result != nil {
 		utils.GetError(
-			errors.New(fmt.Sprintf("Users with email %s exists!", user.Email)),
+			errors.New(fmt.Sprintf("Users with email %s exists!", userEmail)),
 			http.StatusBadRequest, 
 			response,
 		)

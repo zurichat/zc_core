@@ -27,28 +27,29 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	// Setup and init
 	r.HandleFunc("/", VersionHandler)
-	r.HandleFunc("/v1/welcome", auth.IsAuthorized(Index)).Methods("GET")
+	r.HandleFunc("/v1/welcome", auth.IsAuthenticated(Index)).Methods("GET")
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
 
 	// Authentication
 	r.HandleFunc("/auth/login", auth.LoginIn).Methods("POST")
 
 	// Organisation
-	r.HandleFunc("/organizations", auth.IsAuthorized(organizations.Create)).Methods("POST")
-	r.HandleFunc("/organizations", auth.IsAuthorized(organizations.GetOrganizations)).Methods("GET")
+	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.Create)).Methods("POST")
+	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.GetOrganizations)).Methods("GET")
 	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
-	r.HandleFunc("/organizations/{id}", auth.IsAuthorized(organizations.DeleteOrganization)).Methods("DELETE")
+	r.HandleFunc("/organizations/{id}", auth.IsAuthenticated(organizations.DeleteOrganization)).Methods("DELETE")
 
 	r.HandleFunc("/organizations/{id}/plugins", organizations.AddOrganizationPlugin).Methods("POST")
 	r.HandleFunc("/organizations/{id}/plugins", organizations.GetOrganizationPlugins).Methods("GET")
-	r.HandleFunc("/organizations/{id}/url", auth.IsAuthorized(organizations.UpdateUrl)).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/name", auth.IsAuthorized(organizations.UpdateName)).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/members", auth.IsAuthorized(organizations.CreateMember)).Methods("POST")
-	r.HandleFunc("/organizations/{id}/members/{member_id}", auth.IsAuthorized(organizations.DeleteMember)).Methods("DELETE")
-	r.HandleFunc("/organizations/{id}/members", auth.IsAuthorized(organizations.DeleteMembers)).Methods("DELETE")
-	r.HandleFunc("/organizations/{id}/members", auth.IsAuthorized(organizations.GetMembers)).Methods("GET")
-	r.HandleFunc("/organizations/{id}/logo", auth.IsAuthorized(organizations.UpdateLogo)).Methods("PATCH")
-
+	r.HandleFunc("/organizations/{id}/url", auth.IsAuthenticated(organizations.UpdateUrl)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/name", auth.IsAuthenticated(organizations.UpdateName)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members", auth.IsAuthenticated(organizations.CreateMember)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/members", auth.IsAuthenticated(organizations.GetMembers)).Methods("GET")
+	r.HandleFunc("/organizations/{id}/logo", auth.IsAuthenticated(organizations.UpdateLogo)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/photo", auth.IsAuthenticated(organizations.UpdateProfilePicture)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.DeleteMember)).Methods("DELETE")
+	r.HandleFunc("/organizations/{id}/members", auth.IsAuthenticated(organizations.DeleteMembers)).Methods("DELETE")
+	
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
@@ -62,13 +63,13 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	// Users
 	r.HandleFunc("/users", user.Create).Methods("POST")
-	r.HandleFunc("/users/{user_id}", auth.IsAuthorized(user.UpdateUser)).Methods("PATCH")
-	r.HandleFunc("/users/{user_id}", auth.IsAuthorized(user.GetUser)).Methods("GET")
-	r.HandleFunc("/users/{user_id}", auth.IsAuthorized(user.DeleteUser)).Methods("DELETE")
-	r.HandleFunc("/users/search/{query}", user.SearchOtherUsers).Methods("GET")
-	r.HandleFunc("/users", auth.IsAuthorized(user.GetUsers)).Methods("GET")
+	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.UpdateUser)).Methods("PATCH")
+	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.GetUser)).Methods("GET")
+	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.DeleteUser)).Methods("DELETE")
+	r.HandleFunc("/users/search/{query}", auth.IsAuthenticated(user.SearchOtherUsers)).Methods("GET")
+	r.HandleFunc("/users", auth.IsAuthenticated(user.GetUsers)).Methods("GET")
 
-	// Realtime communication
+	// Realtime communications
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
 	r.HandleFunc("/realtime/auth", realtime.Auth).Methods("POST")
 	r.Handle("/socket.io/", Server)
@@ -145,8 +146,11 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 
 // should redirect permanently to the docs page
 func Index(w http.ResponseWriter, r *http.Request) {
+	// extract user from header
+	user := r.Context().Value("user").(auth.AuthUser)
+
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Welcome to Zuri Core Index")
+	fmt.Fprintf(w, fmt.Sprintf("Welcome %s to Zuri Core Developer.", user.Email))
 }
 
 type loggingResponseWriter struct {

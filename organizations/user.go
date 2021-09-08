@@ -116,7 +116,60 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Todo: update user workspace with the org ID
 	utils.GetSuccess("Member created successfully", createdMember, w)
+}
+
+// endpoint to update a member profile picture
+func UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("content-Type", "application/json")
+	org_collection, member_collection := "organizations", "members"
+
+	orgId := mux.Vars(r)["id"]
+	member_Id := mux.Vars(r)["mem_id"]
+
+	requestData := make(map[string]string)
+	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+	image_url := requestData["image_url"]
+
+	pMemId, err := primitive.ObjectIDFromHex(member_Id)
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	pOrgId, err := primitive.ObjectIDFromHex(orgId)
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": pOrgId})
+	if orgDoc == nil {
+		fmt.Printf("org with id %s doesn't exist!", orgId)
+		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
+		return
+	}
+
+	memberDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": pMemId, "org_id": pOrgId})
+	if memberDoc == nil {
+		fmt.Printf("member with id %s doesn't exist!", member_Id)
+		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
+		return
+
+	}
+
+	result, err := utils.UpdateOneMongoDbDoc(member_collection, member_Id, bson.M{"image_url": image_url})
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("Profile picture updated", result, w)
+
 }
 
 // Delete single member from an organizatin

@@ -9,8 +9,10 @@ import (
 	"net/mail"
 	"os"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	// "zuri.chat/zccore/auth"/
 )
 
 // ErrorResponse : This is error model.
@@ -24,6 +26,17 @@ type SuccessResponse struct {
 	StatusCode int         `json:"status"`
 	Message    string      `json:"message"`
 	Data       interface{} `json:"data"`
+}
+
+type AuthUser struct {
+	ID    primitive.ObjectID
+	Email string
+}
+
+type MyCustomClaims struct {
+	Authorized bool
+	User       AuthUser
+	jwt.StandardClaims
 }
 
 // GetError : This is helper function to prepare error model.
@@ -97,50 +110,38 @@ func IsValidEmail(email string) bool {
 }
 
 func TokenIsValid(utoken string) (bool, string, error) {
+
 	SECRET_KEY, _ := os.LookupEnv("AUTH_SECRET_KEY")
+	var cclaims MyCustomClaims
 
-	var signKey = []byte(SECRET_KEY)
-	token, err := jwt.Parse(utoken, func(token *jwt.Token) (interface{}, error) {
-
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-		}
-		return signKey, nil
+	token, err := jwt.ParseWithClaims(utoken, &cclaims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(SECRET_KEY), nil
 	})
 
-	if err != nil {
-		return false, "Token Expired", err
+	if _, ok := token.Claims.(*MyCustomClaims); ok && token.Valid {
+		var iid interface{} = cclaims.User.ID
+		return true, iid.(primitive.ObjectID).Hex(), nil
+	} else {
+		fmt.Print(err)
+		return false, "Not Authorized", errors.New("Not Authorized.")
 	}
-
-	claims, _ := token.Claims.(jwt.MapClaims)
-	fmt.Println(claims["user_id"])
-	return true, fmt.Sprintf("%v", claims["user_id"]), nil
 
 }
 
 func TokenAgainstUserId(utoken string, user_id string) (bool, string, error) {
 	SECRET_KEY, _ := os.LookupEnv("AUTH_SECRET_KEY")
+	var cclaims MyCustomClaims
 
-	var signKey = []byte(SECRET_KEY)
-	token, err := jwt.Parse(utoken, func(token *jwt.Token) (interface{}, error) {
-
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-		}
-		return signKey, nil
+	token, err := jwt.ParseWithClaims(utoken, &cclaims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(SECRET_KEY), nil
 	})
-
-	if err != nil {
-		return false, "Token Expired", err
-	}
-
-	claims, _ := token.Claims.(jwt.MapClaims)
-	fmt.Println(claims["user_id"])
-
-	if user_id == claims["user_id"] {
-		return true, user_id, nil
+	var iiid string
+	if _, ok := token.Claims.(*MyCustomClaims); ok && token.Valid {
+		var iid interface{} = cclaims.User.ID
+		iiid = iid.(primitive.ObjectID).Hex()
+		return true, iiid, nil
 	} else {
-		return false, "Unauthorized user", errors.New("Not Authorized.")
+		fmt.Print(err)
+		return false, "Not Authorized", errors.New("Not Authorized.")
 	}
-
 }
