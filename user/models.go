@@ -35,7 +35,6 @@ const (
 type UserWorkspaceProfile struct {
 	ID             primitive.ObjectID   `bson:"_id,omitempty" json:"id,omitempty"`
 	OrganizationID string               `bson:"organization_id"`
-	DisplayPicture string               `bson:"display_picture"`
 	Status         Status               `bson:"status"`
 	Bio            string               `bson:"bio"`
 	Timezone       string               `bson:"timezone"`
@@ -95,8 +94,6 @@ type User struct {
 	EmailVerification UserEmailVerification   `bson:"email_verification"`
 	PasswordResets    []*UserPasswordReset    `bson:"password_resets"`
 }
-
-
 
 // Struct that user can update directly
 type UserUpdate struct {
