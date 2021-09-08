@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -11,7 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"zuri.chat/zccore/auth"
+	// "zuri.chat/zccore/auth"
 	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 )
@@ -86,8 +87,20 @@ func AddOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetOrganizationPlugins(w http.ResponseWriter, r *http.Request) {
-	// Get logged-in user ID/Emaik
-	u := r.Context().Value("user").(auth.AuthUser)
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Header["Authorization"] == nil {
+		utils.GetError(NoAuthToken, http.StatusForbidden, w)
+		return
+	}
+
+	// authToken := r.Header["Bearer"][0]
+	authToken := strings.Split(r.Header["Authorization"][0], " ")[1]
+	fstatus, user_id, _ := utils.TokenIsValid(authToken)
+	if fstatus == false {
+		utils.GetError(errors.New("Token expired."), http.StatusBadRequest, w)
+		return
+	}
 
 	orgId := mux.Vars(r)["id"]
 
@@ -102,18 +115,20 @@ func GetOrganizationPlugins(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"_id": u.ID.Hex()})
+	userId, err := primitive.ObjectIDFromHex(user_id)
+	userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"_id": userId})
 	if userDoc == nil {
 		utils.GetError(errors.New("Invalid User"), http.StatusBadRequest, w)
 		return
 	}
+
 	// convert user to struct
 	var user user.User
 	mapstructure.Decode(userDoc, &user)
 
 	memDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "email": user.Email})
 	if memDoc == nil {
-		utils.GetError(errors.New("You're not authorized to access this plugin"), http.StatusForbidden, w)
+		utils.GetError(errors.New("User Not Authorized"), http.StatusForbidden, w)
 		return
 	}
 
