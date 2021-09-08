@@ -31,13 +31,13 @@ func Create(response http.ResponseWriter, request *http.Request) {
 	user_collection := "users"
 
 	var user User
-	userEmail := strings.ToLower(user.Email)
-
 	err := utils.ParseJsonFromRequest(request, &user)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, response)
 		return
 	}
+
+	userEmail := strings.ToLower(user.Email)
 	if !utils.IsValidEmail(userEmail) {
 		utils.GetError(EMAIL_NOT_VALID, http.StatusBadRequest, response)
 		return
