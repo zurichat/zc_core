@@ -1,0 +1,28 @@
+consumes:
+  - application/json
+produces:
+  - application/json
+schemes:
+  - http
+swagger: '2.0'
+info:
+  description: This is a Zuri Chat API. You can find out more about the API at https://github.com/zurichat/zc_core.
+  title: Zuri Chat API
+  version: 3.0.0
+host: localhost:8080
+basePath: /
+paths:
+  /auth/login:
+    post:
+      description: Organization Login 
+      produces:
+        - application/json
+      tags:
+        - Authentication
+      operationId: organization_login
+      responses:
+        '200':
+          description: Successful Auth token
+        '400':
+          description: Invalid input
+    

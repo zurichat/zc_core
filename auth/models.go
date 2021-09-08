@@ -98,7 +98,7 @@ func GenerateJWT(userID, email string) (string, error) {
 }
 
 // middleware to check if user is authorized
-func IsAuthorized(nextHandler http.HandlerFunc) http.HandlerFunc {
+func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 	// token format "Authorization": "Bearer token"
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("content-type", "application/json")

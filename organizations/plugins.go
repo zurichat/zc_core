@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -13,6 +12,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	// "zuri.chat/zccore/auth"
+
+	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 )
@@ -87,20 +88,7 @@ func AddOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetOrganizationPlugins(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Header["Authorization"] == nil {
-		utils.GetError(NoAuthToken, http.StatusForbidden, w)
-		return
-	}
-
-	// authToken := r.Header["Bearer"][0]
-	authToken := strings.Split(r.Header["Authorization"][0], " ")[1]
-	fstatus, user_id, _ := utils.TokenIsValid(authToken)
-	if fstatus == false {
-		utils.GetError(errors.New("Token expired."), http.StatusBadRequest, w)
-		return
-	}
+	loggedInUser := r.Context().Value("user").(auth.AuthUser)
 
 	orgId := mux.Vars(r)["id"]
 
@@ -108,15 +96,13 @@ func GetOrganizationPlugins(w http.ResponseWriter, r *http.Request) {
 	member_collection, user_collection := "members", "users"
 
 	docs, err := utils.GetMongoDbDocs(orgCollectionName, nil)
-
 	if err != nil {
 		// org plugins not found.
 		utils.GetError(err, http.StatusNotFound, w)
 		return
 	}
 
-	userId, err := primitive.ObjectIDFromHex(user_id)
-	userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"_id": userId})
+	userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"_id": loggedInUser.ID.Hex()})
 	if userDoc == nil {
 		utils.GetError(errors.New("Invalid User"), http.StatusBadRequest, w)
 		return
@@ -128,7 +114,7 @@ func GetOrganizationPlugins(w http.ResponseWriter, r *http.Request) {
 
 	memDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "email": user.Email})
 	if memDoc == nil {
-		utils.GetError(errors.New("User Not Authorized"), http.StatusForbidden, w)
+		utils.GetError(errors.New("You're not authorized to access this resources"), http.StatusUnauthorized, w)
 		return
 	}
 
