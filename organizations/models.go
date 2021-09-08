@@ -15,13 +15,13 @@ const (
 type Organization struct {
 	ID        string                   `json:"id" bson:"_id"`
 	Name      string                   `json:"name" bson:"name"`
-	Email     string                   `json:"email" bson:"email"`
+	CreatorEmail     string            `json:"creator_email" bson:"creator_email"`
 	CreatorID string                   `json:"creator_id" bson:"creator_id"`
 	Plugins   []map[string]interface{} `json:"plugins" bson:"plugins"`
 	Admins    []string                 `json:"admins" bson:"admins"`
 	Settings  map[string]interface{}   `json:"settings" bson:"settings"`
-	ImageURL  string                   `json:"image_url" bson:"image_url"`
-	URL       string                   `json:"url" bson:"url"`
+	LogoURL  string                   `json:"logo_url" bson:"logo_url"`
+	WorkspaceURL       string         `json:"workspace_url" bson:"workspace_url"`
 	CreatedAt time.Time                `json:"created_at" bson:"created_at"`
 	UpdatedAt time.Time                `json:"updated_at" bson:"updated_at"`
 }
