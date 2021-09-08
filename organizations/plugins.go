@@ -11,6 +11,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
+	// "zuri.chat/zccore/auth"
+
 	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
@@ -86,8 +88,7 @@ func AddOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetOrganizationPlugins(w http.ResponseWriter, r *http.Request) {
-	// Get logged-in user ID/Emaik
-	u := r.Context().Value("user").(auth.AuthUser)
+	loggedInUser := r.Context().Value("user").(auth.AuthUser)
 
 	orgId := mux.Vars(r)["id"]
 
@@ -95,25 +96,25 @@ func GetOrganizationPlugins(w http.ResponseWriter, r *http.Request) {
 	member_collection, user_collection := "members", "users"
 
 	docs, err := utils.GetMongoDbDocs(orgCollectionName, nil)
-
 	if err != nil {
 		// org plugins not found.
 		utils.GetError(err, http.StatusNotFound, w)
 		return
 	}
 
-	userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"_id": u.ID.Hex()})
+	userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"_id": loggedInUser.ID.Hex()})
 	if userDoc == nil {
 		utils.GetError(errors.New("Invalid User"), http.StatusBadRequest, w)
 		return
 	}
+
 	// convert user to struct
 	var user user.User
 	mapstructure.Decode(userDoc, &user)
 
 	memDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "email": user.Email})
 	if memDoc == nil {
-		utils.GetError(errors.New("You're not authorized to access this plugin"), http.StatusForbidden, w)
+		utils.GetError(errors.New("You're not authorized to access this resources"), http.StatusUnauthorized, w)
 		return
 	}
 
