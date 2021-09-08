@@ -139,7 +139,6 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// memberId, err := primitive.ObjectIDFromHex(orgId)
 	orgMembers, err := utils.DeleteOneMongoDoc(member_collection, orgId)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
