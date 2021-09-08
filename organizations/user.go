@@ -171,3 +171,37 @@ func UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("Profile picture updated", result, w)
 
 }
+
+func GetProfile(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	org_collection, member_collection := "organizations", "members"
+
+	Id := mux.Vars(r)["id"]
+	MemId := mux.Vars(r)["mem_id"]
+
+	OrgId, err := primitive.ObjectIDFromHex(Id)
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": OrgId})
+	if orgDoc == nil {
+		utils.GetError(errors.New("Organnization id doesn't exist!"), http.StatusBadRequest, w)
+		return
+	}
+
+	MemberId, err := primitive.ObjectIDFromHex(MemId)
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	MemberProfile, err := utils.GetMongoDbDoc(member_collection, bson.M{"_id": MemberId})
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("Member Profile retrieved succesfully", MemberProfile, w)
+}
