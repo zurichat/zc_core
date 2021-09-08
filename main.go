@@ -44,6 +44,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/url", auth.IsAuthorized(organizations.UpdateUrl)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/name", auth.IsAuthorized(organizations.UpdateName)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members", auth.IsAuthorized(organizations.CreateMember)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/members/{member_id}", auth.IsAuthorized(organizations.DeleteMember)).Methods("DELETE")
 	r.HandleFunc("/organizations/{id}/members", auth.IsAuthorized(organizations.DeleteMembers)).Methods("DELETE")
 	r.HandleFunc("/organizations/{id}/members", auth.IsAuthorized(organizations.GetMembers)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/logo", auth.IsAuthorized(organizations.UpdateLogo)).Methods("PATCH")
