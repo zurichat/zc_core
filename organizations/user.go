@@ -116,6 +116,7 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Todo: update user workspace with the org ID
 	utils.GetSuccess("Member created successfully", createdMember, w)
 }
 
