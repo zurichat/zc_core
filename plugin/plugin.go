@@ -15,6 +15,8 @@ type M map[string]interface{}
 var validate = validator.New()
 
 func Register(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("content-type", "application/json")
+
 	p := Plugin{}
 	if err := utils.ParseJsonFromRequest(r, &p); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
@@ -29,8 +31,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
-	w.Header().Set("content-type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+
 	utils.GetSuccess("success", M{"plugin_id": p.ID.Hex()}, w)
 	go approvePlugin(p.ID.Hex())
 }

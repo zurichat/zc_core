@@ -10,6 +10,7 @@ import (
 	socketio "github.com/googollee/go-socket.io"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	"github.com/rs/cors"
 	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/data"
 	"zuri.chat/zccore/marketplace"
@@ -32,19 +33,20 @@ func Router(Server *socketio.Server) *mux.Router {
 	// Authentication
 	r.HandleFunc("/auth/login", auth.LoginIn).Methods("POST")
 
-	// Organization
-	r.HandleFunc("/organizations", organizations.Create).Methods("POST")
-	r.HandleFunc("/organizations", organizations.GetOrganizations).Methods("GET")
+	// Organisation
+	r.HandleFunc("/organizations", auth.IsAuthorized(organizations.Create)).Methods("POST")
+	r.HandleFunc("/organizations", auth.IsAuthorized(organizations.GetOrganizations)).Methods("GET")
 	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
-	r.HandleFunc("/organizations/{id}", organizations.DeleteOrganization).Methods("DELETE")
+	r.HandleFunc("/organizations/{id}", auth.IsAuthorized(organizations.DeleteOrganization)).Methods("DELETE")
 
 	r.HandleFunc("/organizations/{id}/plugins", organizations.AddOrganizationPlugin).Methods("POST")
 	r.HandleFunc("/organizations/{id}/plugins", organizations.GetOrganizationPlugins).Methods("GET")
-	r.HandleFunc("/organizations/{id}/url", organizations.UpdateUrl).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/name", organizations.ChangeOrganizationName).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/members", organizations.CreateMember).Methods("POST")
-	r.HandleFunc("/organizations/{id}/members", organizations.GetMembers).Methods("GET")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}/photo", organizations.UpdateProfilePicture).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/url", auth.IsAuthorized(organizations.UpdateUrl)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/name", auth.IsAuthorized(organizations.UpdateName)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members", auth.IsAuthorized(organizations.CreateMember)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/members", auth.IsAuthorized(organizations.GetMembers)).Methods("GET")
+	r.HandleFunc("/organizations/{id}/logo", auth.IsAuthorized(organizations.UpdateLogo)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/photo", auth.IsAuthorized(organizations.UpdateProfilePicture)).Methods("PATCH")
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
@@ -59,11 +61,11 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	// Users
 	r.HandleFunc("/users", user.Create).Methods("POST")
-	r.HandleFunc("/users/{user_id}", user.UpdateUser).Methods("PATCH")
-	r.HandleFunc("/users/{user_id}", user.GetUser).Methods("GET")
-	r.HandleFunc("/users/{user_id}", user.DeleteUser).Methods("DELETE")
+	r.HandleFunc("/users/{user_id}", auth.IsAuthorized(user.UpdateUser)).Methods("PATCH")
+	r.HandleFunc("/users/{user_id}", auth.IsAuthorized(user.GetUser)).Methods("GET")
+	r.HandleFunc("/users/{user_id}", auth.IsAuthorized(user.DeleteUser)).Methods("DELETE")
 	r.HandleFunc("/users/search/{query}", user.SearchOtherUsers).Methods("GET")
-	r.HandleFunc("/users", user.GetUsers).Methods("GET")
+	r.HandleFunc("/users", auth.IsAuthorized(user.GetUsers)).Methods("GET")
 
 	// Realtime communications
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
@@ -106,8 +108,13 @@ func main() {
 
 	r := Router(Server)
 
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowCredentials: true,
+	})
+
 	srv := &http.Server{
-		Handler:      LoggingMiddleware(r),
+		Handler:      LoggingMiddleware(c.Handler(r)),
 		Addr:         ":" + port,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
@@ -137,8 +144,11 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 
 // should redirect permanently to the docs page
 func Index(w http.ResponseWriter, r *http.Request) {
+	// extract user from header
+	user := r.Context().Value("user").(auth.AuthUser)
+
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Welcome to Zuri Core Index")
+	fmt.Fprintf(w, fmt.Sprintf("Welcome %s to Zuri Core Developer.", user.Email))
 }
 
 type loggingResponseWriter struct {

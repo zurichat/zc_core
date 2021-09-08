@@ -2,11 +2,14 @@ package utils
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"net/mail"
 	"os"
 
+	"github.com/dgrijalva/jwt-go"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -91,4 +94,53 @@ func ParseJsonFromRequest(r *http.Request, v interface{}) error {
 func IsValidEmail(email string) bool {
 	_, err := mail.ParseAddress(email)
 	return err == nil
+}
+
+func TokenIsValid(utoken string) (bool, string, error) {
+	SECRET_KEY, _ := os.LookupEnv("AUTH_SECRET_KEY")
+
+	var signKey = []byte(SECRET_KEY)
+	token, err := jwt.Parse(utoken, func(token *jwt.Token) (interface{}, error) {
+
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+		return signKey, nil
+	})
+
+	if err != nil {
+		return false, "Token Expired", err
+	}
+
+	claims, _ := token.Claims.(jwt.MapClaims)
+	fmt.Println(claims["user_id"])
+	return true, fmt.Sprintf("%v", claims["user_id"]), nil
+
+}
+
+func TokenAgainstUserId(utoken string, user_id string) (bool, string, error) {
+	SECRET_KEY, _ := os.LookupEnv("AUTH_SECRET_KEY")
+
+	var signKey = []byte(SECRET_KEY)
+	token, err := jwt.Parse(utoken, func(token *jwt.Token) (interface{}, error) {
+
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+		return signKey, nil
+	})
+
+	if err != nil {
+		return false, "Token Expired", err
+	}
+
+	claims, _ := token.Claims.(jwt.MapClaims)
+	fmt.Println(claims["user_id"])
+
+	if user_id == claims["user_id"] {
+		return true, user_id, nil
+	} else {
+		return false, "Unauthorized user", errors.New("Not Authorized.")
+	}
+
 }

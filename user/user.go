@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -11,6 +12,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 	"zuri.chat/zccore/utils"
+)
+
+var (
+	EMAIL_NOT_VALID = errors.New("Email address is not valid")
+	HASHING_FAILED = errors.New("Failed to hashed password")
 )
 
 // Method to hash password
@@ -25,28 +31,31 @@ func Create(response http.ResponseWriter, request *http.Request) {
 	user_collection := "users"
 
 	var user User
+	userEmail := strings.ToLower(user.Email)
 
 	err := utils.ParseJsonFromRequest(request, &user)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, response)
 		return
 	}
-	if !utils.IsValidEmail(user.Email) {
-		utils.GetError(errors.New("email address is not valid"), http.StatusBadRequest, response)
+	if !utils.IsValidEmail(userEmail) {
+		utils.GetError(EMAIL_NOT_VALID, http.StatusBadRequest, response)
 		return
 	}
-
 	// confirm if user_email exists
-	result, _ := utils.GetMongoDbDoc(user_collection, bson.M{"email": user.Email})
+	result, _ := utils.GetMongoDbDoc(user_collection, bson.M{"email": userEmail})
 	if result != nil {
-		fmt.Printf("users with email %s exists!", user.Email)
-		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, response)
+		utils.GetError(
+			errors.New(fmt.Sprintf("Users with email %s exists!", userEmail)),
+			http.StatusBadRequest, 
+			response,
+		)
 		return
 	}
 
 	hashPassword, err := GenerateHashPassword(user.Password)
 	if err != nil {
-		utils.GetError(errors.New("Failed to hashed password"), http.StatusBadRequest, response)
+		utils.GetError(HASHING_FAILED, http.StatusBadRequest, response)
 		return
 	}
 
