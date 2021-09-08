@@ -144,11 +144,4 @@ func TokenAgainstUserId(utoken string, user_id string) (bool, string, error) {
 		fmt.Print(err)
 		return false, "Not Authorized", errors.New("Not Authorized.")
 	}
-
-	if user_id == iiid {
-		return true, user_id, nil
-	} else {
-		return false, "Unauthorized user", errors.New("Not Authorized.")
-	}
-
 }
