@@ -178,7 +178,7 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 
 	member_collection, org_collection := "members", "organizations"
 	orgId := mux.Vars(r)["id"]
-	memberId := mux.Vars(r)["member_id"]
+	memberId := mux.Vars(r)["mem_id"]
 
 	pOrgId, err := primitive.ObjectIDFromHex(orgId)
 	if err != nil {
