@@ -50,7 +50,7 @@ func GetPlugin(w http.ResponseWriter, r *http.Request) {
 
 
 // an endpoint to remove plugins from marketplace
-func RemovePlugin (w http.ResponseWriter, r *http.Request) {
+func RemovePlugin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 	
 	pluginID := mux.Vars(r)["id"]
