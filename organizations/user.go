@@ -224,5 +224,47 @@ func UpdateMemberStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.GetSuccess("status updated", result, w)
+}
 
+// Delete single member from an organizatin
+func DeleteMember(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	member_collection, org_collection := "members", "organizations"
+	orgId := mux.Vars(r)["id"]
+	memberId := mux.Vars(r)["mem_id"]
+
+	pOrgId, err := primitive.ObjectIDFromHex(orgId)
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": pOrgId})
+	if orgDoc == nil {
+		fmt.Printf("org with id %s doesn't exist!", orgId)
+		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
+		return
+	}
+
+	query, err := primitive.ObjectIDFromHex(memberId)
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	member, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": query})
+	if member == nil {
+		fmt.Printf("Member with ID: %s does not exists ", memberId)
+		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
+		return
+	}
+
+	delMember, _ := utils.DeleteOneMongoDoc(member_collection, memberId)
+	if delMember.DeletedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
+		return
+	}
+
+	utils.GetSuccess("Successfully Deleted Member", nil, w)
 }

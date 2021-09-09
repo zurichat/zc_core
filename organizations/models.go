@@ -72,6 +72,7 @@ type Member struct {
 	Pronouns    string             `json:"pronouns" bson:"pronouns"`
 	Phone       string             `json:"phone" bson:"phone"`
 	TimeZone    string             `json:"time_zone" bson:"time_zone"`
+	Role        string             `json:"role" bson:"role"`
 	JoinedAt    time.Time          `json:"joined_at" bson:"joined_at"`
 	// Socials     Social    `json:"socials" bson:"socials"`
 }

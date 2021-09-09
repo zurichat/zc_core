@@ -9,6 +9,10 @@ import (
 	"net/mail"
 	"os"
 
+	"math/rand"
+	"strings"
+	"time"
+
 	"github.com/golang-jwt/jwt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -144,4 +148,45 @@ func TokenAgainstUserId(utoken string, user_id string) (bool, string, error) {
 		fmt.Print(err)
 		return false, "Not Authorized", errors.New("Not Authorized.")
 	}
+}
+
+func RandomGen(n int, s_type string) (status bool, str string) {
+	rand.Seed(time.Now().UnixNano())
+	var final_string = ""
+	if s_type == "l" {
+		randgen_s := `abcdefghijklmnopqrstuvwsyz`
+		s := strings.Split(randgen_s, "")
+
+		for j := 1; j <= n; j++ {
+			randIdx := rand.Intn(len(s))
+			final_string = final_string + s[randIdx]
+		}
+		return true, final_string
+
+	} else if s_type == "d" {
+		randgen_i := `0123456789`
+		i := strings.Split(randgen_i, "")
+		for j := 1; j <= n; j++ {
+			randIdx := rand.Intn(len(i))
+			final_string = final_string + i[randIdx]
+		}
+		return true, final_string
+
+	} else {
+		return false, "wrong type"
+	}
+
+}
+
+func GenWorkspaceUrl(orgName string) string {
+	organisation_collection := "organizations"
+	orgNamestr := strings.ReplaceAll(strings.ToLower(orgName), " ", "")
+	_, randLetters := RandomGen(3, "l")
+	_, randNumbers := RandomGen(4, "d")
+	wksUrl := orgNamestr + "-" + randLetters + randNumbers + ".zurichat.com"
+	result, _ := GetMongoDbDoc(organisation_collection, bson.M{"url": wksUrl})
+	if result != nil {
+		GenWorkspaceUrl(orgName)
+	}
+	return wksUrl
 }
