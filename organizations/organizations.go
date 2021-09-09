@@ -246,3 +246,21 @@ func UpdateLogo(w http.ResponseWriter, r *http.Request) {
 
 	utils.GetSuccess("organization logo updated successfully", nil, w)
 }
+
+func GetOrganizationByURL(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	orgURL := mux.Vars(r)["url"]
+
+	data, err := utils.GetMongoDbDoc("organizations", bson.M{"workspace_url": orgURL})
+	if data == nil {
+		fmt.Printf("workspace with url %s doesn't exist!", orgURL)
+		utils.GetError(errors.New("organization does not exist"), http.StatusNotFound, w)
+		return
+	}
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+	utils.GetSuccess("organization retrieved successfully", data, w)
+
+}
