@@ -58,26 +58,11 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// return erro if name is empty
-	// if newOrg.Name == "" {
-	// 	utils.GetError(fmt.Errorf("Enter Organisation name"), http.StatusBadRequest, w)
-	// 	return
-	// }
-
-	DefaultOrgName := "Zuri Chat"
 	// generate workspace url
-	NewOrgUrl := utils.GenWorkspaceUrl(DefaultOrgName)
-
-	// confirm if user_id exists
-	// objId, err := primitive.ObjectIDFromHex(newOrg.CreatorID)
-
-	// if err != nil {
-	// 	utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
-	// 	return
-	// }
+	newOrg.Name = "Zuri Chat"
+	newOrg.WorkspaceURL = utils.GenWorkspaceUrl(newOrg.Name)
 
 	// extract user document
-	fmt.Println(loggedInUser.ID.Hex())
 	var luHexid, _ = primitive.ObjectIDFromHex(loggedInUser.ID.Hex())
 	userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"_id": luHexid})
 	if userDoc == nil {
@@ -86,8 +71,6 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newOrg.WorkspaceURL = NewOrgUrl
-	newOrg.Name = DefaultOrgName
 	newOrg.CreatorID = loggedInUser.ID.Hex()
 	newOrg.CreatedAt = time.Now()
 
@@ -129,10 +112,10 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// add organisation id to user organisations list
 	updateFields := make(map[string]interface{})
 	user.Organizations = append(user.Organizations, iiid)
 	updateFields["Organizations"] = user.Organizations
-	// add organisation id to user organisations list
 	_, ee := utils.UpdateOneMongoDbDoc(user_collection, loggedInUser.ID.Hex(), updateFields)
 	if ee != nil {
 		utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, w)
