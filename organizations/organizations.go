@@ -8,8 +8,11 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"zuri.chat/zccore/auth"
+	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 )
 
@@ -36,9 +39,10 @@ func GetOrganization(w http.ResponseWriter, r *http.Request) {
 
 func Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	loggedInUser := r.Context().Value("user").(auth.AuthUser)
 
 	var newOrg Organization
-	collection, user_collection := "organizations", "users"
+	collection, user_collection, member_collection := "organizations", "users", "members"
 
 	// Try to decode the request body into the struct. If there is an error,
 	// respond to the client with the error message and a 400 status code.
@@ -54,27 +58,35 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// set default name if name is empty
+	// return erro if name is empty
 	if newOrg.Name == "" {
-		newOrg.Name = "ZuriWorkspace"
-	}
-
-	// confirm if user_id exists
-	objId, err := primitive.ObjectIDFromHex(newOrg.CreatorID)
-
-	if err != nil {
-		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		utils.GetError(fmt.Errorf("Enter Organisation name"), http.StatusBadRequest, w)
 		return
 	}
 
-	user, _ := utils.GetMongoDbDoc(user_collection, bson.M{"_id": objId})
-	if user == nil {
-		fmt.Printf("users with id %s exists!", newOrg.CreatorID)
+	// generate workspace url
+	NewOrgUrl := utils.GenWorkspaceUrl(newOrg.Name)
+
+	// confirm if user_id exists
+	// objId, err := primitive.ObjectIDFromHex(newOrg.CreatorID)
+
+	// if err != nil {
+	// 	utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+	// 	return
+	// }
+
+	// extract user document
+	fmt.Println(loggedInUser.ID.Hex())
+	var luHexid, _ = primitive.ObjectIDFromHex(loggedInUser.ID.Hex())
+	userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"_id": luHexid})
+	if userDoc == nil {
+		fmt.Printf("user with id %s does not exist!", newOrg.CreatorID)
 		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
 		return
 	}
 
-	newOrg.WorkspaceURL = newOrg.Name + ".zuri.chat"
+	newOrg.WorkspaceURL = NewOrgUrl
+	newOrg.CreatorID = loggedInUser.ID.Hex()
 	newOrg.CreatedAt = time.Now()
 
 	// convert to map object
@@ -89,7 +101,42 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Todo: update user workspace and include the newly generated Id/workspace url
+	var iid interface{} = save.InsertedID
+	var iiid string = iid.(primitive.ObjectID).Hex()
+	hexOrgid, _ := primitive.ObjectIDFromHex(iiid)
+
+	// Adding user as a member
+	var user user.User
+	mapstructure.Decode(userDoc, &user)
+
+	newMember := Member{
+		Email: user.Email,
+		OrgId: hexOrgid,
+	}
+	// conv to struct
+	memStruc, err := utils.StructToMap(newMember)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	// add new member to member collection
+	_, e := utils.CreateMongoDbDoc(member_collection, memStruc)
+	if e != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	updateFields := make(map[string]interface{})
+	user.Organizations = append(user.Organizations, iiid)
+	updateFields["Organizations"] = user.Organizations
+	// add organisation id to user organisations list
+	_, ee := utils.UpdateOneMongoDbDoc(user_collection, loggedInUser.ID.Hex(), updateFields)
+	if ee != nil {
+		utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, w)
+		return
+	}
+
 	utils.GetSuccess("organization created", save, w)
 }
 
@@ -199,7 +246,7 @@ func UpdateLogo(w http.ResponseWriter, r *http.Request) {
 
 	org_filter := make(map[string]interface{})
 	org_filter["logo_url"] = requestData["organization_logo"]
-	
+
 	update, err := utils.UpdateOneMongoDbDoc(collection, orgId, org_filter)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
@@ -210,6 +257,6 @@ func UpdateLogo(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
 	}
-	
+
 	utils.GetSuccess("organization logo updated successfully", nil, w)
 }
