@@ -59,13 +59,14 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// return erro if name is empty
-	if newOrg.Name == "" {
-		utils.GetError(fmt.Errorf("Enter Organisation name"), http.StatusBadRequest, w)
-		return
-	}
+	// if newOrg.Name == "" {
+	// 	utils.GetError(fmt.Errorf("Enter Organisation name"), http.StatusBadRequest, w)
+	// 	return
+	// }
 
+	DefaultOrgName := "Zuri Chat"
 	// generate workspace url
-	NewOrgUrl := utils.GenWorkspaceUrl(newOrg.Name)
+	NewOrgUrl := utils.GenWorkspaceUrl(DefaultOrgName)
 
 	// confirm if user_id exists
 	// objId, err := primitive.ObjectIDFromHex(newOrg.CreatorID)
@@ -86,6 +87,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newOrg.WorkspaceURL = NewOrgUrl
+	newOrg.Name = DefaultOrgName
 	newOrg.CreatorID = loggedInUser.ID.Hex()
 	newOrg.CreatedAt = time.Now()
 
