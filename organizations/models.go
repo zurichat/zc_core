@@ -10,6 +10,7 @@ import (
 const (
 	OrganizationCollectionName     = "organizations"
 	InstalledPluginsCollectionName = "installed_plugins"
+	OrganizationSettings = "organizations_settings"
 )
 
 type Organization struct {
