@@ -171,3 +171,58 @@ func UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("Profile picture updated", result, w)
 
 }
+
+// an endpoint to update a user status
+func UpdateMemberStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("content-type", "application/json")
+
+	org_collection, member_collection := "organizations", "members"
+
+	// Validate the user ID
+	orgId := mux.Vars(r)["id"]
+	member_Id := mux.Vars(r)["mem_id"]
+
+	pMemId, err := primitive.ObjectIDFromHex(member_Id)
+	if err != nil {
+		utils.GetError(errors.New("invalid member id"), http.StatusBadRequest, w)
+		return
+	}
+
+	pOrgId, err := primitive.ObjectIDFromHex(orgId)
+	if err != nil {
+		utils.GetError(errors.New("invalid organization id"), http.StatusBadRequest, w)
+		return
+	}
+
+	requestData := make(map[string]string)
+	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	member_status := requestData["status"]
+
+	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": pOrgId})
+	if orgDoc == nil {
+		fmt.Printf("org with id doesn't exist!", orgId)
+		utils.GetError(errors.New("org with id %s doesn't exist!"), http.StatusBadRequest, w)
+		return
+	}
+
+	memberDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": pMemId, "org_id": orgId})
+	if memberDoc == nil {
+		fmt.Printf("member with id %s doesn't exist!", member_Id)
+		utils.GetError(errors.New("member with id doesn't exist!"), http.StatusBadRequest, w)
+		return
+
+	}
+
+	result, err := utils.UpdateOneMongoDbDoc(member_collection, member_Id, bson.M{"status": member_status})
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("status updated", result, w)
+
+}
