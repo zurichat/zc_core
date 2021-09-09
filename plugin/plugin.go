@@ -49,7 +49,7 @@ func GetByID(w http.ResponseWriter, r *http.Request) {
 // a hack to simulate plugin approval, it basically waits 10 seconds after creation and approves the plugin
 func approvePlugin(id string) {
 	time.Sleep(10 * time.Second)
-	update := M{"approved": true, "approved_at": time.Now().String()}
+	update := M{"approved": true, "deleted": false, "approved_at": time.Now().String()}
 	_, err := utils.UpdateOneMongoDbDoc(PluginCollectionName, id, update)
 	if err != nil {
 		log.Println("error approving plugin")
