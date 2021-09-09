@@ -32,7 +32,7 @@ type Authentication struct {
 
 type Token struct {
 	TokenString 	string					`json:"token"`
-	User			user.User				`json:"user"`
+	User			UserResponse			`json:"user"`
 }
 
 type AuthUser struct {
@@ -44,6 +44,24 @@ type MyCustomClaims struct {
 	Authorized 			bool 		`json:"authorized"`
 	User 				AuthUser
 	jwt.StandardClaims
+}
+
+type UserResponse struct {
+	ID                primitive.ObjectID      `json:"id,omitempty"`
+	FirstName         string                  `json:"first_name"`
+	LastName          string                  `json:"last_name"`
+	DisplayName       string                  `json:"display_name"`
+	Email             string                  `json:"email"`
+	Phone             string                  `json:"phone"`
+	Status            int                  	  `json:"status"`
+	Timezone          string                  `json:"time_zone"`
+	CreatedAt         time.Time               `json:"created_at"`
+	UpdatedAt         time.Time               `json:"updated_at"`
+}
+
+type VerifiedTokenResponse struct {
+	Verified	bool			`json:"is_verified"`
+	User		UserResponse	`json:"user"`
 }
 
 // Method to compare password
@@ -123,7 +141,7 @@ func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 			nextHandler.ServeHTTP(w, r.WithContext(ctx))
 		} else {
 			fmt.Print(err)
-			utils.GetError(NotAuthorized, http.StatusBadRequest, w)
+			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
 			return
 		}
 	}
