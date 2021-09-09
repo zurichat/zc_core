@@ -23,12 +23,3 @@ To get all plugins from an organization, go to the following endpoint with the f
  [GET] https://api.zuri.chat/organizations/{id}/plugins
 
 where id is the organization id
-
-
-
-Getting a particular plugin from an organization has been implemented.
-
-To add a plugin to an organization, go to the following endpoint with the following data
- [GET] https://api.zuri.chat//organizations/{id}/plugins/{plugin_id}
-
-where id is the organization id
