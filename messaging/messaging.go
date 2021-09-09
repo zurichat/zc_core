@@ -204,6 +204,35 @@ func EnterRoom(Server *socketio.Server, s socketio.Conn, msg string) {
 
 }
 
+//add leave room functionality
+func LeaveRoom(Server *socketio.Server, s socketio.Conn, msg string) {
+
+	q := make(map[string]interface{})
+	e := json.Unmarshal([]byte(msg), &q)
+	if e != nil {
+		fmt.Println(e)
+	}
+
+	//leave room
+	roomId := fmt.Sprintf("%v", q["roomId"])
+	s.Leave(roomId)
+
+	//get database, delete room data
+	var filtered []bson.M
+	Dbname := utils.Env("DB_NAME")
+
+	MessageCollection, _ := utils.GetMongoDbCollection(Dbname, "messages")
+	_, err := MessageCollection.DeleteMany(context.TODO(), bson.M{"roomid": RoomID})
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		response := GetMessageSuccess("Left Room", filtered)
+		s.Emit("left_conversation", response)
+
+	}
+
+}
+
 func SocketEvents(Server *socketio.Server) *socketio.Server {
 	///////////////////////////////////Connection Related Events//////////////////////////////////////////////
 	Server.OnConnect("/socket.io/", func(s socketio.Conn) error {

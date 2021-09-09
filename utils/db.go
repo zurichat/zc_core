@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -24,6 +25,7 @@ func ConnectToDB(clusterURL string) error {
 	var err error
 	once.Do(func() {
 		err = defaultMongoHandle.Connect(clusterURL)
+		CreateUniqueIndex("users", "email", 1)
 	})
 	return err
 }
@@ -207,4 +209,19 @@ func DeleteManyMongoDoc(collectionName string, filter map[string]interface{}) (*
 	}
 
 	return res, nil
+}
+
+func CreateUniqueIndex(collName, field string, order int) error {
+	collection := defaultMongoHandle.GetCollection(collName)
+	indexModel := mongo.IndexModel{
+		Keys:    bson.M{field: order},
+		Options: options.Index().SetUnique(true),
+	}
+	indexName, err := collection.Indexes().CreateOne(context.Background(), indexModel)
+	if err != nil {
+		fmt.Println("errror creating unique index on email field in users collection")
+		return err
+	}
+	fmt.Printf("%s index on %s collection created successfully\n", indexName, collName)
+	return nil
 }

@@ -7,11 +7,18 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
+	// "zuri.chat/zccore/auth"
+
+	"zuri.chat/zccore/auth"
+	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 )
+
+var NoAuthToken = errors.New("No Authorization header provided.")
 
 func AddOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -28,7 +35,7 @@ func AddOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// confirm if plugin_id exists
-	pluginId, err:= primitive.ObjectIDFromHex(orgPlugin.PluginId)
+	pluginId, err := primitive.ObjectIDFromHex(orgPlugin.PluginId)
 
 	if err != nil {
 		utils.GetError(errors.New("invalid plugin id"), http.StatusBadRequest, w)
@@ -43,7 +50,7 @@ func AddOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// confirm if user_id exists
-	creatorId, err:= primitive.ObjectIDFromHex(orgPlugin.UserId)
+	creatorId, err := primitive.ObjectIDFromHex(orgPlugin.UserId)
 
 	if err != nil {
 		utils.GetError(errors.New("invalid user id"), http.StatusBadRequest, w)
@@ -67,11 +74,11 @@ func AddOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
 
 	userName := user["first_name"].(string) + " " + user["last_name"].(string)
 
-	installedPlugin := InstalledPlugin {
-		PluginID: orgPlugin.PluginId,
-		Plugin: plugin,
-		AddedBy: userName,
-		ApprovedBy: userName,
+	installedPlugin := InstalledPlugin{
+		PluginID:    orgPlugin.PluginId,
+		Plugin:      plugin,
+		AddedBy:     userName,
+		ApprovedBy:  userName,
 		InstalledAt: time.Now(),
 	}
 
@@ -89,21 +96,37 @@ func AddOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetOrganizationPlugins(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	loggedInUser := r.Context().Value("user").(auth.AuthUser)
 
 	orgId := mux.Vars(r)["id"]
 
 	orgCollectionName := GetOrgPluginCollectionName(orgId)
+	member_collection, user_collection := "members", "users"
 
 	docs, err := utils.GetMongoDbDocs(orgCollectionName, nil)
-  
 	if err != nil {
 		// org plugins not found.
 		utils.GetError(err, http.StatusNotFound, w)
 		return
 	}
 
-	utils.GetSuccess("Plugins returned successfully", docs, w)
+	userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"_id": loggedInUser.ID.Hex()})
+	if userDoc == nil {
+		utils.GetError(errors.New("Invalid User"), http.StatusBadRequest, w)
+		return
+	}
+
+	// convert user to struct
+	var user user.User
+	mapstructure.Decode(userDoc, &user)
+
+	memDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "email": user.Email})
+	if memDoc == nil {
+		utils.GetError(errors.New("You're not authorized to access this resources"), http.StatusUnauthorized, w)
+		return
+	}
+
+	utils.GetSuccess("Plugins Retrived successfully", docs, w)
 }
 
 func GetOrganizationPlugin(w http.ResponseWriter, r *http.Request) {

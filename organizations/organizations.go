@@ -49,8 +49,8 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// validate that email is not empty and it meets the format
-	if !utils.IsValidEmail(newOrg.Email) {
-		utils.GetError(fmt.Errorf("invalid email format : %s", newOrg.Email), http.StatusInternalServerError, w)
+	if !utils.IsValidEmail(newOrg.CreatorEmail) {
+		utils.GetError(fmt.Errorf("invalid email format : %s", newOrg.CreatorEmail), http.StatusBadRequest, w)
 		return
 	}
 
@@ -60,7 +60,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// confirm if user_id exists
-	objId, err:= primitive.ObjectIDFromHex(newOrg.CreatorID)
+	objId, err := primitive.ObjectIDFromHex(newOrg.CreatorID)
 
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
@@ -74,7 +74,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newOrg.URL = newOrg.Name + ".zuri.chat"
+	newOrg.WorkspaceURL = newOrg.Name + ".zuri.chat"
 	newOrg.CreatedAt = time.Now()
 
 	// convert to map object
@@ -88,6 +88,8 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
+
+	// Todo: update user workspace and include the newly generated Id/workspace url
 	utils.GetSuccess("organization created", save, w)
 }
 
@@ -112,12 +114,12 @@ func DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 	collection := "organizations"
 
 	response, err := utils.DeleteOneMongoDoc(collection, orgId)
-	
+
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
-	
+
 	if response.DeletedCount == 0 {
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
@@ -134,17 +136,80 @@ func UpdateUrl(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
-	url := requestData["url"]
 
 	collection := "organizations"
 	org_filter := make(map[string]interface{})
-	org_filter["url"] = url
+	org_filter["workspace_url"] = requestData["url"]
 	update, err := utils.UpdateOneMongoDbDoc(collection, orgId, org_filter)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
 
-	utils.GetSuccess("organization url updated successfully", update, w)
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
 
+	utils.GetSuccess("organization url updated successfully", nil, w)
+
+}
+
+func UpdateName(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	orgId := mux.Vars(r)["id"]
+
+	requestData := make(map[string]string)
+	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	collection := "organizations"
+
+	org_filter := make(map[string]interface{})
+	org_filter["name"] = requestData["organization_name"]
+
+	update, err := utils.UpdateOneMongoDbDoc(collection, orgId, org_filter)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("organization name updated successfully", nil, w)
+}
+
+func UpdateLogo(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Content-Type", "application/json")
+	orgId := mux.Vars(r)["id"]
+
+	requestData := make(map[string]string)
+	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	collection := "organizations"
+
+	org_filter := make(map[string]interface{})
+	org_filter["logo_url"] = requestData["organization_logo"]
+	
+	update, err := utils.UpdateOneMongoDbDoc(collection, orgId, org_filter)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+	
+	utils.GetSuccess("organization logo updated successfully", nil, w)
 }
