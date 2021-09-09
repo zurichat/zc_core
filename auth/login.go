@@ -55,7 +55,43 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 
 	token := &Token{
 		TokenString: vtoken,
-		User: *user,
+		User: UserResponse{
+			ID: user.ID,
+			FirstName: user.FirstName,
+			LastName: user.LastName,
+			DisplayName: user.DisplayName,
+			Email: user.Email,
+			Phone: user.Phone,
+			Status: int(user.Status),
+			Timezone: user.Timezone,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+		},
 	}
 	utils.GetSuccess("login successful", token, response)
+}
+
+
+func VerifyTokenHandler(response http.ResponseWriter, request *http.Request) {
+	// extract user id and email from context
+	loggedIn := request.Context().Value("user").(AuthUser)
+	user, _ := fetchUserByEmail(bson.M{"email": strings.ToLower(loggedIn.Email)})
+
+	resp := &VerifiedTokenResponse{
+		true,
+		UserResponse{
+			ID: user.ID,
+			FirstName: user.FirstName,
+			LastName: user.LastName,
+			DisplayName: user.DisplayName,
+			Email: user.Email,
+			Phone: user.Phone,
+			Status: int(user.Status),
+			Timezone: user.Timezone,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+		},
+	}
+
+	utils.GetSuccess("verified", resp, response)
 }

@@ -13,17 +13,17 @@ const (
 )
 
 type Organization struct {
-	ID        string                   `json:"id" bson:"_id"`
-	Name      string                   `json:"name" bson:"name"`
-	CreatorEmail     string            `json:"creator_email" bson:"creator_email"`
-	CreatorID string                   `json:"creator_id" bson:"creator_id"`
-	Plugins   []map[string]interface{} `json:"plugins" bson:"plugins"`
-	Admins    []string                 `json:"admins" bson:"admins"`
-	Settings  map[string]interface{}   `json:"settings" bson:"settings"`
-	LogoURL  string                   `json:"logo_url" bson:"logo_url"`
-	WorkspaceURL       string         `json:"workspace_url" bson:"workspace_url"`
-	CreatedAt time.Time                `json:"created_at" bson:"created_at"`
-	UpdatedAt time.Time                `json:"updated_at" bson:"updated_at"`
+	ID           string                   `json:"id" bson:"_id"`
+	Name         string                   `json:"name" bson:"name"`
+	CreatorEmail string                   `json:"creator_email" bson:"creator_email"`
+	CreatorID    string                   `json:"creator_id" bson:"creator_id"`
+	Plugins      []map[string]interface{} `json:"plugins" bson:"plugins"`
+	Admins       []string                 `json:"admins" bson:"admins"`
+	Settings     map[string]interface{}   `json:"settings" bson:"settings"`
+	LogoURL      string                   `json:"logo_url" bson:"logo_url"`
+	WorkspaceURL string                   `json:"workspace_url" bson:"workspace_url"`
+	CreatedAt    time.Time                `json:"created_at" bson:"created_at"`
+	UpdatedAt    time.Time                `json:"updated_at" bson:"updated_at"`
 }
 
 type OrgPluginBody struct {
@@ -68,9 +68,11 @@ type Member struct {
 	Email       string             `json:"email" bson:"email"`
 	DisplayName string             `json:"display_name" bson:"display_name"`
 	Bio         string             `json:"bio" bson:"bio"`
+	Status      string             `json:"status" bson:"status"`
 	Pronouns    string             `json:"pronouns" bson:"pronouns"`
 	Phone       string             `json:"phone" bson:"phone"`
 	TimeZone    string             `json:"time_zone" bson:"time_zone"`
+	Role        string             `json:"role" bson:"role"`
 	JoinedAt    time.Time          `json:"joined_at" bson:"joined_at"`
 	// Socials     Social    `json:"socials" bson:"socials"`
 }

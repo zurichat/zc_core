@@ -25,6 +25,7 @@ type Plugin struct {
 	IconURL        string             `json:"icon_url" bson:"icon_url"`
 	InstallCount   int64              `json:"install_count,omitempty" bson:"install_count"`
 	Approved       bool               `json:"approved" bson:"approved"`
+	Deleted        bool		  `json:"deleted" bson:"deleted"`
 	ApprovedAt     string             `json:"approved_at" bson:"approved_at"`
 	CreatedAt      string             `json:"created_at" bson:"created_at"`
 	UpdatedAt      string             `json:"updated_at" bson:"updated_at"`
