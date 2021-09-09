@@ -68,6 +68,7 @@ type Member struct {
 	Email       string             `json:"email" bson:"email"`
 	DisplayName string             `json:"display_name" bson:"display_name"`
 	Bio         string             `json:"bio" bson:"bio"`
+	Status      string             `json:"status" bson:"status"`
 	Pronouns    string             `json:"pronouns" bson:"pronouns"`
 	Phone       string             `json:"phone" bson:"phone"`
 	TimeZone    string             `json:"time_zone" bson:"time_zone"`
