@@ -3,7 +3,6 @@ module zuri.chat/zccore
 go 1.16
 
 require (
-	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/golang-jwt/jwt v3.2.2+incompatible
