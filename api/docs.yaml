@@ -116,7 +116,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-
   /users/{user_id}:
     patch:
       summary: Updates the details of a user
@@ -220,6 +219,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
+  /users/search/{query}:
+    get:
+      summary: Retrieves all users that match the given query parameter
+      description: Retrieves all created users saved to the DB
+      security:
+        - BearerAuth: []
+      tags:
+        - Users
+      parameters:
+        - in: path
+          name: query
+          required: true
+          schema:
+            oneOf:
+              - $ref: '#/components/parameters/first_name'
+              - $ref: '#/components/parameters/LastName'
+              - $ref: '#/components/parameters/DisplayName'
+              - $ref: '#/components/parameters/Email'
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/UsersResponse'
+                  - $ref: '#/components/schemas/EmptyUsersResponse'
 
   /organizations:
     get:
@@ -715,6 +742,38 @@ components:
       schema:
         type: integer
 
+    first_name:
+      in: path
+      name: first_name
+      required: true
+      schema:
+        type: string
+        example: Jane
+
+    last_name:
+      in: path
+      name: last_name
+      required: true
+      schema:
+        type: string
+        example: Doe
+
+    display_name:
+      in: path
+      name: display_name
+      required: true
+      schema:
+        type: string
+        example: jane_doe
+
+    email:
+      in: path
+      name: email
+      required: true
+      schema:
+        type: string
+        example: janedoe@email.com
+
   schemas:
     User:
       type: object
@@ -779,7 +838,7 @@ components:
           example: null
         time_zone:
           type: string
-          example: ""
+          example: ''
         created_at:
           type: string
           example: 2021-09-07T12:22:06.932180616+01:00

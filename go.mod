@@ -3,16 +3,23 @@ module zuri.chat/zccore
 go 1.16
 
 require (
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/form3tech-oss/jwt-go v3.2.5+incompatible
 	github.com/go-playground/validator/v10 v10.9.0
+	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/golang-jwt/jwt v3.2.2+incompatible
-	github.com/googollee/go-socket.io v1.6.0
+	// github.com/golang-jwt/jwt v3.2.2+incompatible
+	github.com/golang/snappy v0.0.4 // indirect
+	github.com/gomodule/redigo v2.0.0+incompatible // indirect
+	github.com/googollee/go-socket.io v1.6.1
 	github.com/gorilla/mux v1.8.0
 	github.com/joho/godotenv v1.3.0
+	github.com/klauspost/compress v1.13.5 // indirect
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/rs/cors v1.8.0
-	go.mongodb.org/mongo-driver v1.7.1
-	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
+	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
+	go.mongodb.org/mongo-driver v1.7.2
+	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
+	golang.org/x/sys v0.0.0-20210906170528-6f6e22806c34 // indirect
+	golang.org/x/text v0.3.7 // indirect
 )
