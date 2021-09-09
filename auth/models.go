@@ -141,7 +141,7 @@ func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 			nextHandler.ServeHTTP(w, r.WithContext(ctx))
 		} else {
 			fmt.Print(err)
-			utils.GetError(NotAuthorized, http.StatusBadRequest, w)
+			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
 			return
 		}
 	}
