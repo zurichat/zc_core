@@ -97,6 +97,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	newMember := Member{
 		Email: user.Email,
 		OrgId: hexOrgid,
+		Role:  "owner",
 	}
 	// conv to struct
 	memStruc, err := utils.StructToMap(newMember)
