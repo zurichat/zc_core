@@ -22,7 +22,6 @@ type writeDataRequest struct {
 }
 
 func WriteData(w http.ResponseWriter, r *http.Request) {
-
 	reqData := new(writeDataRequest)
 
 	if err := utils.ParseJsonFromRequest(r, reqData); err != nil {
@@ -48,13 +47,12 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("content-type", "application/json")
+
 	switch r.Method {
 	case "POST":
 		reqData.handlePost(w, r)
 	case "PUT":
 		reqData.handlePut(w, r)
-	case "DELETE":
-		reqData.handleDelete(w, r)
 	default:
 		fmt.Fprint(w, `{"data_write": "Data write request"}`)
 	}
@@ -108,26 +106,6 @@ func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("success", data, w)
 }
 
-func (wdr *writeDataRequest) handleDelete(w http.ResponseWriter, r *http.Request) {
-	var err error
-	var deletedCount int64
-	if wdr.BulkWrite {
-		deletedCount, err = deleteMany(wdr.prefixCollectionName(), wdr.Filter)
-		if err != nil {
-			utils.GetError(fmt.Errorf("an error occured: %v", err), http.StatusInternalServerError, w)
-			return
-		}
-	} else {
-		if err := deleteOne(wdr.prefixCollectionName(), wdr.ObjectID); err != nil {
-			utils.GetError(fmt.Errorf("an error occured: %v", err), http.StatusInternalServerError, w)
-			return
-		}
-		deletedCount = 1
-	}
-
-	utils.GetSuccess("success", M{"deleted_count": deletedCount}, w)
-}
-
 func (wdr *writeDataRequest) prefixCollectionName() string {
 	return getPrefixedCollectionName(wdr.PluginID, wdr.OrganizationID, wdr.CollectionName)
 }
@@ -137,7 +115,6 @@ func insertMany(collName string, data interface{}) (*mongo.InsertManyResult, err
 	if !ok {
 		return nil, errors.New("invalid object type, payload must be an array of objects")
 	}
-	// call mongodb insert many here
 	return utils.CreateManyMongoDbDocs(collName, docs)
 }
 
@@ -162,16 +139,7 @@ func updateMany(collName string, filter map[string]interface{}, upd interface{})
 	if !ok {
 		return nil, errors.New("type assertion error")
 	}
-	// do update many
 	return utils.UpdateManyMongoDbDocs(collName, filter, update)
-}
-
-func deleteOne(collName, id string) error {
-	return nil
-}
-
-func deleteMany(collName string, filter map[string]interface{}) (int64, error) {
-	return 0, nil
 }
 
 func recordExists(collName, id string) bool {
@@ -181,4 +149,12 @@ func recordExists(collName, id string) bool {
 		return true
 	}
 	return false
+}
+
+func MustObjectIDFromHex(hex string) primitive.ObjectID {
+	objID, err := primitive.ObjectIDFromHex(hex)
+	if err != nil {
+		panic(err)
+	}
+	return objID
 }

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"zuri.chat/zccore/utils"
 )
@@ -45,6 +46,7 @@ func ReadData(w http.ResponseWriter, r *http.Request) {
 
 	prefixedCollName := getPrefixedCollectionName(pluginId, orgId, collName)
 	filter := parseURLQuery(r) // queries will have to be sanitized
+	filter["deleted"] = bson.M{"$ne": true}
 	docs, err := utils.GetMongoDbDocs(prefixedCollName, filter)
 
 	if err != nil {
