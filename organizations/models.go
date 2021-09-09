@@ -76,3 +76,14 @@ type Member struct {
 	JoinedAt    time.Time          `json:"joined_at" bson:"joined_at"`
 	// Socials     Social    `json:"socials" bson:"socials"`
 }
+
+type Profile struct {
+	ID          string    `json:"id" bson:"_id"`
+	Name        string    `json:"name" bson:"name"`
+	DisplayName string    `json:"display_name" bson:"display_name"`
+	Bio         string    `json:"bio" bson:"bio"`
+	Pronouns    string    `json:"pronouns" bson:"pronouns"`
+	Phone       string    `json:"phone" bson:"phone"`
+	TimeZone    string    `json:"time_zone" bson:"time_zone"`
+	Socials     [3]string `json:"socials" bson:"socials"`
+}
