@@ -19,13 +19,9 @@ func GetMember(w http.ResponseWriter, r *http.Request) {
 
 	member_collection, org_collection := "members", "organizations"
 	orgId := mux.Vars(r)["id"]
+	memId := mux.Vars(r)["mem_id"]
 
-	requestData := make(map[string]string)
-	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
-	}
-	memberIdhex, _ := primitive.ObjectIDFromHex(requestData["member_id"])
+	memberIdhex, _ := primitive.ObjectIDFromHex(memId)
 
 	pOrgId, err := primitive.ObjectIDFromHex(orgId)
 	if err != nil {
