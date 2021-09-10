@@ -81,7 +81,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.Handle("/socket.io/", Server)
 
 	//api documentation
-	r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.FileServer(http.Dir("./api/"))))
+	r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.FileServer(http.Dir("./docs/"))))
 
 	// Home
 	http.Handle("/", r)

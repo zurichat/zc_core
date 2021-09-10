@@ -204,7 +204,6 @@ func UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.GetSuccess("Profile picture updated", result, w)
-
 }
 
 // an endpoint to update a user status
@@ -239,17 +238,16 @@ func UpdateMemberStatus(w http.ResponseWriter, r *http.Request) {
 
 	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": pOrgId})
 	if orgDoc == nil {
-		fmt.Printf("org with id doesn't exist!", orgId)
-		utils.GetError(errors.New("org with id %s doesn't exist!"), http.StatusBadRequest, w)
+		fmt.Printf("org with id %s doesn't exist!", orgId)
+		utils.GetError(errors.New("org with id %s doesn't exist"), http.StatusBadRequest, w)
 		return
 	}
 
 	memberDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": pMemId, "org_id": orgId})
 	if memberDoc == nil {
 		fmt.Printf("member with id %s doesn't exist!", member_Id)
-		utils.GetError(errors.New("member with id doesn't exist!"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("member with id doesn't exist"), http.StatusBadRequest, w)
 		return
-
 	}
 
 	result, err := utils.UpdateOneMongoDbDoc(member_collection, member_Id, bson.M{"status": member_status})
