@@ -7,7 +7,7 @@ info:
     email: developer@zuri.chat
 servers:
   - description: Zuri Chat Core API
-    url: 'https://api.zuri.chat/'
+    url: 'https://api.zuri.chat'
     
 tags:
 - name: plugins
