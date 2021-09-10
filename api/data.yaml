@@ -19,7 +19,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DataRequestBody'
+              $ref: '#/components/schemas/DataWriteRequestBody'
         required: true
       responses:
         "201":
@@ -42,7 +42,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DataRequestBody'
+              $ref: '#/components/schemas/DataWriteRequestBody'
         required: true
       responses:
         "200":
@@ -57,31 +57,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-    delete:
-      tags:
-      - write
-      description: Deletes data from the database
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DataRequestBody'
-        required: true
-      responses:
-        "200":
-          description: Data deleted successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DataDeleteResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
 
-  /data/read:
+  /data/read/{plugin_id}/{coll_name}/{org_id}:
     get:
       tags:
       - read
@@ -119,17 +96,39 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /data/delete:
+    post:
+      tags:
+      - delete
+      description: Lets plugin delete data from DB.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataDeleteRequestBody'
+        required: true
+      responses:
+        "200":
+          description: Data deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataDeleteResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
 components:
-  schemas
-    DataRequestBody:
+  schemas:
+    DataWriteRequestBody:
         type: object
         required:
           - plugin_id
           - organization_id
           - collection_name
-          - bulk_write
-          - object_id
-          - filter
           - payload
         properties:
           plugin_id:
@@ -145,7 +144,37 @@ components:
             type: boolean
             description: Boolean value that indicates whether many documents are to be inserted or not.
           object_id:
-            type: id
+            type: string
+            description: The ID of inserted data (to be set at server side)
+          filter:
+            type: object
+            description: Query to be matched
+          payload:
+            type: object
+            description: Actual data plugin wants to store in DB.
+
+    DataDeleteRequestBody:
+        type: object
+        required:
+          - plugin_id
+          - organization_id
+          - collection_name
+          - payload
+        properties:
+          plugin_id:
+            type: string
+            description: The plugin ID.
+          organization_id:
+            type: string
+            description: The ID of the organization plugin belongs to.
+          collection_name:
+            type: string
+            description: The name of collection to insert data into.
+          bulk_delete:
+            type: boolean
+            description: Boolean value that indicates whether many documents are to be deleted or not.
+          object_id:
+            type: string
             description: The ID of inserted data (to be set at server side)
           filter:
             type: object
@@ -165,7 +194,7 @@ components:
           type: object
           properties:
             insert_count:
-              type: int64
+              type: integer
             object_id:
               type: string
 
@@ -180,7 +209,7 @@ components:
           type: object
           properties:
             matched_documents:
-              type: int64
+              type: integer
               description: Number of documents matching filter.
             modified_documents:
               type: string
@@ -197,7 +226,7 @@ components:
           type: object
           properties:
             deleted_count:
-              type: int64
+              type: integer
               description: Number of documents deleted.
 
     DataRetrievedResponse:
@@ -211,6 +240,7 @@ components:
           type: array
           items:
             type: object
+            description: object retrieved from DB.
 
     Error:
       type: object
