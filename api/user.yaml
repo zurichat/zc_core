@@ -7,7 +7,7 @@ info:
     email: developer@zuri.chat
 servers:
   - description: Zuri Chat Core API
-    url: "https://api.zuri.chat/v1"
+    url: "https://api.zuri.chat"
 tags:
   - name: user
     description: Controls user registration, login and password recovery
@@ -196,17 +196,15 @@ paths:
             oneOf:
               - $ref: '#/components/parameters/first_name'
               - $ref: '#/components/parameters/last_name'
-              - $ref: '#/components/parameters/display_name'
               - $ref: '#/components/parameters/email'
       responses:
         '200':
-          description: User found
+          description: User found or empty result if not found
           content:
             application/json:
               schema:
                 oneOf:
                   - $ref: '#/components/schemas/UsersResponse'
-                  - $ref: '#/components/schemas/EmptyUsersResponse'
 
 components:
   parameters:
@@ -238,14 +236,6 @@ components:
       schema:
         type: string
         example: Doe
-
-    display_name:
-      in: path
-      name: display_name
-      required: true
-      schema:
-        type: string
-        example: jane_doe
 
     email:
       in: path
