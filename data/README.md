@@ -2,8 +2,8 @@
 
 Data Write
 ----------
-Plugins are allowed to write data to the database by calling the /data/write endpoint with any of the POST, PUT, DELETE http methods.
-Based on this methods a CREATE, UPDATE or DELETE action will be performed on the database. The plugin would have to provide the following json data body
+Plugins are allowed to write data to the database by calling the /data/write endpoint with any of the POST, PUT, http methods.
+Based on this methods a CREATE, UPDATE action will be performed on the database. The plugin would have to provide the following json data body
 ```json
 {
  "plugin_id": "xxx",
@@ -33,7 +33,23 @@ Once the api receives this request, it checks the internal record to validate th
 Extra simple mongodb query parameters can be passed as a url query param e.g ?title=this and the api uses it to query the database.
 
 
+
+Delete Data
+-----------
+To delete data, a POST request is made to /data/delete
+
+```json
+{
+ "plugin_id": "xxx",
+ "organization_id": "xxx",
+ "collection_name": "mycollection",
+ "bulk_delete": false,
+ "object_id": "xxxx",
+ "filter": {},
+```
+
+The `bulk_delete` and `filter` properties are used to delete multiple records. `filter` will contain the query to be matched and `bulk_delete` must be set to `true` to use this filter property.
+
 TODO:
-- Implement data-write for DELETE.
 - Allow zuri main to have read/write access
 - Improve queries for for read.
