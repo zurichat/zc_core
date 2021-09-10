@@ -568,17 +568,9 @@ components:
       description: The structure for the create organization request
       type: object
       properties:
-        creator_id:
+        creator_email:
           type: string
-          description: This is the id of the owner(creator) of the organization
-          example: 6134fc8e0366b6816a0b75eb
-        name:
-          type: string
-          description: Name of the organization
-          example: "Zuri HNG"
-        email:
-          type: string
-          description: Email of the organization
+          description: Email of the owner of the organization
           example: "hng@email.com"
 
   securitySchemes:
