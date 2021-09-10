@@ -307,3 +307,62 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 
 	utils.GetSuccess("Successfully Deleted Member", nil, w)
 }
+
+func UpdateProfile(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	org_collection, member_collection := "organizations", "members"
+
+	id := mux.Vars(r)["id"]
+	memId := mux.Vars(r)["mem_id"]
+
+	// Check if organization id is valid
+	orgId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	// Check if organization id is exists in the database
+	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": orgId})
+	if orgDoc == nil {
+		fmt.Printf("organization with ID: %s does not exist ", id)
+		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
+		return
+	}
+
+	// Check if member id is valid
+	_, err = primitive.ObjectIDFromHex(memId)
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	// Get data from request
+	var memberProfile Profile
+	err = utils.ParseJsonFromRequest(r, &memberProfile)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	// convert struct to map
+	mProfile, err := utils.StructToMap(memberProfile)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	// Fetch and update the MemberDoc from collection
+	update, err := utils.UpdateOneMongoDbDoc(member_collection, memId, mProfile)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("Member Profile updated succesfully", nil, w)
+}
