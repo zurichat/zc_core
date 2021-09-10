@@ -57,7 +57,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
-	// r.HandleFunc("/data/delete", data.DeleteData).Methods("POST")
+	r.HandleFunc("/data/delete", data.DeleteData).Methods("POST")
 
 	// Plugins
 	r.HandleFunc("/plugins/register", plugin.Register).Methods("POST")
