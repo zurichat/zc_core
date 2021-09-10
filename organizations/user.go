@@ -14,6 +14,44 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
+func GetMember(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	member_collection, org_collection := "members", "organizations"
+	orgId := mux.Vars(r)["id"]
+
+	requestData := make(map[string]string)
+	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+	memberIdhex, _ := primitive.ObjectIDFromHex(requestData["member_id"])
+
+	pOrgId, err := primitive.ObjectIDFromHex(orgId)
+	if err != nil {
+		utils.GetError(errors.New("invalid Organisation id"), http.StatusBadRequest, w)
+		return
+	}
+
+	// get organization
+	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": pOrgId})
+	if orgDoc == nil {
+		fmt.Printf("org with id %s doesn't exist!", orgId)
+		utils.GetError(errors.New("org with id "+orgId+" doesn't exist!"), http.StatusBadRequest, w)
+		return
+	}
+
+	orgMember, err := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "_id": memberIdhex})
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+	var memb Member
+	mapstructure.Decode(orgMember, &memb)
+
+	utils.GetSuccess("Member retrieved successfully", orgMember, w)
+}
+
 func GetMembers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -92,6 +130,7 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 	newMember := Member{
 		Email: user.Email,
 		OrgId: orgId,
+		Role:  "member",
 	}
 
 	// conv to struct
