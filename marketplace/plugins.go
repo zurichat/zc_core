@@ -15,7 +15,7 @@ import (
 type M map[string]interface{}
 
 func GetAllPlugins(w http.ResponseWriter, r *http.Request) {
-	ps, err := plugin.FindPlugins(r.Context(), bson.M{"approved": true, "deleted":false})
+	ps, err := plugin.FindPlugins(r.Context(), bson.M{"approved": true, "deleted": false})
 	if err != nil {
 		switch err {
 		case mongo.ErrNoDocuments:
@@ -48,11 +48,10 @@ func GetPlugin(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("success", p, w)
 }
 
-
 // an endpoint to remove plugins from marketplace
 func RemovePlugin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
-	
+
 	pluginID := mux.Vars(r)["id"]
 
 	pluginExists, err := plugin.FindPluginByID(r.Context(), pluginID)
