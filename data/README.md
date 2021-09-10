@@ -31,7 +31,7 @@ Data Read
 The data read operation occurs at the [GET]  /data/read/{plugin_id}/{collection_name}/{organization_id} endpoint.
 Once the api receives this request, it checks the internal record to validate that the plugin with this {plugin_id} is the one that created the {collection_name} for the org with this {organization_id}. Once this is established to be true, then access is granted and the api returns the data requested as an array.
 Extra simple mongodb query parameters can be passed as a url query param e.g ?title=this and the api uses it to query the database.
-
+To find an item by id, pass in the query parameter `id` or `_id` with the appropriate value . A single document/object is returned instead of a list if the item is found.
 
 
 Delete Data
