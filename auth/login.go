@@ -118,7 +118,7 @@ func LogOutUser(w http.ResponseWriter, r *http.Request) {
 
 func VerifyTokenHandler(response http.ResponseWriter, request *http.Request) {
 	// extract user id and email from context
-	loggedIn := request.Context().Value("user").(AuthUser)
+	loggedIn := request.Context().Value("user").(*AuthUser)
 	user, _ := fetchUserByEmail(bson.M{"email": strings.ToLower(loggedIn.Email)})
 
 	resp := &VerifiedTokenResponse{
