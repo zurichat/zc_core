@@ -110,7 +110,11 @@ paths:
               example: { "url": "https://hngworkspace.zuri.chat" }
       responses:
         "200":
-          $ref: "#/components/responses/resourceUpdated"
+        description: Organization URL updated successfully
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/Organization"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
 
@@ -170,7 +174,7 @@ paths:
               example: { "url": "https://image.storage/image.png" }
       responses:
         "200":
-          description: Organization name updated successfully
+          description: Organization logo updated successfully
           content:
             "application/json":
               schema:
