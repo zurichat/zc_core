@@ -49,7 +49,7 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 		utils.GetError(InvalidCredentials, http.StatusBadRequest, response)
 		return
 	}
-	var  store = NewMongoStore(utils.GetCollection(session_collection), 3600, true, []byte(secretKey))
+	store := NewMongoStore(utils.GetCollection(session_collection), 3600, true, []byte(secretKey))
 	var session, e = store.Get(request, sessionKey)
 	if e != nil {
 		msg := fmt.Errorf("%s", e.Error())
