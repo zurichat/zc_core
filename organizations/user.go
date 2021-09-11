@@ -14,6 +14,7 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
+// Get a single member of an organization
 func GetMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -48,6 +49,7 @@ func GetMember(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("Member retrieved successfully", orgMember, w)
 }
 
+// Get all members of an organization
 func GetMembers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -77,6 +79,7 @@ func GetMembers(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("Members retrieved successfully", orgMembers, w)
 }
 
+// Add member to an organization
 func CreateMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	org_collection, user_collection, member_collection := "organizations", "users", "members"
@@ -127,6 +130,7 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 		Email: user.Email,
 		OrgId: orgId,
 		Role:  "member",
+		Presence: "true",
 	}
 
 	// conv to struct
@@ -155,7 +159,7 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("Member created successfully", createdMember, w)
 }
 
-// endpoint to update a member profile picture
+// endpoint to update a member's profile picture
 func UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-Type", "application/json")
 	org_collection, member_collection := "organizations", "members"
@@ -256,10 +260,15 @@ func UpdateMemberStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("status updated", result, w)
+	if result.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("status updated successfully", nil, w)
 }
 
-// Delete single member from an organizatin
+// Delete single member from an organization
 func DeleteMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -302,6 +311,7 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("Successfully Deleted Member", nil, w)
 }
 
+// Update a member profile
 func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	org_collection, member_collection := "organizations", "members"
@@ -325,9 +335,16 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if member id is valid
-	_, err = primitive.ObjectIDFromHex(memId)
+	pMemId, err := primitive.ObjectIDFromHex(memId)
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	memberDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": pMemId, "org_id": id})
+	if memberDoc == nil {
+		fmt.Printf("member with id %s doesn't exist!", memId)
+		utils.GetError(errors.New("member with id doesn't exist"), http.StatusBadRequest, w)
 		return
 	}
 
