@@ -32,6 +32,7 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	// Authentication
 	r.HandleFunc("/auth/login", auth.LoginIn).Methods("POST")
+	r.HandleFunc("/auth/logout", auth.LogOutUser).Methods("POST", "GET")
 	r.HandleFunc("/auth/verify-token", auth.IsAuthenticated(auth.VerifyTokenHandler)).Methods("GET", "POST")
 
 	// Organisation
@@ -154,8 +155,7 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 
 // should redirect permanently to the docs page
 func Index(w http.ResponseWriter, r *http.Request) {
-	// extract user from header
-	user := r.Context().Value("user").(auth.AuthUser)
+	user := r.Context().Value("user").(*auth.AuthUser)
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, fmt.Sprintf("Welcome %s to Zuri Core Developer.", user.Email))
