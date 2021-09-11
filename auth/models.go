@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -36,7 +35,6 @@ type RoleMember struct {
 }
 
 type contextKey int
-
 const authUserKey contextKey = 0
 
 var (
@@ -45,13 +43,13 @@ var (
 	NotAuthorized = errors.New("Not Authorized.")
 )
 
-type Authentication struct {
+type Credentials struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
 }
 
 type Token struct {
-	TokenString string       `json:"token"`
+	SessionID string       `json:"session_id"`
 	User        UserResponse `json:"user"`
 }
 
@@ -101,74 +99,23 @@ func fetchUserByEmail(filter map[string]interface{}) (*user.User, error) {
 	return user, err
 }
 
-// Generate token
-func GenerateJWT(userID, email string) (string, error) {
-	SECRET_KEY, _ := os.LookupEnv("AUTH_SECRET_KEY")
-	if SECRET_KEY == "" {
-		SECRET_KEY = secretKey
-	}
-
-	var signKey = []byte(SECRET_KEY)
-
-	objID, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		return "", errors.New("Invalid user ObjectID")
-	}
-
-	claims := MyCustomClaims{
-		true,
-		AuthUser{
-			ID:    objID,
-			Email: email,
-		},
-		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 12).Unix(), // 12 hours
-			Issuer:    "api.zuri.chat",
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(signKey)
-
-	if err != nil {
-		fmt.Errorf("Something went wrong: %s", err.Error())
-		return "", err
-	}
-
-	return tokenString, nil
-}
-
 // middleware to check if user is authorized
 func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 	// token format "Authorization": "Bearer token"
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("content-type", "application/json")
 
-		if r.Header["Authorization"] == nil {
-			utils.GetError(NoAuthToken, http.StatusUnauthorized, w)
-			return
-		}
+		
+		// WIP
+		// var session, err = store.Get(r, sessionKey)
+		// if err != nil {
+		// 	msg := fmt.Errorf("%s", err.Error())
+		// 	utils.GetError(msg, http.StatusBadRequest, w)
+		// 	return
+		// }
 
-		SECRET_KEY, _ := os.LookupEnv("AUTH_SECRET_KEY")
-		if SECRET_KEY == "" {
-			SECRET_KEY = secretKey
-		}
 
-		authToken := strings.Split(r.Header["Authorization"][0], " ")[1]
-
-		token, err := jwt.ParseWithClaims(authToken, &MyCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
-			return []byte(SECRET_KEY), nil
-		})
-
-		if claims, ok := token.Claims.(*MyCustomClaims); ok && token.Valid {
-			// Extract user information and add it to request context.
-			ctx := context.WithValue(r.Context(), "user", claims.User)
-			nextHandler.ServeHTTP(w, r.WithContext(ctx))
-		} else {
-			fmt.Print(err)
-			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
-			return
-		}
+		// fmt.Print(session)
 	}
 }
 
