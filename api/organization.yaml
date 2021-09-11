@@ -7,7 +7,7 @@ info:
     email: developer@zuri.chat
 servers:
   - description: Zuri Chat Core API
-    url: "https://api.zuri.chat/v1"
+    url: "https://api.zuri.chat"
 
 paths:
   /organizations:
@@ -252,11 +252,7 @@ paths:
                   example: 2
       responses:
         "200":
-          description: User successfully updated
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/Member"
+          $ref: "#/components/responses/resourceUpdated"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
 
@@ -277,11 +273,7 @@ paths:
         - $ref: "#/components/parameters/member_id"
       responses:
         "200":
-          description: User successfully deleted
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/Member"
+          $ref: "#/components/responses/resourceUpdated"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
 
@@ -369,11 +361,7 @@ paths:
                   example: "Available"
       responses:
         "200":
-          description: Member status updated successfully
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/Member"
+          $ref: "#/components/responses/resourceUpdated"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
 
@@ -402,11 +390,7 @@ paths:
               example: { "image_utl": "https://image.storage/image.png" }
       responses:
         "200":
-          description: Member status updated successfully
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/Member"
+          $ref: "#/components/responses/resourceUpdated"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
 
@@ -437,11 +421,7 @@ paths:
                   description: Data to be updated
       responses:
         "200":
-          description: Member status updated successfully
-          content:
-            "application/json":
-              schema:
-                $ref: "#/components/schemas/Member"
+          $ref: "#/components/responses/resourceUpdated"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
 
