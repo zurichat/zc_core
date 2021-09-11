@@ -126,12 +126,12 @@ func (m *MongoStore) MaxAge(age int) {
 
 func (m *MongoStore) load(session *sessions.Session) error {
 	ctx := context.Background()
-	if _, err := primitive.ObjectIDFromHex(session.ID); err != nil {
-		return ErrorInvalid
-	}
 	
+	objID, err := primitive.ObjectIDFromHex(session.ID);
+	if err != nil { return ErrorInvalid }
+
 	s := Session{}
-	if err := m.coll.FindOne(ctx, bson.M{"_id": session.ID}).Decode(&s); err != nil {
+	if err := m.coll.FindOne(ctx, bson.M{"_id": objID}).Decode(&s); err != nil {
 		return err
 	}
 
