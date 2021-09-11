@@ -16,6 +16,7 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
+// Get an organization record
 func GetOrganization(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	collection := "organizations"
@@ -37,6 +38,25 @@ func GetOrganization(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("organization retrieved successfully", save, w)
 }
 
+// Get an organization by url
+func GetOrganizationByURL(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	orgURL := mux.Vars(r)["url"]
+
+	data, err := utils.GetMongoDbDoc("organizations", bson.M{"workspace_url": orgURL})
+	if data == nil {
+		fmt.Printf("workspace with url %s doesn't exist!", orgURL)
+		utils.GetError(errors.New("organization does not exist"), http.StatusNotFound, w)
+		return
+	}
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+	utils.GetSuccess("organization retrieved successfully", data, w)
+}
+
+// Create an organization record
 func Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	loggedInUser := r.Context().Value("user").(auth.AuthUser)
@@ -126,6 +146,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("organization created", save, w)
 }
 
+// Get all organization records
 func GetOrganizations(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -140,6 +161,7 @@ func GetOrganizations(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("organization retrieved successfully", save, w)
 }
 
+// Delete an organization record
 func DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	orgId := mux.Vars(r)["id"]
@@ -161,6 +183,7 @@ func DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("organization deleted successfully", nil, w)
 }
 
+// Update an organization workspace url
 func UpdateUrl(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	orgId := mux.Vars(r)["id"]
@@ -185,9 +208,9 @@ func UpdateUrl(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.GetSuccess("organization url updated successfully", nil, w)
-
 }
 
+// Update organization name
 func UpdateName(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	orgId := mux.Vars(r)["id"]
@@ -217,6 +240,7 @@ func UpdateName(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("organization name updated successfully", nil, w)
 }
 
+// Update organization logo
 func UpdateLogo(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")

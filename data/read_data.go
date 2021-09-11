@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"zuri.chat/zccore/utils"
 )
@@ -45,10 +46,16 @@ func ReadData(w http.ResponseWriter, r *http.Request) {
 
 	prefixedCollName := getPrefixedCollectionName(pluginId, orgId, collName)
 	filter := parseURLQuery(r) // queries will have to be sanitized
+	filter["deleted"] = bson.M{"$ne": true}
 	docs, err := utils.GetMongoDbDocs(prefixedCollName, filter)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if _, exists := filter["_id"]; exists && len(docs) == 1 {
+		utils.GetSuccess("success", docs[0], w)
 		return
 	}
 	utils.GetSuccess("success", docs, w)
@@ -62,8 +69,8 @@ func getPrefixedCollectionName(pluginID, orgID, collName string) string {
 func parseURLQuery(r *http.Request) map[string]interface{} {
 	m := M{}
 	for k, v := range r.URL.Query() {
-		if k == "_id" {
-			m[k], _ = primitive.ObjectIDFromHex(v[0])
+		if k == "id" || k == "_id" {
+			m["_id"], _ = primitive.ObjectIDFromHex(v[0])
 			continue
 		}
 		m[k] = v[0]

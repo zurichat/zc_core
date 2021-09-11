@@ -1,8 +1,10 @@
 package data
 
 import (
+	"fmt"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"zuri.chat/zccore/utils"
 )
@@ -47,4 +49,29 @@ func createPluginCollectionRecord(pluginID, orgID, collectionName string) error 
 		return err
 	}
 	return nil
+}
+
+func getPluginCollections(pluginId string) ([]bson.M, error) {
+	docs, err := utils.GetMongoDbDocs(_PluginCollectionsCollectionName, bson.M{"plugin_id": pluginId})
+	if err != nil {
+		return nil, fmt.Errorf("Error finding collection records for this plugin: %v", err)
+	}
+	for _, doc := range docs {
+		delete(doc, "_id")
+	}
+	return docs, nil
+}
+
+func getPluginCollectionsForOrganization(pluginId, orgId string) ([]bson.M, error) {
+	docs, err := utils.GetMongoDbDocs(_PluginCollectionsCollectionName, bson.M{
+		"plugin_id":       pluginId,
+		"organization_id": orgId,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("Error finding collection records for this plugin: %v", err)
+	}
+	for _, doc := range docs {
+		delete(doc, "_id")
+	}
+	return docs, nil
 }

@@ -14,6 +14,42 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
+// Get a single member of an organization
+func GetMember(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	member_collection, org_collection := "members", "organizations"
+	orgId := mux.Vars(r)["id"]
+	memId := mux.Vars(r)["mem_id"]
+
+	memberIdhex, _ := primitive.ObjectIDFromHex(memId)
+
+	pOrgId, err := primitive.ObjectIDFromHex(orgId)
+	if err != nil {
+		utils.GetError(errors.New("invalid Organisation id"), http.StatusBadRequest, w)
+		return
+	}
+
+	// get organization
+	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": pOrgId})
+	if orgDoc == nil {
+		fmt.Printf("org with id %s doesn't exist!", orgId)
+		utils.GetError(errors.New("org with id "+orgId+" doesn't exist!"), http.StatusBadRequest, w)
+		return
+	}
+
+	orgMember, err := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "_id": memberIdhex})
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+	var memb Member
+	mapstructure.Decode(orgMember, &memb)
+
+	utils.GetSuccess("Member retrieved successfully", orgMember, w)
+}
+
+// Get all members of an organization
 func GetMembers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -43,6 +79,7 @@ func GetMembers(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("Members retrieved successfully", orgMembers, w)
 }
 
+// Add member to an organization
 func CreateMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	org_collection, user_collection, member_collection := "organizations", "users", "members"
@@ -92,6 +129,8 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 	newMember := Member{
 		Email: user.Email,
 		OrgId: orgId,
+		Role:  "member",
+		Presence: "true",
 	}
 
 	// conv to struct
@@ -120,7 +159,7 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("Member created successfully", createdMember, w)
 }
 
-// endpoint to update a member profile picture
+// endpoint to update a member's profile picture
 func UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-Type", "application/json")
 	org_collection, member_collection := "organizations", "members"
@@ -169,7 +208,6 @@ func UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.GetSuccess("Profile picture updated", result, w)
-
 }
 
 // an endpoint to update a user status
@@ -204,17 +242,16 @@ func UpdateMemberStatus(w http.ResponseWriter, r *http.Request) {
 
 	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": pOrgId})
 	if orgDoc == nil {
-		fmt.Printf("org with id doesn't exist!", orgId)
-		utils.GetError(errors.New("org with id %s doesn't exist!"), http.StatusBadRequest, w)
+		fmt.Printf("org with id %s doesn't exist!", orgId)
+		utils.GetError(errors.New("org with id %s doesn't exist"), http.StatusBadRequest, w)
 		return
 	}
 
 	memberDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": pMemId, "org_id": orgId})
 	if memberDoc == nil {
 		fmt.Printf("member with id %s doesn't exist!", member_Id)
-		utils.GetError(errors.New("member with id doesn't exist!"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("member with id doesn't exist"), http.StatusBadRequest, w)
 		return
-
 	}
 
 	result, err := utils.UpdateOneMongoDbDoc(member_collection, member_Id, bson.M{"status": member_status})
@@ -223,10 +260,15 @@ func UpdateMemberStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("status updated", result, w)
+	if result.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("status updated successfully", nil, w)
 }
 
-// Delete single member from an organizatin
+// Delete single member from an organization
 func DeleteMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -267,4 +309,71 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.GetSuccess("Successfully Deleted Member", nil, w)
+}
+
+// Update a member profile
+func UpdateProfile(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	org_collection, member_collection := "organizations", "members"
+
+	id := mux.Vars(r)["id"]
+	memId := mux.Vars(r)["mem_id"]
+
+	// Check if organization id is valid
+	orgId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	// Check if organization id is exists in the database
+	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": orgId})
+	if orgDoc == nil {
+		fmt.Printf("organization with ID: %s does not exist ", id)
+		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
+		return
+	}
+
+	// Check if member id is valid
+	pMemId, err := primitive.ObjectIDFromHex(memId)
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	memberDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": pMemId, "org_id": id})
+	if memberDoc == nil {
+		fmt.Printf("member with id %s doesn't exist!", memId)
+		utils.GetError(errors.New("member with id doesn't exist"), http.StatusBadRequest, w)
+		return
+	}
+
+	// Get data from request
+	var memberProfile Profile
+	err = utils.ParseJsonFromRequest(r, &memberProfile)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	// convert struct to map
+	mProfile, err := utils.StructToMap(memberProfile)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	// Fetch and update the MemberDoc from collection
+	update, err := utils.UpdateOneMongoDbDoc(member_collection, memId, mProfile)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("Member Profile updated succesfully", nil, w)
 }
