@@ -38,8 +38,8 @@ type contextKey int
 const authUserKey contextKey = 0
 
 var (
-	NoAuthToken   = errors.New("No Authorization header provided.")
-	TokenExp      = errors.New("Token expired.")
+	NoAuthToken   = errors.New("No Authorization or session expired.")
+	TokenExp      = errors.New("Session expired.")
 	NotAuthorized = errors.New("Not Authorized.")
 )
 
@@ -101,21 +101,35 @@ func fetchUserByEmail(filter map[string]interface{}) (*user.User, error) {
 
 // middleware to check if user is authorized
 func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
-	// token format "Authorization": "Bearer token"
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("content-type", "application/json")
+	
+		store := NewMongoStore(utils.GetCollection(session_collection), 3600, true, []byte(secretKey))
+		var session, err = store.Get(r, sessionKey)
+		if err != nil {
+			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
+			return
+		}
 
-		
-		// WIP
-		// var session, err = store.Get(r, sessionKey)
-		// if err != nil {
-		// 	msg := fmt.Errorf("%s", err.Error())
-		// 	utils.GetError(msg, http.StatusBadRequest, w)
-		// 	return
-		// }
+		// use is coming in newly, no cookies
+		if session.IsNew == true {
+			utils.GetError(NoAuthToken, http.StatusUnauthorized, w)
+			return
+		}
 
+		objID, err := primitive.ObjectIDFromHex(session.ID);
+		if err != nil { 
+			utils.GetError(ErrorInvalid, http.StatusUnauthorized, w)
+			return
+		 }
 
-		// fmt.Print(session)
+		user := &AuthUser{
+			ID: objID,
+			Email: session.Values["email"].(string),
+		}
+
+		ctx := context.WithValue(r.Context(), "user", user)
+		nextHandler.ServeHTTP(w, r.WithContext(ctx))
 	}
 }
 
