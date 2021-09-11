@@ -133,8 +133,6 @@ func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-
-
 // Checks if a user is authorized to access a particular function, and either returns a 403 error or continues the process
 // First Option is either a token or user id
 // In the second option specify if you entered a token or id in the firstoption, options are "token" or "id"

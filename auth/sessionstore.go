@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -177,13 +178,14 @@ func (m *MongoStore) upsert(session *sessions.Session) error {
 
 func (m *MongoStore) delete(session *sessions.Session) error {
 	ctx := context.Background()
+	fmt.Print("I was called")
 
 	objID, err := primitive.ObjectIDFromHex(session.ID)
 	if err != nil {
 		return ErrorInvalid
 	}
 
-	_, err = m.coll.DeleteOne(ctx, objID)
+	_, err = m.coll.DeleteOne(ctx, bson.M{"_id": objID})
 	if err != nil { return err }
 
 	return nil

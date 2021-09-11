@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/gorilla/sessions"
 	"go.mongodb.org/mongo-driver/bson"
 	"zuri.chat/zccore/utils"
 )
@@ -61,7 +62,7 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 	session.Values["id"] = user.ID.Hex()
 	session.Values["email"] = user.Email
 
-	if err = session.Save(request, response); err != nil {
+	if err = sessions.Save(request, response); err != nil {
 		fmt.Printf("Error saving session: %s", err)
 		return
 	}
@@ -82,6 +83,36 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 		},		
 	}
 	utils.GetSuccess("login successful", resp, response)
+}
+
+
+func LogOutUser(w http.ResponseWriter, r *http.Request) {
+	store := NewMongoStore(
+		utils.GetCollection(session_collection), 
+		3600, 
+		true, 
+		[]byte(secretKey),
+	)
+
+	var session, err = store.Get(r, sessionKey)
+	if err != nil {
+		utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
+		return
+	}
+
+	if session.IsNew == true {
+		utils.GetError(NoAuthToken, http.StatusUnauthorized, w)
+		return
+	}
+
+	session.Options.MaxAge = -1
+
+	if err = sessions.Save(r, w); err != nil {
+		fmt.Printf("Error saving session: %s", err)
+		return
+	}
+
+	utils.GetSuccess("logout successful", map[string]interface{}{}, w)
 }
 
 

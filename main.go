@@ -32,6 +32,7 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	// Authentication
 	r.HandleFunc("/auth/login", auth.LoginIn).Methods("POST")
+	r.HandleFunc("/auth/logout", auth.LogOutUser).Methods("POST", "GET")
 	r.HandleFunc("/auth/verify-token", auth.IsAuthenticated(auth.VerifyTokenHandler)).Methods("GET", "POST")
 
 	// Organisation
