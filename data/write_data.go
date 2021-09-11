@@ -4,18 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"zuri.chat/zccore/plugin"
 	"zuri.chat/zccore/utils"
-)
-
-const (
-	_PluginCollectionName            = "plugins"
-	_PluginCollectionsCollectionName = "plugin_collections"
-	_OrganizationCollectionName      = "organizations"
 )
 
 type writeDataRequest struct {
@@ -30,37 +23,38 @@ type writeDataRequest struct {
 
 func WriteData(w http.ResponseWriter, r *http.Request) {
 	reqData := new(writeDataRequest)
+
 	if err := utils.ParseJsonFromRequest(r, reqData); err != nil {
 		utils.GetError(fmt.Errorf("error processing request: %v", err), http.StatusUnprocessableEntity, w)
 		return
 	}
 
-	if _, err := plugin.FindPluginByID(reqData.PluginID); err != nil {
+	if _, err := plugin.FindPluginByID(r.Context(), reqData.PluginID); err != nil {
 		msg := "plugin with this id does not exist"
 		utils.GetError(errors.New(msg), http.StatusNotFound, w)
 		return
 	}
 
-	if !recordExists(_OrganizationCollectionName, reqData.OrganizationID) {
-		msg := "organization with this id does not exist"
-		utils.GetError(errors.New(msg), http.StatusNotFound, w)
-		return
-	}
+	//if !recordExists(_OrganizationCollectionName, reqData.OrganizationID) {
+	//msg := "organization with this id does not exist"
+	//utils.GetError(errors.New(msg), http.StatusNotFound, w)
+	//return
+	//}
 
 	// if plugin is writing to this collection the first time, we create a record linking this collection to the plugin.
 	if !pluginHasCollection(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName) {
 		createPluginCollectionRecord(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName)
 	}
 
+	w.Header().Set("content-type", "application/json")
+
 	switch r.Method {
 	case "POST":
 		reqData.handlePost(w, r)
 	case "PUT":
 		reqData.handlePut(w, r)
-	case "DELETE":
-		reqData.handleDelete(w, r)
 	default:
-		fmt.Fprint(w, "Data write endpoint")
+		fmt.Fprint(w, `{"data_write": "Data write request"}`)
 	}
 }
 
@@ -112,26 +106,6 @@ func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("success", data, w)
 }
 
-func (wdr *writeDataRequest) handleDelete(w http.ResponseWriter, r *http.Request) {
-	var err error
-	var deletedCount int64
-	if wdr.BulkWrite {
-		deletedCount, err = deleteMany(wdr.prefixCollectionName(), wdr.Filter)
-		if err != nil {
-			utils.GetError(fmt.Errorf("an error occured: %v", err), http.StatusInternalServerError, w)
-			return
-		}
-	} else {
-		if err := deleteOne(wdr.prefixCollectionName(), wdr.ObjectID); err != nil {
-			utils.GetError(fmt.Errorf("an error occured: %v", err), http.StatusInternalServerError, w)
-			return
-		}
-		deletedCount = 1
-	}
-
-	utils.GetSuccess("success", M{"deleted_count": deletedCount}, w)
-}
-
 func (wdr *writeDataRequest) prefixCollectionName() string {
 	return getPrefixedCollectionName(wdr.PluginID, wdr.OrganizationID, wdr.CollectionName)
 }
@@ -141,7 +115,6 @@ func insertMany(collName string, data interface{}) (*mongo.InsertManyResult, err
 	if !ok {
 		return nil, errors.New("invalid object type, payload must be an array of objects")
 	}
-	// call mongodb insert many here
 	return utils.CreateManyMongoDbDocs(collName, docs)
 }
 
@@ -166,16 +139,7 @@ func updateMany(collName string, filter map[string]interface{}, upd interface{})
 	if !ok {
 		return nil, errors.New("type assertion error")
 	}
-	// do update many
 	return utils.UpdateManyMongoDbDocs(collName, filter, update)
-}
-
-func deleteOne(collName, id string) error {
-	return nil
-}
-
-func deleteMany(collName string, filter map[string]interface{}) (int64, error) {
-	return 0, nil
 }
 
 func recordExists(collName, id string) bool {
@@ -187,29 +151,10 @@ func recordExists(collName, id string) bool {
 	return false
 }
 
-func pluginHasCollection(pluginID, orgID, collectionName string) bool {
-	filter := M{
-		"plugin_id":       pluginID,
-		"collection_name": collectionName,
-		"organization_id": orgID,
+func MustObjectIDFromHex(hex string) primitive.ObjectID {
+	objID, err := primitive.ObjectIDFromHex(hex)
+	if err != nil {
+		panic(err)
 	}
-	_, err := utils.GetMongoDbDoc(_PluginCollectionsCollectionName, filter)
-	if err == nil {
-		return true
-	}
-	return false
-}
-
-func createPluginCollectionRecord(pluginID, orgID, collectionName string) error {
-	doc := M{
-		"plugin_id":       pluginID,
-		"organization_id": orgID,
-		"collection_name": collectionName,
-		"created_at":      time.Now(),
-	}
-
-	if _, err := utils.CreateMongoDbDoc(_PluginCollectionsCollectionName, doc); err != nil {
-		return err
-	}
-	return nil
+	return objID
 }
