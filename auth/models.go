@@ -34,9 +34,7 @@ type RoleMember struct {
 	JoinedAt    time.Time          `json:"joined_at" bson:"joined_at"`
 }
 
-type contextKey int
-
-const authUserKey contextKey = 0
+const SESSION_MAX_AGE int = 60 * 60 * 12
 
 var (
 	NoAuthToken   = errors.New("No Authorization or session expired.")
@@ -115,7 +113,7 @@ func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("content-type", "application/json")
 
-		store := NewMongoStore(utils.GetCollection(session_collection), 3600, true, []byte(secretKey))
+		store := NewMongoStore(utils.GetCollection(session_collection), SESSION_MAX_AGE, true, []byte(secretKey))
 		var session, err = store.Get(r, sessionKey)
 		if err != nil {
 			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
