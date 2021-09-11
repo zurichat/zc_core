@@ -271,12 +271,6 @@ func SocketEvents(Server *socketio.Server) *socketio.Server {
 	})
 	//------------------------------Enter room---------------------------------------------------//
 
-	//------------------------------Leave room---------------------------------------------------//
-	Server.OnEvent("/socket.io/", "leave_room", func(s socketio.Conn, msg string) {
-		LeaveRoom(Server, s, msg)
-	})
-	//------------------------------leave room---------------------------------------------------//
-
 	/////////////////////////////////Main Events////////////////////////////////////////////////////////
 	return Server
 
