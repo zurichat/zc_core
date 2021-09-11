@@ -355,6 +355,110 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /organizations/{organization_id}/members/{member_id}/status:
+    patch:
+      tags:
+        - Organization-Member
+      summary: Update member status for an organization
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/organization_id"
+        - $ref: "#/components/parameters/member_id"
+      requestBody:
+        description: The structure for the entire request
+        content:
+          "application/json":
+            schema:
+              properties:
+                status:
+                  type: string
+                  description: Status to be updated
+                  example: "Available"
+      responses:
+        "200":
+          description: Member status updated successfully
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/Member"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /organizations/{organization_id}/members/{member_id}/photo:
+    patch:
+      tags:
+        - Organization-Member
+      summary: Update member profile picture for an organization
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/organization_id"
+        - $ref: "#/components/parameters/member_id"
+      requestBody:
+        description: The structure for the entire request
+        content:
+          "application/json":
+            schema:
+              type: object
+              example: { "image_utl": "https://image.storage/image.png" }
+      responses:
+        "200":
+          description: Member status updated successfully
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/Member"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /organizations/{organization_id}/members/{member_id}/profile:
+    patch:
+      tags:
+        - Organization-Member
+      summary: Update member profile for an organization
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/organization_id"
+        - $ref: "#/components/parameters/member_id"
+      requestBody:
+        description: The structure for the entire request
+        content:
+          "application/json":
+            schema:
+              properties:
+                data:
+                  type: string
+                  description: Data to be updated
+      responses:
+        "200":
+          description: Member status updated successfully
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/Member"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
 components:
   parameters:
     member_id:
@@ -586,6 +690,8 @@ components:
           type: string
           example: "https://image.location/image.png"
         name:
+          type: string
+        status:
           type: string
         email:
           type: string
