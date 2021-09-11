@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -59,7 +60,8 @@ func GetOrganizationByURL(w http.ResponseWriter, r *http.Request) {
 // Create an organization record
 func Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	loggedInUser := r.Context().Value("user").(auth.AuthUser)
+	// loggedIn := r.Context().Value("user").(*auth.AuthUser)
+	// loggedInUser, _ := auth.FetchUserByEmail(bson.M{"email": strings.ToLower(loggedIn.Email)})
 
 	var newOrg Organization
 	collection, user_collection, member_collection := "organizations", "users", "members"
@@ -82,16 +84,22 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	newOrg.Name = "Zuri Chat"
 	newOrg.WorkspaceURL = utils.GenWorkspaceUrl(newOrg.Name)
 
+	// creator
+	creator, _ := auth.FetchUserByEmail(bson.M{"email": strings.ToLower(newOrg.CreatorEmail)})
+	var creatorid interface{} = creator.ID
+	var ccreatorid string = creatorid.(primitive.ObjectID).Hex()
+
 	// extract user document
-	var luHexid, _ = primitive.ObjectIDFromHex(loggedInUser.ID.Hex())
-	userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"_id": luHexid})
+	// var luHexid, _ = primitive.ObjectIDFromHex(loggedInUser.ID.Hex())
+
+	userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"email": newOrg.CreatorEmail})
 	if userDoc == nil {
-		fmt.Printf("user with id %s does not exist!", newOrg.CreatorID)
-		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
+		fmt.Printf("user with email %s does not exist!", newOrg.CreatorEmail)
+		utils.GetError(errors.New("user with this email does not exist!"), http.StatusBadRequest, w)
 		return
 	}
 
-	newOrg.CreatorID = loggedInUser.ID.Hex()
+	newOrg.CreatorID = ccreatorid
 	newOrg.CreatedAt = time.Now()
 
 	// convert to map object
@@ -115,9 +123,10 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	mapstructure.Decode(userDoc, &user)
 
 	newMember := Member{
-		Email: user.Email,
-		OrgId: hexOrgid,
-		Role:  "owner",
+		Email:    user.Email,
+		OrgId:    hexOrgid,
+		Role:     "owner",
+		Presence: "true",
 	}
 	// conv to struct
 	memStruc, err := utils.StructToMap(newMember)
@@ -137,7 +146,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	updateFields := make(map[string]interface{})
 	user.Organizations = append(user.Organizations, iiid)
 	updateFields["Organizations"] = user.Organizations
-	_, ee := utils.UpdateOneMongoDbDoc(user_collection, loggedInUser.ID.Hex(), updateFields)
+	_, ee := utils.UpdateOneMongoDbDoc(user_collection, ccreatorid, updateFields)
 	if ee != nil {
 		utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, w)
 		return
