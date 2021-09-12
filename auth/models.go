@@ -34,9 +34,7 @@ type RoleMember struct {
 	JoinedAt    time.Time          `json:"joined_at" bson:"joined_at"`
 }
 
-type contextKey int
-
-const authUserKey contextKey = 0
+const SESSION_MAX_AGE int = 60 * 60 * 12
 
 var (
 	NoAuthToken   = errors.New("No Authorization or session expired.")
@@ -89,16 +87,6 @@ func CheckPassword(password, hash string) bool {
 	return err == nil
 }
 
-func fetchUserByEmail(filter map[string]interface{}) (*user.User, error) {
-	user := &user.User{}
-	userCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), user_collection)
-	if err != nil {
-		return user, err
-	}
-	result := userCollection.FindOne(context.TODO(), filter)
-	err = result.Decode(&user)
-	return user, err
-}
 func FetchUserByEmail(filter map[string]interface{}) (*user.User, error) {
 	user := &user.User{}
 	userCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), user_collection)
@@ -115,7 +103,7 @@ func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("content-type", "application/json")
 
-		store := NewMongoStore(utils.GetCollection(session_collection), 3600, true, []byte(secretKey))
+		store := NewMongoStore(utils.GetCollection(session_collection), SESSION_MAX_AGE, true, []byte(secretKey))
 		var session, err = store.Get(r, sessionKey)
 		if err != nil {
 			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
