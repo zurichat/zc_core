@@ -3,7 +3,7 @@ package utils
 import "github.com/spf13/viper"
 
 // centralize config file using viper
-type Configuration struct {
+type Configurations struct {
 	ClusterUrl				string
 	DbName					string
 	SecretKey				string
@@ -14,7 +14,7 @@ type Configuration struct {
 	SendGridApiKey			string
 }
 
-func NewConfiguration() *Configuration {
+func NewConfigurations() *Configurations {
 	// Load environmental variables
 	viper.AutomaticEnv()
 	
@@ -26,7 +26,7 @@ func NewConfiguration() *Configuration {
 	viper.SetDefault("USER_COLLECTION", "users")
 	viper.SetDefault("SESSION_COLLECTION", "session_store")
 
-	configs := &Configuration{
+	configs := &Configurations{
 		ClusterUrl: mgURL,
 		DbName: viper.GetString("DB_NAME"),
 		SecretKey: viper.GetString("SECRET_KEY"),
