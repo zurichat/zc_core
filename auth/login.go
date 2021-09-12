@@ -39,7 +39,7 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	user, err := fetchUserByEmail(bson.M{"email":  strings.ToLower(creds.Email)})
+	user, err := FetchUserByEmail(bson.M{"email":  strings.ToLower(creds.Email)})
 	if err != nil {
 		utils.GetError(UserNotFound, http.StatusBadRequest, response)
 		return
@@ -119,7 +119,7 @@ func LogOutUser(w http.ResponseWriter, r *http.Request) {
 func VerifyTokenHandler(response http.ResponseWriter, request *http.Request) {
 	// extract user id and email from context
 	loggedIn := request.Context().Value("user").(*AuthUser)
-	user, _ := fetchUserByEmail(bson.M{"email": strings.ToLower(loggedIn.Email)})
+	user, _ := FetchUserByEmail(bson.M{"email": strings.ToLower(loggedIn.Email)})
 
 	resp := &VerifiedTokenResponse{
 		true,

@@ -87,16 +87,6 @@ func CheckPassword(password, hash string) bool {
 	return err == nil
 }
 
-func fetchUserByEmail(filter map[string]interface{}) (*user.User, error) {
-	user := &user.User{}
-	userCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), user_collection)
-	if err != nil {
-		return user, err
-	}
-	result := userCollection.FindOne(context.TODO(), filter)
-	err = result.Decode(&user)
-	return user, err
-}
 func FetchUserByEmail(filter map[string]interface{}) (*user.User, error) {
 	user := &user.User{}
 	userCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), user_collection)
