@@ -148,28 +148,11 @@ func GetOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"_id": loggedInUser.ID.Hex()})
-	// if userDoc == nil {
-	// 	utils.GetError(errors.New("Invalid User"), http.StatusBadRequest, w)
-	// 	return
-	// }
-
-	// convert user to struct
-	// var user user.User
-	// mapstructure.Decode(userDoc, &user)
-
-	// memDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "email": user.Email})
-	// if memDoc == nil {
-	// 	utils.GetError(errors.New("You're not authorized to access this resources"), http.StatusUnauthorized, w)
-	// 	return
-	// }
-
 	utils.GetSuccess("Plugins returned successfully", doc, w)
 }
 
 func OrganizationPlugins(orgId string) ([]map[string]interface{}, error) {
 	orgCollectionName := GetOrgPluginCollectionName(orgId)
-	// member_collection, user_collection := "members", "users"
 
 	orgPlugins, err := utils.GetMongoDbDocs(orgCollectionName, nil)
 	if err != nil {
