@@ -79,7 +79,7 @@ paths:
   /users/{user_id}:
     patch:
       summary: Updates the details of a user
-      description: Updates existing user fields - first_name, last_name, phone, company
+      description: Updates existing user fields - first_name, last_name, phone
       operationId: getUserID
       security:
         - BearerAuth: []
@@ -285,9 +285,6 @@ components:
         last_name:
           type: string
           example: Doe
-        display_name:
-          type: string
-          example: jane_d
         email:
           type: string
           example: janedoe@email.com
@@ -297,12 +294,6 @@ components:
         phone:
           type: string
           example: 0123456789
-        status:
-          type: number
-          example: 0
-        company:
-          type: string
-          example: Unidentified Inc
         settings:
           type: string
           example: null
