@@ -78,16 +78,16 @@ type Member struct {
 	Settings    map[string]interface{} `json:"settings" bson:"settings"`
 	Deleted     bool                   `json:"deleted" bson:"deleted"`
 	DeletedAt   time.Time              `json:"deleted_at" bson:"deleted_at"`
-	// Socials     Social    `json:"socials" bson:"socials"`
+	Socials     map[string]string      `json:"socials" bson:"socials"`
 }
 
 type Profile struct {
-	ID          string    `json:"id" bson:"_id"`
-	Name        string    `json:"name" bson:"name"`
-	DisplayName string    `json:"display_name" bson:"display_name"`
-	Bio         string    `json:"bio" bson:"bio"`
-	Pronouns    string    `json:"pronouns" bson:"pronouns"`
-	Phone       string    `json:"phone" bson:"phone"`
-	TimeZone    string    `json:"time_zone" bson:"time_zone"`
-	Socials     [3]string `json:"socials" bson:"socials"`
+	ID          string            `json:"id" bson:"_id"`
+	Name        string            `json:"name" bson:"name"`
+	DisplayName string            `json:"display_name" bson:"display_name"`
+	Bio         string            `json:"bio" bson:"bio"`
+	Pronouns    string            `json:"pronouns" bson:"pronouns"`
+	Phone       string            `json:"phone" bson:"phone"`
+	TimeZone    string            `json:"time_zone" bson:"time_zone"`
+	Socials     map[string]string `json:"socials" bson:"socials"`
 }
