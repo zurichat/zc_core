@@ -4,16 +4,18 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-
-	"zuri.chat/zccore/user"
+	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/utils"
 )
 
+// Get a single member of an organization
 func GetMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -48,6 +50,7 @@ func GetMember(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("Member retrieved successfully", orgMember, w)
 }
 
+// Get all members of an organization
 func GetMembers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -77,11 +80,13 @@ func GetMembers(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("Members retrieved successfully", orgMembers, w)
 }
 
+// Add member to an organization
 func CreateMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	org_collection, user_collection, member_collection := "organizations", "users", "members"
 
-	orgId, err := primitive.ObjectIDFromHex(mux.Vars(r)["id"])
+	sOrgId := mux.Vars(r)["id"]
+	orgId, err := primitive.ObjectIDFromHex(sOrgId)
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
 		return
@@ -94,28 +99,47 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, err := primitive.ObjectIDFromHex(requestData["user_id"])
-	if err != nil {
-		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+	// Validating the user email
+	newUserEmail, ok := requestData["user_email"]
+	if !ok {
+		utils.GetError(fmt.Errorf("user_email not provided"), http.StatusBadRequest, w)
+		return
+	}
+	if !utils.IsValidEmail(newUserEmail) {
+		utils.GetError(fmt.Errorf("invalid email format : %s", newUserEmail), http.StatusBadRequest, w)
 		return
 	}
 
-	userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"_id": userId})
+	userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"email": newUserEmail})
 	if userDoc == nil {
-		fmt.Printf("user with id %s doesn't exist!", userId.String())
-		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
+		fmt.Printf("user with email %s doesn't exist! Register User to Proceed", newUserEmail)
+		utils.GetError(errors.New("user with email "+newUserEmail+" doesn't exist! Register User to Proceed"), http.StatusBadRequest, w)
 		return
 	}
-
+	type GUser struct {
+		ID            primitive.ObjectID
+		Email         string
+		Organizations []string
+	}
 	// convert user to struct
-	var user user.User
-	mapstructure.Decode(userDoc, &user)
+	var guser GUser
+	mapstructure.Decode(userDoc, &guser)
+
+	user, _ := auth.FetchUserByEmail(bson.M{"email": strings.ToLower(newUserEmail)})
 
 	// get organization
 	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": orgId})
 	if orgDoc == nil {
 		fmt.Printf("organization with id %s doesn't exist!", orgId.String())
-		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("organization with id "+sOrgId+" doesn't exist!"), http.StatusBadRequest, w)
+		return
+	}
+
+	// check that member isn't already in the organization
+	memDoc, _ := utils.GetMongoDbDocs(member_collection, bson.M{"org_id": sOrgId, "email": newUserEmail})
+	if memDoc != nil {
+		fmt.Printf("organization %s has member with email %s!", orgId.String(), newUserEmail)
+		utils.GetError(errors.New("User is already in this organisation"), http.StatusBadRequest, w)
 		return
 	}
 
@@ -124,23 +148,17 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 	mapstructure.Decode(orgDoc, &org)
 
 	newMember := Member{
-		Email: user.Email,
-		OrgId: orgId,
-		Role:  "member",
+		Email:    user.Email,
+		OrgId:    orgId,
+		Role:     "member",
+		Presence: "true",
+		JoinedAt: time.Now(),
 	}
 
 	// conv to struct
 	memStruc, err := utils.StructToMap(newMember)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
-
-	// check that member isn't already in the organization
-	memDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "email": newMember.Email})
-	if memDoc != nil {
-		fmt.Printf("organization %s has member with email %s!", orgId.String(), newMember.Email)
-		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
 		return
 	}
 
@@ -151,11 +169,21 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Todo: update user workspace with the org ID
+	var uid interface{} = user.ID
+	var uuid string = uid.(primitive.ObjectID).Hex()
+	updateFields := make(map[string]interface{})
+	user.Organizations = append(user.Organizations, sOrgId)
+	updateFields["Organizations"] = user.Organizations
+	fmt.Println(user.Organizations)
+	_, eerr := utils.UpdateOneMongoDbDoc(user_collection, uuid, updateFields)
+	if eerr != nil {
+		utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, w)
+		return
+	}
 	utils.GetSuccess("Member created successfully", createdMember, w)
 }
 
-// endpoint to update a member profile picture
+// endpoint to update a member's profile picture
 func UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-Type", "application/json")
 	org_collection, member_collection := "organizations", "members"
@@ -204,7 +232,6 @@ func UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.GetSuccess("Profile picture updated", result, w)
-
 }
 
 // an endpoint to update a user status
@@ -239,17 +266,16 @@ func UpdateMemberStatus(w http.ResponseWriter, r *http.Request) {
 
 	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": pOrgId})
 	if orgDoc == nil {
-		fmt.Printf("org with id doesn't exist!", orgId)
-		utils.GetError(errors.New("org with id %s doesn't exist!"), http.StatusBadRequest, w)
+		fmt.Printf("org with id %s doesn't exist!", orgId)
+		utils.GetError(errors.New("org with id %s doesn't exist"), http.StatusBadRequest, w)
 		return
 	}
 
 	memberDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": pMemId, "org_id": orgId})
 	if memberDoc == nil {
 		fmt.Printf("member with id %s doesn't exist!", member_Id)
-		utils.GetError(errors.New("member with id doesn't exist!"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("member with id doesn't exist"), http.StatusBadRequest, w)
 		return
-
 	}
 
 	result, err := utils.UpdateOneMongoDbDoc(member_collection, member_Id, bson.M{"status": member_status})
@@ -258,10 +284,15 @@ func UpdateMemberStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("status updated", result, w)
+	if result.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("status updated successfully", nil, w)
 }
 
-// Delete single member from an organizatin
+// Delete single member from an organization
 func DeleteMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -304,6 +335,7 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("Successfully Deleted Member", nil, w)
 }
 
+// Update a member profile
 func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	org_collection, member_collection := "organizations", "members"
@@ -327,9 +359,16 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if member id is valid
-	_, err = primitive.ObjectIDFromHex(memId)
+	pMemId, err := primitive.ObjectIDFromHex(memId)
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	memberDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": pMemId, "org_id": id})
+	if memberDoc == nil {
+		fmt.Printf("member with id %s doesn't exist!", memId)
+		utils.GetError(errors.New("member with id doesn't exist"), http.StatusBadRequest, w)
 		return
 	}
 
@@ -361,4 +400,54 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.GetSuccess("Member Profile updated succesfully", nil, w)
+}
+
+// Toggle a member's presence
+func TogglePresence(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	org_collection, member_collection := "organizations", "members"
+	id := mux.Vars(r)["id"]
+	memId := mux.Vars(r)["mem_id"]
+	// Check if organization id is valid
+	orgId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+	// Check if organization id exists in the database
+	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": orgId})
+	if orgDoc == nil {
+		fmt.Printf("organization with ID: %s does not exist ", id)
+		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
+		return
+	}
+	// Check if member id is valid
+	pMemId, err := primitive.ObjectIDFromHex(memId)
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+	memberDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": pMemId, "org_id": id})
+	if memberDoc == nil {
+		fmt.Printf("member with id %s doesn't exist!", memId)
+		utils.GetError(errors.New("member with id doesn't exist"), http.StatusBadRequest, w)
+		return
+	}
+	org_filter := make(map[string]interface{})
+	if memberDoc["presence"] == "true" {
+		org_filter["presence"] = "false"
+	} else {
+		org_filter["presence"] = "true"
+	}
+	// update the presence field of the member
+	update, err := utils.UpdateOneMongoDbDoc(member_collection, memId, org_filter)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+	utils.GetSuccess("Member presence toggled", nil, w)
 }

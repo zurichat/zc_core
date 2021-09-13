@@ -1,13 +1,13 @@
 openapi: 3.0.0
 info:
   version: 1.0.0
-  title: Zuri Chat Core API
+  title: Zuri Chat Core API (Market Place Endpoints)
   description: Zuri Chat is an open source slack clone. However, it offers a lot more functionality via a plugin system where each room can be provided by a different plugin provider.
   contact:
     email: developer@zuri.chat
 servers:
-  - description: Zuri Chat Core API
-    url: "https://api.zuri.chat/v1"
+  - description: Zuri Chat Core API 
+    url: "https://api.zuri.chat/"
 
 paths:
   /marketplace/plugins:
@@ -76,6 +76,43 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+    delete:
+      tags:
+        - Marketplace
+      summary: Removes a single plugin from the marketplace.
+      parameters:
+        - name: id
+          in: path
+          description: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Plugin Successfully Removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketplacePlugin'
+
+        '400':
+          description: Plugin does not exist or plugin removal failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Plugin not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     Error:
@@ -105,6 +142,8 @@ components:
         developerEmail:
           type: string
           example: developer@zuri.chat
+        metadata:
+          type: object  
         templateUrl:
           type: string
         sidebarUrl:

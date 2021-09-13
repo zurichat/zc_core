@@ -32,32 +32,38 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	// Authentication
 	r.HandleFunc("/auth/login", auth.LoginIn).Methods("POST")
+	r.HandleFunc("/auth/logout", auth.LogOutUser).Methods("POST", "GET")
 	r.HandleFunc("/auth/verify-token", auth.IsAuthenticated(auth.VerifyTokenHandler)).Methods("GET", "POST")
 
-	// Organisation
+	// Organization
 	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.Create)).Methods("POST")
 	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.GetOrganizations)).Methods("GET")
 	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
 	r.HandleFunc("/organizations/{id}", auth.IsAuthenticated(organizations.DeleteOrganization)).Methods("DELETE")
+	r.HandleFunc("/organizations/url/{url}", organizations.GetOrganizationByURL).Methods("GET")
 
 	r.HandleFunc("/organizations/{id}/plugins", organizations.AddOrganizationPlugin).Methods("POST")
 	r.HandleFunc("/organizations/{id}/plugins", organizations.GetOrganizationPlugins).Methods("GET")
+
 	r.HandleFunc("/organizations/{id}/url", auth.IsAuthenticated(organizations.UpdateUrl)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/name", auth.IsAuthenticated(organizations.UpdateName)).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}/status", auth.IsAuthenticated(organizations.UpdateMemberStatus)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/logo", auth.IsAuthenticated(organizations.UpdateLogo)).Methods("PATCH")
+	
 	r.HandleFunc("/organizations/{id}/members", auth.IsAuthenticated(organizations.CreateMember)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/members", auth.IsAuthenticated(organizations.GetMembers)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.GetMember)).Methods("GET")
-	r.HandleFunc("/organizations/{id}/logo", auth.IsAuthenticated(organizations.UpdateLogo)).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}/photo", auth.IsAuthenticated(organizations.UpdateProfilePicture)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.DeleteMember)).Methods("DELETE")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/status", auth.IsAuthenticated(organizations.UpdateMemberStatus)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/photo", auth.IsAuthenticated(organizations.UpdateProfilePicture)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/profile", auth.IsAuthenticated(organizations.UpdateProfile)).Methods("PATCH")
-	r.HandleFunc("/organizations/url/{url}", organizations.GetOrganizationByURL).Methods("GET")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/presence", auth.IsAuthenticated(organizations.TogglePresence)).Methods("POST")
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
 	r.HandleFunc("/data/delete", data.DeleteData).Methods("POST")
+	r.HandleFunc("/data/collections/{plugin_id}", data.ListCollections).Methods("GET")
+	r.HandleFunc("/data/collections/{plugin_id}/{org_id}", data.ListCollections).Methods("GET")
 
 	// Plugins
 	r.HandleFunc("/plugins/register", plugin.Register).Methods("POST")
@@ -81,7 +87,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.Handle("/socket.io/", Server)
 
 	//api documentation
-	r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.FileServer(http.Dir("./api/"))))
+	r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.FileServer(http.Dir("./docs/"))))
 
 	// Home
 	http.Handle("/", r)
@@ -152,8 +158,7 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 
 // should redirect permanently to the docs page
 func Index(w http.ResponseWriter, r *http.Request) {
-	// extract user from header
-	user := r.Context().Value("user").(auth.AuthUser)
+	user := r.Context().Value("user").(*auth.AuthUser)
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, fmt.Sprintf("Welcome %s to Zuri Core Developer.", user.Email))
