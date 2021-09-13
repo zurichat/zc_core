@@ -61,6 +61,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings", auth.IsAuthenticated(organizations.UpdateMemberSettings)).Methods("PATCH")
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
+	r.HandleFunc("/data/read", data.NewRead).Methods("POST")
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
 	r.HandleFunc("/data/delete", data.DeleteData).Methods("POST")
 	r.HandleFunc("/data/collections/{plugin_id}", data.ListCollections).Methods("GET")
