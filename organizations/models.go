@@ -60,23 +60,24 @@ func GetOrgPluginCollectionName(orgName string) string {
 // }
 
 type Member struct {
-	ID          string             `json:"_id" bson:"_id"`
-	OrgId       primitive.ObjectID `json:"org_id" bson:"org_id"`
-	Files       []string           `json:"files" bson:"files"`
-	ImageURL    string             `json:"image_url" bson:"image_url"`
-	Name        string             `json:"name" bson:"name"`
-	Email       string             `json:"email" bson:"email"`
-	DisplayName string             `json:"display_name" bson:"display_name"`
-	Bio         string             `json:"bio" bson:"bio"`
-	Status      string             `json:"status" bson:"status"`
-	Presence    string             `json:"presence" bson:"presence"`
-	Pronouns    string             `json:"pronouns" bson:"pronouns"`
-	Phone       string             `json:"phone" bson:"phone"`
-	TimeZone    string             `json:"time_zone" bson:"time_zone"`
-	Role        string             `json:"role" bson:"role"`
-	JoinedAt    time.Time          `json:"joined_at" bson:"joined_at"`
-	Deleted     bool               `json:"deleted" bson:"deleted"`
-	DeletedAt   time.Time          `json:"deleted_at" bson:"deleted_at"`
+	ID          primitive.ObjectID     `json:"_id" bson:"_id"`
+	OrgId       string                 `json:"org_id" bson:"org_id"`
+	Files       []string               `json:"files" bson:"files"`
+	ImageURL    string                 `json:"image_url" bson:"image_url"`
+	Name        string                 `json:"name" bson:"name"`
+	Email       string                 `json:"email" bson:"email"`
+	DisplayName string                 `json:"display_name" bson:"display_name"`
+	Bio         string                 `json:"bio" bson:"bio"`
+	Status      string                 `json:"status" bson:"status"`
+	Presence    string                 `json:"presence" bson:"presence"`
+	Pronouns    string                 `json:"pronouns" bson:"pronouns"`
+	Phone       string                 `json:"phone" bson:"phone"`
+	TimeZone    string                 `json:"time_zone" bson:"time_zone"`
+	Role        string                 `json:"role" bson:"role"`
+	JoinedAt    time.Time              `json:"joined_at" bson:"joined_at"`
+	Settings    map[string]interface{} `json:"settings" bson:"settings"`
+	Deleted     bool                   `json:"deleted" bson:"deleted"`
+	DeletedAt   time.Time              `json:"deleted_at" bson:"deleted_at"`
 	// Socials     Social    `json:"socials" bson:"socials"`
 }
 
