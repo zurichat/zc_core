@@ -128,7 +128,12 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - $ref: "#/components/parameters/workspace_url"
+        - in: path
+          name: workspace_url
+          required: true
+          schema:
+            type: string
+            example: "hngi8.zuri.chat"
       responses:
         "200":
           $ref: "#/components/responses/getOrgResponse"
