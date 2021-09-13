@@ -120,6 +120,33 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /organizations/url/{workspace_url}:
+    get:
+      tags:
+        - Organization
+      summary: Get an organization by its URL
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: workspace_url
+          required: true
+          schema:
+            type: string
+            example: "hngi8.zuri.chat"
+      responses:
+        "200":
+          $ref: "#/components/responses/getOrgResponse"
+
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /organizations/{organization_id}/name:
     patch:
       tags:

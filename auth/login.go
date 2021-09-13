@@ -33,13 +33,12 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 		utils.GetError(err, http.StatusUnprocessableEntity, response)
 		return
 	}
-
 	if err := validate.Struct(creds); err != nil {
 		utils.GetError(err, http.StatusBadRequest, response)
 		return
 	}
 
-	user, err := fetchUserByEmail(bson.M{"email":  strings.ToLower(creds.Email)})
+	user, err := FetchUserByEmail(bson.M{"email":  strings.ToLower(creds.Email)})
 	if err != nil {
 		utils.GetError(UserNotFound, http.StatusBadRequest, response)
 		return
@@ -50,7 +49,7 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 		utils.GetError(InvalidCredentials, http.StatusBadRequest, response)
 		return
 	}
-	store := NewMongoStore(utils.GetCollection(session_collection), 3600, true, []byte(secretKey))
+	store := NewMongoStore(utils.GetCollection(session_collection), SESSION_MAX_AGE, true, []byte(secretKey))
 	var session, e = store.Get(request, sessionKey)
 	if e != nil {
 		msg := fmt.Errorf("%s", e.Error())
@@ -73,10 +72,8 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 			ID: user.ID,
 			FirstName: user.FirstName,
 			LastName: user.LastName,
-			DisplayName: user.DisplayName,
 			Email: user.Email,
 			Phone: user.Phone,
-			Status: int(user.Status),
 			Timezone: user.Timezone,
 			CreatedAt: user.CreatedAt,
 			UpdatedAt: user.UpdatedAt,		
@@ -89,7 +86,7 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 func LogOutUser(w http.ResponseWriter, r *http.Request) {
 	store := NewMongoStore(
 		utils.GetCollection(session_collection), 
-		3600, 
+		SESSION_MAX_AGE, 
 		true, 
 		[]byte(secretKey),
 	)
@@ -119,7 +116,7 @@ func LogOutUser(w http.ResponseWriter, r *http.Request) {
 func VerifyTokenHandler(response http.ResponseWriter, request *http.Request) {
 	// extract user id and email from context
 	loggedIn := request.Context().Value("user").(*AuthUser)
-	user, _ := fetchUserByEmail(bson.M{"email": strings.ToLower(loggedIn.Email)})
+	user, _ := FetchUserByEmail(bson.M{"email": strings.ToLower(loggedIn.Email)})
 
 	resp := &VerifiedTokenResponse{
 		true,
@@ -127,10 +124,8 @@ func VerifyTokenHandler(response http.ResponseWriter, request *http.Request) {
 			ID: user.ID,
 			FirstName: user.FirstName,
 			LastName: user.LastName,
-			DisplayName: user.DisplayName,
 			Email: user.Email,
 			Phone: user.Phone,
-			Status: int(user.Status),
 			Timezone: user.Timezone,
 			CreatedAt: user.CreatedAt,
 			UpdatedAt: user.UpdatedAt,

@@ -34,8 +34,7 @@ type RoleMember struct {
 	JoinedAt    time.Time          `json:"joined_at" bson:"joined_at"`
 }
 
-type contextKey int
-const authUserKey contextKey = 0
+const SESSION_MAX_AGE int = 60 * 60 * 12
 
 var (
 	NoAuthToken   = errors.New("No Authorization or session expired.")
@@ -50,7 +49,7 @@ type Credentials struct {
 
 type Token struct {
 	SessionID string       `json:"session_id"`
-	User        UserResponse `json:"user"`
+	User      UserResponse `json:"user"`
 }
 
 type AuthUser struct {
@@ -88,7 +87,7 @@ func CheckPassword(password, hash string) bool {
 	return err == nil
 }
 
-func fetchUserByEmail(filter map[string]interface{}) (*user.User, error) {
+func FetchUserByEmail(filter map[string]interface{}) (*user.User, error) {
 	user := &user.User{}
 	userCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), user_collection)
 	if err != nil {
@@ -103,8 +102,8 @@ func fetchUserByEmail(filter map[string]interface{}) (*user.User, error) {
 func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("content-type", "application/json")
-	
-		store := NewMongoStore(utils.GetCollection(session_collection), 3600, true, []byte(secretKey))
+
+		store := NewMongoStore(utils.GetCollection(session_collection), SESSION_MAX_AGE, true, []byte(secretKey))
 		var session, err = store.Get(r, sessionKey)
 		if err != nil {
 			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
@@ -117,14 +116,14 @@ func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		objID, err := primitive.ObjectIDFromHex(session.ID);
-		if err != nil { 
+		objID, err := primitive.ObjectIDFromHex(session.ID)
+		if err != nil {
 			utils.GetError(ErrorInvalid, http.StatusUnauthorized, w)
 			return
-		 }
+		}
 
 		user := &AuthUser{
-			ID: objID,
+			ID:    objID,
 			Email: session.Values["email"].(string),
 		}
 
@@ -134,27 +133,11 @@ func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 }
 
 // Checks if a user is authorized to access a particular function, and either returns a 403 error or continues the process
-// First Option is either a token or user id
-// In the second option specify if you entered a token or id in the firstoption, options are "token" or "id"
-// Third is the Organisation's Id
-// Fourth Option is the role necessary for accessing your endpoint, options are "owner" or "admin" or "member" or "guest"
-// Fifth is response writer
-func IsAuthorized(tokenOrId string, idenType string, orgId string, role string, w http.ResponseWriter) bool {
-	var user_id string
-	// Get user Id from token if specified
-	if idenType == "token" {
-		status, uid, err := utils.TokenIsValid(tokenOrId)
-		if status == false {
-			utils.GetError(err, http.StatusUnauthorized, w)
-		}
-		user_id = uid
-
-	} else if idenType == "id" {
-		user_id = tokenOrId
-	} else {
-		fmt.Println("Specified incorrect identype in isAthorized function")
-		utils.GetError(errors.New("Specified incorrect identype in isAthorized function"), http.StatusInternalServerError, w)
-	}
+// First Option is user id
+// second is the Organisation's Id
+// third Option is the role necessary for accessing your endpoint, options are "owner" or "admin" or "member" or "guest"
+// fourth is response writer
+func IsAuthorized(user_id string, orgId string, role string, w http.ResponseWriter) bool {
 
 	// collections
 	_, user_collection, member_collection := "organizations", "users", "members"
@@ -197,6 +180,6 @@ func IsAuthorized(tokenOrId string, idenType string, orgId string, role string, 
 // loggedInUser := r.Context().Value("user").(auth.AuthUser)
 // orgId := mux.Vars(r)["id"]
 
-// if !auth.IsAuthorized(loggedInUser.ID.Hex(), "id", orgId, "member", w) {
+// if !auth.IsAuthorized(loggedInUser.ID.Hex(), orgId, "member", w) {
 // 	return
 // }

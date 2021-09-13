@@ -57,6 +57,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/status", auth.IsAuthenticated(organizations.UpdateMemberStatus)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/photo", auth.IsAuthenticated(organizations.UpdateProfilePicture)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/profile", auth.IsAuthenticated(organizations.UpdateProfile)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/presence", auth.IsAuthenticated(organizations.TogglePresence)).Methods("POST")
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
@@ -86,6 +87,11 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/realtime/auth", realtime.Auth).Methods("POST")
 	r.Handle("/socket.io/", Server)
 
+	//ping endpoint
+	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		utils.GetSuccess("Server is live", nil, w)
+	}).Methods("GET", "POST")
+
 	//api documentation
 	r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.FileServer(http.Dir("./docs/"))))
 
@@ -102,7 +108,6 @@ func main() {
 	////////////////////////////////////Socket  events////////////////////////////////////////////////
 
 	// load .env file if it exists
-
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Printf("Error loading .env file: %v", err)
