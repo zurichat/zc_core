@@ -133,25 +133,6 @@ func CreateManyMongoDbDocs(collectionName string, data []interface{}) (*mongo.In
 	return res, nil
 }
 
-// Update or Create single MongoDb document for a collection
-func UpdateOrCreateOneMongoDbDoc(collectionName string, ID string, data map[string]interface{}) (*mongo.UpdateResult, error) {
-	ctx := context.Background()
-	collection := defaultMongoHandle.GetCollection(collectionName)
-
-	id, _ := primitive.ObjectIDFromHex(ID)
-	filter := bson.M{"_id": id}
-
-	//updateOne sets the fields, without using $set the entire document will be overwritten
-	update_data := bson.M{"$set": MapToBson(data)}
-	res, err := collection.UpdateOne(ctx, filter, update_data, options.Update().SetUpsert(true))
-
-	if err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
 // Update single MongoDb document for a collection
 func UpdateOneMongoDbDoc(collectionName string, ID string, data map[string]interface{}) (*mongo.UpdateResult, error) {
 	ctx := context.Background()
