@@ -36,7 +36,7 @@ func GetMember(w http.ResponseWriter, r *http.Request) {
 	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": pOrgId})
 	if orgDoc == nil {
 		fmt.Printf("org with id %s doesn't exist!", orgId)
-		utils.GetError(fmt.Errorf("org with id %s doesn't exist!", orgId), http.StatusBadRequest, w)
+		utils.GetError(fmt.Errorf("org with id %s doesn't exist", orgId), http.StatusBadRequest, w)
 		return
 	}
 
@@ -145,7 +145,7 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 	memDoc, _ := utils.GetMongoDbDocs(member_collection, bson.M{"org_id": sOrgId, "email": newUserEmail})
 	if memDoc != nil {
 		fmt.Printf("organization %s has member with email %s!", orgId.String(), newUserEmail)
-		utils.GetError(errors.New("User is already in this organisation"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("user is already in this organization"), http.StatusBadRequest, w)
 		return
 	}
 
@@ -219,7 +219,7 @@ func UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	memberDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": pMemId, "org_id": pOrgId})
+	memberDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": pMemId, "org_id": orgId})
 	if memberDoc == nil {
 		fmt.Printf("member with id %s doesn't exist!", member_Id)
 		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
@@ -233,7 +233,12 @@ func UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("Profile picture updated", result, w)
+	if result.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("image updated successfully", nil, w)
 }
 
 // an endpoint to update a user status
