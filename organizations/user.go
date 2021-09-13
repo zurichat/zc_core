@@ -11,6 +11,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/utils"
 )
@@ -82,7 +83,6 @@ func GetMembers(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
-
 	utils.GetSuccess("Members retrieved successfully", orgMembers, w)
 }
 
@@ -154,22 +154,18 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 	mapstructure.Decode(orgDoc, &org)
 
 	newMember := Member{
+		ID:       primitive.NewObjectID(),
 		Email:    user.Email,
-		OrgId:    orgId,
+		OrgId:    orgId.Hex(),
 		Role:     "member",
 		Presence: "true",
 		JoinedAt: time.Now(),
+		Settings: utils.M{},
+		Deleted:  false,
 	}
 
-	// conv to struct
-	memStruc, err := utils.StructToMap(newMember)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
-
-	// add new member to member collection
-	createdMember, err := utils.CreateMongoDbDoc(member_collection, memStruc)
+	coll := utils.GetCollection(member_collection)
+	res, err := coll.InsertOne(r.Context(), newMember)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
@@ -186,7 +182,7 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, w)
 		return
 	}
-	utils.GetSuccess("Member created successfully", createdMember, w)
+	utils.GetSuccess("Member created successfully", utils.M{"member_id": res.InsertedID}, w)
 }
 
 // endpoint to update a member's profile picture
@@ -453,4 +449,44 @@ func TogglePresence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.GetSuccess("Member presence toggled", nil, w)
+}
+
+// a patch request to /org/id/member/id/settings with the json payload
+// { "check_spelling": true }
+// the update adds to the settings map
+// this query in mongodb would translate to {$set : {"settings.check_spelling" : true}}
+func UpdateMemberSettings(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	orgId, memberId := vars["id"], vars["mem_id"]
+
+	updPayload := make(map[string]interface{})
+	_ = utils.ParseJsonFromRequest(r, &updPayload)
+
+	coll := utils.GetCollection("members")
+	filter := bson.M{
+		"org_id":  orgId,
+		"_id":     mustObjectID(memberId),
+		"deleted": bson.M{"$ne": true},
+	}
+	update := bson.M{}
+	for key, value := range updPayload {
+		settingsField := fmt.Sprintf("settings.%s", key)
+		update["$set"] = bson.M{settingsField: value}
+	}
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	res := coll.FindOneAndUpdate(r.Context(), filter, update, opts)
+	member := new(Member)
+	if err := res.Decode(member); err != nil {
+		utils.GetError(fmt.Errorf("error updating settings: %v", err), http.StatusInternalServerError, w)
+		return
+	}
+	utils.GetSuccess("settings updated successfully", utils.M{"member": member}, w)
+}
+
+func mustObjectID(s string) primitive.ObjectID {
+	id, err := primitive.ObjectIDFromHex(s)
+	if err != nil {
+		panic(err)
+	}
+	return id
 }
