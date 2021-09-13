@@ -52,7 +52,6 @@ func GetOrganization(w http.ResponseWriter, r *http.Request) {
 	org.Plugins = orgPluginsMap
 
 	utils.GetSuccess("organization retrieved successfully", org, w)
-	// utils.GetSuccess("organization retrieved successfully", save, w)
 }
 
 // Get an organization by url
@@ -89,7 +88,6 @@ func GetOrganizationByURL(w http.ResponseWriter, r *http.Request) {
 	org.Plugins = orgPluginsMap
 
 	utils.GetSuccess("organization retrieved successfully", org, w)
-	// utils.GetSuccess("organization retrieved successfully", data, w)
 }
 
 // Create an organization record
