@@ -102,7 +102,6 @@ func main() {
 	////////////////////////////////////Socket  events////////////////////////////////////////////////
 
 	// load .env file if it exists
-
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Printf("Error loading .env file: %v", err)
