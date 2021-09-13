@@ -124,7 +124,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 
 	newMember := Member{
 		Email:    user.Email,
-		OrgId:    hexOrgid,
+		OrgId:    hexOrgid.Hex(),
 		Role:     "owner",
 		Presence: "true",
 	}
