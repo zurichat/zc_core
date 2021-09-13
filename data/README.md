@@ -50,6 +50,16 @@ To delete data, a POST request is made to /data/delete
 
 The `bulk_delete` and `filter` properties are used to delete multiple records. `filter` will contain the query to be matched and `bulk_delete` must be set to `true` to use this filter property.
 
+
+List Data Collections
+---------------------
+Plugins can now request to see a list of collections they have created. 
+
+The a GET request to `/data/collections/<plugin_id>` will return a record of collections created by the plugin.
+while a request to `/data/collections/<plugin_id>/<org_id>` will return a record of collections a plugin has created for a particular organization
+
+
+
 TODO:
 - Allow zuri main to have read/write access
 - Improve queries for for read.

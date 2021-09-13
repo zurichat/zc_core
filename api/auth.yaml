@@ -1,0 +1,80 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Zuri Chat Core API (Authentication Endpoints)
+  description: Zuri Chat is an open source slack clone. However, it offers a lot more functionality via a plugin system where each room can be provided by a different plugin provider.
+  contact:
+    email: developer@zuri.chat
+servers:
+  - description: Zuri Chat Core API 
+    url: "https://api.zuri.chat/"
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Authentication request to access protected resources
+      requestBody:
+        $ref: "#/components/requestBodies/login"
+      responses:
+        "200":
+          $ref: "#/components/responses/LoginSuccess"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+
+  responses:
+    InternalServerError:
+      description: Internal server error occured during operation
+      content:
+        application/json:
+          schema:
+            required:
+              - code
+              - message
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+                example: 500
+              message:
+                type: string
+    
+    LoginSuccess:
+      description: Logged in successfully
+      content:
+        application/json:
+          schema:
+            required:
+              - code
+              - message
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+                example: 200
+              message:
+                type: string
+  
+  requestBodies:
+    login:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/loginReqB"
+
+  schemas:
+    loginReqB:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    

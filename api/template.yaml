@@ -7,7 +7,7 @@ info:
     email: developer@zuri.chat
 servers:
   - description: Zuri Chat Core API
-    url: 'https://api.zuri.chat/v1'
+    url: 'https://api.zuri.chat'
 tags:
 - name: auth
   description: Controls user registration, login and password recovery
@@ -61,7 +61,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
 
   /users/{user_id}:
     put:
@@ -235,7 +234,6 @@ paths:
 
       tags:
         - Users
-
 
   /organizations:
     get:
@@ -723,6 +721,38 @@ components:
       required: true
       schema:
         type: integer
+
+    first_name:
+      in: path
+      name: first_name
+      required: true
+      schema:
+        type: string
+        example: Jane
+
+    last_name:
+      in: path
+      name: last_name
+      required: true
+      schema:
+        type: string
+        example: Doe
+
+    display_name:
+      in: path
+      name: display_name
+      required: true
+      schema:
+        type: string
+        example: jane_doe
+
+    email:
+      in: path
+      name: email
+      required: true
+      schema:
+        type: string
+        example: janedoe@email.com
 
   schemas:
     User:
