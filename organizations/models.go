@@ -60,7 +60,7 @@ func GetOrgPluginCollectionName(orgName string) string {
 // }
 
 type Member struct {
-	ID          string             `json:"id" bson:"_id"`
+	ID          string             `json:"_id" bson:"_id"`
 	OrgId       primitive.ObjectID `json:"org_id" bson:"org_id"`
 	Files       []string           `json:"files" bson:"files"`
 	ImageURL    string             `json:"image_url" bson:"image_url"`

@@ -35,18 +35,21 @@ func GetMember(w http.ResponseWriter, r *http.Request) {
 	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": pOrgId})
 	if orgDoc == nil {
 		fmt.Printf("org with id %s doesn't exist!", orgId)
-		utils.GetError(errors.New("org with id "+orgId+" doesn't exist!"), http.StatusBadRequest, w)
+		utils.GetError(fmt.Errorf("org with id %s doesn't exist!", orgId), http.StatusBadRequest, w)
 		return
 	}
 
-	orgMember, err := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "_id": memberIdhex})
+	orgMember, err := utils.GetMongoDbDoc(member_collection, bson.M{
+		"org_id":  orgId,
+		"_id":     memberIdhex,
+		"deleted": bson.M{"$ne": true},
+	})
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
-	var memb Member
-	mapstructure.Decode(orgMember, &memb)
-
+	var member Member
+	utils.ConvertStructure(orgMember, &member)
 	utils.GetSuccess("Member retrieved successfully", orgMember, w)
 }
 
@@ -71,7 +74,10 @@ func GetMembers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orgMembers, err := utils.GetMongoDbDocs(member_collection, bson.M{"org_id": orgId})
+	orgMembers, err := utils.GetMongoDbDocs(member_collection, bson.M{
+		"org_id":  orgId,
+		"deleted": bson.M{"$ne": true},
+	})
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
