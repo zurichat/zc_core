@@ -33,7 +33,6 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 		utils.GetError(err, http.StatusUnprocessableEntity, response)
 		return
 	}
-
 	if err := validate.Struct(creds); err != nil {
 		utils.GetError(err, http.StatusBadRequest, response)
 		return
