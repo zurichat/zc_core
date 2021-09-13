@@ -30,10 +30,10 @@ func GetOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	save, err := utils.GetMongoDbDoc(collection, bson.M{"_id": objId})
+	save, _ := utils.GetMongoDbDoc(collection, bson.M{"_id": objId})
 
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
+	if save == nil {
+		utils.GetError(fmt.Errorf("organization %s not found", orgId), http.StatusNotFound, w)
 		return
 	}
 
@@ -200,7 +200,7 @@ func GetOrganizations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("organization retrieved successfully", save, w)
+	utils.GetSuccess("organizations retrieved successfully", save, w)
 }
 
 // Delete an organization record
