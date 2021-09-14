@@ -91,3 +91,75 @@ type Profile struct {
 	TimeZone    string    `json:"time_zone" bson:"time_zone"`
 	Socials     [3]string `json:"socials" bson:"socials"`
 }
+
+type Preferences struct {
+	Notifications    *Notifications    `json:"notifications" bson:"notifications"`
+	Themes           *Themes           `json:"themes" bson:"themes"`
+	MessagesAndMedia *MessagesAndMedia `json:"messages_and_media" bson:"messages_and_media"`
+}
+
+type Notifications struct {
+	Section                            string   `json:"section" bson:"section"`
+	NotifyMeAbout                      string   `json:"notify_me_about" bson:"notify_me_about"`
+	UseDifferentSettingsForMyMobile    string   `json:"use_different_settings_mobile" bson:"use_different_settings_mobile"`
+	ChannelHurdleNotification          bool     `json:"channel_hurdle_notification" bson:"channel_hurdle_notification"`
+	ThreadRepliesNotification          bool     `json:"thread_replies_notification" bson:"thread_replies_notification"`
+	MyKeywords                         string   `json:"my_keywords" bson:"my_keywords"`
+	NotificationSchedule               string   `json:"notification_schedule" bson:"notification_schedule"`
+	MessagePreviewInEachNotification   bool     `json:"message_preview_in_each_notification" bson:"message_preview_in_each_notification"`
+	MuteAllSounds                      bool     `json:"mute_all_sounds" bson:"mute_all_sounds"`
+	WhenIamNotActiveOnDesktop          string   `json:"when_iam_not_active_on_desktop" bson:"when_iam_not_active_on_desktop"`
+	EmailNotificationsForMentionsAndDM []string `json:"email_notifications_for_mentions_and_dm" bson:"email_notifications_for_mentions_and_dm"`
+}
+
+type Themes struct {
+	Section string `json:"section" bson:"section"`
+	Themes  string `json:"themes" bson:"themes"`
+	Colors  string `json:"colors" bson:"colors"`
+}
+
+type MessagesAndMedia struct {
+	Section               string   `json:"section" bson:"section"`
+	Theme                 string   `json:"theme" bson:"theme"`
+	Names                 string   `json:"names" bson:"names"`
+	AdditionalOptions     []string `json:"additional_options" bson:"additional_options"`
+	Emoji                 string   `json:"emoji" bson:"emoji"`
+	EmojiAsText           bool     `json:"emoji_as_text" bson:"emoji_as_text"`
+	ShowJumboMoji         bool     `json:"show_jumbomoji" bson:"show_jumbomoji"`
+	FrequentlyUsedEmoji   bool     `json:"frequently_used_emoji" bson:"frequently_used_emoji"`
+	Custom                bool     `json:"custom" bson:"custom"`
+	InlineMediaAndLinks   []string `json:"inline_media_and_links" bson:"inline_media_and_links"`
+	FilesizeBiggerThan2mb bool     `json:"filesize_bigger_than_2mb" bson:"filesize_bigger_than_2mb"`
+	BringEmailsIntoZuri   string   `json:"bring_emails_into_zuri bson:"bring_emails_into_zuri"`
+}
+
+// type Preferences struct {
+// 	// Notifications
+// 	NotifyMeAbout                      string   `json:"notify_me_about" bson:"notify_me_about"`
+// 	UseDifferentSettingsForMyMobile    string   `json:"use_different_settings_mobile" bson:"use_different_settings_mobile"`
+// 	ChannelHurdleNotification          bool     `json:"channel_hurdle_notification" bson:"channel_hurdle_notification"`
+// 	ThreadRepliesNotification          bool     `json:"thread_replies_notification" bson:"thread_replies_notification"`
+// 	MyKeywords                         string   `json:"my_keywords" bson:"my_keywords"`
+// 	NotificationSchedule               string   `json:"notification_schedule" bson:"notification_schedule"`
+// 	MessagePreviewInEachNotification   bool     `json:"message_preview_in_each_notification" bson:"message_preview_in_each_notification"`
+// 	MuteAllSounds                      bool     `json:"mute_all_sounds" bson:"mute_all_sounds"`
+// 	WhenIamNotActiveOnDesktop          string   `json:"when_iam_not_active_on_desktop" bson:"when_iam_not_active_on_desktop"`
+// 	EmailNotificationsForMentionsAndDM []string `json:"email_notifications_for_mentions_and_dm" bson:"email_notifications_for_mentions_and_dm"`
+
+// 	// Themes
+// 	Themes string `json:"themes" bson:"themes"`
+// 	Colors string `json:"colors" bson:"colors"`
+
+// 	// Messages and Media
+// 	Theme                 string   `json:"theme" bson:"theme"`
+// 	Names                 string   `json:"names" bson:"names"`
+// 	AdditionalOptions     []string `json:"additional_options" bson:"additional_options"`
+// 	Emoji                 string   `json:"emoji" bson:"emoji"`
+// 	EmojiAsText           bool     `json:"emoji_as_text" bson:"emoji_as_text"`
+// 	ShowJumboMoji         bool     `json:"show_jumbomoji" bson:"show_jumbomoji"`
+// 	FrequentlyUsedEmoji   bool     `json:"frequently_used_emoji" bson:"frequently_used_emoji"`
+// 	Custom                bool     `json:"custom" bson:"custom"`
+// 	InlineMediaAndLinks   []string `json:"inline_media_and_links" bson:"inline_media_and_links"`
+// 	FilesizeBiggerThan2mb bool     `json:"filesize_bigger_than_2mb" bson:"filesize_bigger_than_2mb"`
+// 	BringEmailsIntoZuri   string   `json:"bring_emails_into_zuri bson:"bring_emails_into_zuri"`
+// }
