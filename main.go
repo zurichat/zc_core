@@ -13,6 +13,7 @@ import (
 	"github.com/rs/cors"
 	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/data"
+	"zuri.chat/zccore/external"
 	"zuri.chat/zccore/marketplace"
 	"zuri.chat/zccore/messaging"
 	"zuri.chat/zccore/organizations"
@@ -59,7 +60,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/profile", auth.IsAuthenticated(organizations.UpdateProfile)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/presence", auth.IsAuthenticated(organizations.TogglePresence)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings", auth.IsAuthenticated(organizations.UpdateMemberSettings)).Methods("PATCH")
-	
+
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
 	r.HandleFunc("/data/read", data.NewRead).Methods("POST")
@@ -88,6 +89,9 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
 	r.HandleFunc("/realtime/auth", realtime.Auth).Methods("POST")
 	r.Handle("/socket.io/", Server)
+
+	// Email subscription
+	r.HandleFunc("/external/subscribe", external.EmailSubscription).Methods("POST")
 
 	//ping endpoint
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
