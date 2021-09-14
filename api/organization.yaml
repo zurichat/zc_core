@@ -265,6 +265,27 @@ paths:
           $ref: "#/components/responses/InternalServerError"
 
   /organizations/{organization_id}/members/{member_id}:
+    get:
+      tags:
+        - Organization-Member
+      summary: Get a record of a member in an organization
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/organization_id"
+      responses:
+        "200":
+          $ref: "#/components/responses/getMemberResponse"
+
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     put:
       tags:
         - Organization-Member
@@ -694,6 +715,25 @@ components:
                 type: array
                 items:
                   $ref: "#/components/schemas/Organization"
+
+    getMemberResponse:
+      description: Successfully returned record of a member in an organization
+      content:
+        application/json:
+          schema:
+            required:
+              - code
+              - message
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+                example: 200
+              message:
+                type: string
+              data:
+                $ref: "#/components/schemas/Member"
 
     getMembersResponse:
       description: Successfully returned list of members in an organization, including an empty array if there are no members
