@@ -13,6 +13,7 @@ import (
 	"github.com/rs/cors"
 	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/data"
+	"zuri.chat/zccore/external"
 	"zuri.chat/zccore/marketplace"
 	"zuri.chat/zccore/messaging"
 	"zuri.chat/zccore/organizations"
@@ -44,6 +45,7 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	r.HandleFunc("/organizations/{id}/plugins", organizations.AddOrganizationPlugin).Methods("POST")
 	r.HandleFunc("/organizations/{id}/plugins", organizations.GetOrganizationPlugins).Methods("GET")
+	r.HandleFunc("/organizations/{id}/plugins/{plugin_id}", organizations.GetOrganizationPlugin).Methods("GET")
 
 	r.HandleFunc("/organizations/{id}/url", auth.IsAuthenticated(organizations.UpdateUrl)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/name", auth.IsAuthenticated(organizations.UpdateName)).Methods("PATCH")
@@ -58,8 +60,10 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/profile", auth.IsAuthenticated(organizations.UpdateProfile)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/presence", auth.IsAuthenticated(organizations.TogglePresence)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings", auth.IsAuthenticated(organizations.UpdateMemberSettings)).Methods("PATCH")
+
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
+	r.HandleFunc("/data/read", data.NewRead).Methods("POST")
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
 	r.HandleFunc("/data/delete", data.DeleteData).Methods("POST")
 	r.HandleFunc("/data/collections/{plugin_id}", data.ListCollections).Methods("GET")
@@ -85,6 +89,14 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
 	r.HandleFunc("/realtime/auth", realtime.Auth).Methods("POST")
 	r.Handle("/socket.io/", Server)
+
+	// Email subscription
+	r.HandleFunc("/external/subscribe", external.EmailSubscription).Methods("POST")
+
+	//ping endpoint
+	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		utils.GetSuccess("Server is live", nil, w)
+	}).Methods("GET", "POST")
 
 	//api documentation
 	r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.FileServer(http.Dir("./docs/"))))

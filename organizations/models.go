@@ -10,6 +10,7 @@ import (
 const (
 	OrganizationCollectionName     = "organizations"
 	InstalledPluginsCollectionName = "installed_plugins"
+	OrganizationSettings           = "organizations_settings"
 )
 
 type Organization struct {
@@ -60,46 +61,46 @@ func GetOrgPluginCollectionName(orgName string) string {
 // }
 
 type Member struct {
-	ID          primitive.ObjectID     `json:"_id" bson:"_id"`
-	OrgId       string                 `json:"org_id" bson:"org_id"`
-	Files       []string               `json:"files" bson:"files"`
-	ImageURL    string                 `json:"image_url" bson:"image_url"`
-	Name        string                 `json:"name" bson:"name"`
-	Email       string                 `json:"email" bson:"email"`
-	DisplayName string                 `json:"display_name" bson:"display_name"`
-	Bio         string                 `json:"bio" bson:"bio"`
-	Status      string                 `json:"status" bson:"status"`
-	Presence    string                 `json:"presence" bson:"presence"`
-	Pronouns    string                 `json:"pronouns" bson:"pronouns"`
-	Phone       string                 `json:"phone" bson:"phone"`
-	TimeZone    string                 `json:"time_zone" bson:"time_zone"`
-	Role        string                 `json:"role" bson:"role"`
-	JoinedAt    time.Time              `json:"joined_at" bson:"joined_at"`
-	Settings    map[string]interface{} `json:"settings" bson:"settings"`
-	Deleted     bool                   `json:"deleted" bson:"deleted"`
-	DeletedAt   time.Time              `json:"deleted_at" bson:"deleted_at"`
-	// Socials     Social    `json:"socials" bson:"socials"`
+	ID          primitive.ObjectID `json:"_id" bson:"_id"`
+	OrgId       string             `json:"org_id" bson:"org_id"`
+	Files       []string           `json:"files" bson:"files"`
+	ImageURL    string             `json:"image_url" bson:"image_url"`
+	Name        string             `json:"name" bson:"name"`
+	Email       string             `json:"email" bson:"email"`
+	DisplayName string             `json:"display_name" bson:"display_name"`
+	Bio         string             `json:"bio" bson:"bio"`
+	Status      string             `json:"status" bson:"status"`
+	Presence    string             `json:"presence" bson:"presence"`
+	Pronouns    string             `json:"pronouns" bson:"pronouns"`
+	Phone       string             `json:"phone" bson:"phone"`
+	TimeZone    string             `json:"time_zone" bson:"time_zone"`
+	Role        string             `json:"role" bson:"role"`
+	JoinedAt    time.Time          `json:"joined_at" bson:"joined_at"`
+	// Settings    map[string]interface{} `json:"settings" bson:"settings"`
+	Settings  *Settings         `json:"settings" bson:"settings"`
+	Deleted   bool              `json:"deleted" bson:"deleted"`
+	DeletedAt time.Time         `json:"deleted_at" bson:"deleted_at"`
+	Socials   map[string]string `json:"socials" bson:"socials"`
 }
 
 type Profile struct {
-	ID          string    `json:"id" bson:"_id"`
-	Name        string    `json:"name" bson:"name"`
-	DisplayName string    `json:"display_name" bson:"display_name"`
-	Bio         string    `json:"bio" bson:"bio"`
-	Pronouns    string    `json:"pronouns" bson:"pronouns"`
-	Phone       string    `json:"phone" bson:"phone"`
-	TimeZone    string    `json:"time_zone" bson:"time_zone"`
-	Socials     [3]string `json:"socials" bson:"socials"`
+	ID          string            `json:"id" bson:"_id"`
+	Name        string            `json:"name" bson:"name"`
+	DisplayName string            `json:"display_name" bson:"display_name"`
+	Bio         string            `json:"bio" bson:"bio"`
+	Pronouns    string            `json:"pronouns" bson:"pronouns"`
+	Phone       string            `json:"phone" bson:"phone"`
+	TimeZone    string            `json:"time_zone" bson:"time_zone"`
+	Socials     map[string]string `json:"socials" bson:"socials"`
 }
 
-type Preferences struct {
+type Settings struct {
 	Notifications    *Notifications    `json:"notifications" bson:"notifications"`
 	Themes           *Themes           `json:"themes" bson:"themes"`
 	MessagesAndMedia *MessagesAndMedia `json:"messages_and_media" bson:"messages_and_media"`
 }
 
 type Notifications struct {
-	Section                            string   `json:"section" bson:"section"`
 	NotifyMeAbout                      string   `json:"notify_me_about" bson:"notify_me_about"`
 	UseDifferentSettingsForMyMobile    string   `json:"use_different_settings_mobile" bson:"use_different_settings_mobile"`
 	ChannelHurdleNotification          bool     `json:"channel_hurdle_notification" bson:"channel_hurdle_notification"`
@@ -113,53 +114,21 @@ type Notifications struct {
 }
 
 type Themes struct {
-	Section string `json:"section" bson:"section"`
-	Themes  string `json:"themes" bson:"themes"`
-	Colors  string `json:"colors" bson:"colors"`
+	Themes string `json:"themes" bson:"themes"`
+	Colors string `json:"colors" bson:"colors"`
 }
 
 type MessagesAndMedia struct {
-	Section               string   `json:"section" bson:"section"`
-	Theme                 string   `json:"theme" bson:"theme"`
-	Names                 string   `json:"names" bson:"names"`
-	AdditionalOptions     []string `json:"additional_options" bson:"additional_options"`
-	Emoji                 string   `json:"emoji" bson:"emoji"`
-	EmojiAsText           bool     `json:"emoji_as_text" bson:"emoji_as_text"`
-	ShowJumboMoji         bool     `json:"show_jumbomoji" bson:"show_jumbomoji"`
-	FrequentlyUsedEmoji   bool     `json:"frequently_used_emoji" bson:"frequently_used_emoji"`
-	Custom                bool     `json:"custom" bson:"custom"`
-	InlineMediaAndLinks   []string `json:"inline_media_and_links" bson:"inline_media_and_links"`
-	FilesizeBiggerThan2mb bool     `json:"filesize_bigger_than_2mb" bson:"filesize_bigger_than_2mb"`
-	BringEmailsIntoZuri   string   `json:"bring_emails_into_zuri bson:"bring_emails_into_zuri"`
+	Theme                    string   `json:"theme" bson:"theme"`
+	Names                    string   `json:"names" bson:"names"`
+	AdditionalOptions        []string `json:"additional_options" bson:"additional_options"`
+	Emoji                    string   `json:"emoji" bson:"emoji"`
+	EmojiAsText              bool     `json:"emoji_as_text" bson:"emoji_as_text"`
+	ShowJumboMoji            bool     `json:"show_jumbomoji" bson:"show_jumbomoji"`
+	ConvertEmoticonsToEmoji  bool     `json:"convert_emoticons_to_emoji" bson:"convert_emoticons_to_emoji"`
+	MessagesOneClickReaction []string `json:"messages_one_click_reaction" bson:"messages_one_click_reaction"`
+	FrequentlyUsedEmoji      bool     `json:"frequently_used_emoji" bson:"frequently_used_emoji"`
+	Custom                   bool     `json:"custom" bson:"custom"`
+	InlineMediaAndLinks      []string `json:"inline_media_and_links" bson:"inline_media_and_links"`
+	BringEmailsIntoZuri      string   `json:"bring_emails_into_zuri bson:"bring_emails_into_zuri"`
 }
-
-// type Preferences struct {
-// 	// Notifications
-// 	NotifyMeAbout                      string   `json:"notify_me_about" bson:"notify_me_about"`
-// 	UseDifferentSettingsForMyMobile    string   `json:"use_different_settings_mobile" bson:"use_different_settings_mobile"`
-// 	ChannelHurdleNotification          bool     `json:"channel_hurdle_notification" bson:"channel_hurdle_notification"`
-// 	ThreadRepliesNotification          bool     `json:"thread_replies_notification" bson:"thread_replies_notification"`
-// 	MyKeywords                         string   `json:"my_keywords" bson:"my_keywords"`
-// 	NotificationSchedule               string   `json:"notification_schedule" bson:"notification_schedule"`
-// 	MessagePreviewInEachNotification   bool     `json:"message_preview_in_each_notification" bson:"message_preview_in_each_notification"`
-// 	MuteAllSounds                      bool     `json:"mute_all_sounds" bson:"mute_all_sounds"`
-// 	WhenIamNotActiveOnDesktop          string   `json:"when_iam_not_active_on_desktop" bson:"when_iam_not_active_on_desktop"`
-// 	EmailNotificationsForMentionsAndDM []string `json:"email_notifications_for_mentions_and_dm" bson:"email_notifications_for_mentions_and_dm"`
-
-// 	// Themes
-// 	Themes string `json:"themes" bson:"themes"`
-// 	Colors string `json:"colors" bson:"colors"`
-
-// 	// Messages and Media
-// 	Theme                 string   `json:"theme" bson:"theme"`
-// 	Names                 string   `json:"names" bson:"names"`
-// 	AdditionalOptions     []string `json:"additional_options" bson:"additional_options"`
-// 	Emoji                 string   `json:"emoji" bson:"emoji"`
-// 	EmojiAsText           bool     `json:"emoji_as_text" bson:"emoji_as_text"`
-// 	ShowJumboMoji         bool     `json:"show_jumbomoji" bson:"show_jumbomoji"`
-// 	FrequentlyUsedEmoji   bool     `json:"frequently_used_emoji" bson:"frequently_used_emoji"`
-// 	Custom                bool     `json:"custom" bson:"custom"`
-// 	InlineMediaAndLinks   []string `json:"inline_media_and_links" bson:"inline_media_and_links"`
-// 	FilesizeBiggerThan2mb bool     `json:"filesize_bigger_than_2mb" bson:"filesize_bigger_than_2mb"`
-// 	BringEmailsIntoZuri   string   `json:"bring_emails_into_zuri bson:"bring_emails_into_zuri"`
-// }

@@ -160,8 +160,8 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 		Role:     "member",
 		Presence: "true",
 		JoinedAt: time.Now(),
-		Settings: utils.M{},
-		Deleted:  false,
+		// Settings: utils.M{},
+		Deleted: false,
 	}
 
 	coll := utils.GetCollection(member_collection)

@@ -30,13 +30,28 @@ func GetOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	save, err := utils.GetMongoDbDocs(collection, bson.M{"_id": objId})
+	save, _ := utils.GetMongoDbDoc(collection, bson.M{"_id": objId})
 
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
+	if save == nil {
+		utils.GetError(fmt.Errorf("organization %s not found", orgId), http.StatusNotFound, w)
 		return
 	}
-	utils.GetSuccess("organization retrieved successfully", save, w)
+
+	orgPluginsMap, err := OrganizationPlugins(orgId)
+	if err != nil {
+		// org plugins not found.
+		utils.GetError(err, http.StatusNotFound, w)
+		return
+	}
+
+	var org Organization
+	
+	orgJson, _ := json.Marshal(save)
+	json.Unmarshal(orgJson, &org)
+
+	org.Plugins = orgPluginsMap
+
+	utils.GetSuccess("organization retrieved successfully", org, w)
 }
 
 // Get an organization by url
@@ -50,11 +65,29 @@ func GetOrganizationByURL(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(errors.New("organization does not exist"), http.StatusNotFound, w)
 		return
 	}
+
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
-	utils.GetSuccess("organization retrieved successfully", data, w)
+	
+	orgId := data["_id"].(string)
+
+	orgPluginsMap, err := OrganizationPlugins(orgId)
+	if err != nil {
+		// org plugins not found.
+		utils.GetError(err, http.StatusNotFound, w)
+		return
+	}
+
+	var org Organization
+	
+	orgJson, _ := json.Marshal(data)
+	json.Unmarshal(orgJson, &org)
+
+	org.Plugins = orgPluginsMap
+
+	utils.GetSuccess("organization retrieved successfully", org, w)
 }
 
 // Create an organization record
@@ -167,7 +200,7 @@ func GetOrganizations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("organization retrieved successfully", save, w)
+	utils.GetSuccess("organizations retrieved successfully", save, w)
 }
 
 // Delete an organization record
