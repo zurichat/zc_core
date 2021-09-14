@@ -171,17 +171,16 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var uid interface{} = user.ID
-	var uuid string = uid.(primitive.ObjectID).Hex()
+	// update user organizations collection
 	updateFields := make(map[string]interface{})
 	user.Organizations = append(user.Organizations, sOrgId)
 	updateFields["Organizations"] = user.Organizations
-	fmt.Println(user.Organizations)
-	_, eerr := utils.UpdateOneMongoDbDoc(user_collection, uuid, updateFields)
+	_, eerr := utils.UpdateOneMongoDbDoc(user_collection, user.ID, updateFields)
 	if eerr != nil {
 		utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, w)
 		return
 	}
+
 	utils.GetSuccess("Member created successfully", utils.M{"member_id": res.InsertedID}, w)
 }
 
@@ -324,7 +323,7 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 	res, err := utils.UpdateOneMongoDbDoc(member_collection, memberId, deleteUpdate)
 
 	if err != nil {
-		utils.GetError(fmt.Errorf("An error occured: %s", err), http.StatusInternalServerError, w)
+		utils.GetError(fmt.Errorf("an error occured: %s", err), http.StatusInternalServerError, w)
 	}
 
 	if res.MatchedCount != 1 {
@@ -333,7 +332,7 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.ModifiedCount != 1 {
-		utils.GetError(errors.New("An error occured, cannot delete user"), http.StatusInternalServerError, w)
+		utils.GetError(errors.New("an error occured, cannot delete user"), http.StatusInternalServerError, w)
 		return
 	}
 	utils.GetSuccess("successfully deleted member", nil, w)

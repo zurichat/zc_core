@@ -64,7 +64,7 @@ type MyCustomClaims struct {
 }
 
 type UserResponse struct {
-	ID          primitive.ObjectID `json:"id,omitempty"`
+	ID          string 			   `json:"id,omitempty"`
 	FirstName   string             `json:"first_name"`
 	LastName    string             `json:"last_name"`
 	DisplayName string             `json:"display_name"`

@@ -42,11 +42,12 @@ func Create(response http.ResponseWriter, request *http.Request) {
 		utils.GetError(EMAIL_NOT_VALID, http.StatusBadRequest, response)
 		return
 	}
+
 	// confirm if user_email exists
 	result, _ := utils.GetMongoDbDoc(user_collection, bson.M{"email": userEmail})
 	if result != nil {
 		utils.GetError(
-			errors.New(fmt.Sprintf("Users with email %s exists!", userEmail)),
+			fmt.Errorf("user with email %s exists", userEmail),
 			http.StatusBadRequest, 
 			response,
 		)
@@ -135,7 +136,6 @@ func GetUser(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 	utils.GetSuccess("user retrieved successfully", res, response)
-
 }
 
 // an endpoint to update a user record
@@ -197,4 +197,52 @@ func GetUsers(response http.ResponseWriter, request *http.Request) {
 	collectionName := "users"
 	res, _ := utils.GetMongoDbDocs(collectionName, nil)
 	utils.GetSuccess("users retrieved successfully", res, response)
+}
+
+// get a user organizations
+func GetUserOrganizations(response http.ResponseWriter, request *http.Request) {
+	response.Header().Set("content-type", "application/json")
+	member_collection, organization_collection := "members", "organizations"
+	
+	params := mux.Vars(request)
+
+	userEmail := strings.ToLower(params["email"])
+	if !utils.IsValidEmail(userEmail) {
+		utils.GetError(EMAIL_NOT_VALID, http.StatusBadRequest, response)
+		return
+	}
+	
+	// find user email in members collection.
+	result, _ := utils.GetMongoDbDocs(member_collection, bson.M{"email": userEmail})
+	if result == nil {
+		utils.GetError(
+			fmt.Errorf("user with email %s has no organization", userEmail),
+			http.StatusNotFound, 
+			response,
+		)
+		return
+	}
+
+	var orgs []map[string]interface{}
+	for _, value := range result{
+		basic := make(map[string]interface{})
+		
+		objId, _ := primitive.ObjectIDFromHex(value["org_id"].(string))
+
+		orgDetails, err := utils.GetMongoDbDoc(organization_collection, bson.M{"_id": objId})
+		if err != nil {
+				utils.GetError(err, http.StatusUnprocessableEntity, response)
+			return
+		}
+
+		basic["id"] = orgDetails["_id"]
+		basic["logo_url"] = orgDetails["logo_url"]
+		basic["name"] = orgDetails["name"]
+		basic["isOwner"] = orgDetails["creator_email"] == params["email"]
+		basic["workspace_url"] = orgDetails["workspace_url"]
+
+		orgs = append(orgs, basic)
+	}
+
+	utils.GetSuccess("user organizations retrieved successfully", orgs, response)
 }

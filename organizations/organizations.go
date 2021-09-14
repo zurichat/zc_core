@@ -37,19 +37,12 @@ func GetOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orgPluginsMap, err := OrganizationPlugins(orgId)
-	if err != nil {
-		// org plugins not found.
-		utils.GetError(err, http.StatusNotFound, w)
-		return
-	}
-
 	var org Organization
-	
-	orgJson, _ := json.Marshal(save)
-	json.Unmarshal(orgJson, &org)
+	// convert bson to struct
+	bsonBytes, _ := bson.Marshal(save)
+	bson.Unmarshal(bsonBytes, &org)
 
-	org.Plugins = orgPluginsMap
+	org.Plugins = org.OrgPlugins()
 
 	utils.GetSuccess("organization retrieved successfully", org, w)
 }
@@ -70,22 +63,13 @@ func GetOrganizationByURL(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
-	
-	orgId := data["_id"].(string)
-
-	orgPluginsMap, err := OrganizationPlugins(orgId)
-	if err != nil {
-		// org plugins not found.
-		utils.GetError(err, http.StatusNotFound, w)
-		return
-	}
 
 	var org Organization
 	
 	orgJson, _ := json.Marshal(data)
 	json.Unmarshal(orgJson, &org)
 
-	org.Plugins = orgPluginsMap
+	org.Plugins = org.OrgPlugins()
 
 	utils.GetSuccess("organization retrieved successfully", org, w)
 }
@@ -128,7 +112,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"email": newOrg.CreatorEmail})
 	if userDoc == nil {
 		fmt.Printf("user with email %s does not exist!", newOrg.CreatorEmail)
-		utils.GetError(errors.New("user with this email does not exist!"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("user with this email does not exist"), http.StatusBadRequest, w)
 		return
 	}
 
@@ -156,11 +140,13 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	mapstructure.Decode(userDoc, &user)
 
 	newMember := Member{
+		ID:       primitive.NewObjectID(),
 		Email:    user.Email,
 		OrgId:    hexOrgid.Hex(),
 		Role:     "owner",
 		Presence: "true",
 	}
+
 	// conv to struct
 	memStruc, err := utils.StructToMap(newMember)
 	if err != nil {
@@ -178,6 +164,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	// add organisation id to user organisations list
 	updateFields := make(map[string]interface{})
 	user.Organizations = append(user.Organizations, iiid)
+	
 	updateFields["Organizations"] = user.Organizations
 	_, ee := utils.UpdateOneMongoDbDoc(user_collection, ccreatorid, updateFields)
 	if ee != nil {

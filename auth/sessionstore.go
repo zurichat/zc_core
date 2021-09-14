@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -16,7 +15,7 @@ import (
 )
 
 var (
-	ErrorInvalid = errors.New("Zuri Core session: invalid session id")
+	ErrorInvalid = errors.New("zuri Core session: invalid session id")
 )
 
 type Session struct{
@@ -147,7 +146,7 @@ func (m *MongoStore) upsert(session *sessions.Session) error {
 
 	objID, err := primitive.ObjectIDFromHex(session.ID)
 	if err != nil {
-		return errors.New("Zuri Core session: invalid session id")
+		return errors.New("zuri Core session: invalid session id")
 	}
 	
 	var modified time.Time
@@ -158,7 +157,7 @@ func (m *MongoStore) upsert(session *sessions.Session) error {
 	} else {
 		modified = time.Now()
 	}
-	encoded, err := securecookie.EncodeMulti(session.Name(), session.Values, m.Codecs...)
+	encoded, _ := securecookie.EncodeMulti(session.Name(), session.Values, m.Codecs...)
 	s := Session{
 		Id:       objID,
 		Data:     encoded,
@@ -178,7 +177,6 @@ func (m *MongoStore) upsert(session *sessions.Session) error {
 
 func (m *MongoStore) delete(session *sessions.Session) error {
 	ctx := context.Background()
-	fmt.Print("I was called")
 
 	objID, err := primitive.ObjectIDFromHex(session.ID)
 	if err != nil {
