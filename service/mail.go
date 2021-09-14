@@ -1,4 +1,4 @@
-package utils
+package service
 
 import (
 	"bytes"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
+	"zuri.chat/zccore/utils"
 )
 
 type MailService interface {
@@ -40,10 +41,10 @@ type Mail struct {
 }
 
 type ZcMailService struct {
-	configs		*Configurations
+	configs		*utils.Configurations
 }
 
-func NewZcMailService(c *Configurations) *ZcMailService {
+func NewZcMailService(c *utils.Configurations) *ZcMailService {
 	return &ZcMailService{ configs: c}
 }
 
