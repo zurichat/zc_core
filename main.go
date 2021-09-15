@@ -8,9 +8,11 @@ import (
 	"time"
 
 	socketio "github.com/googollee/go-socket.io"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
-	"github.com/rs/cors"
+
+	// "github.com/rs/cors"
 	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/blog"
 	"zuri.chat/zccore/data"
@@ -143,13 +145,23 @@ func main() {
 
 	r := Router(Server)
 
-	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowCredentials: true,
-	})
+	// c := cors.New(cors.Options{
+	// 	AllowedOrigins:   []string{"*"},
+	// 	AllowCredentials: true,
+	// })
 
+	headersOK := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type"})
+	originsOK := handlers.AllowedOrigins([]string{"*"})
+	methodsOK := handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS", "DELETE", "PUT"})
+
+	// srv := &http.Server{
+	// 	Handler:      LoggingMiddleware(c.Handler(r)),
+	// 	Addr:         ":" + port,
+	// 	WriteTimeout: 15 * time.Second,
+	// 	ReadTimeout:  15 * time.Second,
+	// }
 	srv := &http.Server{
-		Handler:      LoggingMiddleware(c.Handler(r)),
+		Handler:      handlers.CombinedLoggingHandler(os.Stderr, handlers.CORS(headersOK, originsOK, methodsOK)(r)),
 		Addr:         ":" + port,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
