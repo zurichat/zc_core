@@ -134,18 +134,25 @@ func UpdateBlog(response http.ResponseWriter, request *http.Request) {
 			updateFields[key] = value
 		}
 	}
+
 	if len(updateFields) == 0 {
 		utils.GetError(errors.New("empty/invalid blog input data"), http.StatusBadRequest, response)
 		return
-	} else {
-		updateRes, err := utils.UpdateOneMongoDbDoc(BlogCollectionName, blogID, updateFields)
-		if err != nil {
-			utils.GetError(errors.New("blog post update failed"), http.StatusInternalServerError, response)
-			return
-		}
-		utils.GetSuccess("blog post successfully updated", updateRes, response)
 	}
-}
+
+	updateRes, err := utils.UpdateOneMongoDbDoc(BlogCollectionName, blogID, updateFields)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, response)
+		return
+	}
+
+	if updateRes.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, response)
+		return
+	}
+
+	utils.GetSuccess("blog post successfully updated", nil, response)
+	}
 
 
 func DeleteBlog(response http.ResponseWriter, request *http.Request) {
@@ -153,6 +160,7 @@ func DeleteBlog(response http.ResponseWriter, request *http.Request) {
 
 	blogID := mux.Vars(request)["blog_id"]
 	objID, err := primitive.ObjectIDFromHex(blogID)
+	
 	if err != nil {
 		utils.GetError(errors.New("invalid blog post ID"), http.StatusBadRequest, response)
 		return
@@ -176,5 +184,10 @@ func DeleteBlog(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("blog post successfully deleted", updateRes, response)
+	if updateRes.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, response)
+		return
+	}
+
+	utils.GetSuccess("blog post successfully deleted", nil, response)
 }

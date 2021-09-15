@@ -33,7 +33,6 @@ type Plugin struct {
 }
 
 func CreatePlugin(ctx context.Context, p *Plugin) error {
-	p.Deleted = false
 	p.Approved = false
 	p.CreatedAt = time.Now().String()
 	p.UpdatedAt = time.Now().String()
