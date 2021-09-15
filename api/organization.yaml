@@ -247,10 +247,10 @@ paths:
           "application/json":
             schema:
               properties:
-                user_id:
+                user_email:
                   type: integer
-                  description: This is the id of the user to be added to the organization
-                  example: "6137d69b21d3c78fc9a84bdf"
+                  description: This is the email of the user to be added to the organization
+                  example: "user@email.com"
       responses:
         "201":
           $ref: "#/components/responses/resourceCreated"
