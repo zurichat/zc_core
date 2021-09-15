@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt"
+	"github.com/gorilla/sessions"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
@@ -74,6 +76,7 @@ type UserResponse struct {
 	Timezone    string             `json:"time_zone"`
 	CreatedAt   time.Time          `json:"created_at"`
 	UpdatedAt   time.Time          `json:"updated_at"`
+	Token       string             `json:"token"`
 }
 
 type VerifiedTokenResponse struct {
@@ -104,10 +107,23 @@ func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 		w.Header().Add("content-type", "application/json")
 
 		store := NewMongoStore(utils.GetCollection(session_collection), SESSION_MAX_AGE, true, []byte(secretKey))
-		var session, err = store.Get(r, sessionKey)
-		if err != nil {
+		var session *sessions.Session
+		var err error
+		session, err = store.Get(r, sessionKey)
+		status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
+
+		if err != nil && status == false {
 			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
 			return
+		}
+		var erro error
+		if status == true {
+			session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName)
+			fmt.Println(session)
+			if err != nil && erro != nil {
+				utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
+				return
+			}
 		}
 
 		// use is coming in newly, no cookies
@@ -131,6 +147,49 @@ func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 		nextHandler.ServeHTTP(w, r.WithContext(ctx))
 	}
 }
+
+// func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
+// 	return func(w http.ResponseWriter, r *http.Request) {
+// 		w.Header().Add("content-type", "application/json")
+
+// 		store := NewMongoStore(utils.GetCollection(session_collection), SESSION_MAX_AGE, true, []byte(secretKey))
+// 		var session, err = store.Get(r, sessionKey)
+// 		status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
+
+// 		if err != nil && status == false {
+// 			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
+// 			return
+// 		}
+// 		var erro error
+// 		if status == true {
+// 			session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName)
+// 			if err != nil && erro != nil {
+// 				utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
+// 				return
+// 			}
+// 		}
+
+// 		// use is coming in newly, no cookies
+// 		if session.IsNew == true {
+// 			utils.GetError(NoAuthToken, http.StatusUnauthorized, w)
+// 			return
+// 		}
+
+// 		objID, err := primitive.ObjectIDFromHex(session.ID)
+// 		if err != nil {
+// 			utils.GetError(ErrorInvalid, http.StatusUnauthorized, w)
+// 			return
+// 		}
+
+// 		user := &AuthUser{
+// 			ID:    objID,
+// 			Email: session.Values["email"].(string),
+// 		}
+
+// 		ctx := context.WithValue(r.Context(), "user", user)
+// 		nextHandler.ServeHTTP(w, r.WithContext(ctx))
+// 	}
+// }
 
 // Checks if a user is authorized to access a particular function, and either returns a 403 error or continues the process
 // First Option is user id
@@ -183,3 +242,90 @@ func IsAuthorized(user_id string, orgId string, role string, w http.ResponseWrit
 // if !auth.IsAuthorized(loggedInUser.ID.Hex(), orgId, "member", w) {
 // 	return
 // }
+
+func AuthTest(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	store := NewMongoStore(utils.GetCollection(session_collection), SESSION_MAX_AGE, true, []byte(secretKey))
+	var session *sessions.Session
+	var err error
+	session, err = store.Get(r, sessionKey)
+	status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
+
+	if err != nil && status == false {
+		utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
+		return
+	}
+	var erro error
+	if status == true {
+		session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName)
+		fmt.Println(session)
+		if err != nil && erro != nil {
+			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
+			return
+		}
+	}
+
+	// use is coming in newly, no cookies
+	if session.IsNew == true {
+		utils.GetError(NoAuthToken, http.StatusUnauthorized, w)
+		return
+	}
+
+	objID, err := primitive.ObjectIDFromHex(session.ID)
+	if err != nil {
+		utils.GetError(ErrorInvalid, http.StatusUnauthorized, w)
+		return
+	}
+
+	user := &AuthUser{
+		ID:    objID,
+		Email: session.Values["email"].(string),
+	}
+	utils.GetSuccess("Retrived", user, w)
+
+}
+
+// func AuthTest(w http.ResponseWriter, r *http.Request) {
+// 	w.Header().Set("Content-Type", "application/json")
+// 	hmacSampleSecret = []byte("u7b8be9bd9b9ebd9b9dbdbee")
+// 	status, message, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
+
+// 	if status == false {
+// 		utils.GetError(message, http.StatusUnauthorized, w)
+// 		return
+// 	}
+// 	utils.GetSuccess("Retrived", sessData, w)
+
+// }
+
+func GetSessionDataFromToken(r *http.Request, hmacSampleSecret []byte) (status bool, err error, data ResToken) {
+	reqTokenh := r.Header.Get("Authorization")
+	if reqTokenh == "" {
+		return false, fmt.Errorf("No header"), ResToken{}
+	}
+	splitToken := strings.Split(reqTokenh, "Bearer ")
+	reqToken := splitToken[1]
+
+	token, err := jwt.Parse(reqToken, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+		return hmacSampleSecret, nil
+	})
+	var retTokenD ResToken
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+
+		mapstructure.Decode(claims, &retTokenD)
+		retTokenD.SessionName = fmt.Sprintf("%v", claims["session_name"])
+		// fmt.Println(retTokenD)
+		return true, nil, retTokenD
+
+	} else {
+		return false, fmt.Errorf("failed"), ResToken{}
+	}
+	fmt.Println(retTokenD.SessionName)
+
+	return true, nil, retTokenD
+
+}
