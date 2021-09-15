@@ -85,13 +85,15 @@ func (ms *ZcMailService) SetupSendgrid(mailReq *Mail) ([]byte, error) {
 		return nil, err
 	}	
 
+	x, a := mailReq.to[0], mailReq.to[1:]
+
 	from := mail.NewEmail("name", mailReq.from)
-	to := mail.NewEmail("name", mailReq.to[0])
+	to := mail.NewEmail("name", x)
 
 	content := mail.NewContent("text/html", buf.String())
 
 	m := mail.NewV3MailInit(from, mailReq.subject, to, content)
-	if len(mailReq.to) > 0 {
+	if len(a) > 0 {
 
 		tos := make([]*mail.Email, 0)
 		for _, to := range mailReq.to {
