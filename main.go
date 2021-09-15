@@ -12,6 +12,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rs/cors"
 	"zuri.chat/zccore/auth"
+	"zuri.chat/zccore/blog"
 	"zuri.chat/zccore/data"
 	"zuri.chat/zccore/marketplace"
 	"zuri.chat/zccore/messaging"
@@ -29,6 +30,13 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/", VersionHandler)
 	r.HandleFunc("/v1/welcome", auth.IsAuthenticated(Index)).Methods("GET")
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
+
+	// Blog
+	r.HandleFunc("/blog", blog.GetAllBlogPosts).Methods("GET")
+	r.HandleFunc("/blog/create", blog.CreateBlog).Methods("POST")
+	r.HandleFunc("/blog/update/{blog_id}", blog.UpdateBlog).Methods("PATCH")
+	r.HandleFunc("/blog/delete/{blog_id}", blog.DeleteBlog).Methods("DELETE")
+	r.HandleFunc("/blog/{blog_id}", blog.ReadBlog).Methods("GET")
 
 	// Authentication
 	r.HandleFunc("/auth/login", auth.LoginIn).Methods("POST")
