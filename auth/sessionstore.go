@@ -247,7 +247,7 @@ func (m *MongoStore) upsert(session *sessions.Session) error {
 
 func (m *MongoStore) delete(session *sessions.Session) error {
 	ctx := context.Background()
-	fmt.Print("I was called")
+	fmt.Println("I was called")
 
 	objID, err := primitive.ObjectIDFromHex(session.ID)
 	if err != nil {
