@@ -66,7 +66,8 @@ type User struct {
 	Timezone          string                  `bson:"time_zone" json:"time_zone"`
 	CreatedAt         time.Time               `bson:"created_at" json:"created_at"`
 	UpdatedAt         time.Time               `bson:"updated_at" json:"updated_at"`
-	// Deactivated       string               	  `bson:"deactivated"`
+	Deactivated       string               	  `default:"false" bson:"deactivated" json:"deactivated"`
+	DeactivatedAt     time.Time               `bson:"deactivated_at" json:"deactivated_at"`
 	Organizations     []string                `bson:"workspaces"` // should contain (organization) workspace ids
 	EmailVerification UserEmailVerification   `bson:"email_verification"`
 	PasswordResets    []*UserPasswordReset    `bson:"password_resets"`
