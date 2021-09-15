@@ -93,6 +93,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.DeleteUser)).Methods("DELETE")
 	r.HandleFunc("/users/search/{query}", auth.IsAuthenticated(user.SearchOtherUsers)).Methods("GET")
 	r.HandleFunc("/users", auth.IsAuthenticated(user.GetUsers)).Methods("GET")
+	r.HandleFunc("/users/{email}/organizations", auth.IsAuthenticated(user.GetUserOrganizations)).Methods("GET")
 
 	// Realtime communications
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")

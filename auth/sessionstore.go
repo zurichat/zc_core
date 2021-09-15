@@ -6,7 +6,6 @@ import (
 	"crypto/cipher"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -214,7 +213,7 @@ func (m *MongoStore) upsert(session *sessions.Session) error {
 
 	objID, err := primitive.ObjectIDFromHex(session.ID)
 	if err != nil {
-		return errors.New("Zuri Core session: invalid session id")
+		return errors.New("zuri Core session: invalid session id")
 	}
 
 	var modified time.Time
@@ -227,7 +226,7 @@ func (m *MongoStore) upsert(session *sessions.Session) error {
 	} else {
 		modified = time.Now()
 	}
-	encoded, err := securecookie.EncodeMulti(session.Name(), session.Values, m.Codecs...)
+	encoded, _ := securecookie.EncodeMulti(session.Name(), session.Values, m.Codecs...)
 	s := Session{
 		Id:       objID,
 		Data:     encoded,
@@ -247,7 +246,6 @@ func (m *MongoStore) upsert(session *sessions.Session) error {
 
 func (m *MongoStore) delete(session *sessions.Session) error {
 	ctx := context.Background()
-	fmt.Print("I was called")
 
 	objID, err := primitive.ObjectIDFromHex(session.ID)
 	if err != nil {
@@ -277,7 +275,6 @@ func decodeBase64(s string) []byte {
 }
 
 func Encrypt(key, text string) string {
-	fmt.Println(text)
 	block, err := aes.NewCipher([]byte(key))
 	if err != nil {
 		panic(err)
@@ -290,7 +287,6 @@ func Encrypt(key, text string) string {
 }
 
 func Decrypt(key, text string) string {
-	fmt.Println(text)
 	block, err := aes.NewCipher([]byte(key))
 	if err != nil {
 		panic(err)

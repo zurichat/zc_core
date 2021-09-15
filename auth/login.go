@@ -61,7 +61,7 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 	}
 
 	// store session
-	session.Values["id"] = user.ID.Hex()
+	session.Values["id"] = user.ID
 	session.Values["email"] = user.Email
 
 	if err = sessions.Save(request, response); err != nil {
