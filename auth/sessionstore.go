@@ -275,7 +275,6 @@ func decodeBase64(s string) []byte {
 }
 
 func Encrypt(key, text string) string {
-	fmt.Println(text)
 	block, err := aes.NewCipher([]byte(key))
 	if err != nil {
 		panic(err)
@@ -288,7 +287,6 @@ func Encrypt(key, text string) string {
 }
 
 func Decrypt(key, text string) string {
-	fmt.Println(text)
 	block, err := aes.NewCipher([]byte(key))
 	if err != nil {
 		panic(err)
