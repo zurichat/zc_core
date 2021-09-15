@@ -66,17 +66,17 @@ type MyCustomClaims struct {
 }
 
 type UserResponse struct {
-	ID          string 			   `json:"id,omitempty"`
-	FirstName   string             `json:"first_name"`
-	LastName    string             `json:"last_name"`
-	DisplayName string             `json:"display_name"`
-	Email       string             `json:"email"`
-	Phone       string             `json:"phone"`
-	Status      int                `json:"status"`
-	Timezone    string             `json:"time_zone"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
-	Token       string             `json:"token"`
+	ID          string    `json:"id,omitempty"`
+	FirstName   string    `json:"first_name"`
+	LastName    string    `json:"last_name"`
+	DisplayName string    `json:"display_name"`
+	Email       string    `json:"email"`
+	Phone       string    `json:"phone"`
+	Status      int       `json:"status"`
+	Timezone    string    `json:"time_zone"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	Token       string    `json:"token"`
 }
 
 type VerifiedTokenResponse struct {
@@ -105,6 +105,8 @@ func FetchUserByEmail(filter map[string]interface{}) (*user.User, error) {
 func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("content-type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type,access-control-allow-origin, access-control-allow-headers")
 
 		store := NewMongoStore(utils.GetCollection(session_collection), SESSION_MAX_AGE, true, []byte(secretKey))
 		var session *sessions.Session
