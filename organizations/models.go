@@ -1,10 +1,12 @@
 package organizations
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"zuri.chat/zccore/utils"
 )
 
 const (
@@ -14,7 +16,7 @@ const (
 )
 
 type Organization struct {
-	ID           string                   `json:"id" bson:"_id"`
+	ID           string                   `json:"_id" bson:"_id"`
 	Name         string                   `json:"name" bson:"name"`
 	CreatorEmail string                   `json:"creator_email" bson:"creator_email"`
 	CreatorID    string                   `json:"creator_id" bson:"creator_id"`
@@ -25,6 +27,18 @@ type Organization struct {
 	WorkspaceURL string                   `json:"workspace_url" bson:"workspace_url"`
 	CreatedAt    time.Time                `json:"created_at" bson:"created_at"`
 	UpdatedAt    time.Time                `json:"updated_at" bson:"updated_at"`
+}
+
+func (o *Organization) OrgPlugins() ([]map[string]interface{}) {
+	orgCollectionName := GetOrgPluginCollectionName(o.ID)
+
+	orgPlugins, _ := utils.GetMongoDbDocs(orgCollectionName, nil)
+
+	var pluginsMap []map[string]interface{}
+	pluginJson, _ := json.Marshal(orgPlugins)
+	json.Unmarshal(pluginJson, &pluginsMap)
+
+	return pluginsMap
 }
 
 type OrgPluginBody struct {
