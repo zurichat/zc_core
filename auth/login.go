@@ -23,7 +23,7 @@ const (
 
 var (
 	validate           = validator.New()
-	UserNotFound       = errors.New("User not found!")
+	UserNotFound       = errors.New("User not found, confirm and try again!")
 	InvalidCredentials = errors.New("Invalid login credentials, confirm and try again")
 	hmacSampleSecret   = []byte("u7b8be9bd9b9ebd9b9dbdbee")
 )
