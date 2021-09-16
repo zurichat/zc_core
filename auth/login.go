@@ -28,7 +28,7 @@ var (
 	hmacSampleSecret   = []byte("u7b8be9bd9b9ebd9b9dbdbee")
 )
 
-func LoginIn(response http.ResponseWriter, request *http.Request) {
+func (au *AuthHandler) LoginIn(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 
 	var creds Credentials
@@ -98,7 +98,7 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 	utils.GetSuccess("login successful", resp, response)
 }
 
-func LogOutUser(w http.ResponseWriter, r *http.Request) {
+func (au *AuthHandler) LogOutUser(w http.ResponseWriter, r *http.Request) {
 	store := NewMongoStore(
 		utils.GetCollection(session_collection),
 		SESSION_MAX_AGE,
@@ -146,7 +146,7 @@ func LogOutUser(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("logout successful", map[string]interface{}{}, w)
 }
 
-func VerifyTokenHandler(response http.ResponseWriter, request *http.Request) {
+func (au *AuthHandler) VerifyTokenHandler(response http.ResponseWriter, request *http.Request) {
 	// extract user id and email from context
 	loggedIn := request.Context().Value("user").(*AuthUser)
 	user, _ := FetchUserByEmail(bson.M{"email": strings.ToLower(loggedIn.Email)})
