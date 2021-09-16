@@ -46,7 +46,6 @@ type UserEmailVerification struct {
 }
 
 type UserPasswordReset struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 	IPAddress string             `bson:"ip_address" json:"ip_address"`
 	Token     string             `bson:"token" json:"token"`
 	ExpiredAt time.Time          `bson:"expired_at" json:"expired_at"`
