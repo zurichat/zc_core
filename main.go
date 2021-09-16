@@ -88,6 +88,9 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/data/collections/{plugin_id}", data.ListCollections).Methods("GET")
 	r.HandleFunc("/data/collections/{plugin_id}/{org_id}", data.ListCollections).Methods("GET")
 
+	// file upload
+	r.HandleFunc("/upload", organizations.UploadFile).Methods("PATCH")
+
 	// Plugins
 	r.HandleFunc("/plugins/register", plugin.Register).Methods("POST")
 

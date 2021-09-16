@@ -101,8 +101,11 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	newOrg.Name = "Zuri Chat"
 	newOrg.WorkspaceURL = utils.GenWorkspaceUrl(newOrg.Name)
 
+	userEmail := strings.ToLower(newOrg.CreatorEmail)
+	userName := strings.Split(userEmail, "@")[0]
+
 	// creator
-	creator, _ := auth.FetchUserByEmail(bson.M{"email": strings.ToLower(newOrg.CreatorEmail)})
+	creator, _ := auth.FetchUserByEmail(bson.M{"email": userEmail})
 	// var creatorid interface{} = creator.ID
 	// var creatorid primitive.ObjectID = creator.ID
 	// var ccreatorid string = creatorid.(primitive.ObjectID).Hex()
@@ -120,6 +123,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newOrg.CreatorID = ccreatorid
+	newOrg.CreatorEmail = userEmail
 	newOrg.CreatedAt = time.Now()
 
 	// convert to map object
@@ -147,6 +151,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	newMember := Member{
 		ID:       primitive.NewObjectID(),
 		Email:    user.Email,
+		UserName: userName,
 		OrgId:    iiid,
 		Role:     "owner",
 		Presence: "true",

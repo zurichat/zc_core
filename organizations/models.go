@@ -81,6 +81,7 @@ type Member struct {
 	ImageURL    string                 `json:"image_url" bson:"image_url"`
 	Name        string                 `json:"name" bson:"name"`
 	Email       string                 `json:"email" bson:"email"`
+	UserName    string                 `bson:"user_name" json:"user_name"`
 	DisplayName string                 `json:"display_name" bson:"display_name"`
 	Bio         string                 `json:"bio" bson:"bio"`
 	Status      string                 `json:"status" bson:"status"`
