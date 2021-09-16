@@ -63,8 +63,20 @@ func Create(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+	comfimationToken, err := utils.GenJwtToken(user.Email, "EMAIL_CONFIRMATION")
+	if err != nil {
+		utils.GetError(
+			errors.New("Error occur while generating confirmation token"), 
+			http.StatusInternalServerError, response)
+		return
+	}
+	
+	con := &UserEmailVerification{false, comfimationToken, time.Now().Add(time.Minute * time.Duration(24))}
+
 	user.CreatedAt = time.Now()
 	user.Password = hashPassword
+	user.Deactivated = false
+	user.EmailVerification = con
 	detail, _ := utils.StructToMap(user)
 
 	res, err := utils.CreateMongoDbDoc(user_collection, detail)

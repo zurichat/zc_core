@@ -40,10 +40,9 @@ type UserSettings struct {
 }
 
 type UserEmailVerification struct {
-	ID        primitive.ObjectID `bson:"_id" json:"id"`
-	Verified  bool               `bson:"verified"`
-	Token     string             `bson:"token"`
-	ExpiredAt time.Time          `bson:"expired_at"`
+	Verified  bool               `bson:"verified" json:"verified"`
+	Token     string             `bson:"token" json:"token"`
+	ExpiredAt time.Time          `bson:"expired_at" json:"expired_at"`
 }
 
 type UserPasswordReset struct {
@@ -60,7 +59,7 @@ type User struct {
 	FirstName         string                  `bson:"first_name" validate:"required,min=2,max=100" json:"first_name"`
 	LastName          string                  `bson:"last_name" validate:"required,min=2,max=100" json:"last_name"`
 	Email             string                  `bson:"email" validate:"email,required" json:"email"`
-	Password          string                  `bson:"password" validate:"required,min=6"`
+	Password          string                  `bson:"password" json:"password" validate:"required,min=6"`
 	Phone             string                  `bson:"phone" validate:"required" json:"phone"`
 	Settings          *UserSettings           `bson:"settings" json:"settings"`
 	Timezone          string                  `bson:"time_zone" json:"time_zone"`
@@ -79,3 +78,5 @@ type UserUpdate struct {
 	LastName  string `bson:"last_name" validate:"required,min=2,max=100" json:"last_name"`
 	Phone     string `bson:"phone" validate:"required" json:"phone"`
 }
+
+type UserHandler struct {}
