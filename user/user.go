@@ -263,28 +263,3 @@ func GetUserOrganizations(response http.ResponseWriter, request *http.Request) {
 
 	utils.GetSuccess("user organizations retrieved successfully", orgs, response)
 }
-
-// deactivate user
-func DeActivateUser(response http.ResponseWriter, request *http.Request) {
-	// password, confirm_password
-	creds := &struct{
-		Password 			string	`validate:"required,min=2,max=100" json:"password"`
-		ConfirmPassword		string	`validate:"required,min=2,max=100" json:"confirm_password"`
-	}{}
-
-	if err := utils.ParseJsonFromRequest(request, &creds); err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, response)
-		return
-	}
-	if err := validate.Struct(creds); err != nil {
-		utils.GetError(err, http.StatusBadRequest, response)
-		return
-	}
-
-	if creds.Password != creds.ConfirmPassword {
-		utils.GetError(CONFIRM_PASSWORD, http.StatusBadRequest, response)
-		return		
-	}
-	// will complete shortly.
-
-}
