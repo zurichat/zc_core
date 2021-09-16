@@ -16,9 +16,9 @@ import (
 )
 
 var (
-	validate        = validator.New()
-	EMAIL_NOT_VALID = errors.New("Email address is not valid")
-	HASHING_FAILED = errors.New("Failed to hashed password")
+	validate         = validator.New()
+	EMAIL_NOT_VALID  = errors.New("Email address is not valid")
+	HASHING_FAILED   = errors.New("Failed to hashed password")
 	CONFIRM_PASSWORD = errors.New("Password and confirm password must be the same, confirm and try again!")
 )
 
@@ -51,7 +51,7 @@ func Create(response http.ResponseWriter, request *http.Request) {
 	if result != nil {
 		utils.GetError(
 			fmt.Errorf("user with email %s exists", userEmail),
-			http.StatusBadRequest, 
+			http.StatusBadRequest,
 			response,
 		)
 		return
@@ -63,8 +63,20 @@ func Create(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+	comfimationToken, err := utils.GenJwtToken(user.Email, "EMAIL_CONFIRMATION")
+	if err != nil {
+		utils.GetError(
+			errors.New("Error occur while generating confirmation token"),
+			http.StatusInternalServerError, response)
+		return
+	}
+
+	con := &UserEmailVerification{false, comfimationToken, time.Now().Add(time.Minute * time.Duration(24))}
+
 	user.CreatedAt = time.Now()
 	user.Password = hashPassword
+	user.Deactivated = false
+	user.EmailVerification = con
 	detail, _ := utils.StructToMap(user)
 
 	res, err := utils.CreateMongoDbDoc(user_collection, detail)
@@ -103,13 +115,14 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	userId := params["user_id"]
 
-	delete, err := utils.DeleteOneMongoDoc("users", userId)
+	deactivateUpdate := bson.M{"deactivated": true, "deactivated_at": time.Now()}
+	delete, err := utils.UpdateOneMongoDbDoc("users", userId, deactivateUpdate)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
-	if delete.DeletedCount == 0 {
+	if delete.ModifiedCount == 0 {
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
 	}
@@ -119,6 +132,8 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 // endpoint to find user by ID
 func GetUser(response http.ResponseWriter, request *http.Request) {
+	response.Header().Set("Access-Control-Allow-Origin", "*")
+	response.Header().Set("Access-Control-Allow-Headers", "Content-Type,access-control-allow-origin, access-control-allow-headers")
 	// Find a user by user ID
 	response.Header().Set("content-type", "application/json")
 
@@ -133,9 +148,9 @@ func GetUser(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	res, err := utils.GetMongoDbDoc(collectionName, bson.M{"_id": objId})
+	res, err := utils.GetMongoDbDoc(collectionName, bson.M{"_id": objId, "deactivated": false})
 	if err != nil {
-		utils.GetError(errors.New("user not found"), http.StatusInternalServerError, response)
+		utils.GetError(errors.New("user not found"), http.StatusNotFound, response)
 		return
 	}
 	utils.GetSuccess("user retrieved successfully", res, response)
@@ -196,9 +211,11 @@ func UpdateUser(response http.ResponseWriter, request *http.Request) {
 
 // get all users
 func GetUsers(response http.ResponseWriter, request *http.Request) {
+	response.Header().Set("Access-Control-Allow-Origin", "*")
+	response.Header().Set("Access-Control-Allow-Headers", "Content-Type,access-control-allow-origin, access-control-allow-headers")
 	response.Header().Set("content-type", "application/json")
 	collectionName := "users"
-	res, _ := utils.GetMongoDbDocs(collectionName, nil)
+	res, _ := utils.GetMongoDbDocs(collectionName, bson.M{"deactivated": false})
 	utils.GetSuccess("users retrieved successfully", res, response)
 }
 
@@ -206,7 +223,7 @@ func GetUsers(response http.ResponseWriter, request *http.Request) {
 func GetUserOrganizations(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("content-type", "application/json")
 	member_collection, organization_collection := "members", "organizations"
-	
+
 	params := mux.Vars(request)
 
 	userEmail := strings.ToLower(params["email"])
@@ -214,27 +231,27 @@ func GetUserOrganizations(response http.ResponseWriter, request *http.Request) {
 		utils.GetError(EMAIL_NOT_VALID, http.StatusBadRequest, response)
 		return
 	}
-	
+
 	// find user email in members collection.
-	result, _ := utils.GetMongoDbDocs(member_collection, bson.M{"email": userEmail})
+	result, _ := utils.GetMongoDbDocs(member_collection, bson.M{"email": userEmail, "deactivated": false})
 	if result == nil {
 		utils.GetError(
 			fmt.Errorf("user with email %s has no organization", userEmail),
-			http.StatusNotFound, 
+			http.StatusNotFound,
 			response,
 		)
 		return
 	}
 
 	var orgs []map[string]interface{}
-	for _, value := range result{
+	for _, value := range result {
 		basic := make(map[string]interface{})
-		
+
 		objId, _ := primitive.ObjectIDFromHex(value["org_id"].(string))
 
 		orgDetails, err := utils.GetMongoDbDoc(organization_collection, bson.M{"_id": objId})
 		if err != nil {
-				utils.GetError(err, http.StatusUnprocessableEntity, response)
+			utils.GetError(err, http.StatusUnprocessableEntity, response)
 			return
 		}
 
@@ -248,29 +265,4 @@ func GetUserOrganizations(response http.ResponseWriter, request *http.Request) {
 	}
 
 	utils.GetSuccess("user organizations retrieved successfully", orgs, response)
-}
-
-// deactivate user
-func DeActivateUser(response http.ResponseWriter, request *http.Request) {
-	// password, confirm_password
-	creds := &struct{
-		Password 			string	`validate:"required,min=2,max=100" json:"password"`
-		ConfirmPassword		string	`validate:"required,min=2,max=100" json:"confirm_password"`
-	}{}
-
-	if err := utils.ParseJsonFromRequest(request, &creds); err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, response)
-		return
-	}
-	if err := validate.Struct(creds); err != nil {
-		utils.GetError(err, http.StatusBadRequest, response)
-		return
-	}
-
-	if creds.Password != creds.ConfirmPassword {
-		utils.GetError(CONFIRM_PASSWORD, http.StatusBadRequest, response)
-		return		
-	}
-	// will complete shortly.
-
 }

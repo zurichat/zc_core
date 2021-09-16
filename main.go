@@ -8,11 +8,11 @@ import (
 	"time"
 
 	socketio "github.com/googollee/go-socket.io"
-	"github.com/gorilla/handlers"
+	// "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 
-	// "github.com/rs/cors"
+	"github.com/rs/cors"
 	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/blog"
 	"zuri.chat/zccore/data"
@@ -30,7 +30,7 @@ import (
 func Router(Server *socketio.Server) *mux.Router {
 	r := mux.NewRouter().StrictSlash(true)
 
-	// Load handlers(Doing this to reduce dependency circle issue)
+	// Load handlers(Doing this to reduce dependency circle issue, might reverse if not working)
 	configs := utils.NewConfigurations()
 	mailService := service.NewZcMailService(configs)
 
@@ -53,6 +53,8 @@ func Router(Server *socketio.Server) *mux.Router {
 	// r.HandleFunc("/auth/test", auth.AuthTest).Methods(http.MethodPost)
 	r.HandleFunc("/auth/logout", auth.LogOutUser).Methods(http.MethodPost)
 	r.HandleFunc("/auth/verify-token", auth.IsAuthenticated(auth.VerifyTokenHandler)).Methods(http.MethodGet, http.MethodPost)
+	r.HandleFunc("/auth/confirm-password", auth.IsAuthenticated(auth.ConfirmUserPassword)).Methods(http.MethodPost)
+	r.HandleFunc("/auth/request-reset-password", auth.RequestResetPasswordCode)
 
 	// Organization
 	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.Create)).Methods("POST")
@@ -87,6 +89,9 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/data/collections/{plugin_id}", data.ListCollections).Methods("GET")
 	r.HandleFunc("/data/collections/{plugin_id}/{org_id}", data.ListCollections).Methods("GET")
 
+	// file upload
+	r.HandleFunc("/upload", organizations.UploadFile).Methods("PATCH")
+
 	// Plugins
 	r.HandleFunc("/plugins/register", plugin.Register).Methods("POST")
 
@@ -103,7 +108,6 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/users/search/{query}", auth.IsAuthenticated(user.SearchOtherUsers)).Methods("GET")
 	r.HandleFunc("/users", auth.IsAuthenticated(user.GetUsers)).Methods("GET")
 	r.HandleFunc("/users/{email}/organizations", auth.IsAuthenticated(user.GetUserOrganizations)).Methods("GET")
-	// r.HandleFunc("/users/deactivate", auth.IsAuthenticated(user.DeActivateUser)).Methods(http.MethodPost)
 
 	// Realtime communications
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
@@ -158,22 +162,24 @@ func main() {
 	// 	AllowCredentials: true,
 	// })
 
-	headersOK := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type"})
-	originsOK := handlers.AllowedOrigins([]string{"*"})
-	methodsOK := handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS", "DELETE", "PUT"})
+	c := cors.AllowAll()
 
-	// srv := &http.Server{
-	// 	Handler:      LoggingMiddleware(c.Handler(r)),
-	// 	Addr:         ":" + port,
-	// 	WriteTimeout: 15 * time.Second,
-	// 	ReadTimeout:  15 * time.Second,
-	// }
+	// headersOK := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type"})
+	// originsOK := handlers.AllowedOrigins([]string{"*"})
+	// methodsOK := handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS", "DELETE", "PUT"})
+
 	srv := &http.Server{
-		Handler:      handlers.CombinedLoggingHandler(os.Stderr, handlers.CORS(headersOK, originsOK, methodsOK)(r)),
+		Handler:      LoggingMiddleware(c.Handler(r)),
 		Addr:         ":" + port,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
+	// srv := &http.Server{
+	// 	Handler:      handlers.CombinedLoggingHandler(os.Stderr, handlers.CORS(headersOK, originsOK, methodsOK)(r)),
+	// 	Addr:         ":" + port,
+	// 	WriteTimeout: 15 * time.Second,
+	// 	ReadTimeout:  15 * time.Second,
+	// }
 	go Server.Serve()
 	fmt.Println("Socket Served")
 	defer Server.Close()

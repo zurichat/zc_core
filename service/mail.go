@@ -16,7 +16,7 @@ type MailService interface {
 	SetupSmtp(mailReq *Mail) ([]byte, error)
 	SetupSendgrid(mailReq *Mail) ([]byte, error)
 	SendMail(mailReq *Mail) error
-	NewMail(from string, to []string, subject string, mailType MailType, data *MailData) *Mail
+	NewMail(to []string, subject string, mailType MailType, data *MailData) *Mail
 }
 
 type MailType int
@@ -88,7 +88,7 @@ func (ms *ZcMailService) SetupSendgrid(mailReq *Mail) ([]byte, error) {
 
 	x, a := mailReq.to[0], mailReq.to[1:]
 
-	from := mail.NewEmail("name", mailReq.from)
+	from := mail.NewEmail("name", ms.configs.SendgridEmail)
 	to := mail.NewEmail("name", x)
 
 	content := mail.NewContent("text/html", buf.String())
@@ -140,7 +140,7 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 		if err != nil { return err }
 
 		addr := "smtp.gmail.com:587"
-		if err := smtp.SendMail(addr, auth, mailReq.from, mailReq.to, body); err != nil {
+		if err := smtp.SendMail(addr, auth, ms.configs.SmtpUsername, mailReq.to, body); err != nil {
 			return err
 		}
 		return nil
@@ -152,9 +152,8 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 
 }
 
-func (ms *ZcMailService) NewMail(from string, to []string, subject string, mailType MailType, data *MailData) *Mail {
+func (ms *ZcMailService) NewMail(to []string, subject string, mailType MailType, data *MailData) *Mail {
 	return &Mail{
-		from: 		from,
 		to: 		to,
 		subject: 	subject,
 		mtype: 		mailType,

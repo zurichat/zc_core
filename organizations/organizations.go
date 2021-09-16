@@ -65,7 +65,7 @@ func GetOrganizationByURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var org Organization
-	
+
 	orgJson, _ := json.Marshal(data)
 	json.Unmarshal(orgJson, &org)
 
@@ -101,10 +101,16 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	newOrg.Name = "Zuri Chat"
 	newOrg.WorkspaceURL = utils.GenWorkspaceUrl(newOrg.Name)
 
+	userEmail := strings.ToLower(newOrg.CreatorEmail)
+	userName := strings.Split(userEmail, "@")[0]
+
 	// creator
-	creator, _ := auth.FetchUserByEmail(bson.M{"email": strings.ToLower(newOrg.CreatorEmail)})
-	var creatorid interface{} = creator.ID
-	var ccreatorid string = creatorid.(primitive.ObjectID).Hex()
+	creator, _ := auth.FetchUserByEmail(bson.M{"email": userEmail})
+	// var creatorid interface{} = creator.ID
+	// var creatorid primitive.ObjectID = creator.ID
+	// var ccreatorid string = creatorid.(primitive.ObjectID).Hex()
+	var ccreatorid string = creator.ID
+	fmt.Println(ccreatorid)
 
 	// extract user document
 	// var luHexid, _ = primitive.ObjectIDFromHex(loggedInUser.ID.Hex())
@@ -117,6 +123,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newOrg.CreatorID = ccreatorid
+	newOrg.CreatorEmail = userEmail
 	newOrg.CreatedAt = time.Now()
 
 	// convert to map object
@@ -127,13 +134,15 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	// save organization
 	save, err := utils.CreateMongoDbDoc(collection, inInterface)
 	if err != nil {
+		fmt.Println(err)
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
 
 	var iid interface{} = save.InsertedID
 	var iiid string = iid.(primitive.ObjectID).Hex()
-	hexOrgid, _ := primitive.ObjectIDFromHex(iiid)
+	// var iiid string = fmt.Sprintf("%v", save.InsertedID)
+	// hexOrgid, _ := primitive.ObjectIDFromHex(iiid)
 
 	// Adding user as a member
 	var user user.User
@@ -142,7 +151,8 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	newMember := Member{
 		ID:       primitive.NewObjectID(),
 		Email:    user.Email,
-		OrgId:    hexOrgid.Hex(),
+		UserName: userName,
+		OrgId:    iiid,
 		Role:     "owner",
 		Presence: "true",
 	}
@@ -164,7 +174,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	// add organisation id to user organisations list
 	updateFields := make(map[string]interface{})
 	user.Organizations = append(user.Organizations, iiid)
-	
+
 	updateFields["Organizations"] = user.Organizations
 	_, ee := utils.UpdateOneMongoDbDoc(user_collection, ccreatorid, updateFields)
 	if ee != nil {

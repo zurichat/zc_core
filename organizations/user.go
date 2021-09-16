@@ -106,7 +106,10 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validating the user email
-	newUserEmail, ok := requestData["user_email"]
+	newUserEmailm, ok := requestData["user_email"]
+	newUserEmail := strings.ToLower(newUserEmailm)
+	newUserName := strings.Split(newUserEmail, "@")[0]
+
 	if !ok {
 		utils.GetError(fmt.Errorf("user_email not provided"), http.StatusBadRequest, w)
 		return
@@ -156,6 +159,7 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 	newMember := Member{
 		ID:       primitive.NewObjectID(),
 		Email:    user.Email,
+		UserName: newUserName,
 		OrgId:    orgId.Hex(),
 		Role:     "member",
 		Presence: "true",
