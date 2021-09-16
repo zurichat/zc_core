@@ -19,6 +19,7 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/klauspost/compress v1.13.5 // indirect
 	github.com/mitchellh/mapstructure v1.4.1
+	github.com/rs/cors v1.8.0 // indirect
 	github.com/sendgrid/rest v2.6.4+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.10.0+incompatible
 	github.com/spf13/viper v1.8.1
