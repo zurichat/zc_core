@@ -63,7 +63,7 @@ func Create(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	token, err := utils.GenJwtToken(user.Email)
+	token, err := utils.GenJwtToken(user.Email, "EMAIL_CONFIRMATION")
 	if err != nil {
 		utils.GetError(
 			errors.New("Error occur while generating confirmation token"), 
