@@ -12,7 +12,7 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
-func Contact(w http.ResponseWriter, r *http.Request) {
+func ContactUs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("content-type", "application/json")
 	fmt.Println("Parsing Form Data")
 
@@ -44,34 +44,7 @@ func Contact(w http.ResponseWriter, r *http.Request) {
 
 	// 4. Save files to file system
 	for _, fileHeader := range attachments {
-		// Open form file
-		file, err := fileHeader.Open()
-		defer file.Close()
-		if err != nil {
-			utils.GetError(err, http.StatusInternalServerError, w)
-			return
-		}
-
-		// Create destination folder and file
-		// folderName := "zc_contact"
-		_, err = os.Stat(folderName)
-		if err != nil {
-			err = os.Mkdir(folderName, 0755)
-			if err != nil {
-				utils.GetError(err, http.StatusInternalServerError, w)
-				return
-			}
-		}
-
-		destinationFile, err := os.Create(folderName + "/" + fileHeader.Filename)
-		defer destinationFile.Close()
-		if err != nil {
-			utils.GetError(err, http.StatusInternalServerError, w)
-			return
-		}
-
-		// Copy form file to destination
-		_, err = io.Copy(destinationFile, file)
+		err := SaveFileToFS(folderName, fileHeader)
 		if err != nil {
 			utils.GetError(err, http.StatusInternalServerError, w)
 			return
@@ -125,6 +98,35 @@ func GenerateContactData(email, subject, content string, paths []string) Contact
 }
 
 // SaveFileToFS saves each form file uploaded to the filesystem
-func SaveFileToFS(folderName string, file *multipart.FileHeader) error {
-	
+func SaveFileToFS(folderName string, fileHeader *multipart.FileHeader) error {
+	// Open form file
+	file, err := fileHeader.Open()
+	defer file.Close()
+	if err != nil {
+		return err
+	}
+
+	// Create destination folde
+	_, err = os.Stat(folderName)
+	if err != nil {
+		err = os.Mkdir(folderName, 0755)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Create destination file
+	destinationFile, err := os.Create(folderName + "/" + fileHeader.Filename)
+	defer destinationFile.Close()
+	if err != nil {
+		return err
+	}
+
+	// Copy form file to destination
+	_, err = io.Copy(destinationFile, file)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

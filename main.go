@@ -83,7 +83,8 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/users", auth.IsAuthenticated(user.GetUsers)).Methods("GET")
 
 	// Contact Us
-	r.HandleFunc("/contact", contact.Contact).Methods("POST")
+	r.HandleFunc("/contact", contact.ContactUs).Methods("POST")
+
 	// Realtime communications
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
 	r.HandleFunc("/realtime/auth", realtime.Auth).Methods("POST")
