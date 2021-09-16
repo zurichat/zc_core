@@ -52,7 +52,7 @@ func (au *AuthHandler) LoginIn(response http.ResponseWriter, request *http.Reque
 		utils.GetError(InvalidCredentials, http.StatusBadRequest, response)
 		return
 	}
-	store := NewMongoStore(utils.GetCollection(session_collection), SESSION_MAX_AGE, true, []byte(secretKey))
+	store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(secretKey))
 	var session, e = store.Get(request, sessionKey)
 	if e != nil {
 		msg := fmt.Errorf("%s", e.Error())
@@ -101,7 +101,7 @@ func (au *AuthHandler) LoginIn(response http.ResponseWriter, request *http.Reque
 func (au *AuthHandler) LogOutUser(w http.ResponseWriter, r *http.Request) {
 	store := NewMongoStore(
 		utils.GetCollection(session_collection),
-		SESSION_MAX_AGE,
+		au.configs.SessionMaxAge,
 		true,
 		[]byte(secretKey),
 	)
