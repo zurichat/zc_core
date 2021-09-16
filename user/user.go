@@ -115,13 +115,15 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	userId := params["user_id"]
 
-	delete, err := utils.DeleteOneMongoDoc("users", userId)
+	
+	deactivateUpdate := bson.M{"deactivated": true, "deactivated_at": time.Now()}
+	delete, err := utils.UpdateOneMongoDbDoc("users", userId, deactivateUpdate)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
-	if delete.DeletedCount == 0 {
+	if delete.ModifiedCount == 0 {
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
 	}
@@ -145,7 +147,7 @@ func GetUser(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	res, err := utils.GetMongoDbDoc(collectionName, bson.M{"_id": objId})
+	res, err := utils.GetMongoDbDoc(collectionName, bson.M{"_id": objId, "deactivated": false})
 	if err != nil {
 		utils.GetError(errors.New("user not found"), http.StatusInternalServerError, response)
 		return
@@ -210,7 +212,7 @@ func UpdateUser(response http.ResponseWriter, request *http.Request) {
 func GetUsers(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("content-type", "application/json")
 	collectionName := "users"
-	res, _ := utils.GetMongoDbDocs(collectionName, nil)
+	res, _ := utils.GetMongoDbDocs(collectionName, bson.M{"deactivated": false})
 	utils.GetSuccess("users retrieved successfully", res, response)
 }
 
@@ -228,7 +230,7 @@ func GetUserOrganizations(response http.ResponseWriter, request *http.Request) {
 	}
 	
 	// find user email in members collection.
-	result, _ := utils.GetMongoDbDocs(member_collection, bson.M{"email": userEmail})
+	result, _ := utils.GetMongoDbDocs(member_collection, bson.M{"email": userEmail, "deactivated": false})
 	if result == nil {
 		utils.GetError(
 			fmt.Errorf("user with email %s has no organization", userEmail),

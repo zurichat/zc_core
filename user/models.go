@@ -65,10 +65,11 @@ type User struct {
 	Timezone          string                  `bson:"time_zone" json:"time_zone"`
 	CreatedAt         time.Time               `bson:"created_at" json:"created_at"`
 	UpdatedAt         time.Time               `bson:"updated_at" json:"updated_at"`
-	Deactivated       bool               	  `bson:"deactivated" json:"deactivated"`
-	Organizations     []string                `bson:"workspaces" json:"workspaces"` // should contain (organization) workspace ids
-	EmailVerification *UserEmailVerification  `bson:"email_verification" json:"email_verification"`
-	PasswordResets    []*UserPasswordReset    `bson:"password_resets" json:"password_resets"`
+	Deactivated       string               	  `default:"false" bson:"deactivated" json:"deactivated"`
+	DeactivatedAt     time.Time               `bson:"deactivated_at" json:"deactivated_at"`
+	Organizations     []string                `bson:"workspaces"` // should contain (organization) workspace ids
+	EmailVerification UserEmailVerification   `bson:"email_verification"`
+	PasswordResets    []*UserPasswordReset    `bson:"password_resets"`
 }
 
 // Struct that user can update directly
