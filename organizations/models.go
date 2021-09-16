@@ -1,19 +1,22 @@
 package organizations
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"zuri.chat/zccore/utils"
 )
 
 const (
 	OrganizationCollectionName     = "organizations"
 	InstalledPluginsCollectionName = "installed_plugins"
+	OrganizationSettings = "organizations_settings"
 )
 
 type Organization struct {
-	ID           string                   `json:"id" bson:"_id"`
+	ID           string                   `json:"_id" bson:"_id"`
 	Name         string                   `json:"name" bson:"name"`
 	CreatorEmail string                   `json:"creator_email" bson:"creator_email"`
 	CreatorID    string                   `json:"creator_id" bson:"creator_id"`
@@ -24,6 +27,18 @@ type Organization struct {
 	WorkspaceURL string                   `json:"workspace_url" bson:"workspace_url"`
 	CreatedAt    time.Time                `json:"created_at" bson:"created_at"`
 	UpdatedAt    time.Time                `json:"updated_at" bson:"updated_at"`
+}
+
+func (o *Organization) OrgPlugins() ([]map[string]interface{}) {
+	orgCollectionName := GetOrgPluginCollectionName(o.ID)
+
+	orgPlugins, _ := utils.GetMongoDbDocs(orgCollectionName, nil)
+
+	var pluginsMap []map[string]interface{}
+	pluginJson, _ := json.Marshal(orgPlugins)
+	json.Unmarshal(pluginJson, &pluginsMap)
+
+	return pluginsMap
 }
 
 type OrgPluginBody struct {
@@ -60,31 +75,34 @@ func GetOrgPluginCollectionName(orgName string) string {
 // }
 
 type Member struct {
-	ID          string             `json:"id" bson:"_id"`
-	OrgId       primitive.ObjectID `json:"org_id" bson:"org_id"`
-	Files       []string           `json:"files" bson:"files"`
-	ImageURL    string             `json:"image_url" bson:"image_url"`
-	Name        string             `json:"name" bson:"name"`
-	Email       string             `json:"email" bson:"email"`
-	DisplayName string             `json:"display_name" bson:"display_name"`
-	Bio         string             `json:"bio" bson:"bio"`
-	Status      string             `json:"status" bson:"status"`
-	Presence      string           `json:"presence" bson:"presence"`
-	Pronouns    string             `json:"pronouns" bson:"pronouns"`
-	Phone       string             `json:"phone" bson:"phone"`
-	TimeZone    string             `json:"time_zone" bson:"time_zone"`
-	Role        string             `json:"role" bson:"role"`
-	JoinedAt    time.Time          `json:"joined_at" bson:"joined_at"`
-	// Socials     Social    `json:"socials" bson:"socials"`
+	ID          primitive.ObjectID     `json:"_id" bson:"_id"`
+	OrgId       string                 `json:"org_id" bson:"org_id"`
+	Files       []string               `json:"files" bson:"files"`
+	ImageURL    string                 `json:"image_url" bson:"image_url"`
+	Name        string                 `json:"name" bson:"name"`
+	Email       string                 `json:"email" bson:"email"`
+	DisplayName string                 `json:"display_name" bson:"display_name"`
+	Bio         string                 `json:"bio" bson:"bio"`
+	Status      string                 `json:"status" bson:"status"`
+	Presence    string                 `json:"presence" bson:"presence"`
+	Pronouns    string                 `json:"pronouns" bson:"pronouns"`
+	Phone       string                 `json:"phone" bson:"phone"`
+	TimeZone    string                 `json:"time_zone" bson:"time_zone"`
+	Role        string                 `json:"role" bson:"role"`
+	JoinedAt    time.Time              `json:"joined_at" bson:"joined_at"`
+	Settings    map[string]interface{} `json:"settings" bson:"settings"`
+	Deleted     bool                   `json:"deleted" bson:"deleted"`
+	DeletedAt   time.Time              `json:"deleted_at" bson:"deleted_at"`
+	Socials     map[string]string      `json:"socials" bson:"socials"`
 }
 
 type Profile struct {
-	ID          string    `json:"id" bson:"_id"`
-	Name        string    `json:"name" bson:"name"`
-	DisplayName string    `json:"display_name" bson:"display_name"`
-	Bio         string    `json:"bio" bson:"bio"`
-	Pronouns    string    `json:"pronouns" bson:"pronouns"`
-	Phone       string    `json:"phone" bson:"phone"`
-	TimeZone    string    `json:"time_zone" bson:"time_zone"`
-	Socials     [3]string `json:"socials" bson:"socials"`
+	ID          string            `json:"id" bson:"_id"`
+	Name        string            `json:"name" bson:"name"`
+	DisplayName string            `json:"display_name" bson:"display_name"`
+	Bio         string            `json:"bio" bson:"bio"`
+	Pronouns    string            `json:"pronouns" bson:"pronouns"`
+	Phone       string            `json:"phone" bson:"phone"`
+	TimeZone    string            `json:"time_zone" bson:"time_zone"`
+	Socials     map[string]string `json:"socials" bson:"socials"`
 }

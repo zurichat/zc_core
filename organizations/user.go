@@ -11,6 +11,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/utils"
 )
@@ -35,18 +36,21 @@ func GetMember(w http.ResponseWriter, r *http.Request) {
 	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": pOrgId})
 	if orgDoc == nil {
 		fmt.Printf("org with id %s doesn't exist!", orgId)
-		utils.GetError(errors.New("org with id "+orgId+" doesn't exist!"), http.StatusBadRequest, w)
+		utils.GetError(fmt.Errorf("org with id %s doesn't exist", orgId), http.StatusBadRequest, w)
 		return
 	}
 
-	orgMember, err := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "_id": memberIdhex})
+	orgMember, err := utils.GetMongoDbDoc(member_collection, bson.M{
+		"org_id":  orgId,
+		"_id":     memberIdhex,
+		"deleted": bson.M{"$ne": true},
+	})
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
-	var memb Member
-	mapstructure.Decode(orgMember, &memb)
-
+	var member Member
+	utils.ConvertStructure(orgMember, &member)
 	utils.GetSuccess("Member retrieved successfully", orgMember, w)
 }
 
@@ -71,12 +75,14 @@ func GetMembers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orgMembers, err := utils.GetMongoDbDocs(member_collection, bson.M{"org_id": orgId})
+	orgMembers, err := utils.GetMongoDbDocs(member_collection, bson.M{
+		"org_id":  orgId,
+		"deleted": bson.M{"$ne": true},
+	})
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
-
 	utils.GetSuccess("Members retrieved successfully", orgMembers, w)
 }
 
@@ -139,7 +145,7 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 	memDoc, _ := utils.GetMongoDbDocs(member_collection, bson.M{"org_id": sOrgId, "email": newUserEmail})
 	if memDoc != nil {
 		fmt.Printf("organization %s has member with email %s!", orgId.String(), newUserEmail)
-		utils.GetError(errors.New("User is already in this organisation"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("user is already in this organization"), http.StatusBadRequest, w)
 		return
 	}
 
@@ -148,39 +154,34 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 	mapstructure.Decode(orgDoc, &org)
 
 	newMember := Member{
+		ID:       primitive.NewObjectID(),
 		Email:    user.Email,
-		OrgId:    orgId,
+		OrgId:    orgId.Hex(),
 		Role:     "member",
 		Presence: "true",
 		JoinedAt: time.Now(),
+		Settings: utils.M{},
+		Deleted:  false,
 	}
 
-	// conv to struct
-	memStruc, err := utils.StructToMap(newMember)
+	coll := utils.GetCollection(member_collection)
+	res, err := coll.InsertOne(r.Context(), newMember)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
 
-	// add new member to member collection
-	createdMember, err := utils.CreateMongoDbDoc(member_collection, memStruc)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
-
-	var uid interface{} = user.ID
-	var uuid string = uid.(primitive.ObjectID).Hex()
+	// update user organizations collection
 	updateFields := make(map[string]interface{})
 	user.Organizations = append(user.Organizations, sOrgId)
 	updateFields["Organizations"] = user.Organizations
-	fmt.Println(user.Organizations)
-	_, eerr := utils.UpdateOneMongoDbDoc(user_collection, uuid, updateFields)
+	_, eerr := utils.UpdateOneMongoDbDoc(user_collection, user.ID, updateFields)
 	if eerr != nil {
 		utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, w)
 		return
 	}
-	utils.GetSuccess("Member created successfully", createdMember, w)
+
+	utils.GetSuccess("Member created successfully", utils.M{"member_id": res.InsertedID}, w)
 }
 
 // endpoint to update a member's profile picture
@@ -217,7 +218,7 @@ func UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	memberDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": pMemId, "org_id": pOrgId})
+	memberDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": pMemId, "org_id": orgId})
 	if memberDoc == nil {
 		fmt.Printf("member with id %s doesn't exist!", member_Id)
 		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
@@ -231,7 +232,12 @@ func UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("Profile picture updated", result, w)
+	if result.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("image updated successfully", nil, w)
 }
 
 // an endpoint to update a user status
@@ -297,8 +303,8 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	member_collection, org_collection := "members", "organizations"
-	orgId := mux.Vars(r)["id"]
-	memberId := mux.Vars(r)["mem_id"]
+	vars := mux.Vars(r)
+	orgId, memberId := vars["id"], vars["mem_id"]
 
 	pOrgId, err := primitive.ObjectIDFromHex(orgId)
 	if err != nil {
@@ -313,26 +319,23 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query, err := primitive.ObjectIDFromHex(memberId)
+	deleteUpdate := bson.M{"deleted": true, "deleted_at": time.Now()}
+	res, err := utils.UpdateOneMongoDbDoc(member_collection, memberId, deleteUpdate)
+
 	if err != nil {
-		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		utils.GetError(fmt.Errorf("an error occured: %s", err), http.StatusInternalServerError, w)
+	}
+
+	if res.MatchedCount != 1 {
+		utils.GetError(fmt.Errorf("member with id %s not found", memberId), http.StatusNotFound, w)
 		return
 	}
 
-	member, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": query})
-	if member == nil {
-		fmt.Printf("Member with ID: %s does not exists ", memberId)
-		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
+	if res.ModifiedCount != 1 {
+		utils.GetError(errors.New("an error occured, cannot delete user"), http.StatusInternalServerError, w)
 		return
 	}
-
-	delMember, _ := utils.DeleteOneMongoDoc(member_collection, memberId)
-	if delMember.DeletedCount == 0 {
-		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
-		return
-	}
-
-	utils.GetSuccess("Successfully Deleted Member", nil, w)
+	utils.GetSuccess("successfully deleted member", nil, w)
 }
 
 // Update a member profile
@@ -450,4 +453,44 @@ func TogglePresence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.GetSuccess("Member presence toggled", nil, w)
+}
+
+// a patch request to /org/id/member/id/settings with the json payload
+// { "check_spelling": true }
+// the update adds to the settings map
+// this query in mongodb would translate to {$set : {"settings.check_spelling" : true}}
+func UpdateMemberSettings(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	orgId, memberId := vars["id"], vars["mem_id"]
+
+	updPayload := make(map[string]interface{})
+	_ = utils.ParseJsonFromRequest(r, &updPayload)
+
+	coll := utils.GetCollection("members")
+	filter := bson.M{
+		"org_id":  orgId,
+		"_id":     mustObjectID(memberId),
+		"deleted": bson.M{"$ne": true},
+	}
+	update := bson.M{}
+	for key, value := range updPayload {
+		settingsField := fmt.Sprintf("settings.%s", key)
+		update["$set"] = bson.M{settingsField: value}
+	}
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	res := coll.FindOneAndUpdate(r.Context(), filter, update, opts)
+	member := new(Member)
+	if err := res.Decode(member); err != nil {
+		utils.GetError(fmt.Errorf("error updating settings: %v", err), http.StatusInternalServerError, w)
+		return
+	}
+	utils.GetSuccess("settings updated successfully", utils.M{"member": member}, w)
+}
+
+func mustObjectID(s string) primitive.ObjectID {
+	id, err := primitive.ObjectIDFromHex(s)
+	if err != nil {
+		panic(err)
+	}
+	return id
 }

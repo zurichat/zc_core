@@ -8,17 +8,22 @@ import (
 	"time"
 
 	socketio "github.com/googollee/go-socket.io"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
-	"github.com/rs/cors"
+
+	// "github.com/rs/cors"
 	"zuri.chat/zccore/auth"
+	"zuri.chat/zccore/blog"
 	"zuri.chat/zccore/contact"
 	"zuri.chat/zccore/data"
+	"zuri.chat/zccore/external"
 	"zuri.chat/zccore/marketplace"
 	"zuri.chat/zccore/messaging"
 	"zuri.chat/zccore/organizations"
 	"zuri.chat/zccore/plugin"
 	"zuri.chat/zccore/realtime"
+	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 )
@@ -26,15 +31,29 @@ import (
 func Router(Server *socketio.Server) *mux.Router {
 	r := mux.NewRouter().StrictSlash(true)
 
+	// Load handlers(Doing this to reduce dependency circle issue, might reverse if not working)
+	configs := utils.NewConfigurations()
+	mailService := service.NewZcMailService(configs)
+
+	auth := auth.NewAuthHandler(configs, mailService)
+
 	// Setup and init
 	r.HandleFunc("/", VersionHandler)
 	r.HandleFunc("/v1/welcome", auth.IsAuthenticated(Index)).Methods("GET")
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
 
+	// Blog
+	r.HandleFunc("/blog", blog.GetAllBlogPosts).Methods("GET")
+	r.HandleFunc("/blog/create", blog.CreateBlog).Methods("POST")
+	r.HandleFunc("/blog/update/{blog_id}", blog.UpdateBlog).Methods("PATCH")
+	r.HandleFunc("/blog/delete/{blog_id}", blog.DeleteBlog).Methods("DELETE")
+	r.HandleFunc("/blog/{blog_id}", blog.ReadBlog).Methods("GET")
+
 	// Authentication
-	r.HandleFunc("/auth/login", auth.LoginIn).Methods("POST")
-	r.HandleFunc("/auth/logout", auth.LogOutUser).Methods("POST", "GET")
-	r.HandleFunc("/auth/verify-token", auth.IsAuthenticated(auth.VerifyTokenHandler)).Methods("GET", "POST")
+	r.HandleFunc("/auth/login", auth.LoginIn).Methods(http.MethodPost)
+	// r.HandleFunc("/auth/test", auth.AuthTest).Methods(http.MethodPost)
+	r.HandleFunc("/auth/logout", auth.LogOutUser).Methods(http.MethodPost)
+	r.HandleFunc("/auth/verify-token", auth.IsAuthenticated(auth.VerifyTokenHandler)).Methods(http.MethodGet, http.MethodPost)
 
 	// Organization
 	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.Create)).Methods("POST")
@@ -45,6 +64,7 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	r.HandleFunc("/organizations/{id}/plugins", organizations.AddOrganizationPlugin).Methods("POST")
 	r.HandleFunc("/organizations/{id}/plugins", organizations.GetOrganizationPlugins).Methods("GET")
+	r.HandleFunc("/organizations/{id}/plugins/{plugin_id}", organizations.GetOrganizationPlugin).Methods("GET")
 
 	r.HandleFunc("/organizations/{id}/url", auth.IsAuthenticated(organizations.UpdateUrl)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/name", auth.IsAuthenticated(organizations.UpdateName)).Methods("PATCH")
@@ -58,9 +78,11 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/photo", auth.IsAuthenticated(organizations.UpdateProfilePicture)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/profile", auth.IsAuthenticated(organizations.UpdateProfile)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/presence", auth.IsAuthenticated(organizations.TogglePresence)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings", auth.IsAuthenticated(organizations.UpdateMemberSettings)).Methods("PATCH")
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
+	r.HandleFunc("/data/read", data.NewRead).Methods("POST")
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
 	r.HandleFunc("/data/delete", data.DeleteData).Methods("POST")
 	r.HandleFunc("/data/collections/{plugin_id}", data.ListCollections).Methods("GET")
@@ -81,6 +103,8 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.DeleteUser)).Methods("DELETE")
 	r.HandleFunc("/users/search/{query}", auth.IsAuthenticated(user.SearchOtherUsers)).Methods("GET")
 	r.HandleFunc("/users", auth.IsAuthenticated(user.GetUsers)).Methods("GET")
+	r.HandleFunc("/users/{email}/organizations", auth.IsAuthenticated(user.GetUserOrganizations)).Methods("GET")
+	// r.HandleFunc("/users/deactivate", auth.IsAuthenticated(user.DeActivateUser)).Methods(http.MethodPost)
 
 	// Contact Us
 	r.HandleFunc("/contact", contact.ContactUs).Methods("POST")
@@ -89,6 +113,14 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
 	r.HandleFunc("/realtime/auth", realtime.Auth).Methods("POST")
 	r.Handle("/socket.io/", Server)
+
+	// Email subscription
+	r.HandleFunc("/external/subscribe", external.EmailSubscription).Methods("POST")
+
+	//ping endpoint
+	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		utils.GetSuccess("Server is live", nil, w)
+	}).Methods("GET", "POST")
 
 	//api documentation
 	r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.FileServer(http.Dir("./docs/"))))
@@ -106,7 +138,6 @@ func main() {
 	////////////////////////////////////Socket  events////////////////////////////////////////////////
 
 	// load .env file if it exists
-
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Printf("Error loading .env file: %v", err)
@@ -126,13 +157,23 @@ func main() {
 
 	r := Router(Server)
 
-	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowCredentials: true,
-	})
+	// c := cors.New(cors.Options{
+	// 	AllowedOrigins:   []string{"*"},
+	// 	AllowCredentials: true,
+	// })
 
+	headersOK := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type"})
+	originsOK := handlers.AllowedOrigins([]string{"*"})
+	methodsOK := handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS", "DELETE", "PUT"})
+
+	// srv := &http.Server{
+	// 	Handler:      LoggingMiddleware(c.Handler(r)),
+	// 	Addr:         ":" + port,
+	// 	WriteTimeout: 15 * time.Second,
+	// 	ReadTimeout:  15 * time.Second,
+	// }
 	srv := &http.Server{
-		Handler:      LoggingMiddleware(c.Handler(r)),
+		Handler:      handlers.CombinedLoggingHandler(os.Stderr, handlers.CORS(headersOK, originsOK, methodsOK)(r)),
 		Addr:         ":" + port,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,

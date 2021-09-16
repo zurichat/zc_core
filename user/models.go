@@ -1,12 +1,9 @@
 package user
 
 import (
-	"context"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"zuri.chat/zccore/utils"
 )
 
 const (
@@ -31,22 +28,6 @@ const (
 	Admin
 	Member
 )
-
-type UserWorkspaceProfile struct {
-	ID             primitive.ObjectID   `bson:"_id,omitempty" json:"id,omitempty"`
-	OrganizationID string               `bson:"organization_id"`
-	Status         Status               `bson:"status"`
-	Bio            string               `bson:"bio"`
-	Timezone       string               `bson:"timezone"`
-	Password       string               `bson:"-"`
-	PasswordHash   string               `bson:"password_hash"`
-	PasswordResets []*UserPasswordReset `bson:"password_resets"`
-	Roles          []*Role              `bson:"roles"`
-}
-
-func (uw *UserWorkspaceProfile) SetPassword() {
-
-}
 
 type UserRole struct {
 	ID   primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
@@ -75,7 +56,7 @@ type UserPasswordReset struct {
 }
 
 type User struct {
-	ID                primitive.ObjectID      `bson:"_id,omitempty" json:"id,omitempty"`
+	ID                string     			  `bson:"_id,omitempty" json:"_id,omitempty"`
 	FirstName         string                  `bson:"first_name" validate:"required,min=2,max=100" json:"first_name"`
 	LastName          string                  `bson:"last_name" validate:"required,min=2,max=100" json:"last_name"`
 	Email             string                  `bson:"email" validate:"email,required" json:"email"`
@@ -85,9 +66,8 @@ type User struct {
 	Timezone          string                  `bson:"time_zone" json:"time_zone"`
 	CreatedAt         time.Time               `bson:"created_at" json:"created_at"`
 	UpdatedAt         time.Time               `bson:"updated_at" json:"updated_at"`
-	Deactivated       string                  `bson:"deactivated"`
+	Deactivated       bool               	  `bson:"deactivated"`
 	Organizations     []string                `bson:"workspaces"` // should contain (organization) workspace ids
-	WorkspaceProfiles []*UserWorkspaceProfile `bson:"workspace_profiles"`
 	EmailVerification UserEmailVerification   `bson:"email_verification"`
 	PasswordResets    []*UserPasswordReset    `bson:"password_resets"`
 	Status            Status                 `bson:"status" json:"status"`
@@ -98,51 +78,4 @@ type UserUpdate struct {
 	FirstName string `bson:"first_name" validate:"required,min=2,max=100" json:"first_name"`
 	LastName  string `bson:"last_name" validate:"required,min=2,max=100" json:"last_name"`
 	Phone     string `bson:"phone" validate:"required" json:"phone"`
-}
-
-// helper functions perform CRUD operations on user
-func findUserByID(ctx context.Context, id string) (*User, error) {
-	user := &User{}
-	collectionName := "users"
-	objID, _ := primitive.ObjectIDFromHex(id)
-	collection := utils.GetCollection(collectionName)
-	res := collection.FindOne(ctx, bson.M{"_id": objID})
-	if err := res.Decode(user); err != nil {
-		return nil, err
-	}
-	return user, nil
-}
-
-func findUserByEmail(ctx context.Context, email string) (*User, error) {
-	user := &User{}
-	collectionName := "users"
-	collection := utils.GetCollection(collectionName)
-	res := collection.FindOne(ctx, bson.M{"email": email})
-	if err := res.Decode(user); err != nil {
-		return nil, err
-	}
-	return user, nil
-}
-
-func findUsers(ctx context.Context, filter M) ([]*User, error) {
-	users := []*User{}
-	collectionName := "users"
-	collection := utils.GetCollection(collectionName)
-	cursor, err := collection.Find(ctx, filter)
-
-	if err != nil {
-		return nil, err
-	}
-	if err = cursor.All(ctx, &users); err != nil {
-		return nil, err
-	}
-	return users, nil
-}
-
-func findUserProfile(ctx context.Context, userID, orgID string) (*UserWorkspaceProfile, error) {
-	return nil, nil
-}
-
-func createUserProfile(ctx context.Context, uw *UserWorkspaceProfile) error {
-	return nil
 }

@@ -30,13 +30,21 @@ func GetOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	save, err := utils.GetMongoDbDocs(collection, bson.M{"_id": objId})
+	save, _ := utils.GetMongoDbDoc(collection, bson.M{"_id": objId})
 
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
+	if save == nil {
+		utils.GetError(fmt.Errorf("organization %s not found", orgId), http.StatusNotFound, w)
 		return
 	}
-	utils.GetSuccess("organization retrieved successfully", save, w)
+
+	var org Organization
+	// convert bson to struct
+	bsonBytes, _ := bson.Marshal(save)
+	bson.Unmarshal(bsonBytes, &org)
+
+	org.Plugins = org.OrgPlugins()
+
+	utils.GetSuccess("organization retrieved successfully", org, w)
 }
 
 // Get an organization by url
@@ -50,11 +58,20 @@ func GetOrganizationByURL(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(errors.New("organization does not exist"), http.StatusNotFound, w)
 		return
 	}
+
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
-	utils.GetSuccess("organization retrieved successfully", data, w)
+
+	var org Organization
+	
+	orgJson, _ := json.Marshal(data)
+	json.Unmarshal(orgJson, &org)
+
+	org.Plugins = org.OrgPlugins()
+
+	utils.GetSuccess("organization retrieved successfully", org, w)
 }
 
 // Create an organization record
@@ -95,7 +112,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"email": newOrg.CreatorEmail})
 	if userDoc == nil {
 		fmt.Printf("user with email %s does not exist!", newOrg.CreatorEmail)
-		utils.GetError(errors.New("user with this email does not exist!"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("user with this email does not exist"), http.StatusBadRequest, w)
 		return
 	}
 
@@ -123,11 +140,13 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	mapstructure.Decode(userDoc, &user)
 
 	newMember := Member{
+		ID:       primitive.NewObjectID(),
 		Email:    user.Email,
-		OrgId:    hexOrgid,
+		OrgId:    hexOrgid.Hex(),
 		Role:     "owner",
 		Presence: "true",
 	}
+
 	// conv to struct
 	memStruc, err := utils.StructToMap(newMember)
 	if err != nil {
@@ -145,6 +164,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	// add organisation id to user organisations list
 	updateFields := make(map[string]interface{})
 	user.Organizations = append(user.Organizations, iiid)
+	
 	updateFields["Organizations"] = user.Organizations
 	_, ee := utils.UpdateOneMongoDbDoc(user_collection, ccreatorid, updateFields)
 	if ee != nil {
@@ -167,7 +187,7 @@ func GetOrganizations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("organization retrieved successfully", save, w)
+	utils.GetSuccess("organizations retrieved successfully", save, w)
 }
 
 // Delete an organization record
