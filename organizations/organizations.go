@@ -65,7 +65,7 @@ func GetOrganizationByURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var org Organization
-	
+
 	orgJson, _ := json.Marshal(data)
 	json.Unmarshal(orgJson, &org)
 
@@ -103,8 +103,11 @@ func Create(w http.ResponseWriter, r *http.Request) {
 
 	// creator
 	creator, _ := auth.FetchUserByEmail(bson.M{"email": strings.ToLower(newOrg.CreatorEmail)})
-	var creatorid interface{} = creator.ID
-	var ccreatorid string = creatorid.(primitive.ObjectID).Hex()
+	// var creatorid interface{} = creator.ID
+	// var creatorid primitive.ObjectID = creator.ID
+	// var ccreatorid string = creatorid.(primitive.ObjectID).Hex()
+	var ccreatorid string = creator.ID
+	fmt.Println(ccreatorid)
 
 	// extract user document
 	// var luHexid, _ = primitive.ObjectIDFromHex(loggedInUser.ID.Hex())
@@ -127,12 +130,14 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	// save organization
 	save, err := utils.CreateMongoDbDoc(collection, inInterface)
 	if err != nil {
+		fmt.Println(err)
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
 
-	var iid interface{} = save.InsertedID
-	var iiid string = iid.(primitive.ObjectID).Hex()
+	// var iid interface{} = save.InsertedID
+	// var iiid string = iid.(primitive.ObjectID).Hex()
+	var iiid string = fmt.Sprintf("%v", save.InsertedID)
 	hexOrgid, _ := primitive.ObjectIDFromHex(iiid)
 
 	// Adding user as a member
@@ -164,7 +169,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	// add organisation id to user organisations list
 	updateFields := make(map[string]interface{})
 	user.Organizations = append(user.Organizations, iiid)
-	
+
 	updateFields["Organizations"] = user.Organizations
 	_, ee := utils.UpdateOneMongoDbDoc(user_collection, ccreatorid, updateFields)
 	if ee != nil {
