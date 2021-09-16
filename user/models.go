@@ -40,7 +40,6 @@ type UserSettings struct {
 }
 
 type UserEmailVerification struct {
-	ID        primitive.ObjectID `bson:"_id" json:"id"`
 	Verified  bool               `bson:"verified"`
 	Token     string             `bson:"token"`
 	ExpiredAt time.Time          `bson:"expired_at"`
@@ -78,3 +77,5 @@ type UserUpdate struct {
 	LastName  string `bson:"last_name" validate:"required,min=2,max=100" json:"last_name"`
 	Phone     string `bson:"phone" validate:"required" json:"phone"`
 }
+
+type UserHandler struct {}
