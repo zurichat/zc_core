@@ -14,6 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
+	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 
@@ -84,6 +85,11 @@ type VerifiedTokenResponse struct {
 	User     UserResponse `json:"user"`
 }
 
+type AuthHandler struct {
+	configs 		*utils.Configurations
+	mailService		service.MailService
+}
+
 // Method to compare password
 func CheckPassword(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
@@ -150,48 +156,6 @@ func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 		w.Header().Add("content-type", "application/json")
-
-// 		store := NewMongoStore(utils.GetCollection(session_collection), SESSION_MAX_AGE, true, []byte(secretKey))
-// 		var session, err = store.Get(r, sessionKey)
-// 		status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
-
-// 		if err != nil && status == false {
-// 			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
-// 			return
-// 		}
-// 		var erro error
-// 		if status == true {
-// 			session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName)
-// 			if err != nil && erro != nil {
-// 				utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
-// 				return
-// 			}
-// 		}
-
-// 		// use is coming in newly, no cookies
-// 		if session.IsNew == true {
-// 			utils.GetError(NoAuthToken, http.StatusUnauthorized, w)
-// 			return
-// 		}
-
-// 		objID, err := primitive.ObjectIDFromHex(session.ID)
-// 		if err != nil {
-// 			utils.GetError(ErrorInvalid, http.StatusUnauthorized, w)
-// 			return
-// 		}
-
-// 		user := &AuthUser{
-// 			ID:    objID,
-// 			Email: session.Values["email"].(string),
-// 		}
-
-// 		ctx := context.WithValue(r.Context(), "user", user)
-// 		nextHandler.ServeHTTP(w, r.WithContext(ctx))
-// 	}
-// }
 
 // Checks if a user is authorized to access a particular function, and either returns a 403 error or continues the process
 // First Option is user id
@@ -245,7 +209,7 @@ func IsAuthorized(user_id string, orgId string, role string, w http.ResponseWrit
 // 	return
 // }
 
-func AuthTest(w http.ResponseWriter, r *http.Request) {
+func (au *AuthHandler) AuthTest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	store := NewMongoStore(utils.GetCollection(session_collection), SESSION_MAX_AGE, true, []byte(secretKey))
 	var session *sessions.Session
@@ -330,4 +294,9 @@ func GetSessionDataFromToken(r *http.Request, hmacSampleSecret []byte) (status b
 
 	return true, nil, retTokenD
 
+}
+
+// Initiate
+func NewAuthHandler(c *utils.Configurations, mail service.MailService) *AuthHandler {
+	return &AuthHandler{ configs: c, mailService: mail }
 }

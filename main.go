@@ -22,12 +22,19 @@ import (
 	"zuri.chat/zccore/organizations"
 	"zuri.chat/zccore/plugin"
 	"zuri.chat/zccore/realtime"
+	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 )
 
 func Router(Server *socketio.Server) *mux.Router {
 	r := mux.NewRouter().StrictSlash(true)
+
+	// Load handlers(Doing this to reduce dependency circle issue, might reverse if not working)
+	configs := utils.NewConfigurations()
+	mailService := service.NewZcMailService(configs)
+
+	auth := auth.NewAuthHandler(configs, mailService)
 
 	// Setup and init
 	r.HandleFunc("/", VersionHandler)
@@ -42,10 +49,10 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/blog/{blog_id}", blog.ReadBlog).Methods("GET")
 
 	// Authentication
-	r.HandleFunc("/auth/login", auth.LoginIn).Methods("POST")
-	r.HandleFunc("/auth/test", auth.AuthTest).Methods("POST")
-	r.HandleFunc("/auth/logout", auth.LogOutUser).Methods("POST", "GET")
-	r.HandleFunc("/auth/verify-token", auth.IsAuthenticated(auth.VerifyTokenHandler)).Methods("GET", "POST")
+	r.HandleFunc("/auth/login", auth.LoginIn).Methods(http.MethodPost)
+	// r.HandleFunc("/auth/test", auth.AuthTest).Methods(http.MethodPost)
+	r.HandleFunc("/auth/logout", auth.LogOutUser).Methods(http.MethodPost)
+	r.HandleFunc("/auth/verify-token", auth.IsAuthenticated(auth.VerifyTokenHandler)).Methods(http.MethodGet, http.MethodPost)
 
 	// Organization
 	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.Create)).Methods("POST")
@@ -96,6 +103,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/users/search/{query}", auth.IsAuthenticated(user.SearchOtherUsers)).Methods("GET")
 	r.HandleFunc("/users", auth.IsAuthenticated(user.GetUsers)).Methods("GET")
 	r.HandleFunc("/users/{email}/organizations", auth.IsAuthenticated(user.GetUserOrganizations)).Methods("GET")
+	// r.HandleFunc("/users/deactivate", auth.IsAuthenticated(user.DeActivateUser)).Methods(http.MethodPost)
 
 	// Realtime communications
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
