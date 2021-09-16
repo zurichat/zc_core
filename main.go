@@ -30,7 +30,7 @@ import (
 func Router(Server *socketio.Server) *mux.Router {
 	r := mux.NewRouter().StrictSlash(true)
 
-	// Load handlers(Doing this to reduce dependency circle issue)
+	// Load handlers(Doing this to reduce dependency circle issue, might reverse if not working)
 	configs := utils.NewConfigurations()
 	mailService := service.NewZcMailService(configs)
 
