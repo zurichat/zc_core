@@ -214,3 +214,26 @@ func GenWorkspaceUrl(orgName string) string {
 	}
 	return wksUrl
 }
+
+func GenJwtToken(data, tokenType string) (string, error) {
+	SECRET_KEY, _ := os.LookupEnv("AUTH_SECRET_KEY")
+
+	claims := struct{
+		Data	string
+		TokenType	string
+		jwt.StandardClaims
+	}{ 
+		data,
+		tokenType,
+		jwt.StandardClaims{
+			ExpiresAt: 15000,
+			Issuer: "api.zuri.chat",
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	ss, err := token.SignedString([]byte(SECRET_KEY))
+
+	if err != nil {return "", err}
+	return ss, nil
+}

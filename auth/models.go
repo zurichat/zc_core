@@ -37,13 +37,14 @@ type RoleMember struct {
 	JoinedAt    time.Time          `json:"joined_at" bson:"joined_at"`
 }
 
-const SESSION_MAX_AGE int = 60 * 60 * 12
+const SESSION_MAX_AGE int = 31536000 * 200
 
 var (
-	NoAuthToken   = errors.New("No Authorization or session expired.")
-	TokenExp      = errors.New("Session expired.")
-	NotAuthorized = errors.New("Not Authorized.")
-	UserDetails   = UserKey("userDetails")
+	NoAuthToken     = errors.New("No Authorization or session expired.")
+	TokenExp        = errors.New("Session expired.")
+	NotAuthorized   = errors.New("Not Authorized.")
+	ConfirmPassword = errors.New("The password confirmation does not match")
+	UserDetails     = UserKey("userDetails")
 )
 
 type Credentials struct {
@@ -213,7 +214,7 @@ func IsAuthorized(user_id string, orgId string, role string, w http.ResponseWrit
 
 func (au *AuthHandler) AuthTest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	store := NewMongoStore(utils.GetCollection(session_collection), SESSION_MAX_AGE, true, []byte(secretKey))
+	store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(secretKey))
 	var session *sessions.Session
 	var err error
 	session, err = store.Get(r, sessionKey)
@@ -253,18 +254,39 @@ func (au *AuthHandler) AuthTest(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// func AuthTest(w http.ResponseWriter, r *http.Request) {
-// 	w.Header().Set("Content-Type", "application/json")
-// 	hmacSampleSecret = []byte("u7b8be9bd9b9ebd9b9dbdbee")
-// 	status, message, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
+// This confirm user password before deactivation
+func (au *AuthHandler) ConfirmUserPassword(w http.ResponseWriter, r *http.Request) {
+	loggedInUser := r.Context().Value("user").(*AuthUser)
 
-// 	if status == false {
-// 		utils.GetError(message, http.StatusUnauthorized, w)
-// 		return
-// 	}
-// 	utils.GetSuccess("Retrived", sessData, w)
+	creds := struct {
+		Password        string `json:"password"`
+		ConfirmPassword string `json:"confirm_password"`
+	}{}
 
-// }
+	if err := utils.ParseJsonFromRequest(r, &creds); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	if creds.Password != creds.ConfirmPassword {
+		utils.GetError(ConfirmPassword, http.StatusBadRequest, w)
+		return
+	}
+
+	user, err := FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
+	if err != nil {
+		utils.GetError(UserNotFound, http.StatusBadRequest, w)
+		return
+	}
+	// check password
+	check := CheckPassword(creds.Password, user.Password)
+	if !check {
+		utils.GetError(errors.New("Invalid credentials, confirm and try again"), http.StatusBadRequest, w)
+		return
+	}
+
+	utils.GetSuccess("Password confirm successful", nil, w)
+}
 
 func GetSessionDataFromToken(r *http.Request, hmacSampleSecret []byte) (status bool, err error, data ResToken) {
 	reqTokenh := r.Header.Get("Authorization")
