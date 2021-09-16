@@ -8,11 +8,11 @@ import (
 	"time"
 
 	socketio "github.com/googollee/go-socket.io"
-	"github.com/gorilla/handlers"
+	// "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 
-	// "github.com/rs/cors"
+	"github.com/rs/cors"
 	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/blog"
 	"zuri.chat/zccore/data"
@@ -158,22 +158,24 @@ func main() {
 	// 	AllowCredentials: true,
 	// })
 
-	headersOK := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type"})
-	originsOK := handlers.AllowedOrigins([]string{"*"})
-	methodsOK := handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS", "DELETE", "PUT"})
+	c := cors.AllowAll()
 
-	// srv := &http.Server{
-	// 	Handler:      LoggingMiddleware(c.Handler(r)),
-	// 	Addr:         ":" + port,
-	// 	WriteTimeout: 15 * time.Second,
-	// 	ReadTimeout:  15 * time.Second,
-	// }
+	// headersOK := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type"})
+	// originsOK := handlers.AllowedOrigins([]string{"*"})
+	// methodsOK := handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS", "DELETE", "PUT"})
+
 	srv := &http.Server{
-		Handler:      handlers.CombinedLoggingHandler(os.Stderr, handlers.CORS(headersOK, originsOK, methodsOK)(r)),
+		Handler:      LoggingMiddleware(c.Handler(r)),
 		Addr:         ":" + port,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
+	// srv := &http.Server{
+	// 	Handler:      handlers.CombinedLoggingHandler(os.Stderr, handlers.CORS(headersOK, originsOK, methodsOK)(r)),
+	// 	Addr:         ":" + port,
+	// 	WriteTimeout: 15 * time.Second,
+	// 	ReadTimeout:  15 * time.Second,
+	// }
 	go Server.Serve()
 	fmt.Println("Socket Served")
 	defer Server.Close()
