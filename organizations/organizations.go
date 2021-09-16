@@ -135,10 +135,10 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// var iid interface{} = save.InsertedID
-	// var iiid string = iid.(primitive.ObjectID).Hex()
-	var iiid string = fmt.Sprintf("%v", save.InsertedID)
-	hexOrgid, _ := primitive.ObjectIDFromHex(iiid)
+	var iid interface{} = save.InsertedID
+	var iiid string = iid.(primitive.ObjectID).Hex()
+	// var iiid string = fmt.Sprintf("%v", save.InsertedID)
+	// hexOrgid, _ := primitive.ObjectIDFromHex(iiid)
 
 	// Adding user as a member
 	var user user.User
@@ -147,7 +147,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	newMember := Member{
 		ID:       primitive.NewObjectID(),
 		Email:    user.Email,
-		OrgId:    hexOrgid.Hex(),
+		OrgId:    iiid,
 		Role:     "owner",
 		Presence: "true",
 	}
