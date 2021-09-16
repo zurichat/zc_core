@@ -150,7 +150,7 @@ func GetUser(response http.ResponseWriter, request *http.Request) {
 
 	res, err := utils.GetMongoDbDoc(collectionName, bson.M{"_id": objId, "deactivated": false})
 	if err != nil {
-		utils.GetError(errors.New("user not found"), http.StatusInternalServerError, response)
+		utils.GetError(errors.New("user not found"), http.StatusNotFound, response)
 		return
 	}
 	utils.GetSuccess("user retrieved successfully", res, response)
