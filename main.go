@@ -30,7 +30,7 @@ import (
 func Router(Server *socketio.Server) *mux.Router {
 	r := mux.NewRouter().StrictSlash(true)
 
-	// Load handlers
+	// Load handlers(Doing this to reduce dependency circle issue)
 	configs := utils.NewConfigurations()
 	mailService := service.NewZcMailService(configs)
 
@@ -50,7 +50,7 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	// Authentication
 	r.HandleFunc("/auth/login", auth.LoginIn).Methods("POST")
-	r.HandleFunc("/auth/test", auth.AuthTest).Methods("POST")
+	// r.HandleFunc("/auth/test", auth.AuthTest).Methods("POST")
 	r.HandleFunc("/auth/logout", auth.LogOutUser).Methods("POST")
 	r.HandleFunc("/auth/verify-token", auth.IsAuthenticated(auth.VerifyTokenHandler)).Methods("GET", "POST")
 
