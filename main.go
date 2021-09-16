@@ -22,6 +22,7 @@ import (
 	"zuri.chat/zccore/organizations"
 	"zuri.chat/zccore/plugin"
 	"zuri.chat/zccore/realtime"
+	"zuri.chat/zccore/report"
 	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
@@ -80,6 +81,10 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/profile", auth.IsAuthenticated(organizations.UpdateProfile)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/presence", auth.IsAuthenticated(organizations.TogglePresence)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings", auth.IsAuthenticated(organizations.UpdateMemberSettings)).Methods("PATCH")
+
+	//Report
+	r.HandleFunc("/report", report.AddReport).Methods("POST")
+	r.HandleFunc("/report/{id}", report.GetReport).Methods("GET")
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
