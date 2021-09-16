@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/utils"
 )
 
@@ -22,10 +23,18 @@ func ContactUs(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(errors.New("error parsing form data"), http.StatusBadRequest, w)
 	}
 
+	userDetails, ok := r.Context().Value(auth.UserDetails).(*auth.ResToken)
+	var email string
+	if ok == true && userDetails != nil {
+		email = userDetails.Email
+	} else {
+		email = r.Form.Get("email")
+	}
+
 	// 2. Collect form values and files
 	subject := r.Form.Get("subject")
 	content := r.Form.Get("content")
-	email := r.Form.Get("email")
+	// email := r.Form.Get("email")
 	attachments := r.MultipartForm.File["attachments"]
 
 	// 3. Validate form values and files

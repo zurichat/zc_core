@@ -43,6 +43,7 @@ var (
 	NoAuthToken   = errors.New("No Authorization or session expired.")
 	TokenExp      = errors.New("Session expired.")
 	NotAuthorized = errors.New("Not Authorized.")
+	UserDetails   = UserKey("userDetails")
 )
 
 type Credentials struct {
@@ -86,9 +87,11 @@ type VerifiedTokenResponse struct {
 }
 
 type AuthHandler struct {
-	configs 		*utils.Configurations
-	mailService		service.MailService
+	configs     *utils.Configurations
+	mailService service.MailService
 }
+
+type UserKey string
 
 // Method to compare password
 func CheckPassword(password, hash string) bool {
@@ -155,7 +158,6 @@ func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 		nextHandler.ServeHTTP(w, r.WithContext(ctx))
 	}
 }
-
 
 // Checks if a user is authorized to access a particular function, and either returns a 403 error or continues the process
 // First Option is user id
@@ -298,5 +300,5 @@ func GetSessionDataFromToken(r *http.Request, hmacSampleSecret []byte) (status b
 
 // Initiate
 func NewAuthHandler(c *utils.Configurations, mail service.MailService) *AuthHandler {
-	return &AuthHandler{ configs: c, mailService: mail }
+	return &AuthHandler{configs: c, mailService: mail}
 }

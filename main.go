@@ -107,7 +107,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	// r.HandleFunc("/users/deactivate", auth.IsAuthenticated(user.DeActivateUser)).Methods(http.MethodPost)
 
 	// Contact Us
-	r.HandleFunc("/contact", contact.ContactUs).Methods("POST")
+	r.HandleFunc("/contact", auth.OptionalAuthentication(contact.ContactUs, auth)).Methods("POST")
 
 	// Realtime communications
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
