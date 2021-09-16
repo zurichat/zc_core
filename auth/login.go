@@ -117,7 +117,7 @@ func (au *AuthHandler) LogOutUser(w http.ResponseWriter, r *http.Request) {
 	var erro error
 	if status == true {
 		session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName)
-		fmt.Println(session)
+		// fmt.Println(session)
 		if err != nil && erro != nil {
 			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
 			return
@@ -129,7 +129,7 @@ func (au *AuthHandler) LogOutUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(session)
+	// fmt.Println(session)
 	session.Options.MaxAge = -1
 
 	if err = ClearSession(store, w, session); err != nil {
