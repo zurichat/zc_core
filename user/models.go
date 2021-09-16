@@ -40,9 +40,9 @@ type UserSettings struct {
 }
 
 type UserEmailVerification struct {
-	Verified  bool               `bson:"verified"`
-	Token     string             `bson:"token"`
-	ExpiredAt time.Time          `bson:"expired_at"`
+	Verified  bool               `bson:"verified" json:"verified"`
+	Token     string             `bson:"token" json:"token"`
+	ExpiredAt time.Time          `bson:"expired_at" json:"expired_at"`
 }
 
 type UserPasswordReset struct {
@@ -59,16 +59,16 @@ type User struct {
 	FirstName         string                  `bson:"first_name" validate:"required,min=2,max=100" json:"first_name"`
 	LastName          string                  `bson:"last_name" validate:"required,min=2,max=100" json:"last_name"`
 	Email             string                  `bson:"email" validate:"email,required" json:"email"`
-	Password          string                  `bson:"password" validate:"required,min=6"`
+	Password          string                  `bson:"password" json:"password" validate:"required,min=6"`
 	Phone             string                  `bson:"phone" validate:"required" json:"phone"`
 	Settings          *UserSettings           `bson:"settings" json:"settings"`
 	Timezone          string                  `bson:"time_zone" json:"time_zone"`
 	CreatedAt         time.Time               `bson:"created_at" json:"created_at"`
 	UpdatedAt         time.Time               `bson:"updated_at" json:"updated_at"`
-	Deactivated       bool               	  `bson:"deactivated"`
-	Organizations     []string                `bson:"workspaces"` // should contain (organization) workspace ids
-	EmailVerification UserEmailVerification   `bson:"email_verification"`
-	PasswordResets    []*UserPasswordReset    `bson:"password_resets"`
+	Deactivated       bool               	  `bson:"deactivated" json:"deactivated"`
+	Organizations     []string                `bson:"workspaces" json:"workspaces"` // should contain (organization) workspace ids
+	EmailVerification *UserEmailVerification  `bson:"email_verification" json:"email_verification"`
+	PasswordResets    []*UserPasswordReset    `bson:"password_resets" json:"password_resets"`
 }
 
 // Struct that user can update directly
