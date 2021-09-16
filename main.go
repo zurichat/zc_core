@@ -220,8 +220,7 @@ func LoggingMiddleware(h http.Handler) http.Handler {
 		lrw := &loggingResponseWriter{w, 200}
 		start := time.Now()
 		h.ServeHTTP(lrw, r)
-		end := time.Now()
-		duration := end.Sub(start)
+		duration := time.Since(start)
 		log.Printf("[%s] | %s | %d | %dms\n", r.Method, r.URL.Path, lrw.statusCode, duration.Milliseconds())
 	})
 }

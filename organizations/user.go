@@ -464,7 +464,10 @@ func UpdateMemberSettings(w http.ResponseWriter, r *http.Request) {
 	orgId, memberId := vars["id"], vars["mem_id"]
 
 	updPayload := make(map[string]interface{})
-	_ = utils.ParseJsonFromRequest(r, &updPayload)
+	if err = utils.ParseJsonFromRequest(r, &updPayload); err != nil {
+		utils.GetError(fmt.Errorf("error parsing payload: %v", err), http.StatusUnprocessableEntity, w)
+		return
+	}
 
 	coll := utils.GetCollection("members")
 	filter := bson.M{
