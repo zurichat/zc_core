@@ -211,7 +211,7 @@ func IsAuthorized(user_id string, orgId string, role string, w http.ResponseWrit
 
 func (au *AuthHandler) AuthTest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	store := NewMongoStore(utils.GetCollection(session_collection), SESSION_MAX_AGE, true, []byte(secretKey))
+	store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(secretKey))
 	var session *sessions.Session
 	var err error
 	session, err = store.Get(r, sessionKey)

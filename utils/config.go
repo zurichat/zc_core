@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"time"
-
 	"github.com/spf13/viper"
 )
 
@@ -38,7 +36,7 @@ func NewConfigurations() *Configurations {
 	viper.SetDefault("DB_NAME", "zurichat")
 	viper.SetDefault("SECRET_KEY", "5d5c7f94e29ba12a21f682be310d3af4")
 	viper.SetDefault("SESSION_KEY", "f6822af94e29ba112be310d3af45d5c7")
-	viper.SetDefault("SESSION_MAX_AGE", time.Now().Add(time.Duration(24)).Second())
+	viper.SetDefault("SESSION_MAX_AGE", 60 * 60 * 7 * 24 * 7)
 	viper.SetDefault("USER_COLLECTION", "users")
 	viper.SetDefault("SESSION_COLLECTION", "session_store")
 	viper.SetDefault("CONFIRM_EMAIL_TEMPLATE", "./templates/confirm_email.html")
