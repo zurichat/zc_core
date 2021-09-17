@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-playground/validator"
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -15,8 +16,10 @@ import (
 )
 
 var (
-	EMAIL_NOT_VALID = errors.New("Email address is not valid")
-	HASHING_FAILED  = errors.New("Failed to hashed password")
+	validate         = validator.New()
+	EMAIL_NOT_VALID  = errors.New("Email address is not valid")
+	HASHING_FAILED   = errors.New("Failed to hashed password")
+	CONFIRM_PASSWORD = errors.New("Password and confirm password must be the same, confirm and try again!")
 )
 
 // Method to hash password
@@ -60,8 +63,15 @@ func Create(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+	_, comfimationToken := utils.RandomGen(6, "d")
+
+	con := &UserEmailVerification{false, comfimationToken, time.Now().Add(time.Minute * time.Duration(24))}
+
 	user.CreatedAt = time.Now()
 	user.Password = hashPassword
+	user.Deactivated = false
+	user.IsVerified = false
+	user.EmailVerification = con
 	detail, _ := utils.StructToMap(user)
 
 	res, err := utils.CreateMongoDbDoc(user_collection, detail)
@@ -81,13 +91,14 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	userId := params["user_id"]
 
-	delete, err := utils.DeleteOneMongoDoc("users", userId)
+	deactivateUpdate := bson.M{"deactivated": true, "deactivated_at": time.Now()}
+	delete, err := utils.UpdateOneMongoDbDoc("users", userId, deactivateUpdate)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
-	if delete.DeletedCount == 0 {
+	if delete.ModifiedCount == 0 {
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
 	}
@@ -97,6 +108,8 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 // endpoint to find user by ID
 func GetUser(response http.ResponseWriter, request *http.Request) {
+	response.Header().Set("Access-Control-Allow-Origin", "*")
+	response.Header().Set("Access-Control-Allow-Headers", "Content-Type,access-control-allow-origin, access-control-allow-headers")
 	// Find a user by user ID
 	response.Header().Set("content-type", "application/json")
 
@@ -111,9 +124,9 @@ func GetUser(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	res, err := utils.GetMongoDbDoc(collectionName, bson.M{"_id": objId})
+	res, err := utils.GetMongoDbDoc(collectionName, bson.M{"_id": objId, "deactivated": false})
 	if err != nil {
-		utils.GetError(errors.New("user not found"), http.StatusInternalServerError, response)
+		utils.GetError(errors.New("user not found"), http.StatusNotFound, response)
 		return
 	}
 	utils.GetSuccess("user retrieved successfully", res, response)
@@ -174,9 +187,11 @@ func UpdateUser(response http.ResponseWriter, request *http.Request) {
 
 // get all users
 func GetUsers(response http.ResponseWriter, request *http.Request) {
+	response.Header().Set("Access-Control-Allow-Origin", "*")
+	response.Header().Set("Access-Control-Allow-Headers", "Content-Type,access-control-allow-origin, access-control-allow-headers")
 	response.Header().Set("content-type", "application/json")
 	collectionName := "users"
-	res, _ := utils.GetMongoDbDocs(collectionName, nil)
+	res, _ := utils.GetMongoDbDocs(collectionName, bson.M{"deactivated": false})
 	utils.GetSuccess("users retrieved successfully", res, response)
 }
 
@@ -194,21 +209,18 @@ func GetUserOrganizations(response http.ResponseWriter, request *http.Request) {
 	}
 
 	// find user email in members collection.
-	result, _ := utils.GetMongoDbDocs(member_collection, bson.M{"email": userEmail})
-	if result == nil {
-		utils.GetError(
-			fmt.Errorf("user with email %s has no organization", userEmail),
-			http.StatusNotFound,
-			response,
-		)
-		return
-	}
+	result, _ := utils.GetMongoDbDocs(member_collection, bson.M{"email": userEmail, "deleted": false})
 
 	var orgs []map[string]interface{}
 	for _, value := range result {
 		basic := make(map[string]interface{})
 
-		objId, _ := primitive.ObjectIDFromHex(value["org_id"].(string))
+		orgid := value["org_id"].(string)
+
+		objId, _ := primitive.ObjectIDFromHex(orgid)
+
+		// find all members of an org
+		orgMembers, _ := utils.GetMongoDbDocs(member_collection, bson.M{"org_id": orgid})
 
 		orgDetails, err := utils.GetMongoDbDoc(organization_collection, bson.M{"_id": objId})
 		if err != nil {
@@ -221,6 +233,7 @@ func GetUserOrganizations(response http.ResponseWriter, request *http.Request) {
 		basic["name"] = orgDetails["name"]
 		basic["isOwner"] = orgDetails["creator_email"] == params["email"]
 		basic["workspace_url"] = orgDetails["workspace_url"]
+		basic["no_of_members"] = len(orgMembers)
 
 		orgs = append(orgs, basic)
 	}

@@ -8,13 +8,14 @@ import (
 	"time"
 
 	socketio "github.com/googollee/go-socket.io"
-	"github.com/gorilla/handlers"
+	// "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 
-	// "github.com/rs/cors"
+	"github.com/rs/cors"
 	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/blog"
+	"zuri.chat/zccore/contact"
 	"zuri.chat/zccore/data"
 	"zuri.chat/zccore/external"
 	"zuri.chat/zccore/marketplace"
@@ -22,12 +23,19 @@ import (
 	"zuri.chat/zccore/organizations"
 	"zuri.chat/zccore/plugin"
 	"zuri.chat/zccore/realtime"
+	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 )
 
 func Router(Server *socketio.Server) *mux.Router {
 	r := mux.NewRouter().StrictSlash(true)
+
+	// Load handlers(Doing this to reduce dependency circle issue, might reverse if not working)
+	configs := utils.NewConfigurations()
+	mailService := service.NewZcMailService(configs)
+
+	auth := auth.NewAuthHandler(configs, mailService)
 
 	// Setup and init
 	r.HandleFunc("/", VersionHandler)
@@ -43,10 +51,16 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/post/search", blog.SearchBlog).Methods("GET")
 
 	// Authentication
-	r.HandleFunc("/auth/login", auth.LoginIn).Methods("POST")
-	r.HandleFunc("/auth/test", auth.AuthTest).Methods("POST")
-	r.HandleFunc("/auth/logout", auth.LogOutUser).Methods("POST", "GET")
-	r.HandleFunc("/auth/verify-token", auth.IsAuthenticated(auth.VerifyTokenHandler)).Methods("GET", "POST")
+	r.HandleFunc("/auth/login", auth.LoginIn).Methods(http.MethodPost)
+	// r.HandleFunc("/auth/test", auth.AuthTest).Methods(http.MethodPost)
+	r.HandleFunc("/auth/logout", auth.LogOutUser).Methods(http.MethodPost)
+	r.HandleFunc("/auth/verify-token", auth.IsAuthenticated(auth.VerifyTokenHandler)).Methods(http.MethodGet, http.MethodPost)
+	r.HandleFunc("/auth/confirm-password", auth.IsAuthenticated(auth.ConfirmUserPassword)).Methods(http.MethodPost)
+	
+	r.HandleFunc("/get-password-reset-code", auth.RequestResetPasswordCode).Methods(http.MethodPost)
+	r.HandleFunc("/verify/mail", auth.VerifyMail).Methods(http.MethodPost)
+	// r.HandleFunc("/verify/reset-password", auth.VerifyPasswordResetCode)
+	// r.HandleFunc("/update-password/{token}", auth.UpdatePassword)
 
 	// Organization
 	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.Create)).Methods("POST")
@@ -66,7 +80,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members", auth.IsAuthenticated(organizations.CreateMember)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/members", auth.IsAuthenticated(organizations.GetMembers)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.GetMember)).Methods("GET")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.DeleteMember)).Methods("DELETE")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.DeactivateMember)).Methods("DELETE")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/status", auth.IsAuthenticated(organizations.UpdateMemberStatus)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/photo", auth.IsAuthenticated(organizations.UpdateProfilePicture)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/profile", auth.IsAuthenticated(organizations.UpdateProfile)).Methods("PATCH")
@@ -80,6 +94,9 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/data/delete", data.DeleteData).Methods("POST")
 	r.HandleFunc("/data/collections/{plugin_id}", data.ListCollections).Methods("GET")
 	r.HandleFunc("/data/collections/{plugin_id}/{org_id}", data.ListCollections).Methods("GET")
+
+	// file upload
+	r.HandleFunc("/upload", organizations.UploadFile).Methods("PATCH")
 
 	// Plugins
 	r.HandleFunc("/plugins/register", plugin.Register).Methods("POST")
@@ -97,6 +114,9 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/users", auth.IsAuthenticated(user.GetUsers)).Methods("GET")
 	r.HandleFunc("/users/{email}/organizations", auth.IsAuthenticated(user.GetUserOrganizations)).Methods("GET")
 
+	// Contact Us
+	r.HandleFunc("/contact", auth.OptionalAuthentication(contact.ContactUs, auth)).Methods("POST")
+
 	// Realtime communications
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
 	r.HandleFunc("/realtime/auth", realtime.Auth).Methods("POST")
@@ -111,7 +131,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	}).Methods("GET", "POST")
 
 	//api documentation
-	r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.FileServer(http.Dir("./docs/"))))
+	// r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.FileServer(http.Dir("./docs/"))))
 
 	// Home
 	http.Handle("/", r)
@@ -150,22 +170,24 @@ func main() {
 	// 	AllowCredentials: true,
 	// })
 
-	headersOK := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type"})
-	originsOK := handlers.AllowedOrigins([]string{"*"})
-	methodsOK := handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS", "DELETE", "PUT"})
+	c := cors.AllowAll()
 
-	// srv := &http.Server{
-	// 	Handler:      LoggingMiddleware(c.Handler(r)),
-	// 	Addr:         ":" + port,
-	// 	WriteTimeout: 15 * time.Second,
-	// 	ReadTimeout:  15 * time.Second,
-	// }
+	// headersOK := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type"})
+	// originsOK := handlers.AllowedOrigins([]string{"*"})
+	// methodsOK := handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS", "DELETE", "PUT"})
+
 	srv := &http.Server{
-		Handler:      handlers.CombinedLoggingHandler(os.Stderr, handlers.CORS(headersOK, originsOK, methodsOK)(r)),
+		Handler:      LoggingMiddleware(c.Handler(r)),
 		Addr:         ":" + port,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
+	// srv := &http.Server{
+	// 	Handler:      handlers.CombinedLoggingHandler(os.Stderr, handlers.CORS(headersOK, originsOK, methodsOK)(r)),
+	// 	Addr:         ":" + port,
+	// 	WriteTimeout: 15 * time.Second,
+	// 	ReadTimeout:  15 * time.Second,
+	// }
 	go Server.Serve()
 	fmt.Println("Socket Served")
 	defer Server.Close()

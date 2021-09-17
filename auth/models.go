@@ -14,6 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
+	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 
@@ -36,12 +37,14 @@ type RoleMember struct {
 	JoinedAt    time.Time          `json:"joined_at" bson:"joined_at"`
 }
 
-const SESSION_MAX_AGE int = 60 * 60 * 12
+const SESSION_MAX_AGE int = 31536000 * 200
 
 var (
-	NoAuthToken   = errors.New("No Authorization or session expired.")
-	TokenExp      = errors.New("Session expired.")
-	NotAuthorized = errors.New("Not Authorized.")
+	NoAuthToken     = errors.New("No Authorization or session expired.")
+	TokenExp        = errors.New("Session expired.")
+	NotAuthorized   = errors.New("Not Authorized.")
+	ConfirmPassword = errors.New("The password confirmation does not match")
+	UserDetails     = UserKey("userDetails")
 )
 
 type Credentials struct {
@@ -84,6 +87,13 @@ type VerifiedTokenResponse struct {
 	User     UserResponse `json:"user"`
 }
 
+type AuthHandler struct {
+	configs     *utils.Configurations
+	mailService service.MailService
+}
+
+type UserKey string
+
 // Method to compare password
 func CheckPassword(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
@@ -121,7 +131,7 @@ func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 		var erro error
 		if status == true {
 			session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName)
-			fmt.Println(session)
+			// fmt.Println(session)
 			if err != nil && erro != nil {
 				utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
 				return
@@ -150,49 +160,6 @@ func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 		w.Header().Add("content-type", "application/json")
-
-// 		store := NewMongoStore(utils.GetCollection(session_collection), SESSION_MAX_AGE, true, []byte(secretKey))
-// 		var session, err = store.Get(r, sessionKey)
-// 		status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
-
-// 		if err != nil && status == false {
-// 			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
-// 			return
-// 		}
-// 		var erro error
-// 		if status == true {
-// 			session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName)
-// 			if err != nil && erro != nil {
-// 				utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
-// 				return
-// 			}
-// 		}
-
-// 		// use is coming in newly, no cookies
-// 		if session.IsNew == true {
-// 			utils.GetError(NoAuthToken, http.StatusUnauthorized, w)
-// 			return
-// 		}
-
-// 		objID, err := primitive.ObjectIDFromHex(session.ID)
-// 		if err != nil {
-// 			utils.GetError(ErrorInvalid, http.StatusUnauthorized, w)
-// 			return
-// 		}
-
-// 		user := &AuthUser{
-// 			ID:    objID,
-// 			Email: session.Values["email"].(string),
-// 		}
-
-// 		ctx := context.WithValue(r.Context(), "user", user)
-// 		nextHandler.ServeHTTP(w, r.WithContext(ctx))
-// 	}
-// }
-
 // Checks if a user is authorized to access a particular function, and either returns a 403 error or continues the process
 // First Option is user id
 // second is the Organisation's Id
@@ -204,7 +171,7 @@ func IsAuthorized(user_id string, orgId string, role string, w http.ResponseWrit
 	_, user_collection, member_collection := "organizations", "users", "members"
 	// org_collection
 
-	fmt.Println(user_id)
+	// fmt.Println(user_id)
 
 	// Getting user's document from db
 	var luHexid, _ = primitive.ObjectIDFromHex(user_id)
@@ -245,9 +212,9 @@ func IsAuthorized(user_id string, orgId string, role string, w http.ResponseWrit
 // 	return
 // }
 
-func AuthTest(w http.ResponseWriter, r *http.Request) {
+func (au *AuthHandler) AuthTest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	store := NewMongoStore(utils.GetCollection(session_collection), SESSION_MAX_AGE, true, []byte(secretKey))
+	store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(secretKey))
 	var session *sessions.Session
 	var err error
 	session, err = store.Get(r, sessionKey)
@@ -287,18 +254,39 @@ func AuthTest(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// func AuthTest(w http.ResponseWriter, r *http.Request) {
-// 	w.Header().Set("Content-Type", "application/json")
-// 	hmacSampleSecret = []byte("u7b8be9bd9b9ebd9b9dbdbee")
-// 	status, message, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
+// This confirm user password before deactivation
+func (au *AuthHandler) ConfirmUserPassword(w http.ResponseWriter, r *http.Request) {
+	loggedInUser := r.Context().Value("user").(*AuthUser)
 
-// 	if status == false {
-// 		utils.GetError(message, http.StatusUnauthorized, w)
-// 		return
-// 	}
-// 	utils.GetSuccess("Retrived", sessData, w)
+	creds := struct {
+		Password        string `json:"password"`
+		ConfirmPassword string `json:"confirm_password"`
+	}{}
 
-// }
+	if err := utils.ParseJsonFromRequest(r, &creds); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	if creds.Password != creds.ConfirmPassword {
+		utils.GetError(ConfirmPassword, http.StatusBadRequest, w)
+		return
+	}
+
+	user, err := FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
+	if err != nil {
+		utils.GetError(UserNotFound, http.StatusBadRequest, w)
+		return
+	}
+	// check password
+	check := CheckPassword(creds.Password, user.Password)
+	if !check {
+		utils.GetError(errors.New("Invalid credentials, confirm and try again"), http.StatusBadRequest, w)
+		return
+	}
+
+	utils.GetSuccess("Password confirm successful", nil, w)
+}
 
 func GetSessionDataFromToken(r *http.Request, hmacSampleSecret []byte) (status bool, err error, data ResToken) {
 	reqTokenh := r.Header.Get("Authorization")
@@ -326,8 +314,9 @@ func GetSessionDataFromToken(r *http.Request, hmacSampleSecret []byte) (status b
 	} else {
 		return false, fmt.Errorf("failed"), ResToken{}
 	}
-	fmt.Println(retTokenD.SessionName)
+}
 
-	return true, nil, retTokenD
-
+// Initiate
+func NewAuthHandler(c *utils.Configurations, mail service.MailService) *AuthHandler {
+	return &AuthHandler{configs: c, mailService: mail}
 }

@@ -27,6 +27,13 @@ type ErrorResponse struct {
 	ErrorMessage string `json:"message"`
 }
 
+// DetailedErrorResponse : This is success model.
+type DetailedErrorResponse struct {
+	StatusCode int         `json:"status"`
+	Message    string      `json:"message"`
+	Data       interface{} `json:"data"`
+}
+
 // SuccessResponse : This is success model.
 type SuccessResponse struct {
 	StatusCode int         `json:"status"`
@@ -54,6 +61,21 @@ func GetError(err error, StatusCode int, w http.ResponseWriter) {
 
 	w.WriteHeader(response.StatusCode)
 	w.Header().Set("Content-Type", "application/json<Left>")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Error sending response: %v", err)
+	}
+}
+
+// GetDetailedError: This function provides detailed error information
+func GetDetailedError(msg string, StatusCode int, data interface{}, w http.ResponseWriter) {
+	var response = DetailedErrorResponse{
+		Message:    msg,
+		StatusCode: StatusCode,
+		Data:       data,
+	}
+
+	w.WriteHeader(response.StatusCode)
+	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("Error sending response: %v", err)
 	}
@@ -191,4 +213,27 @@ func GenWorkspaceUrl(orgName string) string {
 		GenWorkspaceUrl(orgName)
 	}
 	return wksUrl
+}
+
+func GenJwtToken(data, tokenType string) (string, error) {
+	SECRET_KEY, _ := os.LookupEnv("AUTH_SECRET_KEY")
+
+	claims := struct{
+		Data	string
+		TokenType	string
+		jwt.StandardClaims
+	}{ 
+		data,
+		tokenType,
+		jwt.StandardClaims{
+			ExpiresAt: 15000,
+			Issuer: "api.zuri.chat",
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	ss, err := token.SignedString([]byte(SECRET_KEY))
+
+	if err != nil {return "", err}
+	return ss, nil
 }

@@ -16,7 +16,7 @@ const (
 )
 
 type Organization struct {
-	ID           string                   `json:"_id" bson:"_id"`
+	ID           string                   `json:"_id,omitempty" bson:"_id,omitempty"`
 	Name         string                   `json:"name" bson:"name"`
 	CreatorEmail string                   `json:"creator_email" bson:"creator_email"`
 	CreatorID    string                   `json:"creator_id" bson:"creator_id"`
@@ -82,6 +82,7 @@ type Member struct {
 	FirstName   string                 `json:"first_name" bson:"first_name"`
 	LastName    string                 `json:"last_name" bson:"last_name"`
 	Email       string                 `json:"email" bson:"email"`
+	UserName    string                 `bson:"user_name" json:"user_name"`
 	DisplayName string                 `json:"display_name" bson:"display_name"`
 	Bio         string                 `json:"bio" bson:"bio"`
 	Status      string                 `json:"status" bson:"status"`

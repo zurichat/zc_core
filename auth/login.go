@@ -23,12 +23,13 @@ const (
 
 var (
 	validate           = validator.New()
-	UserNotFound       = errors.New("User not found!")
+	UserNotFound       = errors.New("User not found, confirm and try again!")
 	InvalidCredentials = errors.New("Invalid login credentials, confirm and try again")
+	AccountConfirmError= errors.New("Your account is not verified, kindly check your email for verification code.")
 	hmacSampleSecret   = []byte("u7b8be9bd9b9ebd9b9dbdbee")
 )
 
-func LoginIn(response http.ResponseWriter, request *http.Request) {
+func (au *AuthHandler) LoginIn(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 
 	var creds Credentials
@@ -46,13 +47,19 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 		utils.GetError(UserNotFound, http.StatusBadRequest, response)
 		return
 	}
+	// check if user is verified
+	if user.IsVerified != true {
+		utils.GetError(AccountConfirmError, http.StatusBadRequest, response)
+		return		
+	}
+
 	// check password
 	check := CheckPassword(creds.Password, user.Password)
 	if !check {
 		utils.GetError(InvalidCredentials, http.StatusBadRequest, response)
 		return
 	}
-	store := NewMongoStore(utils.GetCollection(session_collection), SESSION_MAX_AGE, true, []byte(secretKey))
+	store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(secretKey))
 	var session, e = store.Get(request, sessionKey)
 	if e != nil {
 		msg := fmt.Errorf("%s", e.Error())
@@ -79,6 +86,7 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 	tokenString, eert := retoken.SignedString(hmacSampleSecret)
 	if eert != nil {
 		utils.GetError(eert, http.StatusInternalServerError, response)
+		return
 	}
 
 	resp := &Token{
@@ -98,10 +106,10 @@ func LoginIn(response http.ResponseWriter, request *http.Request) {
 	utils.GetSuccess("login successful", resp, response)
 }
 
-func LogOutUser(w http.ResponseWriter, r *http.Request) {
+func (au *AuthHandler) LogOutUser(w http.ResponseWriter, r *http.Request) {
 	store := NewMongoStore(
 		utils.GetCollection(session_collection),
-		SESSION_MAX_AGE,
+		au.configs.SessionMaxAge,
 		true,
 		[]byte(secretKey),
 	)
@@ -117,7 +125,7 @@ func LogOutUser(w http.ResponseWriter, r *http.Request) {
 	var erro error
 	if status == true {
 		session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName)
-		fmt.Println(session)
+		// fmt.Println(session)
 		if err != nil && erro != nil {
 			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
 			return
@@ -129,7 +137,7 @@ func LogOutUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(session)
+	// fmt.Println(session)
 	session.Options.MaxAge = -1
 
 	if err = ClearSession(store, w, session); err != nil {
@@ -146,7 +154,7 @@ func LogOutUser(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("logout successful", map[string]interface{}{}, w)
 }
 
-func VerifyTokenHandler(response http.ResponseWriter, request *http.Request) {
+func (au *AuthHandler) VerifyTokenHandler(response http.ResponseWriter, request *http.Request) {
 	// extract user id and email from context
 	loggedIn := request.Context().Value("user").(*AuthUser)
 	user, _ := FetchUserByEmail(bson.M{"email": strings.ToLower(loggedIn.Email)})

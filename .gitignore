@@ -3,3 +3,6 @@ todolist/
 views/
 .vscode
 .idea
+zc_contact
+contact_test.go
+validator_test.go
