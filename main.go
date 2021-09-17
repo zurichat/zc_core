@@ -37,6 +37,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	mailService := service.NewZcMailService(configs)
 
 	auth := auth.NewAuthHandler(configs, mailService)
+	user := user.NewUserHandler(configs, mailService)
 
 	// Setup and init
 	r.HandleFunc("/", VersionHandler)

@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"zuri.chat/zccore/service"
+	"zuri.chat/zccore/utils"
 )
 
 const (
@@ -79,4 +81,11 @@ type UserUpdate struct {
 	Phone     string `bson:"phone" validate:"required" json:"phone"`
 }
 
-type UserHandler struct{}
+type UserHandler struct{
+	configs     *utils.Configurations
+	mailService service.MailService	
+}
+
+func NewUserHandler(c *utils.Configurations, mail service.MailService) *UserHandler {
+	return &UserHandler{configs: c, mailService: mail}
+}

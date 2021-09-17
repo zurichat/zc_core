@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
+	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
 
@@ -29,7 +30,7 @@ func GenerateHashPassword(password string) (string, error) {
 }
 
 // An end point to create new users
-func Create(response http.ResponseWriter, request *http.Request) {
+func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 	user_collection := "users"
 
@@ -80,6 +81,21 @@ func Create(response http.ResponseWriter, request *http.Request) {
 		utils.GetError(err, http.StatusInternalServerError, response)
 		return
 	}
+	// Email Service <- send confirmation mail
+	msger := uh.mailService.NewMail(
+		[]string{user.Email}, 
+		"Account Confirmation", 
+		service.MailConfirmation, 
+		&service.MailData{ 
+			Username: user.Email, 
+			Code: comfimationToken,
+		})
+
+	if err := uh.mailService.SendMail(msger); err != nil {
+		msg := fmt.Errorf("Error occured while sending mail: %s", err.Error())
+		utils.GetError(msg, http.StatusInternalServerError, response)
+		return
+	}	
 
 	respse := map[string]interface{}{
 		"InsertedID": res.InsertedID,
@@ -90,7 +106,7 @@ func Create(response http.ResponseWriter, request *http.Request) {
 }
 
 // an endpoint to delete a user record
-func DeleteUser(w http.ResponseWriter, r *http.Request) {
+func (us *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	params := mux.Vars(r)
@@ -112,7 +128,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // endpoint to find user by ID
-func GetUser(response http.ResponseWriter, request *http.Request) {
+func (us *UserHandler) GetUser(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Access-Control-Allow-Origin", "*")
 	response.Header().Set("Access-Control-Allow-Headers", "Content-Type,access-control-allow-origin, access-control-allow-headers")
 	// Find a user by user ID
@@ -139,7 +155,7 @@ func GetUser(response http.ResponseWriter, request *http.Request) {
 
 // an endpoint to update a user record
 
-func UpdateUser(response http.ResponseWriter, request *http.Request) {
+func (us *UserHandler) UpdateUser(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("content-type", "application/json")
 	// Validate the user ID
 	userID := mux.Vars(request)["user_id"]
@@ -191,7 +207,7 @@ func UpdateUser(response http.ResponseWriter, request *http.Request) {
 }
 
 // get all users
-func GetUsers(response http.ResponseWriter, request *http.Request) {
+func (us *UserHandler) GetUsers(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Access-Control-Allow-Origin", "*")
 	response.Header().Set("Access-Control-Allow-Headers", "Content-Type,access-control-allow-origin, access-control-allow-headers")
 	response.Header().Set("content-type", "application/json")
@@ -201,7 +217,7 @@ func GetUsers(response http.ResponseWriter, request *http.Request) {
 }
 
 // get a user organizations
-func GetUserOrganizations(response http.ResponseWriter, request *http.Request) {
+func (us *UserHandler) GetUserOrganizations(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("content-type", "application/json")
 	member_collection, organization_collection := "members", "organizations"
 
