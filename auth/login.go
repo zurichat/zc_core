@@ -22,11 +22,11 @@ const (
 )
 
 var (
-	validate           = validator.New()
-	UserNotFound       = errors.New("User not found, confirm and try again!")
-	InvalidCredentials = errors.New("Invalid login credentials, confirm and try again")
-	AccountConfirmError= errors.New("Your account is not verified, kindly check your email for verification code.")
-	hmacSampleSecret   = []byte("u7b8be9bd9b9ebd9b9dbdbee")
+	validate            = validator.New()
+	UserNotFound        = errors.New("User not found, confirm and try again!")
+	InvalidCredentials  = errors.New("Invalid login credentials, confirm and try again")
+	AccountConfirmError = errors.New("Your account is not verified, kindly check your email for verification code.")
+	hmacSampleSecret    = []byte("u7b8be9bd9b9ebd9b9dbdbee")
 )
 
 func (au *AuthHandler) LoginIn(response http.ResponseWriter, request *http.Request) {
@@ -50,7 +50,7 @@ func (au *AuthHandler) LoginIn(response http.ResponseWriter, request *http.Reque
 	// check if user is verified
 	if user.IsVerified != true {
 		utils.GetError(AccountConfirmError, http.StatusBadRequest, response)
-		return		
+		return
 	}
 
 	// check password
@@ -174,4 +174,43 @@ func (au *AuthHandler) VerifyTokenHandler(response http.ResponseWriter, request 
 	}
 
 	utils.GetSuccess("verified", resp, response)
+}
+
+func (au *AuthHandler) LogOutOtherSessions(w http.ResponseWriter, r *http.Request) {
+
+	store := NewMongoStore(
+		utils.GetCollection(session_collection),
+		au.configs.SessionMaxAge,
+		true,
+		[]byte(secretKey),
+	)
+	var session *sessions.Session
+	var err error
+
+	// Get  current session
+	session, err = store.Get(r, sessionKey)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+	}
+
+	// Get current user ID
+	id := session.Values["id"].(string)
+
+	// Get user who has such ID
+	user, er := FetchUserByID(id)
+	if er != nil {
+		utils.GetError(er, http.StatusInternalServerError, w)
+	}
+
+	// Check that password is correct
+	check := CheckPassword(r.FormValue("password"), user.Password)
+	if !check {
+		utils.GetError(errors.New("invalid password, confirm and try again"), http.StatusBadRequest, w)
+		return
+	}
+
+	// delete other sessions apart from current one
+	DeleteOtherSessions(id, session.ID)
+
+	utils.GetSuccess("successfully logged out of other sessions", nil, w)
 }
