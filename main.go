@@ -15,6 +15,7 @@ import (
 	"github.com/rs/cors"
 	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/blog"
+	"zuri.chat/zccore/contact"
 	"zuri.chat/zccore/data"
 	"zuri.chat/zccore/external"
 	"zuri.chat/zccore/marketplace"
@@ -22,6 +23,7 @@ import (
 	"zuri.chat/zccore/organizations"
 	"zuri.chat/zccore/plugin"
 	"zuri.chat/zccore/realtime"
+	"zuri.chat/zccore/report"
 	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
@@ -47,6 +49,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/blog/update/{blog_id}", blog.UpdateBlog).Methods("PATCH")
 	r.HandleFunc("/blog/delete/{blog_id}", blog.DeleteBlog).Methods("DELETE")
 	r.HandleFunc("/blog/{blog_id}", blog.ReadBlog).Methods("GET")
+	r.HandleFunc("/post/search", blog.SearchBlog).Methods("GET")
 
 	// Authentication
 	r.HandleFunc("/auth/login", auth.LoginIn).Methods(http.MethodPost)
@@ -54,7 +57,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/auth/logout", auth.LogOutUser).Methods(http.MethodPost)
 	r.HandleFunc("/auth/verify-token", auth.IsAuthenticated(auth.VerifyTokenHandler)).Methods(http.MethodGet, http.MethodPost)
 	r.HandleFunc("/auth/confirm-password", auth.IsAuthenticated(auth.ConfirmUserPassword)).Methods(http.MethodPost)
-	
+
 	r.HandleFunc("/get-password-reset-code", auth.RequestResetPasswordCode).Methods(http.MethodPost)
 	r.HandleFunc("/verify/mail", auth.VerifyMail).Methods(http.MethodPost)
 	// r.HandleFunc("/verify/reset-password", auth.VerifyPasswordResetCode)
@@ -84,6 +87,9 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/profile", auth.IsAuthenticated(organizations.UpdateProfile)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/presence", auth.IsAuthenticated(organizations.TogglePresence)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings", auth.IsAuthenticated(organizations.UpdateMemberSettings)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/reports", report.AddReport).Methods("POST")
+	r.HandleFunc("/organizations/{id}/reports", report.GetReports).Methods("GET")
+	r.HandleFunc("/organizations/{id}/reports/{report_id}", report.GetReport).Methods("GET")
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
@@ -92,9 +98,6 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/data/delete", data.DeleteData).Methods("POST")
 	r.HandleFunc("/data/collections/{plugin_id}", data.ListCollections).Methods("GET")
 	r.HandleFunc("/data/collections/{plugin_id}/{org_id}", data.ListCollections).Methods("GET")
-
-	// file upload
-	r.HandleFunc("/upload", organizations.UploadFile).Methods("PATCH")
 
 	// Plugins
 	r.HandleFunc("/plugins/register", plugin.Register).Methods("POST")
@@ -109,9 +112,11 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.UpdateUser)).Methods("PATCH")
 	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.GetUser)).Methods("GET")
 	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.DeleteUser)).Methods("DELETE")
-	r.HandleFunc("/users/search/{query}", auth.IsAuthenticated(user.SearchOtherUsers)).Methods("GET")
 	r.HandleFunc("/users", auth.IsAuthenticated(user.GetUsers)).Methods("GET")
 	r.HandleFunc("/users/{email}/organizations", auth.IsAuthenticated(user.GetUserOrganizations)).Methods("GET")
+
+	// Contact Us
+	r.HandleFunc("/contact", auth.OptionalAuthentication(contact.ContactUs, auth)).Methods("POST")
 
 	// Realtime communications
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
@@ -126,8 +131,10 @@ func Router(Server *socketio.Server) *mux.Router {
 		utils.GetSuccess("Server is live", nil, w)
 	}).Methods("GET", "POST")
 
-	//api documentation
-	// r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.FileServer(http.Dir("./docs/"))))
+	// file upload
+	r.HandleFunc("/upload/file/{plugin_id}", auth.IsAuthenticated(service.UploadOneFile)).Methods("POST")
+	r.HandleFunc("/upload/files/{plugin_id}", auth.IsAuthenticated(service.UploadMultipleFiles)).Methods("POST")
+	r.PathPrefix("/files/").Handler(http.StripPrefix("/files/", http.FileServer(http.Dir("./files/"))))
 
 	// Home
 	http.Handle("/", r)

@@ -84,25 +84,6 @@ func Create(response http.ResponseWriter, request *http.Request) {
 	utils.GetSuccess("user created", res, response)
 }
 
-// an endpoint to search other users
-func SearchOtherUsers(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	query := params["query"]
-	filter := bson.M{
-		"$or": []bson.M{
-			{"first_name": query},
-			{"last_name": query},
-			{"email": query},
-			{"display_name": query},
-		},
-	}
-	res, err := utils.GetMongoDbDocs(UserCollectionName, filter)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-	}
-	utils.GetSuccess("successful", res, w)
-}
-
 // an endpoint to delete a user record
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")

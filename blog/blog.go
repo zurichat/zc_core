@@ -1,6 +1,7 @@
 package blog
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"zuri.chat/zccore/utils"
 )
 
@@ -17,7 +19,7 @@ import (
 func GetAllBlogPosts(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 
-	blogs, err := utils.GetMongoDbDocs(BlogCollectionName, bson.M{"deleted":false})
+	blogs, err := utils.GetMongoDbDocs(BlogCollectionName, bson.M{"deleted": false})
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, response)
 		return
@@ -25,7 +27,6 @@ func GetAllBlogPosts(response http.ResponseWriter, request *http.Request) {
 
 	utils.GetSuccess("success", blogs, response)
 }
-
 
 // An end point to create new blog posts
 func CreateBlog(response http.ResponseWriter, request *http.Request) {
@@ -39,13 +40,14 @@ func CreateBlog(response http.ResponseWriter, request *http.Request) {
 	}
 
 	blogTitle := strings.ToUpper(blogPost.Title)
-	
+
 	// confirm if blog title has already been taken
 	result, _ := utils.GetMongoDbDoc(BlogCollectionName, bson.M{"title": blogTitle})
 	if result != nil {
 		utils.GetError(
 			errors.New(fmt.Sprintf("blog post with title %s exists!", blogTitle)),
-			http.StatusBadRequest, 
+			http.StatusBadRequest,
+
 			response,
 		)
 		return
@@ -69,7 +71,6 @@ func CreateBlog(response http.ResponseWriter, request *http.Request) {
 	utils.GetSuccess("blog post created", res, response)
 }
 
-
 func ReadBlog(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 
@@ -80,7 +81,7 @@ func ReadBlog(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	result, err := utils.GetMongoDbDoc(BlogCollectionName, bson.M{"_id": objID, "deleted":false})
+	result, err := utils.GetMongoDbDoc(BlogCollectionName, bson.M{"_id": objID, "deleted": false})
 
 	if err != nil {
 		utils.GetError(errors.New("blog post does not exist"), http.StatusNotFound, response)
@@ -93,7 +94,6 @@ func ReadBlog(response http.ResponseWriter, request *http.Request) {
 
 	utils.GetSuccess("success", result, response)
 }
-
 
 func UpdateBlog(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
@@ -152,15 +152,14 @@ func UpdateBlog(response http.ResponseWriter, request *http.Request) {
 	}
 
 	utils.GetSuccess("blog post successfully updated", nil, response)
-	}
-
+}
 
 func DeleteBlog(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 
 	blogID := mux.Vars(request)["blog_id"]
 	objID, err := primitive.ObjectIDFromHex(blogID)
-	
+
 	if err != nil {
 		utils.GetError(errors.New("invalid blog post ID"), http.StatusBadRequest, response)
 		return
@@ -190,4 +189,32 @@ func DeleteBlog(response http.ResponseWriter, request *http.Request) {
 	}
 
 	utils.GetSuccess("blog post successfully deleted", nil, response)
+}
+
+// SearchBlog returns all posts and aggregates the ones which contain the posted search query in either title or content field
+func SearchBlog(w http.ResponseWriter, r *http.Request) {
+	query := r.FormValue("query")
+
+	blogs := utils.GetCollection("blogs")
+
+	mod := mongo.IndexModel{
+		Keys: bson.M{"$**": "text"},
+	}
+
+	_, err := blogs.Indexes().CreateOne(context.Background(), mod)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	docs, err := utils.GetMongoDbDocs("blogs", bson.M{"$text": bson.M{"$search": query}})
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+	utils.GetSuccess("successful", docs, w)
+}
+
+func GetCommentCount(w http.ResponseWriter, r *http.Request) int {
+	return 1
 }
