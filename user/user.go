@@ -106,7 +106,7 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 }
 
 // an endpoint to delete a user record
-func (us *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+func (uh *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	params := mux.Vars(r)
@@ -128,7 +128,7 @@ func (us *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // endpoint to find user by ID
-func (us *UserHandler) GetUser(response http.ResponseWriter, request *http.Request) {
+func (uh *UserHandler) GetUser(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Access-Control-Allow-Origin", "*")
 	response.Header().Set("Access-Control-Allow-Headers", "Content-Type,access-control-allow-origin, access-control-allow-headers")
 	// Find a user by user ID
@@ -155,7 +155,7 @@ func (us *UserHandler) GetUser(response http.ResponseWriter, request *http.Reque
 
 // an endpoint to update a user record
 
-func (us *UserHandler) UpdateUser(response http.ResponseWriter, request *http.Request) {
+func (uh *UserHandler) UpdateUser(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("content-type", "application/json")
 	// Validate the user ID
 	userID := mux.Vars(request)["user_id"]
@@ -207,7 +207,7 @@ func (us *UserHandler) UpdateUser(response http.ResponseWriter, request *http.Re
 }
 
 // get all users
-func (us *UserHandler) GetUsers(response http.ResponseWriter, request *http.Request) {
+func (uh *UserHandler) GetUsers(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Access-Control-Allow-Origin", "*")
 	response.Header().Set("Access-Control-Allow-Headers", "Content-Type,access-control-allow-origin, access-control-allow-headers")
 	response.Header().Set("content-type", "application/json")
@@ -217,7 +217,7 @@ func (us *UserHandler) GetUsers(response http.ResponseWriter, request *http.Requ
 }
 
 // get a user organizations
-func (us *UserHandler) GetUserOrganizations(response http.ResponseWriter, request *http.Request) {
+func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("content-type", "application/json")
 	member_collection, organization_collection := "members", "organizations"
 
