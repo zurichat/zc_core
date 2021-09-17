@@ -57,7 +57,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/auth/logout", auth.LogOutUser).Methods(http.MethodPost)
 	r.HandleFunc("/auth/verify-token", auth.IsAuthenticated(auth.VerifyTokenHandler)).Methods(http.MethodGet, http.MethodPost)
 	r.HandleFunc("/auth/confirm-password", auth.IsAuthenticated(auth.ConfirmUserPassword)).Methods(http.MethodPost)
-	
+
 	r.HandleFunc("/get-password-reset-code", auth.RequestResetPasswordCode).Methods(http.MethodPost)
 	r.HandleFunc("/verify/mail", auth.VerifyMail).Methods(http.MethodPost)
 	// r.HandleFunc("/verify/reset-password", auth.VerifyPasswordResetCode)
@@ -99,9 +99,6 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/data/collections/{plugin_id}", data.ListCollections).Methods("GET")
 	r.HandleFunc("/data/collections/{plugin_id}/{org_id}", data.ListCollections).Methods("GET")
 
-	// file upload
-	r.HandleFunc("/upload", organizations.UploadFile).Methods("PATCH")
-
 	// Plugins
 	r.HandleFunc("/plugins/register", plugin.Register).Methods("POST")
 
@@ -134,8 +131,10 @@ func Router(Server *socketio.Server) *mux.Router {
 		utils.GetSuccess("Server is live", nil, w)
 	}).Methods("GET", "POST")
 
-	//api documentation
-	// r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.FileServer(http.Dir("./docs/"))))
+	// file upload
+	r.HandleFunc("/upload/file/{plugin_id}", auth.IsAuthenticated(service.UploadOneFile)).Methods("POST")
+	r.HandleFunc("/upload/files/{plugin_id}", auth.IsAuthenticated(service.UploadMultipleFiles)).Methods("POST")
+	r.PathPrefix("/files/").Handler(http.StripPrefix("/files/", http.FileServer(http.Dir("./files/"))))
 
 	// Home
 	http.Handle("/", r)
