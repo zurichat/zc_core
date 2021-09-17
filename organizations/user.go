@@ -75,7 +75,7 @@ func GetMembers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// query allows you to be able to browse people given the right query param
-	query := r.URL.Query().Get("q")
+	query := r.URL.Query().Get("query")
 
 	var filter map[string]interface{}
 
