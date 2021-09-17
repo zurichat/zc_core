@@ -79,6 +79,7 @@ func (au *AuthHandler) LoginIn(response http.ResponseWriter, request *http.Reque
 	tokenString, eert := retoken.SignedString(hmacSampleSecret)
 	if eert != nil {
 		utils.GetError(eert, http.StatusInternalServerError, response)
+		return
 	}
 
 	resp := &Token{
