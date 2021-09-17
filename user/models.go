@@ -46,7 +46,6 @@ type UserEmailVerification struct {
 }
 
 type UserPasswordReset struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 	IPAddress string             `bson:"ip_address" json:"ip_address"`
 	Token     string             `bson:"token" json:"token"`
 	ExpiredAt time.Time          `bson:"expired_at" json:"expired_at"`
@@ -67,9 +66,10 @@ type User struct {
 	UpdatedAt         time.Time              `bson:"updated_at" json:"updated_at"`
 	Deactivated       bool                   `default:"false" bson:"deactivated" json:"deactivated"`
 	DeactivatedAt     time.Time              `bson:"deactivated_at" json:"deactivated_at"`
+	IsVerified        bool          		 `bson:"isverified" json:"isverified"`
 	Organizations     []string               `bson:"workspaces" json:"workspaces"` // should contain (organization) workspace ids
 	EmailVerification *UserEmailVerification `bson:"email_verification" json:"email_verification"`
-	PasswordResets    []*UserPasswordReset   `bson:"password_resets" json:"password_resets"`
+	PasswordResets    *UserPasswordReset     `bson:"password_resets" json:"password_resets"`  // remove the array
 }
 
 // Struct that user can update directly

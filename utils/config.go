@@ -15,9 +15,14 @@ type Configurations struct {
 	UserDbCollection    string
 	SendGridApiKey      string
 
-	ESPType      string
-	SmtpUsername string
-	SmtpPassword string
+	ESPType					string
+	SmtpUsername			string
+	SmtpPassword			string
+	SendgridEmail			string
+
+	MailGunKey				string
+	MailGunDomain			string
+	MailGunSenderEmail		string
 
 	ConfirmEmailTemplate  string
 	PasswordResetTemplate string
@@ -56,8 +61,13 @@ func NewConfigurations() *Configurations {
 		ConfirmEmailTemplate:  viper.GetString("CONFIRM_EMAIL_TEMPLATE"),
 		PasswordResetTemplate: viper.GetString("PASSWORD_RESET_TEMPLATE"),
 
-		SmtpUsername: viper.GetString("SMTP_USERNAME"),
-		SmtpPassword: viper.GetString("SMTP_PASSWORD"),
+		SmtpUsername:			viper.GetString("SMTP_USERNAME"),
+		SmtpPassword:			viper.GetString("SMTP_PASSWORD"),
+		SendgridEmail:			viper.GetString("SENDGRID_EMAIL"),
+
+		MailGunKey:				viper.GetString("MAILGUN_KEY"),
+		MailGunDomain:			viper.GetString("MAILGUN_DOMAIN"),
+		MailGunSenderEmail:		viper.GetString("MAILGUN_EMAIL"),
 	}
 
 	return configs

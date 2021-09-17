@@ -303,7 +303,7 @@ func UpdateMemberStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 // Delete single member from an organization
-func DeleteMember(w http.ResponseWriter, r *http.Request) {
+func DeactivateMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	member_collection, org_collection := "members", "organizations"
@@ -339,7 +339,7 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(errors.New("an error occured, cannot delete user"), http.StatusInternalServerError, w)
 		return
 	}
-	utils.GetSuccess("successfully deleted member", nil, w)
+	utils.GetSuccess("successfully deactivated member", nil, w)
 }
 
 // Update a member profile
@@ -412,15 +412,18 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 // Toggle a member's presence
 func TogglePresence(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	
 	org_collection, member_collection := "organizations", "members"
 	id := mux.Vars(r)["id"]
 	memId := mux.Vars(r)["mem_id"]
+	
 	// Check if organization id is valid
 	orgId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
 		return
 	}
+	
 	// Check if organization id exists in the database
 	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": orgId})
 	if orgDoc == nil {
@@ -428,34 +431,40 @@ func TogglePresence(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
 		return
 	}
+	
 	// Check if member id is valid
 	pMemId, err := primitive.ObjectIDFromHex(memId)
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
 		return
 	}
+	
 	memberDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": pMemId, "org_id": id})
 	if memberDoc == nil {
 		fmt.Printf("member with id %s doesn't exist!", memId)
 		utils.GetError(errors.New("member with id doesn't exist"), http.StatusBadRequest, w)
 		return
 	}
+	
 	org_filter := make(map[string]interface{})
 	if memberDoc["presence"] == "true" {
 		org_filter["presence"] = "false"
 	} else {
 		org_filter["presence"] = "true"
 	}
+	
 	// update the presence field of the member
 	update, err := utils.UpdateOneMongoDbDoc(member_collection, memId, org_filter)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
+	
 	if update.ModifiedCount == 0 {
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
 	}
+	
 	utils.GetSuccess("Member presence toggled", nil, w)
 }
 
