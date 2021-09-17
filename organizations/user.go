@@ -507,7 +507,7 @@ func mustObjectID(s string) primitive.ObjectID {
 	}
 	return id
 }
-// Activate single member from an organization
+// Activate single member in an organization
 func ReactivateMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
