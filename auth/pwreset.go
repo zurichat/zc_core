@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -12,9 +14,43 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
-func (au *AuthHandler) VerifyMail(w http.ResponseWriter, r *http.Request) {}
+func (au *AuthHandler) VerifyMail(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("content-type", "application/json")
+	c := struct {Code	string	`json:"code" validate:"required"`}{}
 
-func (au *AuthHandler) VerifyPasswordReset(w http.ResponseWriter, r *http.Request){}
+	if err := utils.ParseJsonFromRequest(r, &c); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+	fmt.Print(c.Code)
+	if err := validate.Struct(c); err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+	
+	filter := bson.M{"email_verification.token": c.Code}
+	user, err := FetchUserByEmail(filter)
+	if err != nil {
+		utils.GetError(errors.New("Password reset code not found!"), http.StatusInternalServerError, w)
+		return
+	}
+	
+	// set email_verification null
+	// update isverified to true
+	id, _ := primitive.ObjectIDFromHex(user.ID)
+	update := bson.M{"$set": bson.M{"email_verification": nil, "isverified": true}}
+
+	if _, err := utils.GetCollection(user_collection).UpdateByID(
+		context.Background(),
+		id, update); err != nil {
+			utils.GetError(err, http.StatusInternalServerError, w)
+			return
+		}
+
+	utils.GetSuccess("Email verified, you can now login", nil, w)
+}
+
+func (au *AuthHandler) VerifyPasswordResetCode(w http.ResponseWriter, r *http.Request){}
 
 // Send password reset code to user, auth not required
 func (au *AuthHandler) RequestResetPasswordCode(w http.ResponseWriter, r *http.Request){
