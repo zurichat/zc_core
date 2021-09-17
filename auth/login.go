@@ -25,6 +25,7 @@ var (
 	validate           = validator.New()
 	UserNotFound       = errors.New("User not found, confirm and try again!")
 	InvalidCredentials = errors.New("Invalid login credentials, confirm and try again")
+	AccountConfirmError= errors.New("Your account is not verified, kindly check your email for verification code.")
 	hmacSampleSecret   = []byte("u7b8be9bd9b9ebd9b9dbdbee")
 )
 
@@ -46,6 +47,12 @@ func (au *AuthHandler) LoginIn(response http.ResponseWriter, request *http.Reque
 		utils.GetError(UserNotFound, http.StatusBadRequest, response)
 		return
 	}
+	// check if user is verified
+	if user.IsVerified != true {
+		utils.GetError(AccountConfirmError, http.StatusBadRequest, response)
+		return		
+	}
+
 	// check password
 	check := CheckPassword(creds.Password, user.Password)
 	if !check {
