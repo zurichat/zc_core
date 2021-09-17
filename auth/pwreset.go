@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -22,7 +21,7 @@ func (au *AuthHandler) VerifyMail(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
-	fmt.Print(c.Code)
+
 	if err := validate.Struct(c); err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
