@@ -17,7 +17,6 @@ func ContactUs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("content-type", "application/json")
 	fmt.Println("Parsing Form Data")
 
-	// 1. Parse multipart form data
 	err := r.ParseMultipartForm(MAX_FILE_SIZE * 6)
 	if err != nil {
 		utils.GetError(errors.New("error parsing form data"), http.StatusBadRequest, w)
@@ -31,16 +30,11 @@ func ContactUs(w http.ResponseWriter, r *http.Request) {
 		email = r.Form.Get("email")
 	}
 
-	// 2. Collect form values and files
 	subject := r.Form.Get("subject")
 	content := r.Form.Get("content")
-	// email := r.Form.Get("email")
 	attachments := r.MultipartForm.File["attachments"]
 
-	// 3. Validate form values and files
-	// 3.1. Create new validator
 	validator := NewValidator()
-	// 3.2. Check form values
 	ValidateEmail(*validator, email)
 	ValidateSubject(*validator, subject)
 	ValidateContent(*validator, content)
@@ -51,7 +45,6 @@ func ContactUs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 4. Save files to file system
 	for _, fileHeader := range attachments {
 		err := SaveFileToFS(folderName, fileHeader)
 		if err != nil {
@@ -60,7 +53,6 @@ func ContactUs(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 5. Save contact form data to DB
 	pathSlice := GeneratePaths(attachments)
 	contactFormData := GenerateContactData(email, subject, content, pathSlice)
 
@@ -108,14 +100,12 @@ func GenerateContactData(email, subject, content string, paths []string) Contact
 
 // SaveFileToFS saves each form file uploaded to the filesystem
 func SaveFileToFS(folderName string, fileHeader *multipart.FileHeader) error {
-	// Open form file
 	file, err := fileHeader.Open()
 	defer file.Close()
 	if err != nil {
 		return err
 	}
 
-	// Create destination folde
 	_, err = os.Stat(folderName)
 	if err != nil {
 		err = os.Mkdir(folderName, 0755)
@@ -124,14 +114,12 @@ func SaveFileToFS(folderName string, fileHeader *multipart.FileHeader) error {
 		}
 	}
 
-	// Create destination file
 	destinationFile, err := os.Create(folderName + "/" + fileHeader.Filename)
 	defer destinationFile.Close()
 	if err != nil {
 		return err
 	}
 
-	// Copy form file to destination
 	_, err = io.Copy(destinationFile, file)
 	if err != nil {
 		return err

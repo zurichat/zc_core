@@ -119,21 +119,25 @@ func AcceptFileType(file *multipart.FileHeader, exts ...string) bool {
 	return false
 }
 
+// Validate email
 func ValidateEmail(validator Validator, email string) {
 	validator.Check(EmailLength(email), "email", "email too long")
 	validator.Check(EmailMatches(email, EmailRX), "email", "invalid email")
 }
 
+// Validate subject
 func ValidateSubject(validator Validator, subject string) {
 	validator.Check(CharacterCount(subject, 100), "subject", "character count over 100")
 	validator.Check(Empty(subject), "subject", "field cannot be empty")
 }
 
+// Validate content
 func ValidateContent(validator Validator, content string) {
 	validator.Check(CharacterCount(content, 500), "content", "character count over 500")
 	validator.Check(Empty(content), "content", "field cannot be empty")
 }
 
+// Validate attached files
 func ValidateAttachedFiles(validator Validator, attachments []*multipart.FileHeader) {
 	if len(attachments) > 0 {
 		validator.Check(AttachmentLength(attachments), "attachments", "file count exceeded")
