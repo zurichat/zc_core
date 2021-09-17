@@ -6,7 +6,7 @@ info:
   contact:
     email: developer@zuri.chat
 servers:
-  - description: Zuri Chat Core API 
+  - description: Zuri Chat Core API
     url: "https://api.zuri.chat/"
 paths:
   /auth/login:
@@ -44,7 +44,24 @@ paths:
       summary: Authentication request to logout
       responses:
         "200":
-          $ref: "#/components/responses/LogoutSuccessful"   
+          $ref: "#/components/responses/LogoutSuccessful"
+        "401":
+          $ref: "#/components/responses/NotAuthorizedOrNoAuthToken"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /auth/logout/othersessions:
+    post:
+      tags:
+        - Authentication
+      summary: Authentication request to logout from other sessions
+      requestBody:
+        $ref: "#/components/requestBodies/logoutOtherSessions"
+      responses:
+        "200":
+          $ref: "#/components/responses/LogoutSuccessful"
+        "400":
+          $ref: "#/components/responses/InvalidCredential"
         "401":
           $ref: "#/components/responses/NotAuthorizedOrNoAuthToken"
         "500":
@@ -61,7 +78,7 @@ paths:
       responses:
         "200":
           $ref: "#/components/responses/TokenVerified"
-        "500": 
+        "500":
           $ref: "#/components/responses/InternalServerError"
 
   /auth/confirm-password:
@@ -73,7 +90,7 @@ paths:
       operationId: verifyPassword
       security:
         - cookieAuth: []
-        - bearerAuth: [] 
+        - bearerAuth: []
       requestBody:
         $ref: "#/components/requestBodies/confirm_password"
       responses:
@@ -83,7 +100,7 @@ paths:
           $ref: "#/components/responses/UnprocessableEntity"
         "400":
            $ref: "#/components/responses/BadRequest"
-        "500": 
+        "500":
           $ref: "#/components/responses/InternalServerError"
 
   /auth/request-reset-password:
@@ -124,7 +141,7 @@ components:
                 format: int32
                 example: 500
               message:
-                type: string    
+                type: string
 
     BadRequest:
       description: An incorrect client request
@@ -193,7 +210,7 @@ components:
                 example: 200
               message:
                 type: string
-                example: Password confirm successful 
+                example: Password confirm successful
 
     LoginSuccess:
       description: login successful
@@ -215,12 +232,12 @@ components:
               data:
                 type: object
                 properties:
-                  session_id: 
+                  session_id:
                     type: string
                   user:
                     type: object
                     properties:
-                      id: 
+                      id:
                         type: string
                         example: 613590fd0366b6816a0b75ee
                       first_name:
@@ -231,7 +248,7 @@ components:
                         example: Ajayi
                       display_name:
                         type: string
-                        example: samsoft 
+                        example: samsoft
                       email:
                         type: string
                         example: hng.user01@gmail.com
@@ -251,7 +268,8 @@ components:
                         example: 0001-01-01T00:00:00Z
                       token:
                         type: object
-                        example: l6TVRneU9ESTBNSHhIZDNkQlIwUlplRTVFVFhwYWFsVXlXa1JCZVU5RVVtbFplbHBvVDFSSmVVMTZUbXBPVVQwOWZFQWpod01iU0E2d1FOUkczQlcwaUZDbHVqUnVOVXFFTHk4QUdGMGhMdkgzIiwiZW1haWwiOiJqYjEyQGdtYWlsLmNvbSIsImlkIjoiNjE0MzNmNTZkMDI4NGJjNmE5MjIzM2M1Iiwib3B0aW9ucyI6ey         
+                        example: l6TVRneU9ESTBNSHhIZDNkQlIwUlplRTVFVFhwYWFsVXlXa1JCZVU5RVVtbFplbHBvVDFSSmVVMTZUbXBPVVQwOWZFQWpod01iU0E2d1FOUkczQlcwaUZDbHVqUnVOVXFFTHk4QUdGMGhMdkgzIiwiZW1haWwiOiJqYjEyQGdtYWlsLmNvbSIsImlkIjoiNjE0MzNmNTZkMDI4NGJjNmE5MjIzM2M1Iiwib3B0aW9ucyI6ey
+
     TokenVerified:
       description: Token verification successful
       content:
@@ -271,13 +289,13 @@ components:
                 type: string
               data:
                 type: object
-                properties: 
-                  is_verified: 
+                properties:
+                  is_verified:
                     type: boolean
                   user:
                     type: object
                     properties:
-                      id: 
+                      id:
                         type: string
                         example: 613590fd0366b6816a0b75ee
                       first_name:
@@ -288,7 +306,7 @@ components:
                         example: Ajayi
                       display_name:
                         type: string
-                        example: samsoft 
+                        example: samsoft
                       email:
                         type: string
                         example: hng.user01@gmail.com
@@ -306,7 +324,7 @@ components:
                       update_at:
                         type: string
                         example: 0001-01-01T00:00:00Z
-                        
+
     LogoutSuccessful:
       description: Logged out successfully
       content:
@@ -325,6 +343,23 @@ components:
               message:
                 type: string
 
+    InvalidCredential:
+      description: User entered invalid credential(s)
+      content:
+        application/json:
+          schema:
+            required:
+              - code
+              - message
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+                example: 400
+              message:
+                type: string
+
   requestBodies:
     login:
       content:
@@ -336,6 +371,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/loginReqB"
+    logoutOtherSessions:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/logoutOthers"
+
   schemas:
     loginReqB:
       type: object
@@ -355,12 +396,18 @@ components:
         password:
           type: string
           format: password
-  
+    logoutOthers:
+      type: object
+      properties:
+        password:
+          type: string
+          format: password
+
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
-    cookieAuth:         
+    cookieAuth:
       type: apiKey
       in: cookie
       name: JSESSIONID
