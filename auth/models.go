@@ -44,6 +44,7 @@ var (
 	TokenExp        = errors.New("Session expired.")
 	NotAuthorized   = errors.New("Not Authorized.")
 	ConfirmPassword = errors.New("The password confirmation does not match")
+	UserDetails     = UserKey("userDetails")
 )
 
 type Credentials struct {
@@ -90,6 +91,8 @@ type AuthHandler struct {
 	configs     *utils.Configurations
 	mailService service.MailService
 }
+
+type UserKey string
 
 // Method to compare password
 func CheckPassword(password, hash string) bool {
