@@ -83,18 +83,14 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 	}
 	// Email Service <- send confirmation mail
 	msger := uh.mailService.NewMail(
-		[]string{user.Email}, 
-		"Account Confirmation", 
-		service.MailConfirmation, 
+		[]string{user.Email}, "Account Confirmation", service.MailConfirmation, 
 		&service.MailData{ 
 			Username: user.Email, 
 			Code: comfimationToken,
 		})
 
 	if err := uh.mailService.SendMail(msger); err != nil {
-		msg := fmt.Errorf("Error occured while sending mail: %s", err.Error())
-		utils.GetError(msg, http.StatusInternalServerError, response)
-		return
+		fmt.Printf("Error occured while sending mail: %s", err.Error())
 	}	
 
 	respse := map[string]interface{}{
