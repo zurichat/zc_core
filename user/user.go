@@ -63,19 +63,14 @@ func Create(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	comfimationToken, err := utils.GenJwtToken(user.Email, "EMAIL_CONFIRMATION")
-	if err != nil {
-		utils.GetError(
-			errors.New("Error occur while generating confirmation token"),
-			http.StatusInternalServerError, response)
-		return
-	}
+	_, comfimationToken := utils.RandomGen(6, "d")
 
 	con := &UserEmailVerification{false, comfimationToken, time.Now().Add(time.Minute * time.Duration(24))}
 
 	user.CreatedAt = time.Now()
 	user.Password = hashPassword
 	user.Deactivated = false
+	user.IsVerified = false
 	user.EmailVerification = con
 	detail, _ := utils.StructToMap(user)
 
@@ -233,21 +228,18 @@ func GetUserOrganizations(response http.ResponseWriter, request *http.Request) {
 	}
 
 	// find user email in members collection.
-	result, _ := utils.GetMongoDbDocs(member_collection, bson.M{"email": userEmail, "deactivated": false})
-	if result == nil {
-		utils.GetError(
-			fmt.Errorf("user with email %s has no organization", userEmail),
-			http.StatusNotFound,
-			response,
-		)
-		return
-	}
+	result, _ := utils.GetMongoDbDocs(member_collection, bson.M{"email": userEmail, "deleted": false})
 
 	var orgs []map[string]interface{}
 	for _, value := range result {
 		basic := make(map[string]interface{})
 
-		objId, _ := primitive.ObjectIDFromHex(value["org_id"].(string))
+		orgid := value["org_id"].(string)
+
+		objId, _ := primitive.ObjectIDFromHex(orgid)
+
+		// find all members of an org
+		orgMembers, _ := utils.GetMongoDbDocs(member_collection, bson.M{"org_id": orgid})
 
 		orgDetails, err := utils.GetMongoDbDoc(organization_collection, bson.M{"_id": objId})
 		if err != nil {
@@ -260,6 +252,7 @@ func GetUserOrganizations(response http.ResponseWriter, request *http.Request) {
 		basic["name"] = orgDetails["name"]
 		basic["isOwner"] = orgDetails["creator_email"] == params["email"]
 		basic["workspace_url"] = orgDetails["workspace_url"]
+		basic["no_of_members"] = len(orgMembers)
 
 		orgs = append(orgs, basic)
 	}
