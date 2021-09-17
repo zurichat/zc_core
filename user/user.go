@@ -16,7 +16,7 @@ import (
 
 var (
 	EMAIL_NOT_VALID = errors.New("Email address is not valid")
-	HASHING_FAILED = errors.New("Failed to hashed password")
+	HASHING_FAILED  = errors.New("Failed to hashed password")
 )
 
 // Method to hash password
@@ -48,7 +48,7 @@ func Create(response http.ResponseWriter, request *http.Request) {
 	if result != nil {
 		utils.GetError(
 			fmt.Errorf("user with email %s exists", userEmail),
-			http.StatusBadRequest, 
+			http.StatusBadRequest,
 			response,
 		)
 		return
@@ -72,25 +72,6 @@ func Create(response http.ResponseWriter, request *http.Request) {
 	}
 
 	utils.GetSuccess("user created", res, response)
-}
-
-// an endpoint to search other users
-func SearchOtherUsers(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	query := params["query"]
-	filter := bson.M{
-		"$or": []bson.M{
-			{"first_name": query},
-			{"last_name": query},
-			{"email": query},
-			{"display_name": query},
-		},
-	}
-	res, err := utils.GetMongoDbDocs(UserCollectionName, filter)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-	}
-	utils.GetSuccess("successful", res, w)
 }
 
 // an endpoint to delete a user record
@@ -203,7 +184,7 @@ func GetUsers(response http.ResponseWriter, request *http.Request) {
 func GetUserOrganizations(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("content-type", "application/json")
 	member_collection, organization_collection := "members", "organizations"
-	
+
 	params := mux.Vars(request)
 
 	userEmail := strings.ToLower(params["email"])
@@ -211,27 +192,27 @@ func GetUserOrganizations(response http.ResponseWriter, request *http.Request) {
 		utils.GetError(EMAIL_NOT_VALID, http.StatusBadRequest, response)
 		return
 	}
-	
+
 	// find user email in members collection.
 	result, _ := utils.GetMongoDbDocs(member_collection, bson.M{"email": userEmail})
 	if result == nil {
 		utils.GetError(
 			fmt.Errorf("user with email %s has no organization", userEmail),
-			http.StatusNotFound, 
+			http.StatusNotFound,
 			response,
 		)
 		return
 	}
 
 	var orgs []map[string]interface{}
-	for _, value := range result{
+	for _, value := range result {
 		basic := make(map[string]interface{})
-		
+
 		objId, _ := primitive.ObjectIDFromHex(value["org_id"].(string))
 
 		orgDetails, err := utils.GetMongoDbDoc(organization_collection, bson.M{"_id": objId})
 		if err != nil {
-				utils.GetError(err, http.StatusUnprocessableEntity, response)
+			utils.GetError(err, http.StatusUnprocessableEntity, response)
 			return
 		}
 

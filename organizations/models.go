@@ -12,7 +12,7 @@ import (
 const (
 	OrganizationCollectionName     = "organizations"
 	InstalledPluginsCollectionName = "installed_plugins"
-	OrganizationSettings = "organizations_settings"
+	OrganizationSettings           = "organizations_settings"
 )
 
 type Organization struct {
@@ -29,7 +29,7 @@ type Organization struct {
 	UpdatedAt    time.Time                `json:"updated_at" bson:"updated_at"`
 }
 
-func (o *Organization) OrgPlugins() ([]map[string]interface{}) {
+func (o *Organization) OrgPlugins() []map[string]interface{} {
 	orgCollectionName := GetOrgPluginCollectionName(o.ID)
 
 	orgPlugins, _ := utils.GetMongoDbDocs(orgCollectionName, nil)
@@ -79,7 +79,8 @@ type Member struct {
 	OrgId       string                 `json:"org_id" bson:"org_id"`
 	Files       []string               `json:"files" bson:"files"`
 	ImageURL    string                 `json:"image_url" bson:"image_url"`
-	Name        string                 `json:"name" bson:"name"`
+	FirstName   string                 `json:"first_name" bson:"first_name"`
+	LastName    string                 `json:"last_name" bson:"last_name"`
 	Email       string                 `json:"email" bson:"email"`
 	DisplayName string                 `json:"display_name" bson:"display_name"`
 	Bio         string                 `json:"bio" bson:"bio"`
