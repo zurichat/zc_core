@@ -81,7 +81,12 @@ func Create(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("user created", res, response)
+	respse := map[string]interface{}{
+		"InsertedID": res.InsertedID,
+		"verification_code": comfimationToken,
+	}
+
+	utils.GetSuccess("user created", respse, response)
 }
 
 // an endpoint to delete a user record
