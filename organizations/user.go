@@ -74,11 +74,32 @@ func GetMembers(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
 		return
 	}
+	// query allows you to be able to browse people given the right query param
+	query := r.URL.Query().Get("query")
 
-	orgMembers, err := utils.GetMongoDbDocs(member_collection, bson.M{
+	var filter map[string]interface{}
+
+	filter = bson.M{
 		"org_id":  orgId,
 		"deleted": bson.M{"$ne": true},
-	})
+	}
+
+	//set filter based on query presence
+	if query != "" {
+		filter = bson.M{
+			"org_id":  orgId,
+			"deleted": bson.M{"$ne": true},
+			"$or": []bson.M{
+				{"first_name": query},
+				{"last_name": query},
+				{"email": query},
+				{"display_name": query},
+			},
+		}
+	}
+
+	orgMembers, err := utils.GetMongoDbDocs(member_collection, filter)
+
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return

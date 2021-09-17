@@ -49,6 +49,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/blog/update/{blog_id}", blog.UpdateBlog).Methods("PATCH")
 	r.HandleFunc("/blog/delete/{blog_id}", blog.DeleteBlog).Methods("DELETE")
 	r.HandleFunc("/blog/{blog_id}", blog.ReadBlog).Methods("GET")
+	r.HandleFunc("/post/search", blog.SearchBlog).Methods("GET")
 
 	// Authentication
 	r.HandleFunc("/auth/login", auth.LoginIn).Methods(http.MethodPost)
@@ -114,7 +115,6 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.UpdateUser)).Methods("PATCH")
 	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.GetUser)).Methods("GET")
 	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.DeleteUser)).Methods("DELETE")
-	r.HandleFunc("/users/search/{query}", auth.IsAuthenticated(user.SearchOtherUsers)).Methods("GET")
 	r.HandleFunc("/users", auth.IsAuthenticated(user.GetUsers)).Methods("GET")
 	r.HandleFunc("/users/{email}/organizations", auth.IsAuthenticated(user.GetUserOrganizations)).Methods("GET")
 

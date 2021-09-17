@@ -79,7 +79,8 @@ type Member struct {
 	OrgId       string                 `json:"org_id" bson:"org_id"`
 	Files       []string               `json:"files" bson:"files"`
 	ImageURL    string                 `json:"image_url" bson:"image_url"`
-	Name        string                 `json:"name" bson:"name"`
+	FirstName   string                 `json:"first_name" bson:"first_name"`
+	LastName    string                 `json:"last_name" bson:"last_name"`
 	Email       string                 `json:"email" bson:"email"`
 	UserName    string                 `bson:"user_name" json:"user_name"`
 	DisplayName string                 `json:"display_name" bson:"display_name"`
