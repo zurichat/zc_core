@@ -54,10 +54,11 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/auth/logout", auth.LogOutUser).Methods(http.MethodPost)
 	r.HandleFunc("/auth/verify-token", auth.IsAuthenticated(auth.VerifyTokenHandler)).Methods(http.MethodGet, http.MethodPost)
 	r.HandleFunc("/auth/confirm-password", auth.IsAuthenticated(auth.ConfirmUserPassword)).Methods(http.MethodPost)
-	r.HandleFunc("/auth/request-reset-password", auth.RequestResetPasswordCode)
-	r.HandleFunc("/auth/verify/mail", auth.VerifyMail).Methods(http.MethodPost)
-	// r.HandleFunc("/auth/verify/password-reset", auth.VerifyPasswordResetCode)
-	// r.HandleFunc("/auth/update-password/{token}", auth.UpdatePassword)
+	
+	r.HandleFunc("/get-password-reset-code", auth.RequestResetPasswordCode).Methods(http.MethodPost)
+	r.HandleFunc("/verify/mail", auth.VerifyMail).Methods(http.MethodPost)
+	// r.HandleFunc("/verify/reset-password", auth.VerifyPasswordResetCode)
+	// r.HandleFunc("/update-password/{token}", auth.UpdatePassword)
 
 	// Organization
 	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.Create)).Methods("POST")
