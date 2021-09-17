@@ -589,3 +589,42 @@ func mustObjectID(s string) primitive.ObjectID {
 	}
 	return id
 }
+// Activate single member in an organization
+func ReactivateMember(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	member_collection, org_collection := "members", "organizations"
+	vars := mux.Vars(r)
+	orgId, memberId := vars["id"], vars["mem_id"]
+
+	pOrgId, err := primitive.ObjectIDFromHex(orgId)
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": pOrgId})
+	if orgDoc == nil {
+		fmt.Printf("org with id %s doesn't exist!", orgId)
+		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
+		return
+	}
+
+	ActivatedMember := bson.M{"deleted": false, "deleted_at": time.Time{}}
+	res, err := utils.UpdateOneMongoDbDoc(member_collection, memberId, ActivatedMember)
+
+	if err != nil {
+		utils.GetError(fmt.Errorf("an error occured: %s", err), http.StatusInternalServerError, w)
+	}
+
+	if res.MatchedCount != 1 {
+		utils.GetError(fmt.Errorf("member with id %s not found", memberId), http.StatusNotFound, w)
+		return
+	}
+
+	if res.ModifiedCount != 1 {
+		utils.GetError(errors.New("an error occured, cannot activate user"), http.StatusInternalServerError, w)
+		return
+	}
+	utils.GetSuccess("successfully reactivated member", nil, w)
+}
