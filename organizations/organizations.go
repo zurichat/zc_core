@@ -109,8 +109,8 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	// var creatorid interface{} = creator.ID
 	// var creatorid primitive.ObjectID = creator.ID
 	// var ccreatorid string = creatorid.(primitive.ObjectID).Hex()
-	var creatorid string = creator.ID
-	fmt.Println(creatorid)
+	var ccreatorid string = creator.ID
+	fmt.Println(ccreatorid)
 
 	// extract user document
 	// var luHexid, _ = primitive.ObjectIDFromHex(loggedInUser.ID.Hex())
@@ -122,7 +122,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newOrg.CreatorID = creatorid
+	newOrg.CreatorID = ccreatorid
 	newOrg.CreatorEmail = userEmail
 	newOrg.CreatedAt = time.Now()
 
@@ -176,7 +176,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	user.Organizations = append(user.Organizations, iiid)
 
 	updateFields["Organizations"] = user.Organizations
-	_, ee := utils.UpdateOneMongoDbDoc(user_collection, creatorid, updateFields)
+	_, ee := utils.UpdateOneMongoDbDoc(user_collection, ccreatorid, updateFields)
 	if ee != nil {
 		utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, w)
 		return

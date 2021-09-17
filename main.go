@@ -86,10 +86,9 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/profile", auth.IsAuthenticated(organizations.UpdateProfile)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/presence", auth.IsAuthenticated(organizations.TogglePresence)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings", auth.IsAuthenticated(organizations.UpdateMemberSettings)).Methods("PATCH")
-
-	//Report
-	r.HandleFunc("/report", report.AddReport).Methods("POST")
-	r.HandleFunc("/report/{id}", report.GetReport).Methods("GET")
+	r.HandleFunc("/organizations/{id}/reports", report.AddReport).Methods("POST")
+	r.HandleFunc("/organizations/{id}/reports", report.GetReports).Methods("GET")
+	r.HandleFunc("/organizations/{id}/reports/{report_id}", report.GetReport).Methods("GET")
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)

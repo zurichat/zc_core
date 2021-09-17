@@ -13,32 +13,7 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
-// Get a report
-func GetReport(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	reportId := mux.Vars(r)["id"]
-	objId, err := primitive.ObjectIDFromHex(reportId)
-	
-	if err != nil {
-		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
-		return
-	}
-
-	doc, _ := utils.GetMongoDbDoc(ReportCollectionName, bson.M{"_id": objId})
-
-	if doc == nil {
-		utils.GetError(fmt.Errorf("report %s not found", reportId), http.StatusNotFound, w)
-		return
-	}
-
-	var report Report
-	utils.ConvertStructure(doc, &report)
-
-	utils.GetSuccess("report  retrieved successfully", report, w)
-}
-
-
+// Add a report
 func AddReport(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -50,6 +25,17 @@ func AddReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	orgId := mux.Vars(r)["id"]
+
+	org_collection := "organizations"
+	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": orgId})
+	if orgDoc == nil {
+		fmt.Printf("organization with id %s doesn't exist!", orgId)
+		utils.GetError(errors.New("organization with id "+ orgId + " doesn't exist!"), http.StatusBadRequest, w)
+		return
+	}
+
+	report.Organization = orgId
 	report.Date = time.Now()
 
 	var reportMap map[string]interface{}
@@ -61,6 +47,8 @@ func AddReport(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
+
+	
 
 	if report.ReporterName == "" {
 		utils.GetError(errors.New("reporter's name required"), http.StatusBadRequest, w)
@@ -88,4 +76,62 @@ func AddReport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.GetSuccess("report created", save, w)
+}
+
+// Get a report
+func GetReport(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	orgId := mux.Vars(r)["id"]
+	objId, err := primitive.ObjectIDFromHex(orgId)
+	
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	reportId := mux.Vars(r)["report_id"]
+	reportObjId, err := primitive.ObjectIDFromHex(reportId)
+	
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	doc, _ := utils.GetMongoDbDoc(ReportCollectionName, bson.M{"organization_id":objId, "_id": reportObjId})
+
+	if doc == nil {
+		utils.GetError(fmt.Errorf("report %s not found", orgId), http.StatusNotFound, w)
+		return
+	}
+
+	var report Report
+	utils.ConvertStructure(doc, &report)
+
+	utils.GetSuccess("report  retrieved successfully", report, w)
+}
+
+// Get reports
+func GetReports(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	orgId := mux.Vars(r)["id"]
+	objId, err := primitive.ObjectIDFromHex(orgId)
+	
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	doc, _ := utils.GetMongoDbDocs(ReportCollectionName, bson.M{"organization_id": objId})
+
+	if doc == nil {
+		utils.GetError(fmt.Errorf("report %s not found", orgId), http.StatusNotFound, w)
+		return
+	}
+
+	var report Report
+	utils.ConvertStructure(doc, &report)
+
+	utils.GetSuccess("report  retrieved successfully", report, w)
 }
