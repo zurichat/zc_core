@@ -74,11 +74,32 @@ func GetMembers(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
 		return
 	}
+	// query allows you to be able to browse people given the right query param
+	query := r.URL.Query().Get("query")
 
-	orgMembers, err := utils.GetMongoDbDocs(member_collection, bson.M{
+	var filter map[string]interface{}
+
+	filter = bson.M{
 		"org_id":  orgId,
 		"deleted": bson.M{"$ne": true},
-	})
+	}
+
+	//set filter based on query presence
+	if query != "" {
+		filter = bson.M{
+			"org_id":  orgId,
+			"deleted": bson.M{"$ne": true},
+			"$or": []bson.M{
+				{"first_name": query},
+				{"last_name": query},
+				{"email": query},
+				{"display_name": query},
+			},
+		}
+	}
+
+	orgMembers, err := utils.GetMongoDbDocs(member_collection, filter)
+
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
@@ -106,7 +127,10 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validating the user email
-	newUserEmail, ok := requestData["user_email"]
+	newUserEmailm, ok := requestData["user_email"]
+	newUserEmail := strings.ToLower(newUserEmailm)
+	newUserName := strings.Split(newUserEmail, "@")[0]
+
 	if !ok {
 		utils.GetError(fmt.Errorf("user_email not provided"), http.StatusBadRequest, w)
 		return
@@ -156,6 +180,7 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 	newMember := Member{
 		ID:       primitive.NewObjectID(),
 		Email:    user.Email,
+		UserName: newUserName,
 		OrgId:    orgId.Hex(),
 		Role:     "member",
 		Presence: "true",
@@ -299,7 +324,7 @@ func UpdateMemberStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 // Delete single member from an organization
-func DeleteMember(w http.ResponseWriter, r *http.Request) {
+func DeactivateMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	member_collection, org_collection := "members", "organizations"
@@ -335,7 +360,7 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(errors.New("an error occured, cannot delete user"), http.StatusInternalServerError, w)
 		return
 	}
-	utils.GetSuccess("successfully deleted member", nil, w)
+	utils.GetSuccess("successfully deactivated member", nil, w)
 }
 
 // Update a member profile
@@ -408,15 +433,18 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 // Toggle a member's presence
 func TogglePresence(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	
 	org_collection, member_collection := "organizations", "members"
 	id := mux.Vars(r)["id"]
 	memId := mux.Vars(r)["mem_id"]
+	
 	// Check if organization id is valid
 	orgId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
 		return
 	}
+	
 	// Check if organization id exists in the database
 	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": orgId})
 	if orgDoc == nil {
@@ -424,34 +452,40 @@ func TogglePresence(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
 		return
 	}
+	
 	// Check if member id is valid
 	pMemId, err := primitive.ObjectIDFromHex(memId)
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
 		return
 	}
+	
 	memberDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": pMemId, "org_id": id})
 	if memberDoc == nil {
 		fmt.Printf("member with id %s doesn't exist!", memId)
 		utils.GetError(errors.New("member with id doesn't exist"), http.StatusBadRequest, w)
 		return
 	}
+	
 	org_filter := make(map[string]interface{})
 	if memberDoc["presence"] == "true" {
 		org_filter["presence"] = "false"
 	} else {
 		org_filter["presence"] = "true"
 	}
+	
 	// update the presence field of the member
 	update, err := utils.UpdateOneMongoDbDoc(member_collection, memId, org_filter)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
+	
 	if update.ModifiedCount == 0 {
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
 	}
+	
 	utils.GetSuccess("Member presence toggled", nil, w)
 }
 
