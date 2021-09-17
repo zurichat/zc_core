@@ -131,7 +131,7 @@ func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 		var erro error
 		if status == true {
 			session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName)
-			fmt.Println(session)
+			// fmt.Println(session)
 			if err != nil && erro != nil {
 				utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
 				return
@@ -171,7 +171,7 @@ func IsAuthorized(user_id string, orgId string, role string, w http.ResponseWrit
 	_, user_collection, member_collection := "organizations", "users", "members"
 	// org_collection
 
-	fmt.Println(user_id)
+	// fmt.Println(user_id)
 
 	// Getting user's document from db
 	var luHexid, _ = primitive.ObjectIDFromHex(user_id)
@@ -314,10 +314,6 @@ func GetSessionDataFromToken(r *http.Request, hmacSampleSecret []byte) (status b
 	} else {
 		return false, fmt.Errorf("failed"), ResToken{}
 	}
-	fmt.Println(retTokenD.SessionName)
-
-	return true, nil, retTokenD
-
 }
 
 // Initiate
