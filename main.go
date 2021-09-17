@@ -88,9 +88,6 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/data/collections/{plugin_id}", data.ListCollections).Methods("GET")
 	r.HandleFunc("/data/collections/{plugin_id}/{org_id}", data.ListCollections).Methods("GET")
 
-	// file upload
-	r.HandleFunc("/upload", organizations.UploadFile).Methods("PATCH")
-
 	// Plugins
 	r.HandleFunc("/plugins/register", plugin.Register).Methods("POST")
 
@@ -121,8 +118,13 @@ func Router(Server *socketio.Server) *mux.Router {
 		utils.GetSuccess("Server is live", nil, w)
 	}).Methods("GET", "POST")
 
+	// file upload
+	r.HandleFunc("/upload/file/{plugin_id}", auth.IsAuthenticated(service.UploadOneFile)).Methods("POST")
+	r.HandleFunc("/upload/files/{plugin_id}", auth.IsAuthenticated(service.UploadMultipleFiles)).Methods("POST")
+	r.PathPrefix("/files/").Handler(http.StripPrefix("/files/", http.FileServer(http.Dir("./files/"))))
+
 	//api documentation
-	r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.FileServer(http.Dir("./docs/"))))
+	r.PathPrefix("/docs/").Handler(http.StripPrefix("/docs/", http.FileServer(http.Dir("./docs/"))))
 
 	// Home
 	http.Handle("/", r)
