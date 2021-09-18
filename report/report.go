@@ -59,11 +59,6 @@ func AddReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if report.OffenderName == "" {
-		utils.GetError(errors.New("offender name required"), http.StatusBadRequest, w)
-		return
-	}
-
 	// check that offender is in the organization
 	offenderDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "email": report.OffenderEmail})
 	if offenderDoc == nil {
