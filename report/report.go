@@ -35,7 +35,6 @@ func AddReport(w http.ResponseWriter, r *http.Request) {
 	org_collection, member_collection := "organizations", "members"
 	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": objId})
 	if orgDoc == nil {
-		fmt.Printf("organization with id %s doesn't exist!", orgId)
 		utils.GetError(errors.New("organization with id "+ orgId + " doesn't exist!"), http.StatusBadRequest, w)
 		return
 	}
@@ -88,7 +87,6 @@ func AddReport(w http.ResponseWriter, r *http.Request) {
 
 	save, err := utils.CreateMongoDbDoc(ReportCollectionName, reportMap)
 	if err != nil {
-		fmt.Println(err)
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
