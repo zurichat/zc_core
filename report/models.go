@@ -11,8 +11,8 @@ const(
 type Report struct {
 	ID                string		`bson:"_id,omitempty" json:"_id,omitempty"`
 	ReporterEmail     string        `bson:"reporter_email" validate:"required,email" json:"reporter_email"`
-	OffenderName     string         `bson:"reportee_email" validate:"required,,min=2,max=100" json:"offender_email"`
-	OffenderEmail     string        `bson:"reportee_email" validate:"required,email" json:"offender_email"`
+	OffenderName     string         `bson:"offender_name" validate:"required,,min=2,max=100" json:"offender_name"`
+	OffenderEmail     string        `bson:"offender_email" validate:"required,email" json:"offender_email"`
 	Organization      string        `bson:"organization_id" validate:"required" json:"organization_id"`
 	Date              time.Time     `bson:"date" json:"date" validate:"required"`
 	Anonymous         bool          `bson:"anonymous" default:"false" json:"anonymous"`
