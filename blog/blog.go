@@ -89,10 +89,10 @@ func CreatePost(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	insertedpostID := res.InsertedID.(primitive.ObjectID).Hex()
+	insertedPostID := res.InsertedID.(primitive.ObjectID).Hex()
 
 
-	blogPostLikes := BlogLikes{ID: insertedpostID, UsersList: []string{}}
+	blogPostLikes := BlogLikes{ID: insertedPostID, UsersList: []string{}}
 	blogPostLikesMap, _ := utils.StructToMap(blogPostLikes)
 	likeDocResponse, err := utils.CreateMongoDbDoc(BlogLikesCollectionName, blogPostLikesMap)
 
@@ -101,7 +101,7 @@ func CreatePost(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	blogPostComments := BlogsComment{ID: insertedpostID, Comments: []BlogComment{}}
+	blogPostComments := BlogsComment{ID: insertedPostID, Comments: []BlogComment{}}
 	blogPostCommentsMap, _ := utils.StructToMap(blogPostComments)
 	commentDocResponse, err := utils.CreateMongoDbDoc(BlogCommentsCollectionName, blogPostCommentsMap)
 	if err != nil {
