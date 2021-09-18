@@ -429,7 +429,3 @@ func SearchBlog(w http.ResponseWriter, r *http.Request) {
 	}
 	utils.GetSuccess("successful", docs, w)
 }
-
-func GetCommentCount(w http.ResponseWriter, r *http.Request) int {
-	return 1
-}
