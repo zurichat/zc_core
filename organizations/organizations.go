@@ -155,16 +155,10 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		Settings: setting,
 	}
 
-	// conv to struct
-	memStruc, err := utils.StructToMap(newMember)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
-
 	// add new member to member collection
-	_, e := utils.CreateMongoDbDoc(member_collection, memStruc)
-	if e != nil {
+	coll := utils.GetCollection(member_collection)
+	_, err = coll.InsertOne(r.Context(), newMember)
+	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
