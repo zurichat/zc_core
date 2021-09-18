@@ -1,6 +1,7 @@
 package blog
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"zuri.chat/zccore/utils"
 )
 
@@ -25,6 +27,7 @@ func GetAllBlogPosts(response http.ResponseWriter, request *http.Request) {
 
 	utils.GetSuccess("success", blogs, response)
 }
+
 
 func GetBlogComments(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
@@ -56,6 +59,7 @@ func CreateBlog(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+
 	blogTitle := strings.ToTitle(blogPost.Title)
 
 	// confirm if blog title has already been taken
@@ -86,6 +90,7 @@ func CreateBlog(response http.ResponseWriter, request *http.Request) {
 	}
 
 	insertedBlogID := res.InsertedID.(primitive.ObjectID).Hex()
+
 
 	blogPostLikes := BlogLikes{ID: insertedBlogID, UsersList: []string{}}
 	blogPostLikesMap, _ := utils.StructToMap(blogPostLikes)
@@ -399,4 +404,32 @@ func calculateReadingTime(content string) int {
 	wordLength := len(words)
 	readingTime := int(wordLength / 200)
 	return readingTime
+}
+
+// SearchBlog returns all posts and aggregates the ones which contain the posted search query in either title or content field
+func SearchBlog(w http.ResponseWriter, r *http.Request) {
+	query := r.FormValue("query")
+
+	blogs := utils.GetCollection("blogs")
+
+	mod := mongo.IndexModel{
+		Keys: bson.M{"$**": "text"},
+	}
+
+	_, err := blogs.Indexes().CreateOne(context.Background(), mod)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	docs, err := utils.GetMongoDbDocs("blogs", bson.M{"$text": bson.M{"$search": query}})
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+	utils.GetSuccess("successful", docs, w)
+}
+
+func GetCommentCount(w http.ResponseWriter, r *http.Request) int {
+	return 1
 }

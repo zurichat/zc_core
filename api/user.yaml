@@ -39,7 +39,7 @@ paths:
               $ref: "#/components/schemas/User"
 
       responses:
-        "201":
+        "200":
           description: Returns ID of created user
           content:
             application/json:
@@ -82,7 +82,8 @@ paths:
       description: Updates existing user fields - first_name, last_name, phone
       operationId: getUserID
       security:
-        - BearerAuth: []
+        - cookieAuth: []
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/user_id"
 
@@ -120,7 +121,8 @@ paths:
     get:
       summary: Retrieves the information about a user
       security:
-        - BearerAuth: []
+        - cookieAuth: []
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/user_id"
 
@@ -152,7 +154,8 @@ paths:
     delete:
       summary: Deactivates a user's account
       security:
-        - BearerAuth: []
+        - bearerAuth: []
+        - cookieAuth: []
       parameters:
         - $ref: "#/components/parameters/user_id"
 
@@ -186,7 +189,8 @@ paths:
       description: retrive all organizations a user belongs to
       operationId: getUserOrgs
       security:
-        - BearerAuth: []
+        - cookieAuth: []
+        - bearerAuth: []
       parameters:
         - in: path
           name: email
@@ -220,33 +224,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
-
-  /users/search/{query}:
-    get:
-      summary: Retrieves all users that match the given query parameter
-      description: Retrieves all created users saved to the DB
-      security:
-        - BearerAuth: [ ]
-      tags:
-        - Users
-      parameters:
-        - in: path
-          name: query
-          required: true
-          schema:
-            oneOf:
-              - $ref: '#/components/parameters/first_name'
-              - $ref: '#/components/parameters/last_name'
-              - $ref: '#/components/parameters/email'
-      responses:
-        '200':
-          description: User found or empty result if not found
-          content:
-            application/json:
-              schema:
-                oneOf:
-                  - $ref: '#/components/schemas/UsersResponse'
-
 components:
   parameters:
     user_id:
@@ -262,29 +239,7 @@ components:
       required: true
       schema:
         type: integer
-    first_name:
-      in: path
-      name: first_name
-      required: true
-      schema:
-        type: string
-        example: Jane
 
-    last_name:
-      in: path
-      name: last_name
-      required: true
-      schema:
-        type: string
-        example: Doe
-
-    email:
-      in: path
-      name: email
-      required: true
-      schema:
-        type: string
-        example: janedoe@email.com
   schemas:
     User:
       type: object
@@ -424,7 +379,7 @@ components:
           example: 200
         message:
           type: string
-          example: user created
+          example: user organizations retrieved successfully
         data:
           type: object
           properties:
@@ -480,6 +435,10 @@ components:
           example: email address is not valid
 
   securitySchemes:
-    BearerAuth:
+    bearerAuth:
       type: http
       scheme: bearer
+    cookieAuth:         
+      type: apiKey
+      in: cookie
+      name: JSESSIONID

@@ -37,13 +37,14 @@ type RoleMember struct {
 	JoinedAt    time.Time          `json:"joined_at" bson:"joined_at"`
 }
 
-const SESSION_MAX_AGE int = 60 * 60 * 12
+const SESSION_MAX_AGE int = 31536000 * 200
 
 var (
-	NoAuthToken   = errors.New("No Authorization or session expired.")
-	TokenExp      = errors.New("Session expired.")
-	NotAuthorized = errors.New("Not Authorized.")
+	NoAuthToken     = errors.New("No Authorization or session expired.")
+	TokenExp        = errors.New("Session expired.")
+	NotAuthorized   = errors.New("Not Authorized.")
 	ConfirmPassword = errors.New("The password confirmation does not match")
+	UserDetails     = UserKey("userDetails")
 )
 
 type Credentials struct {
@@ -87,9 +88,11 @@ type VerifiedTokenResponse struct {
 }
 
 type AuthHandler struct {
-	configs 		*utils.Configurations
-	mailService		service.MailService
+	configs     *utils.Configurations
+	mailService service.MailService
 }
+
+type UserKey string
 
 // Method to compare password
 func CheckPassword(password, hash string) bool {
@@ -128,7 +131,7 @@ func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 		var erro error
 		if status == true {
 			session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName)
-			fmt.Println(session)
+			// fmt.Println(session)
 			if err != nil && erro != nil {
 				utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
 				return
@@ -157,7 +160,6 @@ func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-
 // Checks if a user is authorized to access a particular function, and either returns a 403 error or continues the process
 // First Option is user id
 // second is the Organisation's Id
@@ -169,7 +171,7 @@ func IsAuthorized(user_id string, orgId string, role string, w http.ResponseWrit
 	_, user_collection, member_collection := "organizations", "users", "members"
 	// org_collection
 
-	fmt.Println(user_id)
+	// fmt.Println(user_id)
 
 	// Getting user's document from db
 	var luHexid, _ = primitive.ObjectIDFromHex(user_id)
@@ -256,9 +258,9 @@ func (au *AuthHandler) AuthTest(w http.ResponseWriter, r *http.Request) {
 func (au *AuthHandler) ConfirmUserPassword(w http.ResponseWriter, r *http.Request) {
 	loggedInUser := r.Context().Value("user").(*AuthUser)
 
-	creds := struct{
-		Password			string	`json:"password"`
-		ConfirmPassword		string	`json:"confirm_password"`
+	creds := struct {
+		Password        string `json:"password"`
+		ConfirmPassword string `json:"confirm_password"`
 	}{}
 
 	if err := utils.ParseJsonFromRequest(r, &creds); err != nil {
@@ -282,7 +284,7 @@ func (au *AuthHandler) ConfirmUserPassword(w http.ResponseWriter, r *http.Reques
 		utils.GetError(errors.New("Invalid credentials, confirm and try again"), http.StatusBadRequest, w)
 		return
 	}
-	
+
 	utils.GetSuccess("Password confirm successful", nil, w)
 }
 
@@ -312,13 +314,9 @@ func GetSessionDataFromToken(r *http.Request, hmacSampleSecret []byte) (status b
 	} else {
 		return false, fmt.Errorf("failed"), ResToken{}
 	}
-	fmt.Println(retTokenD.SessionName)
-
-	return true, nil, retTokenD
-
 }
 
 // Initiate
 func NewAuthHandler(c *utils.Configurations, mail service.MailService) *AuthHandler {
-	return &AuthHandler{ configs: c, mailService: mail }
+	return &AuthHandler{configs: c, mailService: mail}
 }
