@@ -178,7 +178,7 @@ components:
                 type: string
 
     PasswordConfirmSuccess:
-      description: Unauthorized Error
+      description: Password confirm successful
       content:
         application/json:
           schema:
