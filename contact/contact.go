@@ -108,7 +108,7 @@ func SaveFileToFS(folderName string, fileHeader *multipart.FileHeader) error {
 
 	_, err = os.Stat(folderName)
 	if err != nil {
-		err = os.Mkdir(folderName, 0755)
+		err = os.Mkdir(folderName, os.ModePerm)
 		if err != nil {
 			return err
 		}

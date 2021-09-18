@@ -1,12 +1,14 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"os"
+	uuser "os/user"
 	"path/filepath"
 	"strings"
 	"time"
@@ -33,6 +35,9 @@ type MultTempResponse struct {
 type MultipleTempResponse struct {
 	OriginalName string `json:"original_name"`
 	FileUrl      string `json:"file_url"`
+}
+type DeleteFileRequest struct {
+	FileUrl string `json:"file_url" validate:"required"`
 }
 
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
@@ -112,20 +117,42 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 			// folderName = ""
 		}
 		fileExtension := filepath.Ext(fileHeader.Filename)
-
+		cwd, _ := os.Getwd()
 		exeDir, newF := "./files/"+folderName, ""
+		mexeDir := filepath.Join(cwd,exeDir)
 		filenamePrefix := filepath.Join(exeDir, newF, buildFileName())
 		filename, errr := pickFileName(filenamePrefix, fileExtension)
+		wfilename := filepath.Join(cwd,filename)
+
+
+
 		if errr != nil {
 			return nil, errr
 		}
 
-		err0 := os.MkdirAll(exeDir, os.ModePerm)
-		if err != nil {
-			return nil, err0
+		// err0 := os.MkdirAll(mexeDir, os.ModePerm)
+		// if err != nil {
+		// 	return nil, err0
+		// }
+		_, err2 := os.Stat(mexeDir)
+ 
+		if os.IsNotExist(err2) {
+			err1 := os.Mkdir(mexeDir, 0755)
+			if err != nil {
+				return nil, err1
+			}
+			err0 := os.MkdirAll(mexeDir, 0755)
+			if err != nil {
+				return nil, err0
+			}
+	
 		}
 
-		f, erri := os.Create(filename)
+		// f, erri := os.Create(wfilename)
+		// if erri != nil {
+		// 	return nil, erri
+		// }
+		f, erri := os.OpenFile(wfilename, os.O_RDONLY|os.O_CREATE, 0644)
 		if erri != nil {
 			return nil, erri
 		}
@@ -150,13 +177,28 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
-// Plugin file upload route functions
+// Delete file service function
+
+func DeleteFileFromServer(filePath string) error {
+	e := os.Remove(filePath)
+	if e != nil {
+		return e
+	}
+	return nil
+}
+
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// Plugin file route functions
 
 func UploadOneFile(w http.ResponseWriter, r *http.Request) {
 	plugin_id := mux.Vars(r)["plugin_id"]
 	_, err := plugin.FindPluginByID(r.Context(), plugin_id)
 	if err != nil {
-		utils.GetError(fmt.Errorf("Plugin does not exist"), http.StatusNotFound, w)
+		utils.GetError(fmt.Errorf("Acess Denied, Plugin does not exist"), http.StatusForbidden, w)
 		return
 	}
 	url, err := SingleFileUpload(plugin_id, r)
@@ -176,7 +218,7 @@ func UploadMultipleFiles(w http.ResponseWriter, r *http.Request) {
 	plugin_id := mux.Vars(r)["plugin_id"]
 	_, err := plugin.FindPluginByID(r.Context(), plugin_id)
 	if err != nil {
-		utils.GetError(fmt.Errorf("Plugin does not exist"), http.StatusNotFound, w)
+		utils.GetError(fmt.Errorf("Acess Denied, Plugin does not exist"), http.StatusForbidden, w)
 		return
 	}
 	list, err := MultipleFileUpload(plugin_id, r)
@@ -192,12 +234,44 @@ func UploadMultipleFiles(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func DeleteFile(w http.ResponseWriter, r *http.Request) {
+	var delFile DeleteFileRequest
+	plugin_id := mux.Vars(r)["plugin_id"]
+	_, ee := plugin.FindPluginByID(r.Context(), plugin_id)
+	if ee != nil {
+		utils.GetError(fmt.Errorf("Acess Denied, Plugin does not exist"), http.StatusForbidden, w)
+		return
+	}
+	err := json.NewDecoder(r.Body).Decode(&delFile)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if len(strings.Split(delFile.FileUrl, plugin_id)) == 1 {
+		utils.GetError(fmt.Errorf("Delete Not Allowed for plugin of Id: "+plugin_id), http.StatusForbidden, w)
+		return
+	}
+	filePath := "." + strings.Split(delFile.FileUrl, r.Host)[1]
+	cwd, _ := os.Getwd()
+	filePath = filepath.Join(cwd,filePath)
+	er := DeleteFileFromServer(filePath)
+	if er != nil {
+		utils.GetError(er, http.StatusBadRequest, w)
+		return
+	}
+	utils.GetSuccess("Deleted Successfully", "", w)
+}
+
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 
 // Functions below here are some inpackage functions used in the functions above
 
 func saveFile(folderName string, file multipart.File, handle *multipart.FileHeader, r *http.Request) (string, error) {
+	cwd, _ := os.Getwd()
+	usdr,_ := uuser.Current()
+	fmt.Println(usdr.HomeDir)
+	fmt.Println(cwd)
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
 		return "", err
@@ -211,20 +285,33 @@ func saveFile(folderName string, file multipart.File, handle *multipart.FileHead
 	fileExtension := filepath.Ext(handle.Filename)
 
 	exeDir, newF := "./files/"+folderName, ""
+	mexeDir := filepath.Join(cwd,exeDir)
 	filenamePrefix := filepath.Join(exeDir, newF, buildFileName())
 	filename, errr := pickFileName(filenamePrefix, fileExtension)
+	wfilename := filepath.Join(cwd,filename)
 	if errr != nil {
 		return "", errr
 	}
 
-	// Create the uploads folder if it doesn't
-	// already exist
-	err0 := os.MkdirAll(exeDir, os.ModePerm)
-	if err != nil {
-		return "", err0
+	_, err2 := os.Stat(mexeDir)
+ 
+	if os.IsNotExist(err2) {
+		err1 := os.Mkdir(mexeDir, 0755)
+		if err != nil {
+			return "", err1
+		}
+		err0 := os.MkdirAll(mexeDir, 0755)
+		if err != nil {
+			return "", err0
+		}
+ 
+	}
+	_, erri := os.OpenFile(wfilename, os.O_RDONLY|os.O_CREATE, 0644)
+		if erri != nil {
+			return "", erri
 	}
 
-	err = ioutil.WriteFile(filename, data, 0666)
+	err = ioutil.WriteFile(wfilename, data, 0666)
 	if err != nil {
 		return "", err
 	}
