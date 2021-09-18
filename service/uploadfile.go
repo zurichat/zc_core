@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	uuser "os/user"
 	"path/filepath"
 	"strings"
 	"time"
@@ -129,12 +130,29 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 			return nil, errr
 		}
 
-		err0 := os.MkdirAll(mexeDir, os.ModePerm)
-		if err != nil {
-			return nil, err0
+		// err0 := os.MkdirAll(mexeDir, os.ModePerm)
+		// if err != nil {
+		// 	return nil, err0
+		// }
+		_, err2 := os.Stat(mexeDir)
+ 
+		if os.IsNotExist(err2) {
+			err1 := os.Mkdir(mexeDir, 0755)
+			if err != nil {
+				return nil, err1
+			}
+			err0 := os.MkdirAll(mexeDir, 0755)
+			if err != nil {
+				return nil, err0
+			}
+	
 		}
 
-		f, erri := os.Create(wfilename)
+		// f, erri := os.Create(wfilename)
+		// if erri != nil {
+		// 	return nil, erri
+		// }
+		f, erri := os.OpenFile(wfilename, os.O_RDONLY|os.O_CREATE, 0644)
 		if erri != nil {
 			return nil, erri
 		}
@@ -251,6 +269,8 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 
 func saveFile(folderName string, file multipart.File, handle *multipart.FileHeader, r *http.Request) (string, error) {
 	cwd, _ := os.Getwd()
+	usdr,_ := uuser.Current()
+	fmt.Println(usdr.HomeDir)
 	fmt.Println(cwd)
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
@@ -273,15 +293,22 @@ func saveFile(folderName string, file multipart.File, handle *multipart.FileHead
 		return "", errr
 	}
 
-	// Create the uploads folder if it doesn't
-	// already exist
-	// err0 := os.MkdirAll(exeDir, os.ModePerm)
-	// if err != nil {
-	// 	return "", err0
-	// }
-	err0 := os.MkdirAll(mexeDir, os.ModePerm)
-	if err != nil {
-		return "", err0
+	_, err2 := os.Stat(mexeDir)
+ 
+	if os.IsNotExist(err2) {
+		err1 := os.Mkdir(mexeDir, 0755)
+		if err != nil {
+			return "", err1
+		}
+		err0 := os.MkdirAll(mexeDir, 0755)
+		if err != nil {
+			return "", err0
+		}
+ 
+	}
+	_, erri := os.OpenFile(wfilename, os.O_RDONLY|os.O_CREATE, 0644)
+		if erri != nil {
+			return "", erri
 	}
 
 	err = ioutil.WriteFile(wfilename, data, 0666)
