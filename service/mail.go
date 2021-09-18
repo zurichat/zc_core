@@ -60,7 +60,7 @@ func (ms *ZcMailService) SetupSmtp(mailReq *Mail) (string, error) {
 	} else if mailReq.mtype == PasswordReset {
 		templateFileName = ms.configs.PasswordResetTemplate
 	}
-	fmt.Print(mailReq)
+	
 	t, err := template.ParseFiles(templateFileName)
 	if err != nil {return "", err }
 
