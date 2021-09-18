@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -33,6 +34,9 @@ type MultTempResponse struct {
 type MultipleTempResponse struct {
 	OriginalName string `json:"original_name"`
 	FileUrl      string `json:"file_url"`
+}
+type DeleteFileRequest struct {
+	FileUrl string `json:"file_url" validate:"required"`
 }
 
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
@@ -150,13 +154,28 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
-// Plugin file upload route functions
+// Delete file service function
+
+func DeleteFileFromServer(filePath string) error {
+	e := os.Remove(filePath)
+	if e != nil {
+		return e
+	}
+	return nil
+}
+
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// Plugin file route functions
 
 func UploadOneFile(w http.ResponseWriter, r *http.Request) {
 	plugin_id := mux.Vars(r)["plugin_id"]
 	_, err := plugin.FindPluginByID(r.Context(), plugin_id)
 	if err != nil {
-		utils.GetError(fmt.Errorf("Plugin does not exist"), http.StatusNotFound, w)
+		utils.GetError(fmt.Errorf("Acess Denied, Plugin does not exist"), http.StatusForbidden, w)
 		return
 	}
 	url, err := SingleFileUpload(plugin_id, r)
@@ -176,7 +195,7 @@ func UploadMultipleFiles(w http.ResponseWriter, r *http.Request) {
 	plugin_id := mux.Vars(r)["plugin_id"]
 	_, err := plugin.FindPluginByID(r.Context(), plugin_id)
 	if err != nil {
-		utils.GetError(fmt.Errorf("Plugin does not exist"), http.StatusNotFound, w)
+		utils.GetError(fmt.Errorf("Acess Denied, Plugin does not exist"), http.StatusForbidden, w)
 		return
 	}
 	list, err := MultipleFileUpload(plugin_id, r)
@@ -190,6 +209,32 @@ func UploadMultipleFiles(w http.ResponseWriter, r *http.Request) {
 	}
 	utils.GetSuccess("Files Uploaded Successfully", res, w)
 
+}
+
+func DeleteFile(w http.ResponseWriter, r *http.Request) {
+	var delFile DeleteFileRequest
+	plugin_id := mux.Vars(r)["plugin_id"]
+	_, ee := plugin.FindPluginByID(r.Context(), plugin_id)
+	if ee != nil {
+		utils.GetError(fmt.Errorf("Acess Denied, Plugin does not exist"), http.StatusForbidden, w)
+		return
+	}
+	err := json.NewDecoder(r.Body).Decode(&delFile)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if len(strings.Split(delFile.FileUrl, plugin_id)) == 1 {
+		utils.GetError(fmt.Errorf("Delete Not Allowed for plugin of Id: "+plugin_id), http.StatusForbidden, w)
+		return
+	}
+	filePath := "." + strings.Split(delFile.FileUrl, r.Host)[1]
+	er := DeleteFileFromServer(filePath)
+	if er != nil {
+		utils.GetError(er, http.StatusBadRequest, w)
+		return
+	}
+	utils.GetSuccess("Deleted Successfully", "", w)
 }
 
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //

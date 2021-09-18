@@ -22,7 +22,7 @@ func (au *AuthHandler) VerifyMail(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
-	fmt.Print(c.Code)
+
 	if err := validate.Struct(c); err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
@@ -93,16 +93,16 @@ func (au *AuthHandler) RequestResetPasswordCode(w http.ResponseWriter, r *http.R
 		return		
 	}
 
-	data := &service.MailData{ 
-		Username: user.Email, 
-		Code: userPasswordReset["token"].(string),
-	}
-
-	msger := au.mailService.NewMail([]string{user.Email}, "Reset Password Code", service.PasswordReset, data)
+	msger := au.mailService.NewMail(
+		[]string{user.Email}, 
+		"Reset Password Code", service.PasswordReset, 
+		&service.MailData{ 
+			Username: user.Email, 
+			Code: userPasswordReset["token"].(string),
+		})
 
 	if err := au.mailService.SendMail(msger); err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
+		fmt.Printf("Error occured while sending mail: %s", err.Error())
 	}
 
 	utils.GetSuccess("Password reset code sent", nil, w)
