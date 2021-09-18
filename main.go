@@ -45,15 +45,15 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
 
 	// Blog
-	r.HandleFunc("/blog", blog.GetAllBlogPosts).Methods("GET")
-	r.HandleFunc("/blog/create", blog.CreateBlog).Methods("POST")
-	r.HandleFunc("/blog/update/{blog_id}", blog.UpdateBlog).Methods("PATCH")
-	r.HandleFunc("/blog/delete/{blog_id}", blog.DeleteBlog).Methods("DELETE")
-	r.HandleFunc("/blog/{blog_id}", blog.ReadBlog).Methods("GET")
-	r.HandleFunc("/blog/{blog_id}/like/{user_id}", blog.LikeBlog).Methods("PATCH")
-	r.HandleFunc("/blog/{blog_id}/comments", blog.GetBlogComments).Methods("GET")
-	r.HandleFunc("/blog/{blog_id}/comments", blog.CommentBlog).Methods("POST")
-	r.HandleFunc("/post/search", blog.SearchBlog).Methods("GET")
+	r.HandleFunc("/posts", blog.GetPosts).Methods("GET")
+	r.HandleFunc("/posts", blog.CreatePost).Methods("POST")
+	r.HandleFunc("/posts/{post_id}", blog.UpdatePost).Methods("PUT")
+	r.HandleFunc("/posts/{post_id}", blog.DeletePost).Methods("DELETE")
+	r.HandleFunc("/posts/{post_id}", blog.GetPost).Methods("GET")
+	r.HandleFunc("/posts/{post_id}/like/{user_id}", blog.LikeBlog).Methods("PATCH")
+	r.HandleFunc("/posts/{post_id}/comments", blog.GetBlogComments).Methods("GET")
+	r.HandleFunc("/posts/{post_id}/comments", blog.CommentBlog).Methods("POST")
+	r.HandleFunc("/posts/search", blog.SearchBlog).Methods("GET")
 
 	// Authentication
 	r.HandleFunc("/auth/login", auth.LoginIn).Methods(http.MethodPost)
