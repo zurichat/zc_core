@@ -131,15 +131,7 @@ func GetReports(w http.ResponseWriter, r *http.Request) {
 
 	doc, _ := utils.GetMongoDbDocs(ReportCollectionName, bson.M{"organization_id": orgId})
 
-	/* if doc == nil {
-		utils.GetError(fmt.Errorf("reports %s not found", orgId), http.StatusNotFound, w)
-		return
-	}
-
-	var report []Report */
-
 	var report []Report = []Report{}
-	// var re
 
 	if doc == nil {
 		utils.GetSuccess("no report has been added yet", report, w)
