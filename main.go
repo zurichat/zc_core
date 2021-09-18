@@ -125,11 +125,12 @@ func Router(Server *socketio.Server) *mux.Router {
 	//ping endpoint
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		utils.GetSuccess("Server is live", nil, w)
-	}).Methods("GET", "POST")
+	})
 
 	// file upload
 	r.HandleFunc("/upload/file/{plugin_id}", auth.IsAuthenticated(service.UploadOneFile)).Methods("POST")
 	r.HandleFunc("/upload/files/{plugin_id}", auth.IsAuthenticated(service.UploadMultipleFiles)).Methods("POST")
+	r.HandleFunc("/upload/files/{plugin_id}", auth.IsAuthenticated(service.DeleteFile)).Methods("POST")
 	r.PathPrefix("/files/").Handler(http.StripPrefix("/files/", http.FileServer(http.Dir("./files/"))))
 
 	// Home

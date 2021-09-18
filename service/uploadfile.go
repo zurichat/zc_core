@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -33,6 +34,10 @@ type MultTempResponse struct {
 type MultipleTempResponse struct {
 	OriginalName string `json:"original_name"`
 	FileUrl      string `json:"file_url"`
+}
+type DeleteFileRequest struct {
+	FileUrl  string `json:"file_url"`
+	PluginId string `json:"plugin_id"`
 }
 
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
@@ -150,7 +155,22 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
-// Plugin file upload route functions
+// Delete file service function
+
+func DeleteFileFromServer(filePath string) error {
+	e := os.Remove(filePath)
+	if e != nil {
+		return e
+	}
+	return nil
+}
+
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// Plugin file route functions
 
 func UploadOneFile(w http.ResponseWriter, r *http.Request) {
 	plugin_id := mux.Vars(r)["plugin_id"]
@@ -190,6 +210,22 @@ func UploadMultipleFiles(w http.ResponseWriter, r *http.Request) {
 	}
 	utils.GetSuccess("Files Uploaded Successfully", res, w)
 
+}
+
+func DeleteFile(w http.ResponseWriter, r *http.Request) {
+	var delFile DeleteFileRequest
+	err := json.NewDecoder(r.Body).Decode(&delFile)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	filePath := "." + strings.Split(delFile.FileUrl, r.Host)[1]
+	er := DeleteFileFromServer(filePath)
+	if er != nil {
+		utils.GetError(er, http.StatusBadRequest, w)
+		return
+	}
+	utils.GetSuccess("Deleted Successfully", "", w)
 }
 
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
