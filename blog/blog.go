@@ -229,26 +229,6 @@ func DeleteBlog(response http.ResponseWriter, request *http.Request) {
 	utils.GetSuccess("blog post successfully deleted", nil, response)
 }
 
-func SearchBlog(response http.ResponseWriter, request *http.Request) {
-	response.Header().Add("content-type", "application/json")
-
-	params := mux.Vars(request)
-	query := params["query"]
-	filter := bson.M{
-		"deleted": false,
-		"$or": []bson.M{
-			{"title": query},
-			{"author": query},
-			{"content": query},
-		},
-	}
-	blogs, err := utils.GetMongoDbDocs(BlogCollectionName, filter)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, response)
-	}
-	utils.GetSuccess("successful", blogs, response)
-}
-
 func LikeBlog(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 
