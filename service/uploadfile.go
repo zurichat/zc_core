@@ -116,20 +116,25 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 			// folderName = ""
 		}
 		fileExtension := filepath.Ext(fileHeader.Filename)
-
+		cwd, _ := os.Getwd()
 		exeDir, newF := "./files/"+folderName, ""
+		mexeDir := filepath.Join(cwd,exeDir)
 		filenamePrefix := filepath.Join(exeDir, newF, buildFileName())
 		filename, errr := pickFileName(filenamePrefix, fileExtension)
+		wfilename := filepath.Join(cwd,filename)
+
+
+
 		if errr != nil {
 			return nil, errr
 		}
 
-		err0 := os.MkdirAll(exeDir, os.ModePerm)
+		err0 := os.MkdirAll(mexeDir, os.ModePerm)
 		if err != nil {
 			return nil, err0
 		}
 
-		f, erri := os.Create(filename)
+		f, erri := os.Create(wfilename)
 		if erri != nil {
 			return nil, erri
 		}
@@ -229,6 +234,8 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	filePath := "." + strings.Split(delFile.FileUrl, r.Host)[1]
+	cwd, _ := os.Getwd()
+	filePath = filepath.Join(cwd,filePath)
 	er := DeleteFileFromServer(filePath)
 	if er != nil {
 		utils.GetError(er, http.StatusBadRequest, w)
@@ -243,6 +250,8 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 // Functions below here are some inpackage functions used in the functions above
 
 func saveFile(folderName string, file multipart.File, handle *multipart.FileHeader, r *http.Request) (string, error) {
+	cwd, _ := os.Getwd()
+	fmt.Println(cwd)
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
 		return "", err
@@ -256,20 +265,26 @@ func saveFile(folderName string, file multipart.File, handle *multipart.FileHead
 	fileExtension := filepath.Ext(handle.Filename)
 
 	exeDir, newF := "./files/"+folderName, ""
+	mexeDir := filepath.Join(cwd,exeDir)
 	filenamePrefix := filepath.Join(exeDir, newF, buildFileName())
 	filename, errr := pickFileName(filenamePrefix, fileExtension)
+	wfilename := filepath.Join(cwd,filename)
 	if errr != nil {
 		return "", errr
 	}
 
 	// Create the uploads folder if it doesn't
 	// already exist
-	err0 := os.MkdirAll(exeDir, os.ModePerm)
+	// err0 := os.MkdirAll(exeDir, os.ModePerm)
+	// if err != nil {
+	// 	return "", err0
+	// }
+	err0 := os.MkdirAll(mexeDir, os.ModePerm)
 	if err != nil {
 		return "", err0
 	}
 
-	err = ioutil.WriteFile(filename, data, 0666)
+	err = ioutil.WriteFile(wfilename, data, 0666)
 	if err != nil {
 		return "", err
 	}
