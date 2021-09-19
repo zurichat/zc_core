@@ -161,6 +161,14 @@ func (au *AuthHandler) RequestResetPasswordCode(w http.ResponseWriter, r *http.R
 		utils.GetError(UserNotFound, http.StatusBadRequest, w)
 		return
 	}
+
+	// check if user already requested for password
+	if user.PasswordResets != nil {
+		x2x := map[string]interface{}{ "password_reset_code" : user.PasswordResets.Token }
+		utils.GetSuccess("Password reset code already sent, check your email", x2x, w)
+		return
+	}
+
 	// Update user collection with UserPasswordReset - WIP
 	_, token := utils.RandomGen(6, "d")
 
