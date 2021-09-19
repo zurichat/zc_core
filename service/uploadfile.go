@@ -118,7 +118,7 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 		}
 		fileExtension := filepath.Ext(fileHeader.Filename)
 		// cwd, _ := os.Getwd()
-		exeDir, newF := "./files/"+folderName, ""
+		exeDir, newF := "files/"+folderName, ""
 		// mexeDir := filepath.Join(cwd,exeDir)
 		filenamePrefix := filepath.Join(exeDir, newF, buildFileName())
 		filename, errr := pickFileName(filenamePrefix, fileExtension)
@@ -152,7 +152,7 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 		// if erri != nil {
 		// 	return nil, erri
 		// }
-		f, erri := os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0777)
+		f, erri := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0777)
 		if erri != nil {
 			return nil, erri, "Opening File Failed"
 		}
@@ -295,7 +295,7 @@ func saveFile(folderName string, file multipart.File, handle *multipart.FileHead
 	}
 	fileExtension := filepath.Ext(handle.Filename)
 
-	exeDir, newF := "./files/"+folderName, ""
+	exeDir, newF := "files/"+folderName, ""
 	// mexeDir := filepath.Join(cwd,exeDir)
 	filenamePrefix := filepath.Join(exeDir, newF, buildFileName())
 	filename, errr := pickFileName(filenamePrefix, fileExtension)
@@ -317,7 +317,7 @@ func saveFile(folderName string, file multipart.File, handle *multipart.FileHead
 		}
  
 	}
-	_, erri := os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0777)
+	_, erri := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0777)
 		if erri != nil {
 			return "", erri, "Creating file with openfile Failed"
 	}
