@@ -147,15 +147,15 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 		// 	}
 	
 		// }
-		_, err2 = os.Stat(exeDir)
+		_, err2 := os.Stat(exeDir)
 		if err2 != nil {
 			err1 := os.Mkdir(exeDir, 0777)
 			if err != nil {
-				return "", err1, "Creating Dir with Mkdir Failed"
+				return nil, err1, "Creating Dir with Mkdir Failed"
 			}
 			err0 := os.MkdirAll(exeDir, 0777)
 			if err != nil {
-				return "", err0, "Creating Dir with MkdirAll Failed"
+				return nil, err0, "Creating Dir with MkdirAll Failed"
 			}
 		}
 
@@ -329,7 +329,7 @@ func saveFile(folderName string, file multipart.File, handle *multipart.FileHead
  
 	// }
 
-	_, err2 = os.Stat(exeDir)
+	_, err2 := os.Stat(exeDir)
 	if err2 != nil {
 		err1 := os.Mkdir(exeDir, 0777)
 		if err != nil {
