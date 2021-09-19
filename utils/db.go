@@ -152,6 +152,22 @@ func UpdateOneMongoDbDoc(collectionName string, ID string, data map[string]inter
 	return res, nil
 }
 
+//This methods allows update of any kind e.g array increment, object embedding etc by passing the raw update data
+func GenericUpdateOneMongoDbDoc(collectionName string, ID interface{}, updateData map[string]interface{}) (*mongo.UpdateResult, error) {
+	ctx := context.Background()
+	collection := defaultMongoHandle.GetCollection(collectionName)
+
+	filter := bson.M{"_id": ID}
+
+	res, err := collection.UpdateOne(ctx, filter, updateData)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 // Update many MongoDb documents for a collection
 func UpdateManyMongoDbDocs(collectionName string, filter map[string]interface{}, data map[string]interface{}) (*mongo.UpdateResult, error) {
 	ctx := context.Background()

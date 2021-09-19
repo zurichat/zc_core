@@ -43,7 +43,8 @@ var (
 	NoAuthToken     = errors.New("No Authorization or session expired.")
 	TokenExp        = errors.New("Session expired.")
 	NotAuthorized   = errors.New("Not Authorized.")
-	ConfirmPassword = errors.New("The password confirmation does not match")
+	ConfirmPasswordError = errors.New("The password confirmation does not match")
+	UserDetails     = UserKey("userDetails")
 )
 
 type Credentials struct {
@@ -91,6 +92,8 @@ type AuthHandler struct {
 	mailService service.MailService
 }
 
+type UserKey string
+
 // Method to compare password
 func CheckPassword(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
@@ -128,7 +131,7 @@ func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 		var erro error
 		if status == true {
 			session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName)
-			fmt.Println(session)
+			// fmt.Println(session)
 			if err != nil && erro != nil {
 				utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
 				return
@@ -168,7 +171,7 @@ func IsAuthorized(user_id string, orgId string, role string, w http.ResponseWrit
 	_, user_collection, member_collection := "organizations", "users", "members"
 	// org_collection
 
-	fmt.Println(user_id)
+	// fmt.Println(user_id)
 
 	// Getting user's document from db
 	var luHexid, _ = primitive.ObjectIDFromHex(user_id)
@@ -202,10 +205,11 @@ func IsAuthorized(user_id string, orgId string, role string, w http.ResponseWrit
 }
 
 // NOTE: Example of how to use isAuthorized function
-// loggedInUser := r.Context().Value("user").(auth.AuthUser)
-// orgId := mux.Vars(r)["id"]
+// loggedInUser := r.Context().Value("user").(*auth.AuthUser)
+// user, _ := auth.FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
+// sOrgId := mux.Vars(r)["id"]
 
-// if !auth.IsAuthorized(loggedInUser.ID.Hex(), orgId, "member", w) {
+// if !auth.IsAuthorized(user.ID, sOrgId, "admin", w) {
 // 	return
 // }
 
@@ -266,7 +270,7 @@ func (au *AuthHandler) ConfirmUserPassword(w http.ResponseWriter, r *http.Reques
 	}
 
 	if creds.Password != creds.ConfirmPassword {
-		utils.GetError(ConfirmPassword, http.StatusBadRequest, w)
+		utils.GetError(ConfirmPasswordError, http.StatusBadRequest, w)
 		return
 	}
 
@@ -311,10 +315,6 @@ func GetSessionDataFromToken(r *http.Request, hmacSampleSecret []byte) (status b
 	} else {
 		return false, fmt.Errorf("failed"), ResToken{}
 	}
-	fmt.Println(retTokenD.SessionName)
-
-	return true, nil, retTokenD
-
 }
 
 // Initiate

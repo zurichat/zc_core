@@ -26,8 +26,6 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-
-
   /auth/logout:
     get:
       tags:
@@ -57,10 +55,108 @@ paths:
       tags:
         - Authentication
       summary: validates the user before access is granted.
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
       responses:
         "200":
           $ref: "#/components/responses/TokenVerified"
         "500": 
+          $ref: "#/components/responses/InternalServerError"
+
+  /auth/confirm-password:
+    post:
+      tags:
+        - Authentication
+      summary: confirm user password
+      description: verify user password
+      operationId: verifyPassword
+      security:
+        - cookieAuth: []
+        - bearerAuth: [] 
+      requestBody:
+        $ref: "#/components/requestBodies/confirmPassword"
+      responses:
+        "200":
+          $ref: "#/components/responses/PasswordConfirmSuccess"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "400":
+           $ref: "#/components/responses/BadRequest"
+        "500": 
+          $ref: "#/components/responses/InternalServerError"
+
+  /auth/request-reset-password:
+    post:
+      summary: Reset user password
+      description: Reset user password
+      operationId: resetPassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: string
+              format: email
+      tags:
+          - Authentication
+      responses:
+        default:
+          description: if no errors email for a password reset is sent to the submitted email
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "400":
+           $ref: "#/components/responses/BadRequest"
+  
+  /account/verify-account:
+    post:
+      tags:
+        - Authentication - Account
+      summary: Verify user account
+      requestBody:
+        $ref: "#/components/requestBodies/login"
+      responses:
+        "200":
+          $ref: "#/components/responses/VerificationSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /account/request-password-reset-code:
+    post:
+      tags:
+        - Authentication - Account
+      summary: Request password reset code
+      requestBody:
+        $ref: "#/components/requestBodies/requestPassReset"
+      responses:
+        "200":
+          description: verification successful
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    example: null
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "500":
           $ref: "#/components/responses/InternalServerError"
 
 components:
@@ -80,7 +176,7 @@ components:
                 format: int32
                 example: 500
               message:
-                type: string
+                type: string    
 
     BadRequest:
       description: An incorrect client request
@@ -132,6 +228,24 @@ components:
                 example: 401
               message:
                 type: string
+
+    PasswordConfirmSuccess:
+      description: Password confirm successful
+      content:
+        application/json:
+          schema:
+            required:
+              - code
+              - message
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+                example: 200
+              message:
+                type: string
+                example: Password confirm successful 
 
     LoginSuccess:
       description: login successful
@@ -187,7 +301,10 @@ components:
                       update_at:
                         type: string
                         example: 0001-01-01T00:00:00Z
-                               
+                      token:
+                        type: object
+                        example: l6TVRneU9ESTBNSHhIZDNkQlIwUlplRTVFVFhwYWFsVXlXa1JCZVU5RVVtbFplbHBvVDFSSmVVMTZUbXBPVVQwOWZFQWpod01iU0E2d1FOUkczQlcwaUZDbHVqUnVOVXFFTHk4QUdGMGhMdkgzIiwiZW1haWwiOiJqYjEyQGdtYWlsLmNvbSIsImlkIjoiNjE0MzNmNTZkMDI4NGJjNmE5MjIzM2M1Iiwib3B0aW9ucyI6ey         
+
     TokenVerified:
       description: Token verification successful
       content:
@@ -260,14 +377,49 @@ components:
                 example: 200
               message:
                 type: string
-
+    
+    VerificationSuccess:
+      description: verification successful
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - code
+              - message
+              - data
+            properties:
+              code:
+                type: integer
+                format: int32
+                example: 200
+              message:
+                type: string
+              data:
+                type: object
+                example: null
+                
   requestBodies:
     login:
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/loginReqB"
-
+    confirmPassword:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/confirmPassReqB"
+    verification:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/verficationReqB"
+    requestPassReset:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/passwordResetReqB"
   schemas:
     loginReqB:
       type: object
@@ -278,4 +430,33 @@ components:
         password:
           type: string
           format: password
-    
+    confirmPassReqB:
+      type: object
+      properties:
+        confirm_password:
+          type: string
+          format: password
+        password:
+          type: string
+          format: password
+    verficationReqB:
+      type: object
+      properties:
+        code:
+          type: string
+          example: 245632
+    passwordResetReqB:
+      type: object
+      properties:
+        code:
+          type: string
+          format: email
+  
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+    cookieAuth:         
+      type: apiKey
+      in: cookie
+      name: JSESSIONID

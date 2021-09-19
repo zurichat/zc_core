@@ -104,13 +104,9 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	userEmail := strings.ToLower(newOrg.CreatorEmail)
 	userName := strings.Split(userEmail, "@")[0]
 
-	// creator
+	// get creator id
 	creator, _ := auth.FetchUserByEmail(bson.M{"email": userEmail})
-	// var creatorid interface{} = creator.ID
-	// var creatorid primitive.ObjectID = creator.ID
-	// var ccreatorid string = creatorid.(primitive.ObjectID).Hex()
 	var ccreatorid string = creator.ID
-	fmt.Println(ccreatorid)
 
 	// extract user document
 	// var luHexid, _ = primitive.ObjectIDFromHex(loggedInUser.ID.Hex())
@@ -141,12 +137,12 @@ func Create(w http.ResponseWriter, r *http.Request) {
 
 	var iid interface{} = save.InsertedID
 	var iiid string = iid.(primitive.ObjectID).Hex()
-	// var iiid string = fmt.Sprintf("%v", save.InsertedID)
-	// hexOrgid, _ := primitive.ObjectIDFromHex(iiid)
 
 	// Adding user as a member
 	var user user.User
 	mapstructure.Decode(userDoc, &user)
+
+	setting := new(Settings)
 
 	newMember := Member{
 		ID:       primitive.NewObjectID(),
@@ -155,18 +151,14 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		OrgId:    iiid,
 		Role:     "owner",
 		Presence: "true",
-	}
-
-	// conv to struct
-	memStruc, err := utils.StructToMap(newMember)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
+		Deleted:  false,
+		Settings: setting,
 	}
 
 	// add new member to member collection
-	_, e := utils.CreateMongoDbDoc(member_collection, memStruc)
-	if e != nil {
+	coll := utils.GetCollection(member_collection)
+	_, err = coll.InsertOne(r.Context(), newMember)
+	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}

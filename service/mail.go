@@ -2,18 +2,21 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"html/template"
-	"net/smtp"
+	"strings"
+	"time"
 
+	"github.com/mailgun/mailgun-go/v4"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 	"zuri.chat/zccore/utils"
 )
 
 type MailService interface {
-	SetupSmtp(mailReq *Mail) ([]byte, error)
+	SetupSmtp(mailReq *Mail) (string, error)
 	SetupSendgrid(mailReq *Mail) ([]byte, error)
 	SendMail(mailReq *Mail) error
 	NewMail(to []string, subject string, mailType MailType, data *MailData) *Mail
@@ -32,7 +35,6 @@ type MailData struct {
 }
 
 type Mail struct {
-	from  	string
 	to    	[]string
 	subject string
 	body 	string
@@ -50,7 +52,7 @@ func NewZcMailService(c *utils.Configurations) *ZcMailService {
 
 // Gmail smtp setup
 // To use this, Gmail need to set allowed unsafe app
-func (ms *ZcMailService) SetupSmtp(mailReq *Mail) ([]byte, error) {
+func (ms *ZcMailService) SetupSmtp(mailReq *Mail) (string, error) {
 	var templateFileName string
 
 	if mailReq.mtype == MailConfirmation {
@@ -58,14 +60,14 @@ func (ms *ZcMailService) SetupSmtp(mailReq *Mail) ([]byte, error) {
 	} else if mailReq.mtype == PasswordReset {
 		templateFileName = ms.configs.PasswordResetTemplate
 	}
-
+	
 	t, err := template.ParseFiles(templateFileName)
-	if err != nil {return nil, err }
+	if err != nil {return "", err }
 
 	buf := new(bytes.Buffer)
 	if err = t.Execute(buf, mailReq.data); err != nil {}
 
-	return []byte(buf.String()), nil
+	return buf.String(), nil
 }
 
 // sendgrid setup
@@ -108,7 +110,7 @@ func (ms *ZcMailService) SetupSendgrid(mailReq *Mail) ([]byte, error) {
 
 func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 	// if ms.configs.ESPType == "sendgrid"
-	switch esp := ms.configs.ESPType; esp {
+	switch esp := strings.ToLower(ms.configs.ESPType); esp {
 
 	case "sendgrid":
 		request := sendgrid.GetRequest(
@@ -129,24 +131,25 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 		return nil
 
 	case "smtp":
-		auth := smtp.PlainAuth(
-			"",
-			ms.configs.SmtpUsername,
-			ms.configs.SmtpPassword,
-			"smtp.gmail.com",
-		)
-
-		body, err  := ms.SetupSmtp(mailReq)
+		// switch to mailgun temp
+		body, err := ms.SetupSmtp(mailReq)
 		if err != nil { return err }
 
-		addr := "smtp.gmail.com:587"
-		if err := smtp.SendMail(addr, auth, ms.configs.SmtpUsername, mailReq.to, body); err != nil {
+		mg := mailgun.NewMailgun(ms.configs.MailGunDomain, ms.configs.MailGunKey)
+		message := mg.NewMessage(ms.configs.MailGunSenderEmail, mailReq.subject, "", mailReq.to...)
+		message.SetHtml(body)
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		defer cancel()
+		
+		if _, _, err := mg.Send(ctx, message); err != nil {
 			return err
 		}
+
 		return nil
 		
 	default:
-		msg := fmt.Sprintf("%s is not included in the list of email service providers", ms.configs.ESPType)
+		msg := fmt.Sprintf("%s is not included in the list of email service providers", esp)
 		return errors.New(msg)
 	}
 
