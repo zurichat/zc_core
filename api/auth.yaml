@@ -6,7 +6,7 @@ info:
   contact:
     email: developer@zuri.chat
 servers:
-  - description: Zuri Chat Core API
+  - description: Zuri Chat Core API 
     url: "https://api.zuri.chat/"
 paths:
   /auth/login:
@@ -44,24 +44,7 @@ paths:
       summary: Authentication request to logout
       responses:
         "200":
-          $ref: "#/components/responses/LogoutSuccessful"
-        "401":
-          $ref: "#/components/responses/NotAuthorizedOrNoAuthToken"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
-  /auth/logout/othersessions:
-    post:
-      tags:
-        - Authentication
-      summary: Authentication request to logout from other sessions
-      requestBody:
-        $ref: "#/components/requestBodies/logoutOtherSessions"
-      responses:
-        "200":
-          $ref: "#/components/responses/LogoutSuccessful"
-        "400":
-          $ref: "#/components/responses/InvalidCredential"
+          $ref: "#/components/responses/LogoutSuccessful"   
         "401":
           $ref: "#/components/responses/NotAuthorizedOrNoAuthToken"
         "500":
@@ -78,7 +61,7 @@ paths:
       responses:
         "200":
           $ref: "#/components/responses/TokenVerified"
-        "500":
+        "500": 
           $ref: "#/components/responses/InternalServerError"
 
   /auth/confirm-password:
@@ -90,9 +73,9 @@ paths:
       operationId: verifyPassword
       security:
         - cookieAuth: []
-        - bearerAuth: []
+        - bearerAuth: [] 
       requestBody:
-        $ref: "#/components/requestBodies/confirm_password"
+        $ref: "#/components/requestBodies/confirmPassword"
       responses:
         "200":
           $ref: "#/components/responses/PasswordConfirmSuccess"
@@ -100,7 +83,7 @@ paths:
           $ref: "#/components/responses/UnprocessableEntity"
         "400":
            $ref: "#/components/responses/BadRequest"
-        "500":
+        "500": 
           $ref: "#/components/responses/InternalServerError"
 
   /auth/request-reset-password:
@@ -123,6 +106,58 @@ paths:
           $ref: "#/components/responses/UnprocessableEntity"
         "400":
            $ref: "#/components/responses/BadRequest"
+  
+  /account/verify-account:
+    post:
+      tags:
+        - Authentication - Account
+      summary: Verify user account
+      requestBody:
+        $ref: "#/components/requestBodies/login"
+      responses:
+        "200":
+          $ref: "#/components/responses/VerificationSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /account/request-password-reset-code:
+    post:
+      tags:
+        - Authentication - Account
+      summary: Request password reset code
+      requestBody:
+        $ref: "#/components/requestBodies/requestPassReset"
+      responses:
+        "200":
+          description: verification successful
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    example: null
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
 components:
   responses:
@@ -141,7 +176,7 @@ components:
                 format: int32
                 example: 500
               message:
-                type: string
+                type: string    
 
     BadRequest:
       description: An incorrect client request
@@ -210,7 +245,7 @@ components:
                 example: 200
               message:
                 type: string
-                example: Password confirm successful
+                example: Password confirm successful 
 
     LoginSuccess:
       description: login successful
@@ -232,12 +267,12 @@ components:
               data:
                 type: object
                 properties:
-                  session_id:
+                  session_id: 
                     type: string
                   user:
                     type: object
                     properties:
-                      id:
+                      id: 
                         type: string
                         example: 613590fd0366b6816a0b75ee
                       first_name:
@@ -248,7 +283,7 @@ components:
                         example: Ajayi
                       display_name:
                         type: string
-                        example: samsoft
+                        example: samsoft 
                       email:
                         type: string
                         example: hng.user01@gmail.com
@@ -268,7 +303,7 @@ components:
                         example: 0001-01-01T00:00:00Z
                       token:
                         type: object
-                        example: l6TVRneU9ESTBNSHhIZDNkQlIwUlplRTVFVFhwYWFsVXlXa1JCZVU5RVVtbFplbHBvVDFSSmVVMTZUbXBPVVQwOWZFQWpod01iU0E2d1FOUkczQlcwaUZDbHVqUnVOVXFFTHk4QUdGMGhMdkgzIiwiZW1haWwiOiJqYjEyQGdtYWlsLmNvbSIsImlkIjoiNjE0MzNmNTZkMDI4NGJjNmE5MjIzM2M1Iiwib3B0aW9ucyI6ey
+                        example: l6TVRneU9ESTBNSHhIZDNkQlIwUlplRTVFVFhwYWFsVXlXa1JCZVU5RVVtbFplbHBvVDFSSmVVMTZUbXBPVVQwOWZFQWpod01iU0E2d1FOUkczQlcwaUZDbHVqUnVOVXFFTHk4QUdGMGhMdkgzIiwiZW1haWwiOiJqYjEyQGdtYWlsLmNvbSIsImlkIjoiNjE0MzNmNTZkMDI4NGJjNmE5MjIzM2M1Iiwib3B0aW9ucyI6ey         
 
     TokenVerified:
       description: Token verification successful
@@ -289,13 +324,13 @@ components:
                 type: string
               data:
                 type: object
-                properties:
-                  is_verified:
+                properties: 
+                  is_verified: 
                     type: boolean
                   user:
                     type: object
                     properties:
-                      id:
+                      id: 
                         type: string
                         example: 613590fd0366b6816a0b75ee
                       first_name:
@@ -306,7 +341,7 @@ components:
                         example: Ajayi
                       display_name:
                         type: string
-                        example: samsoft
+                        example: samsoft 
                       email:
                         type: string
                         example: hng.user01@gmail.com
@@ -324,7 +359,7 @@ components:
                       update_at:
                         type: string
                         example: 0001-01-01T00:00:00Z
-
+                        
     LogoutSuccessful:
       description: Logged out successfully
       content:
@@ -342,41 +377,49 @@ components:
                 example: 200
               message:
                 type: string
-
-    InvalidCredential:
-      description: User entered invalid credential(s)
+    
+    VerificationSuccess:
+      description: verification successful
       content:
         application/json:
           schema:
+            type: object
             required:
               - code
               - message
-            type: object
+              - data
             properties:
               code:
                 type: integer
                 format: int32
-                example: 400
+                example: 200
               message:
                 type: string
-
+              data:
+                type: object
+                example: null
+                
   requestBodies:
     login:
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/loginReqB"
-    confirm_password:
+    confirmPassword:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/loginReqB"
-    logoutOtherSessions:
+            $ref: "#/components/schemas/confirmPassReqB"
+    verification:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/logoutOthers"
-
+            $ref: "#/components/schemas/verficationReqB"
+    requestPassReset:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/passwordResetReqB"
   schemas:
     loginReqB:
       type: object
@@ -396,18 +439,24 @@ components:
         password:
           type: string
           format: password
-    logoutOthers:
+    verficationReqB:
       type: object
       properties:
-        password:
+        code:
           type: string
-          format: password
-
+          example: 245632
+    passwordResetReqB:
+      type: object
+      properties:
+        code:
+          type: string
+          format: email
+  
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
-    cookieAuth:
+    cookieAuth:         
       type: apiKey
       in: cookie
       name: JSESSIONID
