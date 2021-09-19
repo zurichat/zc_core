@@ -101,7 +101,8 @@ type Member struct {
 
 type Profile struct {
 	ID          string            `json:"id" bson:"_id"`
-	Name        string            `json:"name" bson:"name"`
+	FirstName   string                 `json:"first_name" bson:"first_name"`
+	LastName    string                 `json:"last_name" bson:"last_name"`
 	DisplayName string            `json:"display_name" bson:"display_name"`
 	Bio         string            `json:"bio" bson:"bio"`
 	Pronouns    string            `json:"pronouns" bson:"pronouns"`

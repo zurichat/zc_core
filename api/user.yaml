@@ -345,6 +345,9 @@ components:
             InsertedID:
               type: string
               example: 6137a5af52efebbea2739c71
+            verification_code:
+              type: string
+              example: 123456
 
     UpdateUser:
       type: object

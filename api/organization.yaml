@@ -527,6 +527,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  
   /organizations/{organization_id}/members/{member_id}/settings:
     patch:
       tags:
@@ -544,7 +545,66 @@ paths:
           "application/json":
             schema:
               type: object
-              example: {"global_settings": {"allow_user_add_plugins": true, "allow_only_admin_invite": true}, "plugin_settings": {"chess_plugin": {"allow_in_every_channel": false}}}
+              example: {
+    "messages_and_media": {
+      "theme": "dui",
+      "emoji_as_text": true,
+      "show_jumbomoji": false,
+      "convert_emoticons_to_emoji": true,
+      "messages_one_click_reaction": [
+        "pede",
+        "at",
+        "montes"
+      ],
+      "bring_emails_into_zuri bson:": "magna",
+      "names": "odio",
+      "additional_options": [
+        "id",
+        "nunc",
+        "nisl"
+      ],
+      "emoji": "libero",
+      "frequently_used_emoji": true,
+      "custom": false,
+      "inline_media_and_links": [
+        "nisi",
+        "euismod",
+        "pellentesque"
+      ]
+    },
+    "notifications": {
+      "channel_hurdle_notification": false,
+      "thread_replies_notification": true,
+      "my_keywords": "eleifend",
+      "message_preview_in_each_notification": false,
+      "mute_all_sounds": true,
+      "email_notifications_for_mentions_and_dm": [
+        "ut",
+        "posuere",
+        "nulla"
+      ],
+      "notify_me_about": "lectus",
+      "notification_schedule": "rutrum",
+      "when_iam_not_active_on_desktop": "venenatis",
+      "use_different_settings_mobile": "nunc"
+    },
+    "sidebar": {
+      "always_show_in_the_sidebar": [
+        "interdum",
+        "a",
+        "at"
+      ],
+      "sidebar_sort": "ullamcorper",
+      "show_profile_picture_next_to_dm": false,
+      "list_private_channels_seperately": false,
+      "organize_external_conversations": true,
+      "show_conversations": "phasellus"
+    },
+    "themes": {
+      "themes": "cursus",
+      "colors": "orci"
+    }
+  }
       responses:
         "200":
           $ref: "#/components/responses/resourceUpdated"
