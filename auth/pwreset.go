@@ -8,30 +8,47 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"golang.org/x/crypto/bcrypt"
 	"zuri.chat/zccore/service"
+	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 )
 
-func (au *AuthHandler) VerifyMail(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("content-type", "application/json")
+func (au *AuthHandler) validateCode(r *http.Request, column string, vcode string)(*user.User, error) {
 	c := struct {Code	string	`json:"code" validate:"required"`}{}
 
-	if err := utils.ParseJsonFromRequest(r, &c); err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
-	}
+	var filter primitive.M
+	if vcode == "" {
+		if err := utils.ParseJsonFromRequest(r, &c); err != nil {
+			return nil, err
+		}
 
-	if err := validate.Struct(c); err != nil {
-		utils.GetError(err, http.StatusBadRequest, w)
-		return
+		if err := validate.Struct(c); err != nil {
+			return nil, err
+		}
+		
+		filter = bson.M{column: c.Code}
+	} else {
+		filter = bson.M{column: vcode}
 	}
-	
-	filter := bson.M{"email_verification.token": c.Code}
 	user, err := FetchUserByEmail(filter)
 	if err != nil {
-		utils.GetError(errors.New("Password reset code not found!"), http.StatusInternalServerError, w)
+		return nil, errors.New("Password reset code not found!")
+	}	
+
+	return user, nil
+}
+
+
+func (au *AuthHandler) VerifyAccount(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("content-type", "application/json")
+
+	user, err := au.validateCode(r, "email_verification.token", "")
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
 	
@@ -50,7 +67,73 @@ func (au *AuthHandler) VerifyMail(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("Email verified, you can now login", nil, w)
 }
 
-func (au *AuthHandler) VerifyPasswordResetCode(w http.ResponseWriter, r *http.Request){}
+func (au *AuthHandler) VerifyPasswordResetCode(w http.ResponseWriter, r *http.Request){
+	w.Header().Add("content-type", "application/json")
+
+	user, err := au.validateCode(r, "password_resets.token", "")
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	resp := map[string]interface{}{
+		"isverified": true,
+		"verification_code": user.PasswordResets.Token,
+	}
+
+	utils.GetSuccess("Password reset code valid", resp, w)
+}
+
+func (au *AuthHandler) UpdatePassword(w http.ResponseWriter, r *http.Request){
+	w.Header().Add("content-type", "application/json")
+
+	rBody := struct{
+		Password 			string	`json:"password" validate:"required"`
+		ConfirmPassword 	string	`json:"confirm_password" validate:"required"`
+	}{}
+
+	params := mux.Vars(r)
+	verificationToken := params["verification_code"]
+
+	user, err := au.validateCode(r, "password_resets.token", verificationToken)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}	
+
+	if err := utils.ParseJsonFromRequest(r, &rBody); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	if err := validate.Struct(rBody); err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	if rBody.Password != rBody.ConfirmPassword {
+		utils.GetError(ConfirmPasswordError, http.StatusBadRequest, w)
+		return		
+	}
+
+	// update password & delete passwordreset object
+	bytes, err := bcrypt.GenerateFromPassword([]byte(rBody.Password), 14)
+	if err != nil { 
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	id, _ := primitive.ObjectIDFromHex(user.ID)
+	filter := bson.M{"_id": id}
+	update := bson.M{"$set": bson.M{"password_resets": nil, "password": string(bytes) }}
+
+	if _, err := utils.GetCollection(user_collection).UpdateOne(context.Background(), filter, update); err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return		
+	}	
+
+	utils.GetSuccess("Password update successful", nil, w)
+}
 
 // Send password reset code to user, auth not required
 func (au *AuthHandler) RequestResetPasswordCode(w http.ResponseWriter, r *http.Request){
