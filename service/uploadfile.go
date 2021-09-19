@@ -134,18 +134,29 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 		// if err != nil {
 		// 	return nil, err0
 		// }
-		_, err2 := os.Stat(exeDir)
+		// _, err2 := os.Stat(exeDir)
  
-		if os.IsNotExist(err2) {
+		// if os.IsNotExist(err2) {
+		// 	err1 := os.Mkdir(exeDir, 0777)
+		// 	if err != nil {
+		// 		return nil, err1, "Creating Dir with Mkdir Failed"
+		// 	}
+		// 	err0 := os.MkdirAll(exeDir, 0777)
+		// 	if err != nil {
+		// 		return nil, err0, "Creating Dir with MkdirAll Failed"
+		// 	}
+	
+		// }
+		_, err2 = os.Stat(exeDir)
+		if err2 != nil {
 			err1 := os.Mkdir(exeDir, 0777)
 			if err != nil {
-				return nil, err1, "Creating Dir with Mkdir Failed"
+				return "", err1, "Creating Dir with Mkdir Failed"
 			}
 			err0 := os.MkdirAll(exeDir, 0777)
 			if err != nil {
-				return nil, err0, "Creating Dir with MkdirAll Failed"
+				return "", err0, "Creating Dir with MkdirAll Failed"
 			}
-	
 		}
 
 		// f, erri := os.Create(wfilename)
@@ -304,9 +315,22 @@ func saveFile(folderName string, file multipart.File, handle *multipart.FileHead
 		return "", errr, "error creating unique file name"
 	}
 
-	_, err2 := os.Stat(exeDir)
+	// _, err2 := os.Stat(exeDir)
  
-	if os.IsNotExist(err2) {
+	// if os.IsNotExist(err2) {
+	// 	err1 := os.Mkdir(exeDir, 0777)
+	// 	if err != nil {
+	// 		return "", err1, "Creating Dir with Mkdir Failed"
+	// 	}
+	// 	err0 := os.MkdirAll(exeDir, 0777)
+	// 	if err != nil {
+	// 		return "", err0, "Creating Dir with MkdirAll Failed"
+	// 	}
+ 
+	// }
+
+	_, err2 = os.Stat(exeDir)
+	if err2 != nil {
 		err1 := os.Mkdir(exeDir, 0777)
 		if err != nil {
 			return "", err1, "Creating Dir with Mkdir Failed"
@@ -315,8 +339,8 @@ func saveFile(folderName string, file multipart.File, handle *multipart.FileHead
 		if err != nil {
 			return "", err0, "Creating Dir with MkdirAll Failed"
 		}
- 
 	}
+
 	_, erri := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0777)
 		if erri != nil {
 			return "", erri, "Creating file with openfile Failed"
