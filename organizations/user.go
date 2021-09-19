@@ -559,16 +559,26 @@ func UpdateMemberSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse request payload to map
-	updPayload := make(map[string]interface{})
-	err = utils.ParseJsonFromRequest(r, &updPayload)
+	// Parse request from incoming payload
+	var settings Settings
+	err = utils.ParseJsonFromRequest(r, &settings)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
 
+	// convert setting struct to map
+	pSettings, err := utils.StructToMap(settings)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	memberSettings := make(map[string]interface{})
+	memberSettings["settings"] = pSettings
+
 	// fetch and update the document
-	update, err := utils.UpdateOneMongoDbDoc(member_collection, memberId, updPayload)
+	update, err := utils.UpdateOneMongoDbDoc(member_collection, memberId, memberSettings)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
@@ -589,6 +599,7 @@ func mustObjectID(s string) primitive.ObjectID {
 	}
 	return id
 }
+
 // Activate single member in an organization
 func ReactivateMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
