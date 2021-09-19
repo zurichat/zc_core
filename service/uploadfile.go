@@ -150,11 +150,11 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 		_, err2 := os.Stat(exeDir)
 		if err2 != nil {
 			err1 := os.Mkdir(exeDir, 0777)
-			if err != nil {
+			if err1 != nil {
 				return nil, err1, "Creating Dir with Mkdir Failed"
 			}
 			err0 := os.MkdirAll(exeDir, 0777)
-			if err != nil {
+			if err0 != nil {
 				return nil, err0, "Creating Dir with MkdirAll Failed"
 			}
 		}
@@ -163,14 +163,20 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 		// if erri != nil {
 		// 	return nil, erri
 		// }
-		f, erri := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0777)
-		if erri != nil {
-			return nil, erri, "Opening File Failed"
+
+		destinationFile, erri := os.Create(filename)
+		defer destinationFile.Close()
+		if err != nil {
+			return nil, erri, "Creating file with os.Create Failed"
 		}
+		// f, erri := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0777)
+		// if erri != nil {
+		// 	return nil, erri, "Opening File Failed"
+		// }
 
-		defer f.Close()
+		// defer f.Close()
 
-		_, err = io.Copy(f, file)
+		_, err = io.Copy(destinationFile, file)
 		if err != nil {
 			return nil, err, "copying data to file failed"
 		}
@@ -292,6 +298,10 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 // Functions below here are some inpackage functions used in the functions above
 
 func saveFile(folderName string, file multipart.File, handle *multipart.FileHeader, r *http.Request) (string, error, string) {
+		err7 := os.Mkdir("test", os.ModePerm)
+		if err7 != nil {
+			return "", err7, "Erro Creating test dir"
+		}
 	// cwd, _ := os.Getwd()
 	// usdr,_ := uuser.Current()
 	data, err := ioutil.ReadAll(file)
@@ -331,20 +341,25 @@ func saveFile(folderName string, file multipart.File, handle *multipart.FileHead
 
 	_, err2 := os.Stat(exeDir)
 	if err2 != nil {
-		err1 := os.Mkdir(exeDir, 0777)
-		if err != nil {
-			return "", err1, "Creating Dir with Mkdir Failed"
+		err1 := os.Mkdir(exeDir, os.ModePerm)
+		if err1 != nil {
+			return "", err1, "Creating Dir with Mkdir Failed n"
 		}
-		err0 := os.MkdirAll(exeDir, 0777)
-		if err != nil {
-			return "", err0, "Creating Dir with MkdirAll Failed"
+		err0 := os.MkdirAll(exeDir, os.ModePerm)
+		if err0 != nil {
+			return "", err0, "Creating Dir with MkdirAll Failed n"
 		}
 	}
 
-	_, erri := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0777)
-		if erri != nil {
-			return "", erri, "Creating file with openfile Failed"
+	destinationFile, erri := os.Create(filename)
+	defer destinationFile.Close()
+	if err != nil {
+		return "", erri, "Creating file with os.Create Failed"
 	}
+	// _, erri := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0777)
+	// 	if erri != nil {
+	// 		return "", erri, "Creating file with openfile Failed"
+	// }
 
 	err = ioutil.WriteFile(filename, data, 0777)
 	if err != nil {
