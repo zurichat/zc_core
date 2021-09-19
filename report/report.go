@@ -54,15 +54,15 @@ func AddReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !utils.IsValidEmail(report.ReporteeEmail) {
-		utils.GetError(fmt.Errorf("invalid email format : %s", report.ReporteeEmail), http.StatusBadRequest, w)
+	if !utils.IsValidEmail(report.OffenderEmail) {
+		utils.GetError(fmt.Errorf("invalid email format : %s", report.OffenderEmail), http.StatusBadRequest, w)
 		return
 	}
 
-	// check that reportee is in the organization
-	reporteeDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "email": report.ReporteeEmail})
-	if reporteeDoc == nil {
-		utils.GetError(errors.New("reportee must be a member of this organization"), http.StatusBadRequest, w)
+	// check that offender is in the organization
+	offenderDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "email": report.OffenderEmail})
+	if offenderDoc == nil {
+		utils.GetError(errors.New("offender must be a member of this organization"), http.StatusBadRequest, w)
 		return
 	}
 

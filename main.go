@@ -63,10 +63,10 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/auth/verify-token", auth.IsAuthenticated(auth.VerifyTokenHandler)).Methods(http.MethodGet, http.MethodPost)
 	r.HandleFunc("/auth/confirm-password", auth.IsAuthenticated(auth.ConfirmUserPassword)).Methods(http.MethodPost)
 
-	r.HandleFunc("/get-password-reset-code", auth.RequestResetPasswordCode).Methods(http.MethodPost)
-	r.HandleFunc("/verify-account", auth.VerifyMail).Methods(http.MethodPost)
-	// r.HandleFunc("/verify/reset-password", auth.VerifyPasswordResetCode)
-	// r.HandleFunc("/update-password/{token}", auth.UpdatePassword)
+	r.HandleFunc("/account/verify-account", auth.VerifyAccount).Methods(http.MethodPost)
+	r.HandleFunc("/account/request-password-reset-code", auth.RequestResetPasswordCode).Methods(http.MethodPost)
+	r.HandleFunc("/account/verify-reset-password", auth.VerifyPasswordResetCode)
+	r.HandleFunc("/account/update-password/{verification_code}", auth.UpdatePassword)
 
 	// Organization
 	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.Create)).Methods("POST")
@@ -82,7 +82,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/url", auth.IsAuthenticated(organizations.UpdateUrl)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/name", auth.IsAuthenticated(organizations.UpdateName)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/logo", auth.IsAuthenticated(organizations.UpdateLogo)).Methods("PATCH")
-
+	 
 	r.HandleFunc("/organizations/{id}/members", auth.IsAuthenticated(organizations.CreateMember)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/members", auth.IsAuthenticated(organizations.GetMembers)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.GetMember)).Methods("GET")
@@ -218,7 +218,7 @@ func LoadApp(w http.ResponseWriter, r *http.Request) {
 
 func VersionHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Zuri Chat API - Version 0.0001\n")
+	fmt.Fprintf(w, "Zuri Chat API - Version 0.0005\n")
 
 }
 
