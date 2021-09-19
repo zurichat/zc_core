@@ -189,28 +189,52 @@ func (au *AuthHandler) LogOutOtherSessions(w http.ResponseWriter, r *http.Reques
 
 	// Get  current session
 	session, err = store.Get(r, sessionKey)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-	}
+	status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
 
-	// Get current user ID
-	id := session.Values["id"].(string)
-
-	// Get user who has such ID
-	user, er := FetchUserByID(id)
-	if er != nil {
-		utils.GetError(er, http.StatusInternalServerError, w)
-	}
-
-	// Check that password is correct
-	check := CheckPassword(r.FormValue("password"), user.Password)
-	if !check {
-		utils.GetError(errors.New("invalid password, confirm and try again"), http.StatusBadRequest, w)
+	if err != nil && status == false {
+		utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
 		return
 	}
 
-	// delete other sessions apart from current one
-	DeleteOtherSessions(id, session.ID)
+	// Handles token session
+	if status == true {
+		email := sessData.Email
+		user, err := FetchUserByEmail(bson.M{"email": email})
+		if err != nil {
+			utils.GetError(err, http.StatusInternalServerError, w)
+		}
+
+		// Check that password is correct
+		check := CheckPassword(r.FormValue("password"), user.Password)
+		if !check {
+			utils.GetError(errors.New("invalid password, confirm and try again"), http.StatusBadRequest, w)
+			return
+		}
+
+		// delete other sessions apart from current one
+		DeleteOtherSessions(user.ID, session.ID)
+
+		// Handles cookie sessions
+	} else {
+		// Get current user ID
+		id := session.Values["id"].(string)
+
+		// Get user who has such ID
+		user, er := FetchUserByID(id)
+		if er != nil {
+			utils.GetError(er, http.StatusInternalServerError, w)
+		}
+
+		// Check that password is correct
+		check := CheckPassword(r.FormValue("password"), user.Password)
+		if !check {
+			utils.GetError(errors.New("invalid password, confirm and try again"), http.StatusBadRequest, w)
+			return
+		}
+
+		// delete other sessions apart from current one
+		DeleteOtherSessions(id, session.ID)
+	}
 
 	utils.GetSuccess("successfully logged out of other sessions", nil, w)
 }
