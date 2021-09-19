@@ -17,7 +17,12 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
-func (au *AuthHandler) validateCode(r *http.Request, column string, vcode string)(*user.User, error) {
+var (
+	ERROR_CONFIMATION_CODE = errors.New("Account confirmation code used or expired, confirm and try again")
+	ERROR_RESET_CODE = errors.New("Invalid password reset code, already used or expired, confirm and try again")
+)
+
+func (au *AuthHandler) validateCode(r *http.Request, column string, errMsg error, vcode string)(*user.User, error) {
 	c := struct {Code	string	`json:"code" validate:"required"`}{}
 
 	var filter primitive.M
@@ -34,9 +39,10 @@ func (au *AuthHandler) validateCode(r *http.Request, column string, vcode string
 	} else {
 		filter = bson.M{column: vcode}
 	}
+
 	user, err := FetchUserByEmail(filter)
 	if err != nil {
-		return nil, errors.New("Password reset code not found!")
+		return nil, errMsg
 	}	
 
 	return user, nil
@@ -46,7 +52,7 @@ func (au *AuthHandler) validateCode(r *http.Request, column string, vcode string
 func (au *AuthHandler) VerifyAccount(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("content-type", "application/json")
 
-	user, err := au.validateCode(r, "email_verification.token", "")
+	user, err := au.validateCode(r, "email_verification.token", ERROR_CONFIMATION_CODE, "")
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
@@ -70,7 +76,7 @@ func (au *AuthHandler) VerifyAccount(w http.ResponseWriter, r *http.Request) {
 func (au *AuthHandler) VerifyPasswordResetCode(w http.ResponseWriter, r *http.Request){
 	w.Header().Add("content-type", "application/json")
 
-	user, err := au.validateCode(r, "password_resets.token", "")
+	user, err := au.validateCode(r, "password_resets.token", ERROR_RESET_CODE, "")
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
@@ -95,7 +101,7 @@ func (au *AuthHandler) UpdatePassword(w http.ResponseWriter, r *http.Request){
 	params := mux.Vars(r)
 	verificationToken := params["verification_code"]
 
-	user, err := au.validateCode(r, "password_resets.token", verificationToken)
+	user, err := au.validateCode(r, "password_resets.token", ERROR_RESET_CODE, verificationToken)
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
