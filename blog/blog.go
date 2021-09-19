@@ -16,7 +16,7 @@ import (
 )
 
 // An endpoint to list all available blog posts
-func GetAllBlogPosts(response http.ResponseWriter, request *http.Request) {
+func GetPosts(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 
 	blogs, err := utils.GetMongoDbDocs(BlogCollectionName, bson.M{"deleted": false})
@@ -32,9 +32,9 @@ func GetAllBlogPosts(response http.ResponseWriter, request *http.Request) {
 func GetBlogComments(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 
-	blogID := mux.Vars(request)["blog_id"]
+	postID := mux.Vars(request)["post_id"]
 
-	result, err := utils.GetMongoDbDoc(BlogCommentsCollectionName, bson.M{"_id": blogID})
+	result, err := utils.GetMongoDbDoc(BlogCommentsCollectionName, bson.M{"_id": postID})
 
 	if err != nil {
 		utils.GetError(errors.New("blog post comments does not exist"), http.StatusNotFound, response)
@@ -49,7 +49,7 @@ func GetBlogComments(response http.ResponseWriter, request *http.Request) {
 }
 
 // An end point to create new blog posts
-func CreateBlog(response http.ResponseWriter, request *http.Request) {
+func CreatePost(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 
 	var blogPost BlogPost
@@ -89,10 +89,10 @@ func CreateBlog(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	insertedBlogID := res.InsertedID.(primitive.ObjectID).Hex()
+	insertedPostID := res.InsertedID.(primitive.ObjectID).Hex()
 
 
-	blogPostLikes := BlogLikes{ID: insertedBlogID, UsersList: []string{}}
+	blogPostLikes := BlogLikes{ID: insertedPostID, UsersList: []string{}}
 	blogPostLikesMap, _ := utils.StructToMap(blogPostLikes)
 	likeDocResponse, err := utils.CreateMongoDbDoc(BlogLikesCollectionName, blogPostLikesMap)
 
@@ -101,7 +101,7 @@ func CreateBlog(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	blogPostComments := BlogsComment{ID: insertedBlogID, Comments: []BlogComment{}}
+	blogPostComments := BlogsComment{ID: insertedPostID, Comments: []BlogComment{}}
 	blogPostCommentsMap, _ := utils.StructToMap(blogPostComments)
 	commentDocResponse, err := utils.CreateMongoDbDoc(BlogCommentsCollectionName, blogPostCommentsMap)
 	if err != nil {
@@ -114,11 +114,11 @@ func CreateBlog(response http.ResponseWriter, request *http.Request) {
 	utils.GetSuccess("blog post created", ress, response)
 }
 
-func ReadBlog(response http.ResponseWriter, request *http.Request) {
+func GetPost(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 
-	blogID := mux.Vars(request)["blog_id"]
-	objID, err := primitive.ObjectIDFromHex(blogID)
+	postID := mux.Vars(request)["post_id"]
+	objID, err := primitive.ObjectIDFromHex(postID)
 	if err != nil {
 		utils.GetError(errors.New("invalid blog post ID"), http.StatusBadRequest, response)
 		return
@@ -138,11 +138,11 @@ func ReadBlog(response http.ResponseWriter, request *http.Request) {
 	utils.GetSuccess("success", result, response)
 }
 
-func UpdateBlog(response http.ResponseWriter, request *http.Request) {
+func UpdatePost(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 
-	blogID := mux.Vars(request)["blog_id"]
-	objID, err := primitive.ObjectIDFromHex(blogID)
+	postID := mux.Vars(request)["post_id"]
+	objID, err := primitive.ObjectIDFromHex(postID)
 	if err != nil {
 		utils.GetError(errors.New("invalid blog post ID"), http.StatusBadRequest, response)
 		return
@@ -183,7 +183,7 @@ func UpdateBlog(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	updateRes, err := utils.UpdateOneMongoDbDoc(BlogCollectionName, blogID, updateFields)
+	updateRes, err := utils.UpdateOneMongoDbDoc(BlogCollectionName, postID, updateFields)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, response)
 		return
@@ -197,11 +197,11 @@ func UpdateBlog(response http.ResponseWriter, request *http.Request) {
 	utils.GetSuccess("blog post successfully updated", nil, response)
 }
 
-func DeleteBlog(response http.ResponseWriter, request *http.Request) {
+func DeletePost(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 
-	blogID := mux.Vars(request)["blog_id"]
-	objID, err := primitive.ObjectIDFromHex(blogID)
+	postID := mux.Vars(request)["post_id"]
+	objID, err := primitive.ObjectIDFromHex(postID)
 
 	if err != nil {
 		utils.GetError(errors.New("invalid blog post ID"), http.StatusBadRequest, response)
@@ -220,7 +220,7 @@ func DeleteBlog(response http.ResponseWriter, request *http.Request) {
 
 	update := bson.M{"deleted": true, "deleted_at": time.Now()}
 
-	updateRes, err := utils.UpdateOneMongoDbDoc(BlogCollectionName, blogID, update)
+	updateRes, err := utils.UpdateOneMongoDbDoc(BlogCollectionName, postID, update)
 	if err != nil {
 		utils.GetError(errors.New("blog post could not be deleted"), http.StatusBadRequest, response)
 		return
@@ -241,16 +241,16 @@ func LikeBlog(response http.ResponseWriter, request *http.Request) {
 	var userExists bool
 
 	params := mux.Vars(request)
-	blogID := params["blog_id"]
+	postID := params["post_id"]
 	userID := params["user_id"]
-	blogObjID, err := primitive.ObjectIDFromHex(blogID)
+	blogObjID, err := primitive.ObjectIDFromHex(postID)
 
 	if err != nil {
 		utils.GetError(errors.New("invalid blog post ID"), http.StatusBadRequest, response)
 		return
 	}
 
-	filter := bson.M{"_id": blogID}
+	filter := bson.M{"_id": postID}
 
 	blogPostLikes, err := utils.GetMongoDbDoc(BlogLikesCollectionName, filter)
 	if err != nil {
@@ -277,7 +277,7 @@ func LikeBlog(response http.ResponseWriter, request *http.Request) {
 	if !userExists {
 		updateData := bson.M{"$push": bson.M{"users_list": userID}}
 
-		userLikeResult, err := utils.GenericUpdateOneMongoDbDoc(BlogLikesCollectionName, blogID, updateData)
+		userLikeResult, err := utils.GenericUpdateOneMongoDbDoc(BlogLikesCollectionName, postID, updateData)
 
 		if err != nil {
 			utils.GetError(errors.New("user could not like blog post"), http.StatusBadRequest, response)
@@ -306,7 +306,7 @@ func LikeBlog(response http.ResponseWriter, request *http.Request) {
 	} else {
 		updateData := bson.M{"$pull": bson.M{"users_list": userID}}
 
-		userLikeResult, err := utils.GenericUpdateOneMongoDbDoc(BlogLikesCollectionName, blogID, updateData)
+		userLikeResult, err := utils.GenericUpdateOneMongoDbDoc(BlogLikesCollectionName, postID, updateData)
 
 		if err != nil {
 			utils.GetError(errors.New("user could not unlike blog post"), http.StatusBadRequest, response)
@@ -340,8 +340,8 @@ func CommentBlog(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 
 	params := mux.Vars(request)
-	blogID := params["blog_id"]
-	blogObjID, err := primitive.ObjectIDFromHex(blogID)
+	postID := params["post_id"]
+	blogObjID, err := primitive.ObjectIDFromHex(postID)
 	if err != nil {
 		utils.GetError(errors.New("invalid blog post ID"), http.StatusBadRequest, response)
 		return
@@ -360,7 +360,7 @@ func CommentBlog(response http.ResponseWriter, request *http.Request) {
 	blogComment.CommentAt = time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), time.Now().UTC().Hour(), time.Now().Minute(), time.Now().Second(), 0, time.Local)
 	blogComment.CommentLikes = 0
 
-	blogCommentDoc, err := utils.GetMongoDbDoc(BlogCommentsCollectionName, bson.M{"_id": blogID})
+	blogCommentDoc, err := utils.GetMongoDbDoc(BlogCommentsCollectionName, bson.M{"_id": postID})
 
 	if err != nil {
 		utils.GetError(errors.New("invalid blog post ID"), http.StatusBadRequest, response)
@@ -376,7 +376,7 @@ func CommentBlog(response http.ResponseWriter, request *http.Request) {
 
 	updateData := bson.M{"$push": bson.M{"comments": data}}
 
-	res, err := utils.GenericUpdateOneMongoDbDoc(BlogCommentsCollectionName, blogID, updateData)
+	res, err := utils.GenericUpdateOneMongoDbDoc(BlogCommentsCollectionName, postID, updateData)
 
 	if err != nil {
 		utils.GetError(errors.New("comment unsuccessful"), http.StatusBadRequest, response)
@@ -428,8 +428,4 @@ func SearchBlog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.GetSuccess("successful", docs, w)
-}
-
-func GetCommentCount(w http.ResponseWriter, r *http.Request) int {
-	return 1
 }
