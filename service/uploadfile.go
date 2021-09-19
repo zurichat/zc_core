@@ -298,10 +298,6 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 // Functions below here are some inpackage functions used in the functions above
 
 func saveFile(folderName string, file multipart.File, handle *multipart.FileHeader, r *http.Request) (string, error, string) {
-		err7 := os.Mkdir("test", os.ModePerm)
-		if err7 != nil {
-			return "", err7, "Erro Creating test dir"
-		}
 	// cwd, _ := os.Getwd()
 	// usdr,_ := uuser.Current()
 	data, err := ioutil.ReadAll(file)
