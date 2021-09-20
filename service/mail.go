@@ -27,27 +27,28 @@ type MailType int
 const (
 	MailConfirmation MailType = iota + 1
 	PasswordReset
+	TeamInvitation
 )
 
 type MailData struct {
 	Username string
-	Code	 string
+	Code     string
 }
 
 type Mail struct {
-	to    	[]string
+	to      []string
 	subject string
-	body 	string
-	mtype 	MailType
-	data 	*MailData
+	body    string
+	mtype   MailType
+	data    *MailData
 }
 
 type ZcMailService struct {
-	configs		*utils.Configurations
+	configs *utils.Configurations
 }
 
 func NewZcMailService(c *utils.Configurations) *ZcMailService {
-	return &ZcMailService{ configs: c}
+	return &ZcMailService{configs: c}
 }
 
 // Gmail smtp setup
@@ -59,13 +60,18 @@ func (ms *ZcMailService) SetupSmtp(mailReq *Mail) (string, error) {
 		templateFileName = ms.configs.ConfirmEmailTemplate
 	} else if mailReq.mtype == PasswordReset {
 		templateFileName = ms.configs.PasswordResetTemplate
+	} else if mailReq.mtype == TeamInvitation {
+		templateFileName = ms.configs.TeamInvitationTemplate
 	}
-	
+
 	t, err := template.ParseFiles(templateFileName)
-	if err != nil {return "", err }
+	if err != nil {
+		return "", err
+	}
 
 	buf := new(bytes.Buffer)
-	if err = t.Execute(buf, mailReq.data); err != nil {}
+	if err = t.Execute(buf, mailReq.data); err != nil {
+	}
 
 	return buf.String(), nil
 }
@@ -78,15 +84,19 @@ func (ms *ZcMailService) SetupSendgrid(mailReq *Mail) ([]byte, error) {
 		templateFileName = ms.configs.ConfirmEmailTemplate
 	} else if mailReq.mtype == PasswordReset {
 		templateFileName = ms.configs.PasswordResetTemplate
+	} else if mailReq.mtype == TeamInvitation {
+		templateFileName = ms.configs.TeamInvitationTemplate
 	}
 
 	t, err := template.ParseFiles(templateFileName)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	buf := new(bytes.Buffer)
 	if err = t.Execute(buf, mailReq.data); err != nil {
 		return nil, err
-	}	
+	}
 
 	x, a := mailReq.to[0], mailReq.to[1:]
 
@@ -102,7 +112,7 @@ func (ms *ZcMailService) SetupSendgrid(mailReq *Mail) ([]byte, error) {
 		for _, to := range mailReq.to {
 			tos = append(tos, mail.NewEmail("user", to))
 		}
-				
+
 		m.Personalizations[0].AddTos(tos...)
 	}
 	return mail.GetRequestBody(m), nil
@@ -114,18 +124,20 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 
 	case "sendgrid":
 		request := sendgrid.GetRequest(
-			ms.configs.SendGridApiKey, 
-			"/v3/mail/send", 
+			ms.configs.SendGridApiKey,
+			"/v3/mail/send",
 			"https://api.sendgrid.com",
 		)
 
 		request.Method = "POST"
-		
+
 		body, err := ms.SetupSendgrid(mailReq)
 		request.Body = body
 
 		response, err := sendgrid.API(request)
-		if err != nil { return err }
+		if err != nil {
+			return err
+		}
 
 		fmt.Printf("mail sent successfully, with status code %d", response.StatusCode)
 		return nil
@@ -133,7 +145,9 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 	case "smtp":
 		// switch to mailgun temp
 		body, err := ms.SetupSmtp(mailReq)
-		if err != nil { return err }
+		if err != nil {
+			return err
+		}
 
 		mg := mailgun.NewMailgun(ms.configs.MailGunDomain, ms.configs.MailGunKey)
 		message := mg.NewMessage(ms.configs.MailGunSenderEmail, mailReq.subject, "", mailReq.to...)
@@ -141,13 +155,13 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 		defer cancel()
-		
+
 		if _, _, err := mg.Send(ctx, message); err != nil {
 			return err
 		}
 
 		return nil
-		
+
 	default:
 		msg := fmt.Sprintf("%s is not included in the list of email service providers", esp)
 		return errors.New(msg)
@@ -157,9 +171,9 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 
 func (ms *ZcMailService) NewMail(to []string, subject string, mailType MailType, data *MailData) *Mail {
 	return &Mail{
-		to: 		to,
-		subject: 	subject,
-		mtype: 		mailType,
-		data: 		data,
+		to:      to,
+		subject: subject,
+		mtype:   mailType,
+		data:    data,
 	}
 }
