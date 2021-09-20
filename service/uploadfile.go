@@ -44,27 +44,27 @@ type DeleteFileRequest struct {
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 // service file for uploading a single file to the files folder, please always specify a folder to saved your files in
 
-func SingleFileUpload(folderName string, r *http.Request) (string, error, string) {
+func SingleFileUpload(folderName string, r *http.Request) (string, error) {
 	var fileUrl string
 	file, handle, err := r.FormFile("file")
 	if err != nil {
-		return "", err, "Error getting file from form data"
+		return "", err
 	}
 	defer file.Close()
 
 	mimeType := handle.Header.Get("Content-Type")
 	switch {
 	case contains(mimeType, allowedMimeTypes):
-		path, err, msg := saveFile(folderName, file, handle, r)
+		path, err := saveFile(folderName, file, handle, r)
 		if err != nil {
-			return "", err, msg
+			return "", err
 		}
 		fileUrl = path
 	default:
-		return "", fmt.Errorf("File type not Allow"), "file type not allowed"
+		return "", fmt.Errorf("File type not Allow")
 	}
 
-	return fileUrl, nil, "success"
+	return fileUrl, nil
 }
 
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
@@ -74,13 +74,13 @@ func SingleFileUpload(folderName string, r *http.Request) (string, error, string
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 // Service function for uploading multiple files to the files folder, please always provide folder to save your files to
 
-func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempResponse, error, string) {
+func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempResponse, error) {
 	if r.Method != "POST" {
-		return nil, fmt.Errorf("method not allowed"), "Request Method is not allowed"
+		return nil, fmt.Errorf("method not allowed")
 	}
 
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
-		return nil, err, "Error Parsing Form"
+		return nil, err
 	}
 
 	files := r.MultipartForm.File["file"]
@@ -89,7 +89,7 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 
 		file, err := fileHeader.Open()
 		if err != nil {
-			return nil, err, "Error Opening File Header"
+			return nil, err
 		}
 
 		defer file.Close()
@@ -97,17 +97,17 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 		buff := make([]byte, 512)
 		_, err = file.Read(buff)
 		if err != nil {
-			return nil, err, "Error Reading buffer"
+			return nil, err
 		}
 
 		filetype := http.DetectContentType(buff)
 		if !contains(filetype, allowedMimeTypes) {
-			return nil, fmt.Errorf("File type not allowed"), "File type is not allowed"
+			return nil, fmt.Errorf("File type not allowed")
 		}
 
 		_, errr := file.Seek(0, io.SeekStart)
 		if errr != nil {
-			return nil, errr, "File Seeking Failed"
+			return nil, errr
 		}
 
 		if spl := strings.ReplaceAll(folderName, " ", ""); spl != "" {
@@ -118,7 +118,7 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 		}
 		fileExtension := filepath.Ext(fileHeader.Filename)
 		// cwd, _ := os.Getwd()
-		exeDir, newF := "./files/"+folderName, ""
+		exeDir, newF := "files/"+folderName, ""
 		// mexeDir := filepath.Join(cwd,exeDir)
 		filenamePrefix := filepath.Join(exeDir, newF, buildFileName())
 		filename, errr := pickFileName(filenamePrefix, fileExtension)
@@ -127,44 +127,39 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 
 
 		if errr != nil {
-			return nil, errr, "Eror creating unique file name"
+			return nil, errr
 		}
 
-		// err0 := os.MkdirAll(mexeDir, os.ModePerm)
-		// if err != nil {
-		// 	return nil, err0
-		// }
 		_, err2 := os.Stat(exeDir)
- 
-		if os.IsNotExist(err2) {
+		if err2 != nil {
 			err1 := os.Mkdir(exeDir, 0777)
-			if err != nil {
-				return nil, err1, "Creating Dir with Mkdir Failed"
+			if err1 != nil {
+				return nil, err1
 			}
 			err0 := os.MkdirAll(exeDir, 0777)
-			if err != nil {
-				return nil, err0, "Creating Dir with MkdirAll Failed"
+			if err0 != nil {
+				return nil, err0
 			}
-	
 		}
 
-		// f, erri := os.Create(wfilename)
-		// if erri != nil {
-		// 	return nil, erri
-		// }
-		f, erri := os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0777)
-		if erri != nil {
-			return nil, erri, "Opening File Failed"
-		}
-
-		defer f.Close()
-
-		_, err = io.Copy(f, file)
+		destinationFile, erri := os.Create(filename)
+		defer destinationFile.Close()
 		if err != nil {
-			return nil, err, "copying data to file failed"
+			return nil, erri
+		}
+
+		_, err = io.Copy(destinationFile, file)
+		if err != nil {
+			return nil, err
 		}
 		filename_e := strings.Join(strings.Split(filename, "\\"), "/")
-		fileUrl := r.Host + "/" + filename_e
+
+
+		var urlPrefix string = "https://api.zuri.chat/"
+		if r.Host == "127.0.0.1:8080" {
+			urlPrefix = "127.0.0.1:8080/"
+		}
+		fileUrl := urlPrefix + filename_e
 		lores := MultipleTempResponse{
 			OriginalName: fileHeader.Filename,
 			FileUrl:      fileUrl,
@@ -172,7 +167,7 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 		res = append(res, lores)
 	}
 
-	return res, nil, "successfully Upload files"
+	return res, nil
 }
 
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
@@ -206,13 +201,9 @@ func UploadOneFile(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(fmt.Errorf("Acess Denied, Plugin does not exist"), http.StatusForbidden, w)
 		return
 	}
-	url, err, msg := SingleFileUpload(plugin_id, r)
+	url, err:= SingleFileUpload(plugin_id, r)
 	if err != nil {
-		err3 := Terror{
-			Err: err, 
-			Msg: msg,
-		}
-		utils.GetError(fmt.Errorf(fmt.Sprintf("%v", err3)), http.StatusBadRequest, w)
+		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
 	res := OneTempResponse{
@@ -230,13 +221,9 @@ func UploadMultipleFiles(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(fmt.Errorf("Acess Denied, Plugin does not exist"), http.StatusForbidden, w)
 		return
 	}
-	list, err, msg := MultipleFileUpload(plugin_id, r)
+	list, err:= MultipleFileUpload(plugin_id, r)
 	if err != nil {
-		err3 := Terror{
-			Err: err, 
-			Msg: msg,
-		}
-		utils.GetError(fmt.Errorf(fmt.Sprintf("%v", err3)), http.StatusBadRequest, w)
+		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
 	res := MultTempResponse{
@@ -264,7 +251,11 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(fmt.Errorf("Delete Not Allowed for plugin of Id: "+plugin_id), http.StatusForbidden, w)
 		return
 	}
-	filePath := "." + strings.Split(delFile.FileUrl, r.Host)[1]
+	var urldom string ="api.zuri.chat"
+	if r.Host == "127.0.0.1:8080" {
+		urldom = "127.0.0.1:8080"
+	}
+	filePath := "." + strings.Split(delFile.FileUrl, urldom)[1]
 	cwd, _ := os.Getwd()
 	filePath = filepath.Join(cwd,filePath)
 	er := DeleteFileFromServer(filePath)
@@ -280,12 +271,12 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 
 // Functions below here are some inpackage functions used in the functions above
 
-func saveFile(folderName string, file multipart.File, handle *multipart.FileHeader, r *http.Request) (string, error, string) {
+func saveFile(folderName string, file multipart.File, handle *multipart.FileHeader, r *http.Request) (string, error) {
 	// cwd, _ := os.Getwd()
 	// usdr,_ := uuser.Current()
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
-		return "", err, "error reading files"
+		return "", err
 	}
 	if spl := strings.ReplaceAll(folderName, " ", ""); spl != "" {
 		folderName = folderName + "/"
@@ -295,40 +286,45 @@ func saveFile(folderName string, file multipart.File, handle *multipart.FileHead
 	}
 	fileExtension := filepath.Ext(handle.Filename)
 
-	exeDir, newF := "./files/"+folderName, ""
+	exeDir, newF := "files/"+folderName, ""
 	// mexeDir := filepath.Join(cwd,exeDir)
 	filenamePrefix := filepath.Join(exeDir, newF, buildFileName())
 	filename, errr := pickFileName(filenamePrefix, fileExtension)
 	// wfilename := filepath.Join(cwd,filename)
 	if errr != nil {
-		return "", errr, "error creating unique file name"
+		return "", errr
 	}
 
 	_, err2 := os.Stat(exeDir)
- 
-	if os.IsNotExist(err2) {
-		err1 := os.Mkdir(exeDir, 0777)
-		if err != nil {
-			return "", err1, "Creating Dir with Mkdir Failed"
+	if err2 != nil {
+		err1 := os.Mkdir(exeDir, os.ModePerm)
+		if err1 != nil {
+			return "", err1
 		}
-		err0 := os.MkdirAll(exeDir, 0777)
-		if err != nil {
-			return "", err0, "Creating Dir with MkdirAll Failed"
+		err0 := os.MkdirAll(exeDir, os.ModePerm)
+		if err0 != nil {
+			return "", err0
 		}
- 
 	}
-	_, erri := os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0777)
-		if erri != nil {
-			return "", erri, "Creating file with openfile Failed"
+
+	destinationFile, erri := os.Create(filename)
+	defer destinationFile.Close()
+	if err != nil {
+		return "", erri
 	}
 
 	err = ioutil.WriteFile(filename, data, 0777)
 	if err != nil {
-		return "", err, "Writing to file Failed"
+		return "", err
 	}
+
 	filename_e := strings.Join(strings.Split(filename, "\\"), "/")
-	fileUrl := r.Host + "/" + filename_e
-	return fileUrl, nil, "Success"
+	var urlPrefix string = "https://api.zuri.chat/"
+		if r.Host == "127.0.0.1:8080" {
+			urlPrefix = "127.0.0.1:8080/"
+		}
+		fileUrl := urlPrefix + filename_e
+	return fileUrl, nil
 }
 
 func contains(v string, a []string) bool {

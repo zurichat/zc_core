@@ -109,9 +109,18 @@ func GetMembers(w http.ResponseWriter, r *http.Request) {
 // Add member to an organization
 func CreateMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	loggedInUser := r.Context().Value("user").(*auth.AuthUser)
 	org_collection, user_collection, member_collection := "organizations", "users", "members"
+	user, _ := auth.FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
 
 	sOrgId := mux.Vars(r)["id"]
+
+	if !auth.IsAuthorized(user.ID, sOrgId, "admin", w) {
+		return
+	}
+
+
+
 	orgId, err := primitive.ObjectIDFromHex(sOrgId)
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
@@ -154,7 +163,7 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 	var guser GUser
 	mapstructure.Decode(userDoc, &guser)
 
-	user, _ := auth.FetchUserByEmail(bson.M{"email": strings.ToLower(newUserEmail)})
+	user, _ = auth.FetchUserByEmail(bson.M{"email": strings.ToLower(newUserEmail)})
 
 	// get organization
 	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": orgId})
@@ -559,16 +568,26 @@ func UpdateMemberSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse request payload to map
-	updPayload := make(map[string]interface{})
-	err = utils.ParseJsonFromRequest(r, &updPayload)
+	// Parse request from incoming payload
+	var settings Settings
+	err = utils.ParseJsonFromRequest(r, &settings)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
 
+	// convert setting struct to map
+	pSettings, err := utils.StructToMap(settings)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	memberSettings := make(map[string]interface{})
+	memberSettings["settings"] = pSettings
+
 	// fetch and update the document
-	update, err := utils.UpdateOneMongoDbDoc(member_collection, memberId, updPayload)
+	update, err := utils.UpdateOneMongoDbDoc(member_collection, memberId, memberSettings)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
@@ -589,6 +608,7 @@ func mustObjectID(s string) primitive.ObjectID {
 	}
 	return id
 }
+
 // Activate single member in an organization
 func ReactivateMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")

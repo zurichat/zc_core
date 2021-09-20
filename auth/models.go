@@ -205,10 +205,11 @@ func IsAuthorized(user_id string, orgId string, role string, w http.ResponseWrit
 }
 
 // NOTE: Example of how to use isAuthorized function
-// loggedInUser := r.Context().Value("user").(auth.AuthUser)
-// orgId := mux.Vars(r)["id"]
+// loggedInUser := r.Context().Value("user").(*auth.AuthUser)
+// user, _ := auth.FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
+// sOrgId := mux.Vars(r)["id"]
 
-// if !auth.IsAuthorized(loggedInUser.ID.Hex(), orgId, "member", w) {
+// if !auth.IsAuthorized(user.ID, sOrgId, "admin", w) {
 // 	return
 // }
 
