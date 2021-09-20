@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+
 	// uuser "os/user"
 	"path/filepath"
 	"strings"
@@ -124,8 +125,6 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 		filename, errr := pickFileName(filenamePrefix, fileExtension)
 		// wfilename := filepath.Join(cwd,filename)
 
-
-
 		if errr != nil {
 			return nil, errr
 		}
@@ -153,7 +152,6 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 			return nil, err
 		}
 		filename_e := strings.Join(strings.Split(filename, "\\"), "/")
-
 
 		var urlPrefix string = "https://api.zuri.chat/"
 		if r.Host == "127.0.0.1:8080" {
@@ -201,7 +199,7 @@ func UploadOneFile(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(fmt.Errorf("Acess Denied, Plugin does not exist"), http.StatusForbidden, w)
 		return
 	}
-	url, err:= SingleFileUpload(plugin_id, r)
+	url, err := SingleFileUpload(plugin_id, r)
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
@@ -221,7 +219,7 @@ func UploadMultipleFiles(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(fmt.Errorf("Acess Denied, Plugin does not exist"), http.StatusForbidden, w)
 		return
 	}
-	list, err:= MultipleFileUpload(plugin_id, r)
+	list, err := MultipleFileUpload(plugin_id, r)
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
@@ -251,13 +249,13 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(fmt.Errorf("Delete Not Allowed for plugin of Id: "+plugin_id), http.StatusForbidden, w)
 		return
 	}
-	var urldom string ="api.zuri.chat"
+	var urldom string = "api.zuri.chat"
 	if r.Host == "127.0.0.1:8080" {
 		urldom = "127.0.0.1:8080"
 	}
 	filePath := "." + strings.Split(delFile.FileUrl, urldom)[1]
 	cwd, _ := os.Getwd()
-	filePath = filepath.Join(cwd,filePath)
+	filePath = filepath.Join(cwd, filePath)
 	er := DeleteFileFromServer(filePath)
 	if er != nil {
 		utils.GetError(er, http.StatusBadRequest, w)
@@ -320,10 +318,10 @@ func saveFile(folderName string, file multipart.File, handle *multipart.FileHead
 
 	filename_e := strings.Join(strings.Split(filename, "\\"), "/")
 	var urlPrefix string = "https://api.zuri.chat/"
-		if r.Host == "127.0.0.1:8080" {
-			urlPrefix = "127.0.0.1:8080/"
-		}
-		fileUrl := urlPrefix + filename_e
+	if r.Host == "127.0.0.1:8080" {
+		urlPrefix = "127.0.0.1:8080/"
+	}
+	fileUrl := urlPrefix + filename_e
 	return fileUrl, nil
 }
 

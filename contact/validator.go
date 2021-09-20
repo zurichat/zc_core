@@ -10,14 +10,15 @@ import (
 
 const (
 	MAX_FILE_COUNT  = 5
-	MAX_FILE_SIZE   = int64(1024 * 1024) // 2 MB
+	MAX_FILE_SIZE   = int64(2 * 1024 * 1024) // 2 MB
 	MAX_EMAIL_COUNT = 254
 )
 
 var (
 	EmailRX           = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 	AcceptedFileTypes = []string{"jpeg", "jpg", "png", "webp", "bmp", "pdf", "docx", "doc"}
-	folderName        = "zc_contact"
+	folderName        = "contact"
+	exts              = []string{"png", "jpeg", "jpg", "bmp", "doc", "pdf", "docx"}
 )
 
 type Validator struct {
@@ -66,49 +67,34 @@ func EmailMatches(value string, rx *regexp.Regexp) bool {
 
 // Empty returns true if a specific, trimmed value is empty
 func Empty(value string) bool {
-	if strings.TrimSpace(value) == "" {
-		return false
-	}
-	return true
+	return strings.TrimSpace(value) != ""
 }
 
 // CharacterCount returns true if the character count of a given value is less
 // than a given integer(count)
 func CharacterCount(value string, count int) bool {
-	if utf8.RuneCountInString(value) < count {
-		return true
-	}
-	return false
+	return utf8.RuneCountInString(value) < count
 }
 
 // AttachmentLength returns true if length of array is less than MAX_FILE_COUNT of 5
 func AttachmentLength(list []*multipart.FileHeader) bool {
-	if len(list) > MAX_FILE_COUNT {
-		return false
-	}
-	return true
+	return len(list) <= MAX_FILE_COUNT
 }
 
 // EmailLength returns true if length of email is less than MAX_EMAIL_COUNT of 254
 func EmailLength(email string) bool {
-	if len(email) < MAX_EMAIL_COUNT+1 {
-		return true
-	}
-	return false
+	return len(email) < MAX_EMAIL_COUNT+1
 }
 
 // FileSize returns true if the file size of a given file is less than
 // MAX_FILE_SIZE of 2MB
 func FileSize(file *multipart.FileHeader) bool {
-	if file.Size > MAX_FILE_SIZE {
-		return false
-	}
-	return true
+	return file.Size < MAX_FILE_SIZE
 }
 
 // AcceptFileSize returns true if the extension of the uploaded files matches the
 // allowed file extensions
-func AcceptFileType(file *multipart.FileHeader, exts ...string) bool {
+func AcceptFileType(file *multipart.FileHeader, exts []string) bool {
 	filename := file.Filename
 	fileExtension := filepath.Ext(filename)
 	for _, ext := range exts {
@@ -142,7 +128,7 @@ func ValidateAttachedFiles(validator Validator, attachments []*multipart.FileHea
 	if len(attachments) > 0 {
 		validator.Check(AttachmentLength(attachments), "attachments", "file count exceeded")
 		for _, attachment := range attachments {
-			validator.Check(AcceptFileType(attachment, "png", "jpeg", "jpg", "bmp"), "attachments", "invalid file type")
+			validator.Check(AcceptFileType(attachment, exts), "attachments", "invalid file type")
 			validator.Check(FileSize(attachment), "attachments", "maximum file size exceeded")
 		}
 
