@@ -49,6 +49,23 @@ paths:
           $ref: "#/components/responses/NotAuthorizedOrNoAuthToken"
         "500":
           $ref: "#/components/responses/InternalServerError"
+          
+  /auth/logout/othersessions:
+    post:
+      tags:
+        - Authentication
+      summary: Authentication request to logout from other sessions
+      requestBody:
+        $ref: "#/components/requestBodies/logoutOtherSessions"
+      responses:
+        "200":
+          $ref: "#/components/responses/LogoutSuccessful"
+        "400":
+          $ref: "#/components/responses/InvalidCredential"
+        "401":
+          $ref: "#/components/responses/NotAuthorizedOrNoAuthToken"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /auth/verify-token:
     get:
@@ -176,8 +193,25 @@ components:
                 format: int32
                 example: 500
               message:
-                type: string    
-
+                type: string
+                
+    InvalidCredential:
+      description: User entered invalid credential(s)
+      content:
+        application/json:
+          schema:
+            required:
+              - code
+              - message
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+                example: 400
+              message:
+                type: string
+                
     BadRequest:
       description: An incorrect client request
       content:
@@ -410,6 +444,11 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/confirmPassReqB"
+    logoutOtherSessions:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/logoutOthers"
     verification:
       content:
         application/json:
@@ -451,7 +490,13 @@ components:
         code:
           type: string
           format: email
-  
+    logoutOthers:
+      type: object
+      properties:
+        password:
+          type: string
+          format: password
+          
   securitySchemes:
     bearerAuth:
       type: http
