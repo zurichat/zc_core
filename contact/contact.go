@@ -3,18 +3,18 @@ package contact
 import (
 	"errors"
 	"fmt"
-	"io"
 	"mime/multipart"
 	"net/http"
-	"os"
 	"time"
 
 	"zuri.chat/zccore/auth"
+	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
 
 func ContactUs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("content-type", "application/json")
+
 	fmt.Println("Parsing Form Data")
 
 	err := r.ParseMultipartForm(MAX_FILE_SIZE * 6)
@@ -22,17 +22,20 @@ func ContactUs(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(errors.New("error parsing form data"), http.StatusBadRequest, w)
 	}
 
+	// extract user email from session data or form field in request context
 	userDetails, ok := r.Context().Value(auth.UserDetails).(*auth.ResToken)
 	var email string
-	if ok == true && userDetails != nil {
+	if ok && userDetails != nil {
 		email = userDetails.Email
 	} else {
 		email = r.Form.Get("email")
 	}
 
+	// extract subject and content data
 	subject := r.Form.Get("subject")
 	content := r.Form.Get("content")
-	attachments := r.MultipartForm.File["attachments"]
+	// parse attached files and save to file system
+	attachments := r.MultipartForm.File["file"]
 
 	validator := NewValidator()
 	ValidateEmail(*validator, email)
@@ -45,30 +48,30 @@ func ContactUs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, fileHeader := range attachments {
-		err := SaveFileToFS(folderName, fileHeader)
-		if err != nil {
-			utils.GetError(err, http.StatusInternalServerError, w)
-			return
-		}
-	}
-
-	pathSlice := GeneratePaths(attachments)
-	contactFormData := GenerateContactData(email, subject, content, pathSlice)
-
-	data, err := utils.StructToMap(contactFormData)
+	res, err := SaveFileToFS(folderName, r)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
 
-	mongoRes, err := utils.CreateMongoDbDoc("contact", data)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
+	fmt.Println(res)
 
-	utils.GetSuccess("contact information sent successfully", mongoRes, w)
+	// pathSlice := GeneratePaths(attachments)
+	// contactFormData := GenerateContactData(email, subject, content, pathSlice)
+
+	// data, err := utils.StructToMap(contactFormData)
+	// if err != nil {
+	// 	utils.GetError(err, http.StatusInternalServerError, w)
+	// 	return
+	// }
+
+	// mongoRes, err := utils.CreateMongoDbDoc("contact", data)
+	// if err != nil {
+	// 	utils.GetError(err, http.StatusInternalServerError, w)
+	// 	return
+	// }
+
+	// utils.GetSuccess("contact information sent successfully", mongoRes, w)
 }
 
 // GeneratePaths takes in file atachments and generates/returns a path slice
@@ -99,31 +102,10 @@ func GenerateContactData(email, subject, content string, paths []string) Contact
 }
 
 // SaveFileToFS saves each form file uploaded to the filesystem
-func SaveFileToFS(folderName string, fileHeader *multipart.FileHeader) error {
-	file, err := fileHeader.Open()
+func SaveFileToFS(folderName string, r *http.Request) ([]service.MultipleTempResponse, error) {
+	multiTempRes, err := service.MultipleFileUpload(folderName, r)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer file.Close()
-
-	_, err = os.Stat(folderName)
-	if err != nil {
-		err = os.Mkdir(folderName, os.ModePerm)
-		if err != nil {
-			return err
-		}
-	}
-
-	destinationFile, err := os.Create(folderName + "/" + fileHeader.Filename)
-	if err != nil {
-		return err
-	}
-	defer destinationFile.Close()
-
-	_, err = io.Copy(destinationFile, file)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return multiTempRes, nil
 }
