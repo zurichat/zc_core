@@ -101,10 +101,10 @@ func GenerateContactData(email, subject, content string, paths []string) Contact
 // SaveFileToFS saves each form file uploaded to the filesystem
 func SaveFileToFS(folderName string, fileHeader *multipart.FileHeader) error {
 	file, err := fileHeader.Open()
-	defer file.Close()
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 
 	_, err = os.Stat(folderName)
 	if err != nil {
@@ -115,10 +115,10 @@ func SaveFileToFS(folderName string, fileHeader *multipart.FileHeader) error {
 	}
 
 	destinationFile, err := os.Create(folderName + "/" + fileHeader.Filename)
-	defer destinationFile.Close()
 	if err != nil {
 		return err
 	}
+	defer destinationFile.Close()
 
 	_, err = io.Copy(destinationFile, file)
 	if err != nil {
