@@ -419,9 +419,16 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(memberProfile.Socials) > 3 {
+		utils.GetError(errors.New("socials must be 3 or less"), http.StatusBadRequest, w)
+		return
+	}
+
 	// convert struct to map
 	mProfile, err := utils.StructToMap(memberProfile)
 	if err != nil {
+		fmt.Printf("member with id %s failed to convert!", memId)
+		fmt.Printf("mProfile: %s", mProfile)
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
@@ -434,6 +441,7 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if update.ModifiedCount == 0 {
+		fmt.Printf("member with id %s failed to update!", memId)
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
 	}
