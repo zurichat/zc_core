@@ -44,7 +44,7 @@ func ContactUs(w http.ResponseWriter, r *http.Request) {
 	ValidateAttachedFiles(*validator, attachments)
 
 	if !validator.Valid() {
-		utils.GetDetailedError("invalid form data", http.StatusUnprocessableEntity, validator.Errors, w)
+		utils.GetDetailedError("invalid form data", http.StatusInternalServerError, validator.Errors, w)
 		return
 	}
 
@@ -54,24 +54,21 @@ func ContactUs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(res)
+	contactFormData := GenerateContactData(email, subject, content, res)
 
-	// pathSlice := GeneratePaths(attachments)
-	// contactFormData := GenerateContactData(email, subject, content, pathSlice)
+	data, err := utils.StructToMap(contactFormData)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
 
-	// data, err := utils.StructToMap(contactFormData)
-	// if err != nil {
-	// 	utils.GetError(err, http.StatusInternalServerError, w)
-	// 	return
-	// }
+	mongoRes, err := utils.CreateMongoDbDoc("contact", data)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
 
-	// mongoRes, err := utils.CreateMongoDbDoc("contact", data)
-	// if err != nil {
-	// 	utils.GetError(err, http.StatusInternalServerError, w)
-	// 	return
-	// }
-
-	// utils.GetSuccess("contact information sent successfully", mongoRes, w)
+	utils.GetSuccess("contact information sent successfully", mongoRes, w)
 }
 
 // GeneratePaths takes in file atachments and generates/returns a path slice
@@ -89,13 +86,13 @@ func GeneratePaths(attachments []*multipart.FileHeader) []string {
 
 // GenerateContactData returns a compact struct of contact form data given each piece
 // of data sent by user
-func GenerateContactData(email, subject, content string, paths []string) ContactFormData {
+func GenerateContactData(email, subject, content string, filesInfo []service.MultipleTempResponse) ContactFormData {
 	contactFormData := &ContactFormData{
-		Subject:     subject,
-		Content:     content,
-		Email:       email,
-		Attachments: paths,
-		CreatedAt:   time.Now(),
+		Subject:   subject,
+		Content:   content,
+		Email:     email,
+		Files:     filesInfo,
+		CreatedAt: time.Now(),
 	}
 
 	return *contactFormData
