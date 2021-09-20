@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"time"
+
 	"github.com/spf13/viper"
 )
 
@@ -15,14 +17,14 @@ type Configurations struct {
 	UserDbCollection    string
 	SendGridApiKey      string
 
-	ESPType					string
-	SmtpUsername			string
-	SmtpPassword			string
-	SendgridEmail			string
+	ESPType       string
+	SmtpUsername  string
+	SmtpPassword  string
+	SendgridEmail string
 
-	MailGunKey				string
-	MailGunDomain			string
-	MailGunSenderEmail		string
+	MailGunKey         string
+	MailGunDomain      string
+	MailGunSenderEmail string
 
 	ConfirmEmailTemplate  string
 	PasswordResetTemplate string
@@ -41,7 +43,7 @@ func NewConfigurations() *Configurations {
 	viper.SetDefault("DB_NAME", "zurichat")
 	viper.SetDefault("SECRET_KEY", "5d5c7f94e29ba12a21f682be310d3af4")
 	viper.SetDefault("SESSION_KEY", "f6822af94e29ba112be310d3af45d5c7")
-	viper.SetDefault("SESSION_MAX_AGE", 31536000*200)
+	viper.SetDefault("SESSION_MAX_AGE", time.Now().Unix()+(31536000*200))
 	viper.SetDefault("USER_COLLECTION", "users")
 	viper.SetDefault("SESSION_COLLECTION", "session_store")
 	viper.SetDefault("CONFIRM_EMAIL_TEMPLATE", "./templates/confirm_email.html")
@@ -61,13 +63,13 @@ func NewConfigurations() *Configurations {
 		ConfirmEmailTemplate:  viper.GetString("CONFIRM_EMAIL_TEMPLATE"),
 		PasswordResetTemplate: viper.GetString("PASSWORD_RESET_TEMPLATE"),
 
-		SmtpUsername:			viper.GetString("SMTP_USERNAME"),
-		SmtpPassword:			viper.GetString("SMTP_PASSWORD"),
-		SendgridEmail:			viper.GetString("SENDGRID_EMAIL"),
+		SmtpUsername:  viper.GetString("SMTP_USERNAME"),
+		SmtpPassword:  viper.GetString("SMTP_PASSWORD"),
+		SendgridEmail: viper.GetString("SENDGRID_EMAIL"),
 
-		MailGunKey:				viper.GetString("MAILGUN_KEY"),
-		MailGunDomain:			viper.GetString("MAILGUN_DOMAIN"),
-		MailGunSenderEmail:		viper.GetString("MAILGUN_EMAIL"),
+		MailGunKey:         viper.GetString("MAILGUN_KEY"),
+		MailGunDomain:      viper.GetString("MAILGUN_DOMAIN"),
+		MailGunSenderEmail: viper.GetString("MAILGUN_EMAIL"),
 	}
 
 	return configs

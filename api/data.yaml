@@ -58,6 +58,31 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /data/read:
+    post:
+      tags:
+        - read
+      description: Let's plugin read from DB.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataReadRequestBody'
+        required: true
+      responses:
+        "200":
+          description: Successful query.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataRetrievedResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /data/read/{plugin_id}/{coll_name}/{org_id}:
     get:
       tags:
@@ -182,6 +207,29 @@ components:
           payload:
             type: object
             description: Actual data plugin wants to store in DB.
+
+    DataReadRequestBody:
+        type: object
+        required:
+          - plugin_id
+          - organization_id
+          - collection_name
+        properties:
+          plugin_id:
+            type: string
+            description: The plugin ID.
+          organization_id:
+            type: string
+            description: The ID of the organization plugin belongs to.
+          collection_name:
+            type: string
+            description: The name of collection to read from.
+          object_id:
+            type: string
+            description: The ID of object to be received, if known, else ignore
+          filter:
+            type: object
+            description: Query to be matched, ignore if object_id is known
 
     DataPostResponse:
       type: object
