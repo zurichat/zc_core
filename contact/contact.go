@@ -3,18 +3,18 @@ package contact
 import (
 	"errors"
 	"fmt"
-	"io"
 	"mime/multipart"
 	"net/http"
-	"os"
 	"time"
 
 	"zuri.chat/zccore/auth"
+	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
 
 func ContactUs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("content-type", "application/json")
+
 	fmt.Println("Parsing Form Data")
 
 	err := r.ParseMultipartForm(MAX_FILE_SIZE * 6)
@@ -22,17 +22,20 @@ func ContactUs(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(errors.New("error parsing form data"), http.StatusBadRequest, w)
 	}
 
+	// extract user email from session data or form field in request context
 	userDetails, ok := r.Context().Value(auth.UserDetails).(*auth.ResToken)
 	var email string
-	if ok == true && userDetails != nil {
+	if ok && userDetails != nil {
 		email = userDetails.Email
 	} else {
 		email = r.Form.Get("email")
 	}
 
+	// extract subject and content data
 	subject := r.Form.Get("subject")
 	content := r.Form.Get("content")
-	attachments := r.MultipartForm.File["attachments"]
+	// parse attached files and save to file system
+	attachments := r.MultipartForm.File["file"]
 
 	validator := NewValidator()
 	ValidateEmail(*validator, email)
@@ -41,20 +44,17 @@ func ContactUs(w http.ResponseWriter, r *http.Request) {
 	ValidateAttachedFiles(*validator, attachments)
 
 	if !validator.Valid() {
-		utils.GetDetailedError("invalid form data", http.StatusUnprocessableEntity, validator.Errors, w)
+		utils.GetDetailedError("invalid form data", http.StatusInternalServerError, validator.Errors, w)
 		return
 	}
 
-	for _, fileHeader := range attachments {
-		err := SaveFileToFS(folderName, fileHeader)
-		if err != nil {
-			utils.GetError(err, http.StatusInternalServerError, w)
-			return
-		}
+	res, err := SaveFileToFS(folderName, r)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
 	}
 
-	pathSlice := GeneratePaths(attachments)
-	contactFormData := GenerateContactData(email, subject, content, pathSlice)
+	contactFormData := GenerateContactData(email, subject, content, res)
 
 	data, err := utils.StructToMap(contactFormData)
 	if err != nil {
@@ -86,44 +86,23 @@ func GeneratePaths(attachments []*multipart.FileHeader) []string {
 
 // GenerateContactData returns a compact struct of contact form data given each piece
 // of data sent by user
-func GenerateContactData(email, subject, content string, paths []string) ContactFormData {
+func GenerateContactData(email, subject, content string, filesInfo []service.MultipleTempResponse) ContactFormData {
 	contactFormData := &ContactFormData{
-		Subject:     subject,
-		Content:     content,
-		Email:       email,
-		Attachments: paths,
-		CreatedAt:   time.Now(),
+		Subject:   subject,
+		Content:   content,
+		Email:     email,
+		Files:     filesInfo,
+		CreatedAt: time.Now(),
 	}
 
 	return *contactFormData
 }
 
 // SaveFileToFS saves each form file uploaded to the filesystem
-func SaveFileToFS(folderName string, fileHeader *multipart.FileHeader) error {
-	file, err := fileHeader.Open()
-	defer file.Close()
+func SaveFileToFS(folderName string, r *http.Request) ([]service.MultipleTempResponse, error) {
+	multiTempRes, err := service.MultipleFileUpload(folderName, r)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	_, err = os.Stat(folderName)
-	if err != nil {
-		err = os.Mkdir(folderName, os.ModePerm)
-		if err != nil {
-			return err
-		}
-	}
-
-	destinationFile, err := os.Create(folderName + "/" + fileHeader.Filename)
-	defer destinationFile.Close()
-	if err != nil {
-		return err
-	}
-
-	_, err = io.Copy(destinationFile, file)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return multiTempRes, nil
 }
