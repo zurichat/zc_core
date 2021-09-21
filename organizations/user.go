@@ -500,39 +500,6 @@ func TogglePresence(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("Member presence toggled", nil, w)
 }
 
-// // a patch request to /org/id/member/id/settings with the json payload
-// // { "check_spelling": true }
-// // the update adds to the settings map
-// // this query in mongodb would translate to {$set : {"settings.check_spelling" : true}}
-
-// func UpdateMemberSettings(w http.ResponseWriter, r *http.Request) {
-// 	vars := mux.Vars(r)
-// 	orgId, memberId := vars["id"], vars["mem_id"]
-
-// 	updPayload := make(map[string]interface{})
-// 	_ = utils.ParseJsonFromRequest(r, &updPayload)
-
-// 	coll := utils.GetCollection("members")
-// 	filter := bson.M{
-// 		"org_id":  orgId,
-// 		"_id":     mustObjectID(memberId),
-// 		"deleted": bson.M{"$ne": true},
-// 	}
-// 	update := bson.M{}
-// 	for key, value := range updPayload {
-// 		settingsField := fmt.Sprintf("settings.%s", key)
-// 		update["$set"] = bson.M{settingsField: value}
-// 	}
-// 	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
-// 	res := coll.FindOneAndUpdate(r.Context(), filter, update, opts)
-// 	member := new(Member)
-// 	if err := res.Decode(member); err != nil {
-// 		utils.GetError(fmt.Errorf("error updating settings: %v", err), http.StatusInternalServerError, w)
-// 		return
-// 	}
-// 	utils.GetSuccess("settings updated successfully", utils.M{"member": member}, w)
-// }
-
 func UpdateMemberSettings(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	org_collection, member_collection := "organizations", "members"
@@ -601,13 +568,6 @@ func UpdateMemberSettings(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("Member settings updated successfully", nil, w)
 }
 
-func mustObjectID(s string) primitive.ObjectID {
-	id, err := primitive.ObjectIDFromHex(s)
-	if err != nil {
-		panic(err)
-	}
-	return id
-}
 
 // Activate single member in an organization
 func ReactivateMember(w http.ResponseWriter, r *http.Request) {
