@@ -36,6 +36,6 @@ func EmailSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Println(res.InsertedID)
-	utils.GetSuccess("Thanks for subscribing to for or Newsletter", sub_res{status: true}, w)
+	utils.GetSuccess("Thanks for subscribing for our Newsletter", sub_res{status: true}, w)
 
 }

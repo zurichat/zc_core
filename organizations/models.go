@@ -15,6 +15,12 @@ const (
 	OrganizationSettings           = "organizations_settings"
 )
 
+type MemberPassword struct {
+	MemberID string	`bson:"member_id"`
+	Password string	`bson:"password"`
+}
+
+
 type Organization struct {
 	ID           string                   `json:"_id,omitempty" bson:"_id,omitempty"`
 	Name         string                   `json:"name" bson:"name"`
