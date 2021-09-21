@@ -247,7 +247,6 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 		// Get the images of all memebers of the organization
 		var member_imgs []interface{}
 		for _, member := range orgMembers {
-			
 			member_imgs = append(member_imgs,member["image_url"] )
 		}
 		// Return 10 images or less
