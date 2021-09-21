@@ -21,7 +21,7 @@ type BlogPost struct {
 	Likes     int                `json:"likes" bson:"likes"`
 	Comments  int                `json:"comments" bson:"comments"`
 	Tags      []string           `json:"tags" bson:"tags"`
-	Socials   map[string]string  `json:"socials" bson:"socials"`
+	Socials   []string  		 `json:"socials" bson:"socials"`
 	Length    int                `json:"length" bson:"length"`
 	Deleted   bool               `json:"deleted" bson:"deleted"`
 	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
