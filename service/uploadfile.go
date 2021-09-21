@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+
 	// uuser "os/user"
 	"path/filepath"
 	"strings"
@@ -21,7 +22,10 @@ import (
 var allowedMimeTypes = []string{"application/pdf",
 	"image/png", "image/jpg", "text/plain", "image/jpeg",
 	"video/mp4", "video/mpeg", "video/ogg", "video/quicktime",
-	"application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+	"application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+	"application/vnd.android.package-archive", "application/octet-stream",
+	"application/x-rar-compressed"," application/octet-stream"," application/zip", "application/octet-stream", "application/x-zip-compressed", "multipart/x-zip",
+	}
 
 type OneTempResponse struct {
 	FileUrl string `json:"file_url"`
@@ -124,18 +128,16 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 		filename, errr := pickFileName(filenamePrefix, fileExtension)
 		// wfilename := filepath.Join(cwd,filename)
 
-
-
 		if errr != nil {
 			return nil, errr
 		}
 
 		_, err2 := os.Stat(exeDir)
 		if err2 != nil {
-			err1 := os.Mkdir(exeDir, 0777)
-			if err1 != nil {
-				return nil, err1
-			}
+			// err1 := os.Mkdir(exeDir, 0777)
+			// if err1 != nil {
+			// 	return nil, err1
+			// }
 			err0 := os.MkdirAll(exeDir, 0777)
 			if err0 != nil {
 				return nil, err0
@@ -153,7 +155,6 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 			return nil, err
 		}
 		filename_e := strings.Join(strings.Split(filename, "\\"), "/")
-
 
 		var urlPrefix string = "https://api.zuri.chat/"
 		if r.Host == "127.0.0.1:8080" {
@@ -187,6 +188,40 @@ func DeleteFileFromServer(filePath string) error {
 
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// profile image upload
+func ProfileImageUpload(folderName string, r *http.Request) (string, error) {
+	var allowedMimeImageTypes = []string{
+		"image/bmp", "image/cis-cod", "image/gif", "image/ief", "image/jpeg", "image/jpeg", "image/jpeg", "image/pipeg	jfif", "image/svg+xml",
+		"image/tiff", "image/tiff", "image/x-cmu-raster", "	image/x-cmx", "image/x-icon", "image/x-portable-anymap", "image/x-portable-bitmap",
+		"image/x-portable-graymap", "image/x-portable-pixmap", "image/x-rgb", "image/x-xbitmap", "image/x-xpixmap", "image/x-xwindowdump",
+		"image/png"}
+	var fileUrl string
+	file, handle, err := r.FormFile("image")
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	mimeType := handle.Header.Get("Content-Type")
+	switch {
+	case contains(mimeType, allowedMimeImageTypes):
+		path, err := saveFile(folderName, file, handle, r)
+		if err != nil {
+			return "", err
+		}
+		fileUrl = path
+	default:
+		return "", fmt.Errorf("File type not Allow")
+	}
+
+	return fileUrl, nil
+}
+
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 // Plugin file route functions
 
 type Terror struct {
@@ -201,7 +236,7 @@ func UploadOneFile(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(fmt.Errorf("Acess Denied, Plugin does not exist"), http.StatusForbidden, w)
 		return
 	}
-	url, err:= SingleFileUpload(plugin_id, r)
+	url, err := SingleFileUpload(plugin_id, r)
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
@@ -221,7 +256,7 @@ func UploadMultipleFiles(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(fmt.Errorf("Acess Denied, Plugin does not exist"), http.StatusForbidden, w)
 		return
 	}
-	list, err:= MultipleFileUpload(plugin_id, r)
+	list, err := MultipleFileUpload(plugin_id, r)
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
@@ -251,13 +286,13 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(fmt.Errorf("Delete Not Allowed for plugin of Id: "+plugin_id), http.StatusForbidden, w)
 		return
 	}
-	var urldom string ="api.zuri.chat"
+	var urldom string = "api.zuri.chat"
 	if r.Host == "127.0.0.1:8080" {
 		urldom = "127.0.0.1:8080"
 	}
 	filePath := "." + strings.Split(delFile.FileUrl, urldom)[1]
 	cwd, _ := os.Getwd()
-	filePath = filepath.Join(cwd,filePath)
+	filePath = filepath.Join(cwd, filePath)
 	er := DeleteFileFromServer(filePath)
 	if er != nil {
 		utils.GetError(er, http.StatusBadRequest, w)
@@ -297,10 +332,10 @@ func saveFile(folderName string, file multipart.File, handle *multipart.FileHead
 
 	_, err2 := os.Stat(exeDir)
 	if err2 != nil {
-		err1 := os.Mkdir(exeDir, os.ModePerm)
-		if err1 != nil {
-			return "", err1
-		}
+		// err1 := os.Mkdir(exeDir, os.ModePerm)
+		// if err1 != nil {
+		// 	return "", err1
+		// }
 		err0 := os.MkdirAll(exeDir, os.ModePerm)
 		if err0 != nil {
 			return "", err0
@@ -320,10 +355,10 @@ func saveFile(folderName string, file multipart.File, handle *multipart.FileHead
 
 	filename_e := strings.Join(strings.Split(filename, "\\"), "/")
 	var urlPrefix string = "https://api.zuri.chat/"
-		if r.Host == "127.0.0.1:8080" {
-			urlPrefix = "127.0.0.1:8080/"
-		}
-		fileUrl := urlPrefix + filename_e
+	if r.Host == "127.0.0.1:8080" {
+		urlPrefix = "127.0.0.1:8080/"
+	}
+	fileUrl := urlPrefix + filename_e
 	return fileUrl, nil
 }
 

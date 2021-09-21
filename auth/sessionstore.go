@@ -6,6 +6,7 @@ import (
 	"crypto/cipher"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -15,6 +16,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"zuri.chat/zccore/user"
+	"zuri.chat/zccore/utils"
 )
 
 var (
@@ -23,7 +26,8 @@ var (
 )
 
 type Session struct {
-	Id       primitive.ObjectID `bson:"_id,omitempty`
+	Id       primitive.ObjectID `bson:"_id,omitempty"`
+	UserId   primitive.ObjectID `bson:"user_id,omitempty" json:"user_id,omitempty"`
 	Data     string
 	Modified time.Time
 }
@@ -212,6 +216,8 @@ func (m *MongoStore) upsert(session *sessions.Session) error {
 	ctx := context.Background()
 
 	objID, err := primitive.ObjectIDFromHex(session.ID)
+	userID, _ := primitive.ObjectIDFromHex(session.Values["id"].(string))
+
 	if err != nil {
 		return errors.New("zuri Core session: invalid session id")
 	}
@@ -229,6 +235,7 @@ func (m *MongoStore) upsert(session *sessions.Session) error {
 	encoded, _ := securecookie.EncodeMulti(session.Name(), session.Values, m.Codecs...)
 	s := Session{
 		Id:       objID,
+		UserId:   userID,
 		Data:     encoded,
 		Modified: modified,
 	}
@@ -296,4 +303,30 @@ func Decrypt(key, text string) string {
 	plaintext := make([]byte, len(ciphertext))
 	cfb.XORKeyStream(plaintext, ciphertext)
 	return string(plaintext)
+}
+
+// Deletes other sessions apart from current one
+func DeleteOtherSessions(userID string, sessionID string) {
+	uid, _ := primitive.ObjectIDFromHex(userID)
+	sid, _ := primitive.ObjectIDFromHex(sessionID)
+	filter := bson.M{
+		"user_id": bson.M{"$eq": uid},
+		"_id":     bson.M{"$ne": sid},
+	}
+	_, err := utils.DeleteManyMongoDoc(session_collection, filter)
+	if err != nil {
+		fmt.Printf("%v", err)
+	}
+}
+
+// Finds User by ID
+func FetchUserByID(id string) (*user.User, error) {
+	uid, _ := primitive.ObjectIDFromHex(id)
+	filter := bson.M{"_id": uid}
+	user := &user.User{}
+
+	userCollection := utils.GetCollection(user_collection)
+	result := userCollection.FindOne(context.TODO(), filter)
+	err := result.Decode(&user)
+	return user, err
 }

@@ -68,11 +68,11 @@ func GetOrgPluginCollectionName(orgName string) string {
 	return strings.ToLower(orgName) + "_" + InstalledPluginsCollectionName
 }
 
-// type Social struct {
-// 	ID    primitive.ObjectID `json:"id" bson:"id"`
-// 	url   string             `json:"url" bson:"url"`
-// 	title string             `json:"title" bson:"title"`
-// }
+type Social struct {
+	// ID    primitive.ObjectID `json:"id" bson:"id"`
+	Url   string             `json:"url" bson:"url"`
+	Title string             `json:"title" bson:"title"`
+}
 
 type Member struct {
 	ID          primitive.ObjectID     `json:"_id" bson:"_id"`
@@ -96,7 +96,7 @@ type Member struct {
 	Settings  *Settings         `json:"settings" bson:"settings"`
 	Deleted     bool                   `json:"deleted" bson:"deleted"`
 	DeletedAt   time.Time              `json:"deleted_at" bson:"deleted_at"`
-	Socials     map[string]string      `json:"socials" bson:"socials"`
+	Socials     []Social      		   `json:"socials" bson:"socials"`
 }
 
 type Profile struct {
@@ -108,7 +108,7 @@ type Profile struct {
 	Pronouns    string            `json:"pronouns" bson:"pronouns"`
 	Phone       string            `json:"phone" bson:"phone"`
 	TimeZone    string            `json:"time_zone" bson:"time_zone"`
-	Socials     map[string]string `json:"socials" bson:"socials"`
+	Socials     map[string]string		 `json:"socials" bson:"socials"`
 }
 
 type Settings struct {
