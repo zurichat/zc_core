@@ -341,15 +341,16 @@ func TransferOwnership(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var member Member
-
-	err = utils.ParseJsonFromRequest(r, &member)
-	if err != nil {
+	requestData := make(map[string]string)
+	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
 
-	newOwner := strings.ToLower(member.Email)
+	// member_filter := make(map[string]interface{})
+	newOwner := requestData["email"]
+
+	// newOwner := strings.ToLower(member.Email)
 	
 	// confirm if email supplied is valid
 	if !utils.IsValidEmail(newOwner) {
@@ -378,10 +379,10 @@ func TransferOwnership(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	member.Role = "owner"
-	member.MadeOwnerAt = time.Now()
+	orgMember.Role = "owner"
+	orgMember.MadeOwnerAt = time.Now()
 
-	memberMap, err := utils.StructToMap(member)
+	memberMap, err := utils.StructToMap(orgMember)
 	if err != nil {
 		utils.GetError(errors.New("struct to map"), http.StatusInternalServerError, w)
 	}
@@ -404,15 +405,6 @@ func TransferOwnership(w http.ResponseWriter, r *http.Request) {
 
 	memberID := memID.String()
 
-	fmt.Printf("%s member id in string", memberID)
-
-	// update := bson.M{"role": "owner", "madeowner_at": time.Now()}
-
-	// status := make(map[string]interface{})
-
-	// status["role"] = "owner"
-	// status["madeowner_at"] = time.Now()
-	
 	updateRes, err := utils.UpdateOneMongoDbDoc(member_collection, memberID, updateFields)
 
 	if err != nil {
@@ -421,7 +413,7 @@ func TransferOwnership(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if updateRes.ModifiedCount == 0 {
-		utils.GetError(errors.New("zero update count"), http.StatusInternalServerError, w)
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
 	}
 

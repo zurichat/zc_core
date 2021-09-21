@@ -54,6 +54,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/posts/{post_id}/comments", blog.GetBlogComments).Methods("GET")
 	r.HandleFunc("/posts/{post_id}/comments", blog.CommentBlog).Methods("POST")
 	r.HandleFunc("/posts/search", blog.SearchBlog).Methods("GET")
+	r.HandleFunc("/posts/mail", blog.MailList).Methods("PATCH")
 
 	// Authentication
 	r.HandleFunc("/auth/login", auth.LoginIn).Methods(http.MethodPost)

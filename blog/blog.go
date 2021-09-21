@@ -12,6 +12,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"zuri.chat/zccore/auth"
+	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 )
 
@@ -428,4 +430,52 @@ func SearchBlog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.GetSuccess("successful", docs, w)
+}
+
+
+// function for authenticated users to join zuri mailing list
+func MailList(response http.ResponseWriter, request *http.Request) {
+	response.Header().Add("content-type", "application/json")
+
+	var MailList user.User
+	if err := utils.ParseJsonFromRequest(request, &MailList); err != nil {
+		utils.GetError(errors.New("bad update data"), http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	blogMail := strings.ToLower(MailList.Email)
+
+	userMail, err := auth.FetchUserByEmail(bson.M{"email": blogMail})
+
+	if err != nil {
+		utils.GetError(errors.New("please sign up on zuri chat"), http.StatusBadRequest, response)
+		return
+	}
+
+	if !userMail.IsVerified {
+		utils.GetError(errors.New("please verify your email account on zuri chat"), http.StatusBadRequest, response)
+		return
+	}
+
+	if userMail.MailingList {
+		utils.GetError(errors.New("you already subscribed to zuri mail"), http.StatusBadRequest, response)
+		return
+	}
+
+	updateField := bson.M{"mailing_list":true}
+
+	userID := userMail.ID
+
+	updateRes, err := utils.UpdateOneMongoDbDoc(user.UserCollectionName, userID, updateField)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, response)
+		return
+	}
+
+	if updateRes.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, response)
+		return
+	}
+
+	utils.GetSuccess("successfully signed up for zuri mail service", nil, response)
 }
