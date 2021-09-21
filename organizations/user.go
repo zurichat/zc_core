@@ -273,7 +273,7 @@ func UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("image updated successfully", nil, w)
+	utils.GetSuccess("image updated successfully", img_url, w)
 }
 
 // an endpoint to update a user status
