@@ -352,28 +352,17 @@ paths:
 
         "500":
           $ref: "#/components/responses/InternalServerError"
-    put:
+    patch:
       tags:
         - Organization-Member
-      summary: Update user
-      description: This endpoint will be used to update the user's organization information. e.g user roles and permissions
+      summary: Reactivate a deactivated member
+      description: This endpoint will be used to reactivate a member of an organization
       security:
         - cookieAuth: []
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/organization_id"
         - $ref: "#/components/parameters/member_id"
-      requestBody:
-        description: The structure for the entire request
-        required: true
-        content:
-          "application/json":
-            schema:
-              properties:
-                data:
-                  type: string
-                  description: Data to be updated
-                  example: 2
       responses:
         "200":
           $ref: "#/components/responses/resourceUpdated"
@@ -388,7 +377,7 @@ paths:
     delete:
       tags:
         - Organization-Member
-      summary: Delete user
+      summary: Delete user (deactivate)
       description: Remove a user from an organization
       security:
         - cookieAuth: []
@@ -407,7 +396,7 @@ paths:
 
         "500":
           $ref: "#/components/responses/InternalServerError"
-
+      
   /organizations/{organization_id}/members/{member_id}/status:
     patch:
       tags:
@@ -455,10 +444,13 @@ paths:
       requestBody:
         description: The structure for the entire request
         content:
-          "application/json":
+          image:
             schema:
               type: object
-              example: { "image_utl": "https://image.storage/image.png" }
+              properties:
+                image:
+                  type: string
+                  format: binary
       responses:
         "200":
           $ref: "#/components/responses/resourceUpdated"
@@ -487,10 +479,31 @@ paths:
         content:
           "application/json":
             schema:
+              type: object
               properties:
-                data:
+                first_name:
                   type: string
-                  description: Data to be updated
+                last_name:
+                  type: string
+                display_name:
+                  type: string
+                bio:
+                  type: string
+                pronouns:
+                  type: string
+                phone:
+                  type: string
+                time_zone:
+                  type: string
+                socials:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                      title:
+                        type: string
       responses:
         "200":
           $ref: "#/components/responses/resourceUpdated"
@@ -527,7 +540,6 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  
   /organizations/{organization_id}/members/{member_id}/settings:
     patch:
       tags:
@@ -617,32 +629,6 @@ paths:
 
         "500":
           $ref: "#/components/responses/InternalServerError"
-
-  # /organizations/{organization_id}/members:
-  #   get:
-  #     summary: Retrieves all memebers that match the given query parameter
-  #     description: Retrieves all created users saved to the DB
-  #     security:
-  #       - cookieAuth: []
-  #       - bearerAuth: []
-  #     tags:
-  #       - Organization-Member
-  #     parameters:
-  #       - in: query
-  #         name: query
-  #         schema:
-  #           oneOf:
-  #             - $ref: '#/components/parameters/first_name'
-  #             - $ref: '#/components/parameters/last_name'
-  #             - $ref: '#/components/parameters/email'
-  #     responses:
-  #       '200':
-  #         description: Member found or empty result if not found
-  #         content:
-  #           application/json:
-  #             schema:
-  #               oneOf:
-  #                 - $ref: '#/components/responses/getMemberResponse'
 
 components:
   parameters:
@@ -937,6 +923,15 @@ components:
         joined_at:
           type: string
           format: date
+        socials:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: integer
+              title:
+                type: integer
 
     Organization:
       type: object
