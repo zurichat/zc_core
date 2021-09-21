@@ -14,9 +14,17 @@ To create a plugin, go to the following endpoint with the following data
 "install_url":  "url for installation",
 "developer_name": "whatever",
 "developer_email": "whatever@hey.com",
-"icon_url": "icon for the plugin"
+"icon_url": "icon for the plugin",
+"version": "v1",
+"tags": ["some", "nice", "tags"],
+"category": "some category",
+"pictures": ["some.jpeng", "to.jpeng", "be.jpeng", "displayed.peng"]
 }
 
 ```
 Every field here is required, else validation error will occur.
 After a success message is received, the plugin is the approved to be listed on marketplace. It takes 10 seconds before the plugin can be listed in the marketplace.
+
+
+### Update a plugin
+To Update a plugin, a PATCH request should be sent to /plugins/{id} containing a JSON payload with the updated fields and values
