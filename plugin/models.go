@@ -30,6 +30,9 @@ type Plugin struct {
 	CreatedAt      string             `json:"created_at" bson:"created_at"`
 	UpdatedAt      string             `json:"updated_at" bson:"updated_at"`
 	DeletedAt      string             `json:"deleted_at" bson:"deleted_at"`
+	Category  	   string 			  `json:"category" bson:"category"`
+	Version 	   string             `json:"version" bson:"version"`
+	Images         []string           `json:"images" bson:"images"`
 }
 
 func CreatePlugin(ctx context.Context, p *Plugin) error {
