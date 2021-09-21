@@ -236,21 +236,21 @@ func UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
 
 	pOrgId, err := primitive.ObjectIDFromHex(orgId)
 	if err != nil {
-		utils.GetError(errors.New("invalid organisation id"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("invalid organization id"), http.StatusBadRequest, w)
 		return
 	}
 
 	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": pOrgId})
 	if orgDoc == nil {
 		fmt.Printf("org with id %s doesn't exist!", orgId)
-		utils.GetError(errors.New("Organisation Does not exist"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("organization does not exist"), http.StatusBadRequest, w)
 		return
 	}
 
 	memberDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": pMemId, "org_id": orgId})
 	if memberDoc == nil {
 		fmt.Printf("member with id %s doesn't exist!", member_Id)
-		utils.GetError(errors.New("Member Does not exist"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("member does not exist"), http.StatusBadRequest, w)
 		return
 
 	}
@@ -427,8 +427,6 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	// convert struct to map
 	mProfile, err := utils.StructToMap(memberProfile)
 	if err != nil {
-		fmt.Printf("member with id %s failed to convert!", memId)
-		fmt.Printf("mProfile: %s", mProfile)
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
@@ -441,7 +439,6 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if update.ModifiedCount == 0 {
-		fmt.Printf("member with id %s failed to update!", memId)
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
 	}
@@ -575,7 +572,6 @@ func UpdateMemberSettings(w http.ResponseWriter, r *http.Request) {
 
 	utils.GetSuccess("Member settings updated successfully", nil, w)
 }
-
 
 // Activate single member in an organization
 func ReactivateMember(w http.ResponseWriter, r *http.Request) {
