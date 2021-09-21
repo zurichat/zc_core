@@ -82,7 +82,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/url", auth.IsAuthenticated(organizations.UpdateUrl)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/name", auth.IsAuthenticated(organizations.UpdateName)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/logo", auth.IsAuthenticated(organizations.UpdateLogo)).Methods("PATCH")
-	 
+
 	r.HandleFunc("/organizations/{id}/members", auth.IsAuthenticated(organizations.CreateMember)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/members", auth.IsAuthenticated(organizations.GetMembers)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.GetMember)).Methods("GET")
@@ -108,6 +108,8 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	// Plugins
 	r.HandleFunc("/plugins/register", plugin.Register).Methods("POST")
+	r.HandleFunc("/plugins/{id}", plugin.Update).Methods("PATCH")
+	r.HandleFunc("/plugins/{id}", plugin.Delete).Methods("DELETE")
 
 	// Marketplace
 	r.HandleFunc("/marketplace/plugins", marketplace.GetAllPlugins).Methods("GET")
