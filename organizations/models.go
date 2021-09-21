@@ -92,6 +92,7 @@ type Member struct {
 	TimeZone    string                 `json:"time_zone" bson:"time_zone"`
 	Role        string                 `json:"role" bson:"role"`
 	JoinedAt    time.Time              `json:"joined_at" bson:"joined_at"`
+	MadeOwnerAt time.Time              `json:"madeowner_at" bson:"madeowner_at"`
 	// Settings    map[string]interface{} `json:"settings" bson:"settings"`
 	Settings  *Settings         `json:"settings" bson:"settings"`
 	Deleted     bool                   `json:"deleted" bson:"deleted"`
