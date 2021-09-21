@@ -401,6 +401,9 @@ components:
             workspace_url:
               type: string
               example: zurichat-ssr9730.zurichat.com
+            img:
+              type: array
+              example: ["https://imagelocation.com/image.png","https://imagelocation.com/image.png"]
 
     DeleteUser:
       type: object

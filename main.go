@@ -141,6 +141,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	// file upload
 	r.HandleFunc("/upload/file/{plugin_id}", auth.IsAuthenticated(service.UploadOneFile)).Methods("POST")
 	r.HandleFunc("/upload/files/{plugin_id}", auth.IsAuthenticated(service.UploadMultipleFiles)).Methods("POST")
+	r.HandleFunc("/upload/mesc/{apk_sec}/{exe_sec}", auth.IsAuthenticated(service.MescFiles)).Methods("POST")
 	r.HandleFunc("/delete/file/{plugin_id}", auth.IsAuthenticated(service.DeleteFile)).Methods("DELETE")
 	r.PathPrefix("/files/").Handler(http.StripPrefix("/files/", http.FileServer(http.Dir("./files/"))))
 
