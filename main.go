@@ -8,7 +8,7 @@ import (
 	"time"
 
 	socketio "github.com/googollee/go-socket.io"
-	// "github.com/gorilla/handlers"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 
@@ -191,7 +191,7 @@ func main() {
 	// methodsOK := handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS", "DELETE", "PUT"})
 
 	srv := &http.Server{
-		Handler:      LoggingMiddleware(c.Handler(r)),
+		Handler:      handlers.LoggingHandler(os.Stdout, c.Handler(r)),
 		Addr:         ":" + port,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
@@ -231,24 +231,4 @@ func Index(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, fmt.Sprintf("Welcome %s to Zuri Core Developer.", user.Email))
-}
-
-type loggingResponseWriter struct {
-	http.ResponseWriter
-	statusCode int
-}
-
-func (lrw *loggingResponseWriter) WriteHeader(code int) {
-	lrw.statusCode = code
-	lrw.ResponseWriter.WriteHeader(code)
-}
-
-func LoggingMiddleware(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		lrw := &loggingResponseWriter{w, 200}
-		start := time.Now()
-		h.ServeHTTP(lrw, r)
-		duration := time.Since(start)
-		log.Printf("[%s] | %s | %d | %dms\n", r.Method, r.URL.Path, lrw.statusCode, duration.Milliseconds())
-	})
 }

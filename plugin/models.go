@@ -26,7 +26,7 @@ type Plugin struct {
 	InstallCount   int64              `json:"install_count,omitempty" bson:"install_count"`
 	Approved       bool               `json:"approved" bson:"approved"`
 	Deleted        bool               `json:"deleted" bson:"deleted"`
-	Pictures       []string           `json:"pictures" bson:"pictures"`
+	Images         []string           `json:"images" bson:"images"`
 	Version        string             `json:"version" bson:"version"`
 	Category       string             `json:"category" bson:"category"`
 	Tags           []string           `json:"tags" bson:"tags"`
@@ -34,15 +34,12 @@ type Plugin struct {
 	CreatedAt      string             `json:"created_at" bson:"created_at"`
 	UpdatedAt      string             `json:"updated_at" bson:"updated_at"`
 	DeletedAt      string             `json:"deleted_at" bson:"deleted_at"`
-	Category  	   string 			  `json:"category" bson:"category"`
-	Version 	   string             `json:"version" bson:"version"`
-	Images         []string           `json:"images" bson:"images"`
 }
 
 type PluginPatch struct {
 	Name        *string  `json:"name"`
 	Description *string  `json:"description"`
-	Pictures    []string `json:"pictures"`
+	Images      []string `json:"images" bson:"images"`
 	Tags        []string `json:"tags"`
 	Version     *string  `json:"version"`
 	SidebarURL  *string  `json:"sidebar_url"`
@@ -85,7 +82,7 @@ func FindPlugins(ctx context.Context, filter bson.M) ([]*Plugin, error) {
 	return ps, nil
 }
 
-func updatePlugin(ctx context.Context, id string, pp PluginPatch) {
+func updatePlugin(ctx context.Context, id string, pp PluginPatch) error {
 	collection := utils.GetCollection(PluginCollectionName)
 	objId, _ := primitive.ObjectIDFromHex(id)
 	update := M{}
@@ -107,13 +104,14 @@ func updatePlugin(ctx context.Context, id string, pp PluginPatch) {
 		update["version"] = *(pp.Version)
 	}
 
-	if pp.Pictures != nil {
-		update["$push"] = bson.M{"pictures": bson.M{"$each": pp.Pictures}}
+	if pp.Images != nil {
+
+		update["$push"] = bson.M{"images": bson.M{"$each": pp.Images}}
 	}
 
 	if pp.Tags != nil {
 		update["$push"] = bson.M{"tags": bson.M{"$each": pp.Tags}}
 	}
-	_, err = collection.UpdateOne(ctx, M{"_id": objId}, update)
+	_, err := collection.UpdateOne(ctx, M{"_id": objId}, update)
 	return err
 }
