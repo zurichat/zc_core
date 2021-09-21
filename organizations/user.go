@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"zuri.chat/zccore/auth"
+	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
 
@@ -119,8 +120,6 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
-
 	orgId, err := primitive.ObjectIDFromHex(sOrgId)
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
@@ -227,42 +226,43 @@ func UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
 
 	orgId := mux.Vars(r)["id"]
 	member_Id := mux.Vars(r)["mem_id"]
-
-	requestData := make(map[string]string)
-	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
-	}
-	image_url := requestData["image_url"]
+	
 
 	pMemId, err := primitive.ObjectIDFromHex(member_Id)
 	if err != nil {
-		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("invalid Member id"), http.StatusBadRequest, w)
 		return
 	}
 
 	pOrgId, err := primitive.ObjectIDFromHex(orgId)
 	if err != nil {
-		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("invalid organisation id"), http.StatusBadRequest, w)
 		return
 	}
 
 	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": pOrgId})
 	if orgDoc == nil {
 		fmt.Printf("org with id %s doesn't exist!", orgId)
-		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("Organisation Does not exist"), http.StatusBadRequest, w)
 		return
 	}
 
 	memberDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": pMemId, "org_id": orgId})
 	if memberDoc == nil {
 		fmt.Printf("member with id %s doesn't exist!", member_Id)
-		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("Member Does not exist"), http.StatusBadRequest, w)
 		return
 
 	}
 
-	result, err := utils.UpdateOneMongoDbDoc(member_collection, member_Id, bson.M{"image_url": image_url})
+	uploadPath := "profile_image/" + orgId + "/" + member_Id
+	img_url, erro := service.ProfileImageUpload(uploadPath, r)
+	if erro != nil {
+		utils.GetError(erro, http.StatusInternalServerError, w)
+		return
+	}
+
+	result, err := utils.UpdateOneMongoDbDoc(member_collection, member_Id, bson.M{"image_url": img_url})
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
@@ -273,7 +273,7 @@ func UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("image updated successfully", nil, w)
+	utils.GetSuccess("image updated successfully", img_url, w)
 }
 
 // an endpoint to update a user status
