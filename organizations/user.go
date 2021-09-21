@@ -236,21 +236,21 @@ func UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
 
 	pOrgId, err := primitive.ObjectIDFromHex(orgId)
 	if err != nil {
-		utils.GetError(errors.New("invalid organisation id"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("invalid organization id"), http.StatusBadRequest, w)
 		return
 	}
 
 	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"_id": pOrgId})
 	if orgDoc == nil {
 		fmt.Printf("org with id %s doesn't exist!", orgId)
-		utils.GetError(errors.New("Organisation Does not exist"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("organization does not exist"), http.StatusBadRequest, w)
 		return
 	}
 
 	memberDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": pMemId, "org_id": orgId})
 	if memberDoc == nil {
 		fmt.Printf("member with id %s doesn't exist!", member_Id)
-		utils.GetError(errors.New("Member Does not exist"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("member does not exist"), http.StatusBadRequest, w)
 		return
 
 	}
@@ -427,8 +427,6 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	// convert struct to map
 	mProfile, err := utils.StructToMap(memberProfile)
 	if err != nil {
-		fmt.Printf("member with id %s failed to convert!", memId)
-		fmt.Printf("mProfile: %s", mProfile)
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
@@ -441,7 +439,6 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if update.ModifiedCount == 0 {
-		fmt.Printf("member with id %s failed to update!", memId)
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
 	}
@@ -507,39 +504,6 @@ func TogglePresence(w http.ResponseWriter, r *http.Request) {
 
 	utils.GetSuccess("Member presence toggled", nil, w)
 }
-
-// // a patch request to /org/id/member/id/settings with the json payload
-// // { "check_spelling": true }
-// // the update adds to the settings map
-// // this query in mongodb would translate to {$set : {"settings.check_spelling" : true}}
-
-// func UpdateMemberSettings(w http.ResponseWriter, r *http.Request) {
-// 	vars := mux.Vars(r)
-// 	orgId, memberId := vars["id"], vars["mem_id"]
-
-// 	updPayload := make(map[string]interface{})
-// 	_ = utils.ParseJsonFromRequest(r, &updPayload)
-
-// 	coll := utils.GetCollection("members")
-// 	filter := bson.M{
-// 		"org_id":  orgId,
-// 		"_id":     mustObjectID(memberId),
-// 		"deleted": bson.M{"$ne": true},
-// 	}
-// 	update := bson.M{}
-// 	for key, value := range updPayload {
-// 		settingsField := fmt.Sprintf("settings.%s", key)
-// 		update["$set"] = bson.M{settingsField: value}
-// 	}
-// 	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
-// 	res := coll.FindOneAndUpdate(r.Context(), filter, update, opts)
-// 	member := new(Member)
-// 	if err := res.Decode(member); err != nil {
-// 		utils.GetError(fmt.Errorf("error updating settings: %v", err), http.StatusInternalServerError, w)
-// 		return
-// 	}
-// 	utils.GetSuccess("settings updated successfully", utils.M{"member": member}, w)
-// }
 
 func UpdateMemberSettings(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -607,14 +571,6 @@ func UpdateMemberSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.GetSuccess("Member settings updated successfully", nil, w)
-}
-
-func mustObjectID(s string) primitive.ObjectID {
-	id, err := primitive.ObjectIDFromHex(s)
-	if err != nil {
-		panic(err)
-	}
-	return id
 }
 
 // Activate single member in an organization
