@@ -22,7 +22,10 @@ import (
 var allowedMimeTypes = []string{"application/pdf",
 	"image/png", "image/jpg", "text/plain", "image/jpeg",
 	"video/mp4", "video/mpeg", "video/ogg", "video/quicktime",
-	"application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+	"application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+	"application/vnd.android.package-archive", "application/octet-stream",
+	"application/x-rar-compressed"," application/octet-stream"," application/zip", "application/octet-stream", "application/x-zip-compressed", "multipart/x-zip",
+	}
 
 type OneTempResponse struct {
 	FileUrl string `json:"file_url"`
@@ -131,10 +134,10 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 
 		_, err2 := os.Stat(exeDir)
 		if err2 != nil {
-			err1 := os.Mkdir(exeDir, 0777)
-			if err1 != nil {
-				return nil, err1
-			}
+			// err1 := os.Mkdir(exeDir, 0777)
+			// if err1 != nil {
+			// 	return nil, err1
+			// }
 			err0 := os.MkdirAll(exeDir, 0777)
 			if err0 != nil {
 				return nil, err0
@@ -178,6 +181,40 @@ func DeleteFileFromServer(filePath string) error {
 		return e
 	}
 	return nil
+}
+
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// profile image upload
+func ProfileImageUpload(folderName string, r *http.Request) (string, error) {
+	var allowedMimeImageTypes = []string{
+		"image/bmp", "image/cis-cod", "image/gif", "image/ief", "image/jpeg", "image/jpeg", "image/jpeg", "image/pipeg	jfif", "image/svg+xml",
+		"image/tiff", "image/tiff", "image/x-cmu-raster", "	image/x-cmx", "image/x-icon", "image/x-portable-anymap", "image/x-portable-bitmap",
+		"image/x-portable-graymap", "image/x-portable-pixmap", "image/x-rgb", "image/x-xbitmap", "image/x-xpixmap", "image/x-xwindowdump",
+		"image/png"}
+	var fileUrl string
+	file, handle, err := r.FormFile("image")
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	mimeType := handle.Header.Get("Content-Type")
+	switch {
+	case contains(mimeType, allowedMimeImageTypes):
+		path, err := saveFile(folderName, file, handle, r)
+		if err != nil {
+			return "", err
+		}
+		fileUrl = path
+	default:
+		return "", fmt.Errorf("File type not Allow")
+	}
+
+	return fileUrl, nil
 }
 
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
@@ -295,10 +332,10 @@ func saveFile(folderName string, file multipart.File, handle *multipart.FileHead
 
 	_, err2 := os.Stat(exeDir)
 	if err2 != nil {
-		err1 := os.Mkdir(exeDir, os.ModePerm)
-		if err1 != nil {
-			return "", err1
-		}
+		// err1 := os.Mkdir(exeDir, os.ModePerm)
+		// if err1 != nil {
+		// 	return "", err1
+		// }
 		err0 := os.MkdirAll(exeDir, os.ModePerm)
 		if err0 != nil {
 			return "", err0
@@ -347,4 +384,39 @@ func pickFileName(prefix string, suffix string) (string, error) {
 
 	}
 	return "", fmt.Errorf("Unable to create a unique file with the prefix %v in 100 tries", prefix)
+}
+
+func MescFiles(w http.ResponseWriter, r *http.Request) {
+	masc, mesc, apk_sec, exe_sec := utils.Env("APK_SEC"), utils.Env("EXE_SEC"), mux.Vars(r)["apk_sec"], mux.Vars(r)["exe_sec"]
+	if !(masc == apk_sec && mesc == exe_sec){
+		utils.GetError(fmt.Errorf("Acess Denied"), http.StatusForbidden, w)
+		return
+	}
+	uploadPath := "applications"
+	url, err := mescf(uploadPath, r)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+	res := OneTempResponse{
+		FileUrl: url,
+		Status:  true,
+	}
+	utils.GetSuccess("File Upload Successful", res, w)
+}
+func mescf(folderName string, r *http.Request) (string, error) {
+	var fileUrl string
+	file, handle, err := r.FormFile("app")
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	path, err := saveFile(folderName, file, handle, r)
+	if err != nil {
+		return "", err
+	}
+	fileUrl = path
+
+	return fileUrl, nil
 }

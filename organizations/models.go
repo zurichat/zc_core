@@ -15,6 +15,12 @@ const (
 	OrganizationSettings           = "organizations_settings"
 )
 
+type MemberPassword struct {
+	MemberID string	`bson:"member_id"`
+	Password string	`bson:"password"`
+}
+
+
 type Organization struct {
 	ID           string                   `json:"_id,omitempty" bson:"_id,omitempty"`
 	Name         string                   `json:"name" bson:"name"`
@@ -68,11 +74,10 @@ func GetOrgPluginCollectionName(orgName string) string {
 	return strings.ToLower(orgName) + "_" + InstalledPluginsCollectionName
 }
 
-// type Social struct {
-// 	ID    primitive.ObjectID `json:"id" bson:"id"`
-// 	url   string             `json:"url" bson:"url"`
-// 	title string             `json:"title" bson:"title"`
-// }
+type Social struct {
+	Url   string             `json:"url" bson:"url"`
+	Title string             `json:"title" bson:"title"`
+}
 
 type Member struct {
 	ID          primitive.ObjectID     `json:"_id" bson:"_id"`
@@ -92,23 +97,22 @@ type Member struct {
 	TimeZone    string                 `json:"time_zone" bson:"time_zone"`
 	Role        string                 `json:"role" bson:"role"`
 	JoinedAt    time.Time              `json:"joined_at" bson:"joined_at"`
-	// Settings    map[string]interface{} `json:"settings" bson:"settings"`
-	Settings  *Settings         `json:"settings" bson:"settings"`
+	Settings    *Settings         	   `json:"settings" bson:"settings"`
 	Deleted     bool                   `json:"deleted" bson:"deleted"`
 	DeletedAt   time.Time              `json:"deleted_at" bson:"deleted_at"`
-	Socials     map[string]string      `json:"socials" bson:"socials"`
+	Socials     []Social      		   `json:"socials" bson:"socials"`
 }
 
 type Profile struct {
-	ID          string            `json:"id" bson:"_id"`
-	FirstName   string                 `json:"first_name" bson:"first_name"`
-	LastName    string                 `json:"last_name" bson:"last_name"`
-	DisplayName string            `json:"display_name" bson:"display_name"`
-	Bio         string            `json:"bio" bson:"bio"`
-	Pronouns    string            `json:"pronouns" bson:"pronouns"`
-	Phone       string            `json:"phone" bson:"phone"`
-	TimeZone    string            `json:"time_zone" bson:"time_zone"`
-	Socials     map[string]string `json:"socials" bson:"socials"`
+	ID          string      `json:"id" bson:"_id"`
+	FirstName   string      `json:"first_name" bson:"first_name"`
+	LastName    string      `json:"last_name" bson:"last_name"`
+	DisplayName string      `json:"display_name" bson:"display_name"`
+	Bio         string      `json:"bio" bson:"bio"`
+	Pronouns    string      `json:"pronouns" bson:"pronouns"`
+	Phone       string      `json:"phone" bson:"phone"`
+	TimeZone    string      `json:"time_zone" bson:"time_zone"`
+	Socials     []Social	`json:"socials" bson:"socials"`
 }
 
 type Settings struct {
@@ -157,5 +161,5 @@ type MessagesAndMedia struct {
 	FrequentlyUsedEmoji      bool     `json:"frequently_used_emoji" bson:"frequently_used_emoji"`
 	Custom                   bool     `json:"custom" bson:"custom"`
 	InlineMediaAndLinks      []string `json:"inline_media_and_links" bson:"inline_media_and_links"`
-	BringEmailsIntoZuri      string   `json:"bring_emails_into_zuri bson:"bring_emails_into_zuri"`
+	BringEmailsIntoZuri      string   `json:"bring_emails_into_zuri" bson:"bring_emails_into_zuri"`
 }
