@@ -69,8 +69,8 @@ type User struct {
 	Deactivated       bool                   `default:"false" bson:"deactivated" json:"deactivated"`
 	DeactivatedAt     time.Time              `bson:"deactivated_at" json:"deactivated_at"`
 	IsVerified        bool          		 `bson:"isverified" json:"isverified"`
-	MailingList       bool          		 `bson:"mailing_list" json:"mailing_list"`
-	Organizations     []string               `bson:"workspaces" json:"workspaces"` // should contain (organization) workspace ids
+	Organizations     []string               `bson:"workspaces" json:"workspaces"` 
+	// should contain (organization) workspace ids
 	EmailVerification *UserEmailVerification `bson:"email_verification" json:"email_verification"`
 	PasswordResets    *UserPasswordReset     `bson:"password_resets" json:"password_resets"`  // remove the array
 }
