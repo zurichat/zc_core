@@ -21,7 +21,7 @@ var NoAuthToken = errors.New("No Authorization header provided.")
 func AddOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	plugin_collection, user_collection := "plugins", "users"
+	plugin_collection, member_collection := "plugins", "members"
 	var orgPlugin OrgPluginBody
 
 	OrgId := mux.Vars(r)["id"]
@@ -55,9 +55,9 @@ func AddOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, _ := utils.GetMongoDbDoc(user_collection, bson.M{"_id": creatorId})
+	user, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": creatorId, "org_id": OrgId})
 	if user == nil {
-		utils.GetError(errors.New("user does not exist"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("member doesn't exist in the organization"), http.StatusBadRequest, w)
 		return
 	}
 
