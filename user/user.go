@@ -137,15 +137,17 @@ func (uh *UserHandler) GetUser(response http.ResponseWriter, request *http.Reque
 	objId, err := primitive.ObjectIDFromHex(userId)
 
 	if err != nil {
-		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, response)
+		utils.GetError(errors.New("invalid user id"), http.StatusBadRequest, response)
 		return
 	}
 
 	res, err := utils.GetMongoDbDoc(collectionName, bson.M{"_id": objId, "deactivated": false})
+
 	if err != nil {
 		utils.GetError(errors.New("user not found"), http.StatusNotFound, response)
 		return
 	}
+
 	utils.GetSuccess("user retrieved successfully", res, response)
 }
 
@@ -243,6 +245,17 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 		if err != nil {
 			utils.GetError(err, http.StatusUnprocessableEntity, response)
 			return
+		}
+		// Get the images of all memebers of the organization
+		var member_imgs []interface{}
+		for _, member := range orgMembers {
+			member_imgs = append(member_imgs,member["image_url"] )
+		}
+		// Return 10 images or less
+		if len(member_imgs) < 11 {
+			basic["imgs"] = member_imgs
+		} else {
+			basic["imgs"] = member_imgs[:10]
 		}
 
 		basic["id"] = orgDetails["_id"]
