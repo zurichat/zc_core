@@ -60,15 +60,15 @@ func NewMongoStore(c *mongo.Collection, maxAge int, ensureTTL bool, keyPairs ...
 
 	store.MaxAge(maxAge)
 
-	if ensureTTL {
-		x := (time.Duration(maxAge) * time.Second)
+	// if ensureTTL {
+	// 	x := (time.Duration(maxAge) * time.Second)
 
-		indexModel := mongo.IndexModel{
-			Keys:    bson.M{"modified": 1},
-			Options: options.Index().SetExpireAfterSeconds(int32(x.Seconds())),
-		}
-		c.Indexes().CreateOne(context.Background(), indexModel)
-	}
+	// 	indexModel := mongo.IndexModel{
+	// 		Keys: bson.M{"modified": 1},
+	// 		Options: options.Index().SetExpireAfterSeconds(int32(x.Seconds())),
+	// 	}
+	// 	c.Indexes().CreateOne(context.Background(), indexModel)
+	// }
 
 	return store
 }

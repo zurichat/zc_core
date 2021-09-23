@@ -64,7 +64,7 @@ func (au *AuthHandler) OptionalAuthentication(nextHandler http.HandlerFunc, auth
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("content-type", "application/json")
 
-		store := NewMongoStore(utils.GetCollection(session_collection), SESSION_MAX_AGE, true, []byte(secretKey))
+		store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(secretKey))
 		session, err := store.Get(r, sessionKey)
 		status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
 
