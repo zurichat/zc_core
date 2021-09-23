@@ -137,7 +137,7 @@ func (uh *UserHandler) GetUser(response http.ResponseWriter, request *http.Reque
 	objId, err := primitive.ObjectIDFromHex(userId)
 
 	if err != nil {
-		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, response)
+		utils.GetError(errors.New("invalid user id"), http.StatusBadRequest, response)
 		return
 	}
 
