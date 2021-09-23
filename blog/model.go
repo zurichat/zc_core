@@ -52,6 +52,5 @@ type BlogLikes struct {
 type MailLists struct {
 	ID              primitive.ObjectID 		`bson:"_id,omitempty" json:".id,omitempty"`
 	Email			string					`bson:"email" json:"email"`
-	Subscribed		bool					`bson:"subscribed" json:"subscribed"`
 	SubscribedAt 	time.Time				`bson:"subscribed_at" json:"subscribed_at"`
 }

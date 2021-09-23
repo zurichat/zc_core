@@ -454,10 +454,10 @@ func MailingList(response http.ResponseWriter, request *http.Request) {
 		utils.GetError(errors.New("you already subscribed"), http.StatusBadRequest, response)
 		return
 	}
+	
 
 	mail.Email = blogMail
-	mail.Subscribed = true
-	mail.SubscribedAt = time.Now()
+	mail.SubscribedAt = time.Now() 
 
 	detail, _ := utils.StructToMap(mail)
 
