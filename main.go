@@ -98,7 +98,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/reports", report.GetReports).Methods("GET")
 	r.HandleFunc("/organizations/{id}/reports/{report_id}", report.GetReport).Methods("GET")
 	
-	r.HandleFunc("/organizations/{id}/invitation", organizations.TeamInvitation).Methods("POST")
+	r.HandleFunc("/organizations/{id}/invite", organizations.TeamInvitation).Methods("POST")
 	
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)

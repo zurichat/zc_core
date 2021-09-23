@@ -3,6 +3,7 @@ package organizations
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -20,19 +21,22 @@ type UserHandler struct {
 	configs     *utils.Configurations
 	mailService service.MailService
 }
+
 var us UserHandler
 var validate = validator.New()
 
 func TeamInvitation(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	orgURL := mux.Vars(r)["url"]
+	org_collection, user_collection := "organizations", "users"
 
-	data, _ := utils.GetMongoDbDoc("organizations", bson.M{"workspace_url": orgURL})
-	if data == nil {
-		fmt.Printf("workspace with url %s doesn't exist!", orgURL)
+	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"workspace_url": orgURL})
+	if orgDoc == nil {
+		// fmt.Printf("workspace with url %s doesn't exist!", orgURL)
 		utils.GetError(errors.New("organization does not exist"), http.StatusNotFound, w)
 		return
 	}
+
 	email := struct {
 		Email string `json:"email" validate:"email,required"`
 	}{}
@@ -51,13 +55,19 @@ func TeamInvitation(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
+
+	userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"email": email.Email})
+	if userDoc == nil {
+		utils.GetError(errors.New("user with this email does not exist"), http.StatusBadRequest, w)
+		return
+	}
+
 	// send invite email null
-	// _, token := utils.RandomGen(6, "d")
-	link:= "https://zuri.chat/confirmed_invitation"
+	uniquestring := randomString(36)
+	link := "https://zuri.chat/confirmed_invitation/" + uniquestring
 	invitationLink := map[string]interface{}{
 		"ip_address": strings.Split(r.RemoteAddr, ":")[0],
-		// "token":      token,
-		"link": link,
+		"link":       link,
 		"expired_at": time.Now(),
 		"updated_at": time.Now(),
 		"created_at": time.Now(),
@@ -67,8 +77,7 @@ func TeamInvitation(w http.ResponseWriter, r *http.Request) {
 		"Workspace Invitation Link", service.TeamInvitation,
 		&service.MailData{
 			Username: email.Email,
-			// Code:     invitationLink["token"].(string),
-			Url: invitationLink["link"].(string),
+			Url:      invitationLink["link"].(string),
 		})
 
 	if err := us.mailService.SendMail(msger); err != nil {
@@ -76,4 +85,13 @@ func TeamInvitation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.GetSuccess("Invitation Email Sent", nil, w)
+}
+
+func randomString(n int) string {
+	letters := []rune("abcdefghijklmnopqrstuvwzyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_@")
+	s := make([]rune, n)
+	for i := range s {
+		s[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(s)
 }
