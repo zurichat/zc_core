@@ -92,7 +92,15 @@
         font-weight: inherit !important;
         line-height: inherit !important;
       }
-
+      .btn {
+        background: rgb(17, 151, 17);
+        padding: 12px;
+        margin: 10px 0;
+        border: 1px solid rgba(17, 151, 17, 0.5);
+        border-radius: 3px;
+        text-decoration: none;
+        color: #fff;
+      }
       /* MOBILE STYLES */
       @media screen and (max-width: 600px) {
         h1 {
@@ -196,13 +204,8 @@
                   and looking forward to working with you!
                 </p>
                 <br />
-                <h3>
-                  Follow this link to join workspace
-                  <br />
-                  <a href="zurichat.com/organization/{{.id}}/invite/{{.Code}}"
-                    >zuri.chat/organization/{{.id}}/invite/{{.code}}</a
-                  >
-                </h3>
+                <h3>Follow this link to join workspace</h3>
+                <a href="zuri.chat/join" class="btn">Accept invitation</a>
                 <p style="margin: 0"><strong></strong></p>
               </td>
             </tr>

@@ -15,6 +15,14 @@ import (
 )
 
 // Team Invite to workspace
+
+type UserHandler struct {
+	configs     *utils.Configurations
+	mailService service.MailService
+}
+var us UserHandler
+var validate = validator.New()
+
 func TeamInvitation(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	orgURL := mux.Vars(r)["url"]
@@ -25,8 +33,6 @@ func TeamInvitation(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(errors.New("organization does not exist"), http.StatusNotFound, w)
 		return
 	}
-
-	validate := validator.New()
 	email := struct {
 		Email string `json:"email" validate:"email,required"`
 	}{}
@@ -46,26 +52,23 @@ func TeamInvitation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// send invite email null
-	_, token := utils.RandomGen(6, "d")
-
-	invitationCode := map[string]interface{}{
+	// _, token := utils.RandomGen(6, "d")
+	link:= "https://zuri.chat/confirmed_invitation"
+	invitationLink := map[string]interface{}{
 		"ip_address": strings.Split(r.RemoteAddr, ":")[0],
-		"token":      token,
+		// "token":      token,
+		"link": link,
 		"expired_at": time.Now(),
 		"updated_at": time.Now(),
 		"created_at": time.Now(),
 	}
-	type UserHandler struct {
-		configs     *utils.Configurations
-		mailService service.MailService
-	}
-	var us UserHandler
 	msger := us.mailService.NewMail(
 		[]string{email.Email},
 		"Workspace Invitation Link", service.TeamInvitation,
 		&service.MailData{
 			Username: email.Email,
-			Code:     invitationCode["token"].(string),
+			// Code:     invitationLink["token"].(string),
+			Url: invitationLink["link"].(string),
 		})
 
 	if err := us.mailService.SendMail(msger); err != nil {

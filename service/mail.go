@@ -33,6 +33,7 @@ const (
 type MailData struct {
 	Username string
 	Code     string
+	Url      string
 }
 
 type Mail struct {
