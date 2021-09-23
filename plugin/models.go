@@ -26,13 +26,25 @@ type Plugin struct {
 	InstallCount   int64              `json:"install_count,omitempty" bson:"install_count"`
 	Approved       bool               `json:"approved" bson:"approved"`
 	Deleted        bool               `json:"deleted" bson:"deleted"`
+	Images         []string           `json:"images" bson:"images"`
+	Version        string             `json:"version" bson:"version"`
+	Category       string             `json:"category" bson:"category"`
+	Tags           []string           `json:"tags" bson:"tags"`
 	ApprovedAt     string             `json:"approved_at" bson:"approved_at"`
 	CreatedAt      string             `json:"created_at" bson:"created_at"`
 	UpdatedAt      string             `json:"updated_at" bson:"updated_at"`
 	DeletedAt      string             `json:"deleted_at" bson:"deleted_at"`
-	Category  	   string 			  `json:"category" bson:"category"`
-	Version 	   string             `json:"version" bson:"version"`
-	Images         []string           `json:"images" bson:"images"`
+}
+
+type PluginPatch struct {
+	Name        *string  `json:"name"`
+	Description *string  `json:"description"`
+	Images      []string `json:"images" bson:"images"`
+	Tags        []string `json:"tags"`
+	Version     *string  `json:"version"`
+	SidebarURL  *string  `json:"sidebar_url"`
+	InstallURL  *string  `json:"install_url"`
+	TemplateURL *string  `json:"template_url"`
 }
 
 func CreatePlugin(ctx context.Context, p *Plugin) error {
@@ -49,7 +61,7 @@ func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 	p := new(Plugin)
 	objID, _ := primitive.ObjectIDFromHex(id)
 	collection := utils.GetCollection(PluginCollectionName)
-	res := collection.FindOne(ctx, bson.M{"_id": objID})
+	res := collection.FindOne(ctx, bson.M{"_id": objID, "deleted": M{"$ne": true}})
 	if err := res.Decode(p); err != nil {
 		return nil, err
 	}
@@ -68,4 +80,38 @@ func FindPlugins(ctx context.Context, filter bson.M) ([]*Plugin, error) {
 		return nil, err
 	}
 	return ps, nil
+}
+
+func updatePlugin(ctx context.Context, id string, pp PluginPatch) error {
+	collection := utils.GetCollection(PluginCollectionName)
+	objId, _ := primitive.ObjectIDFromHex(id)
+	update := M{}
+	if pp.Name != nil {
+		update["name"] = *(pp.Name)
+	}
+	if pp.Description != nil {
+		update["description"] = *(pp.Description)
+	}
+	if pp.SidebarURL != nil {
+		update["sidebar_url"] = *(pp.SidebarURL)
+	}
+
+	if pp.TemplateURL != nil {
+		update["template_url"] = *(pp.Description)
+	}
+
+	if pp.Version != nil {
+		update["version"] = *(pp.Version)
+	}
+
+	if pp.Images != nil {
+
+		update["$push"] = bson.M{"images": bson.M{"$each": pp.Images}}
+	}
+
+	if pp.Tags != nil {
+		update["$push"] = bson.M{"tags": bson.M{"$each": pp.Tags}}
+	}
+	_, err := collection.UpdateOne(ctx, M{"_id": objId}, update)
+	return err
 }
