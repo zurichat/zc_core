@@ -8,7 +8,7 @@ import (
 	"time"
 
 	socketio "github.com/googollee/go-socket.io"
-	// "github.com/gorilla/handlers"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 
@@ -75,14 +75,14 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}", auth.IsAuthenticated(organizations.DeleteOrganization)).Methods("DELETE")
 	r.HandleFunc("/organizations/url/{url}", organizations.GetOrganizationByURL).Methods("GET")
 
-	r.HandleFunc("/organizations/{id}/plugins", organizations.AddOrganizationPlugin).Methods("POST")
-	r.HandleFunc("/organizations/{id}/plugins", organizations.GetOrganizationPlugins).Methods("GET")
-	r.HandleFunc("/organizations/{id}/plugins/{plugin_id}", organizations.GetOrganizationPlugin).Methods("GET")
+	r.HandleFunc("/organizations/{id}/plugins", auth.IsAuthenticated(organizations.AddOrganizationPlugin)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/plugins", auth.IsAuthenticated(organizations.GetOrganizationPlugins)).Methods("GET")
+	r.HandleFunc("/organizations/{id}/plugins/{plugin_id}", auth.IsAuthenticated(organizations.GetOrganizationPlugin)).Methods("GET")
 
 	r.HandleFunc("/organizations/{id}/url", auth.IsAuthenticated(organizations.UpdateUrl)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/name", auth.IsAuthenticated(organizations.UpdateName)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/logo", auth.IsAuthenticated(organizations.UpdateLogo)).Methods("PATCH")
-	 
+
 	r.HandleFunc("/organizations/{id}/members", auth.IsAuthenticated(organizations.CreateMember)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/members", auth.IsAuthenticated(organizations.GetMembers)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.GetMember)).Methods("GET")
@@ -108,6 +108,8 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	// Plugins
 	r.HandleFunc("/plugins/register", plugin.Register).Methods("POST")
+	r.HandleFunc("/plugins/{id}", plugin.Update).Methods("PATCH")
+	r.HandleFunc("/plugins/{id}", plugin.Delete).Methods("DELETE")
 
 	// Marketplace
 	r.HandleFunc("/marketplace/plugins", marketplace.GetAllPlugins).Methods("GET")
@@ -189,7 +191,7 @@ func main() {
 	// methodsOK := handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS", "DELETE", "PUT"})
 
 	srv := &http.Server{
-		Handler:      LoggingMiddleware(c.Handler(r)),
+		Handler:      handlers.LoggingHandler(os.Stdout, c.Handler(r)),
 		Addr:         ":" + port,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
@@ -229,25 +231,4 @@ func Index(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, fmt.Sprintf("Welcome %s to Zuri Core Developer.", user.Email))
-}
-
-type loggingResponseWriter struct {
-	http.ResponseWriter
-	statusCode int
-}
-
-func (lrw *loggingResponseWriter) WriteHeader(code int) {
-	lrw.statusCode = code
-	lrw.ResponseWriter.WriteHeader(code)
-}
-
-func LoggingMiddleware(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		lrw := &loggingResponseWriter{w, 200}
-		start := time.Now()
-		h.ServeHTTP(lrw, r)
-		end := time.Now()
-		duration := end.Sub(start)
-		log.Printf("[%s] | %s | %d | %dms\n", r.Method, r.URL.Path, lrw.statusCode, duration.Milliseconds())
-	})
 }

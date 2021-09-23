@@ -137,15 +137,17 @@ func (uh *UserHandler) GetUser(response http.ResponseWriter, request *http.Reque
 	objId, err := primitive.ObjectIDFromHex(userId)
 
 	if err != nil {
-		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, response)
+		utils.GetError(errors.New("invalid user id"), http.StatusBadRequest, response)
 		return
 	}
 
 	res, err := utils.GetMongoDbDoc(collectionName, bson.M{"_id": objId, "deactivated": false})
+
 	if err != nil {
 		utils.GetError(errors.New("user not found"), http.StatusNotFound, response)
 		return
 	}
+
 	utils.GetSuccess("user retrieved successfully", res, response)
 }
 
