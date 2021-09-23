@@ -148,18 +148,18 @@ func ClearSession(m *MongoStore, w http.ResponseWriter, session *sessions.Sessio
 
 func (m *MongoStore) Save(r *http.Request, w http.ResponseWriter, session *sessions.Session) error {
 
-	if session.Options.MaxAge < 0 {
-		if err := m.delete(session); err != nil {
-			return err
-		}
-		m.Token.SetToken(w, session.Name(), "", session.Options)
-		Resptoken = ResToken{
-			SessionName: session.Name(),
-			Cookie:      "",
-			Options:     session.Options,
-		}
-		return nil
-	}
+	// if session.Options.MaxAge < 0 {
+	// 	if err := m.delete(session); err != nil {
+	// 		return err
+	// 	}
+	// 	m.Token.SetToken(w, session.Name(), "", session.Options)
+	// 	Resptoken = ResToken{
+	// 		SessionName: session.Name(),
+	// 		Cookie:      "",
+	// 		Options:     session.Options,
+	// 	}
+	// 	return nil
+	// }
 
 	if session.ID == "" {
 		session.ID = primitive.NewObjectID().Hex()
