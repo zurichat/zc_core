@@ -1,0 +1,804 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Swagger UI</title>
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700|Source+Code+Pro:300,600|Titillium+Web:400,600,700" rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.24.2/swagger-ui.css" >
+  <style>
+    html
+    {
+      box-sizing: border-box;
+      overflow: -moz-scrollbars-vertical;
+      overflow-y: scroll;
+    }
+    *,
+    *:before,
+    *:after
+    {
+      box-sizing: inherit;
+    }
+
+    body {
+      margin:0;
+      background: #fafafa;
+    }
+  </style>
+</head>
+<body>
+
+<div id="swagger-ui"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.24.2/swagger-ui-bundle.js"> </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.24.2/swagger-ui-standalone-preset.js"> </script>
+<script>
+window.onload = function() {
+
+  var spec = {
+    "components": {
+        "requestBodies": {
+            "confirmPassword": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/confirmPassReqB"
+                        }
+                    }
+                }
+            },
+            "login": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/loginReqB"
+                        }
+                    }
+                }
+            },
+            "logoutOtherSessions": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/logoutOthers"
+                        }
+                    }
+                }
+            },
+            "requestPassReset": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/passwordResetReqB"
+                        }
+                    }
+                }
+            },
+            "verification": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/verficationReqB"
+                        }
+                    }
+                }
+            }
+        },
+        "responses": {
+            "BadRequest": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "code": {
+                                    "example": 400,
+                                    "format": "int32",
+                                    "type": "integer"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "code",
+                                "message"
+                            ],
+                            "type": "object"
+                        }
+                    }
+                },
+                "description": "An incorrect client request"
+            },
+            "InternalServerError": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "code": {
+                                    "example": 500,
+                                    "format": "int32",
+                                    "type": "integer"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "code",
+                                "message"
+                            ],
+                            "type": "object"
+                        }
+                    }
+                },
+                "description": "Internal server error occured during operation"
+            },
+            "InvalidCredential": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "code": {
+                                    "example": 400,
+                                    "format": "int32",
+                                    "type": "integer"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "code",
+                                "message"
+                            ],
+                            "type": "object"
+                        }
+                    }
+                },
+                "description": "User entered invalid credential(s)"
+            },
+            "LoginSuccess": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "code": {
+                                    "example": 200,
+                                    "format": "int32",
+                                    "type": "integer"
+                                },
+                                "data": {
+                                    "properties": {
+                                        "session_id": {
+                                            "type": "string"
+                                        },
+                                        "user": {
+                                            "properties": {
+                                                "created_at": {
+                                                    "example": "2021-09-06 03:54:37.387816",
+                                                    "type": "string"
+                                                },
+                                                "display_name": {
+                                                    "example": "samsoft",
+                                                    "type": "string"
+                                                },
+                                                "email": {
+                                                    "example": "hng.user01@gmail.com",
+                                                    "type": "string"
+                                                },
+                                                "first_name": {
+                                                    "example": "Johnson",
+                                                    "type": "string"
+                                                },
+                                                "id": {
+                                                    "example": "613590fd0366b6816a0b75ee",
+                                                    "type": "string"
+                                                },
+                                                "last_name": {
+                                                    "example": "Ajayi",
+                                                    "type": "string"
+                                                },
+                                                "phone": {
+                                                    "example": "09067324567",
+                                                    "type": "string"
+                                                },
+                                                "status": {
+                                                    "example": 0,
+                                                    "type": "string"
+                                                },
+                                                "time_zone": {
+                                                    "type": "string"
+                                                },
+                                                "token": {
+                                                    "example": "l6TVRneU9ESTBNSHhIZDNkQlIwUlplRTVFVFhwYWFsVXlXa1JCZVU5RVVtbFplbHBvVDFSSmVVMTZUbXBPVVQwOWZFQWpod01iU0E2d1FOUkczQlcwaUZDbHVqUnVOVXFFTHk4QUdGMGhMdkgzIiwiZW1haWwiOiJqYjEyQGdtYWlsLmNvbSIsImlkIjoiNjE0MzNmNTZkMDI4NGJjNmE5MjIzM2M1Iiwib3B0aW9ucyI6ey",
+                                                    "type": "object"
+                                                },
+                                                "update_at": {
+                                                    "example": "0001-01-01 00:00:00",
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "code",
+                                "message",
+                                "data"
+                            ],
+                            "type": "object"
+                        }
+                    }
+                },
+                "description": "login successful"
+            },
+            "LogoutSuccessful": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "code": {
+                                    "example": 200,
+                                    "format": "int32",
+                                    "type": "integer"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "code",
+                                "message",
+                                "data"
+                            ],
+                            "type": "object"
+                        }
+                    }
+                },
+                "description": "Logged out successfully"
+            },
+            "NotAuthorizedOrNoAuthToken": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "code": {
+                                    "example": 401,
+                                    "format": "int32",
+                                    "type": "integer"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "code",
+                                "message"
+                            ],
+                            "type": "object"
+                        }
+                    }
+                },
+                "description": "Unauthorized Error"
+            },
+            "PasswordConfirmSuccess": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "code": {
+                                    "example": 200,
+                                    "format": "int32",
+                                    "type": "integer"
+                                },
+                                "message": {
+                                    "example": "Password confirm successful",
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "code",
+                                "message"
+                            ],
+                            "type": "object"
+                        }
+                    }
+                },
+                "description": "Password confirm successful"
+            },
+            "TokenVerified": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "code": {
+                                    "example": 200,
+                                    "format": "int32",
+                                    "type": "integer"
+                                },
+                                "data": {
+                                    "properties": {
+                                        "is_verified": {
+                                            "type": "boolean"
+                                        },
+                                        "user": {
+                                            "properties": {
+                                                "created_at": {
+                                                    "example": "2021-09-06 03:54:37.387816",
+                                                    "type": "string"
+                                                },
+                                                "display_name": {
+                                                    "example": "samsoft",
+                                                    "type": "string"
+                                                },
+                                                "email": {
+                                                    "example": "hng.user01@gmail.com",
+                                                    "type": "string"
+                                                },
+                                                "first_name": {
+                                                    "example": "Johnson",
+                                                    "type": "string"
+                                                },
+                                                "id": {
+                                                    "example": "613590fd0366b6816a0b75ee",
+                                                    "type": "string"
+                                                },
+                                                "last_name": {
+                                                    "example": "Ajayi",
+                                                    "type": "string"
+                                                },
+                                                "phone": {
+                                                    "example": "09067324567",
+                                                    "type": "string"
+                                                },
+                                                "status": {
+                                                    "example": 0,
+                                                    "type": "string"
+                                                },
+                                                "time_zone": {
+                                                    "type": "string"
+                                                },
+                                                "update_at": {
+                                                    "example": "0001-01-01 00:00:00",
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "code",
+                                "message",
+                                "data"
+                            ],
+                            "type": "object"
+                        }
+                    }
+                },
+                "description": "Token verification successful"
+            },
+            "UnprocessableEntity": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "code": {
+                                    "example": 422,
+                                    "format": "int32",
+                                    "type": "integer"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "code",
+                                "message"
+                            ],
+                            "type": "object"
+                        }
+                    }
+                },
+                "description": "server unable to process contained information, e.g API behaviour"
+            },
+            "VerificationSuccess": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "code": {
+                                    "example": 200,
+                                    "format": "int32",
+                                    "type": "integer"
+                                },
+                                "data": {
+                                    "example": null,
+                                    "type": "object"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "code",
+                                "message",
+                                "data"
+                            ],
+                            "type": "object"
+                        }
+                    }
+                },
+                "description": "verification successful"
+            }
+        },
+        "schemas": {
+            "confirmPassReqB": {
+                "properties": {
+                    "confirm_password": {
+                        "format": "password",
+                        "type": "string"
+                    },
+                    "password": {
+                        "format": "password",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "loginReqB": {
+                "properties": {
+                    "email": {
+                        "format": "email",
+                        "type": "string"
+                    },
+                    "password": {
+                        "format": "password",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "logoutOthers": {
+                "properties": {
+                    "password": {
+                        "format": "password",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "passwordResetReqB": {
+                "properties": {
+                    "code": {
+                        "format": "email",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "verficationReqB": {
+                "properties": {
+                    "code": {
+                        "example": 245632,
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "scheme": "bearer",
+                "type": "http"
+            },
+            "cookieAuth": {
+                "in": "cookie",
+                "name": "JSESSIONID",
+                "type": "apiKey"
+            }
+        }
+    },
+    "info": {
+        "contact": {
+            "email": "developer@zuri.chat"
+        },
+        "description": "Zuri Chat is an open source slack clone. However, it offers a lot more functionality via a plugin system where each room can be provided by a different plugin provider.",
+        "title": "Zuri Chat Core API (Authentication Endpoints)",
+        "version": "1.0.0"
+    },
+    "openapi": "3.0.0",
+    "paths": {
+        "/account/request-password-reset-code": {
+            "post": {
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/requestPassReset"
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "code": {
+                                            "example": 200,
+                                            "format": "int32",
+                                            "type": "integer"
+                                        },
+                                        "data": {
+                                            "example": null,
+                                            "type": "object"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "code",
+                                        "message",
+                                        "data"
+                                    ],
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "verification successful"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/UnprocessableEntity"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "summary": "Request password reset code",
+                "tags": [
+                    "Authentication - Account"
+                ]
+            }
+        },
+        "/account/verify-account": {
+            "post": {
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/login"
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/VerificationSuccess"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/UnprocessableEntity"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "summary": "Verify user account",
+                "tags": [
+                    "Authentication - Account"
+                ]
+            }
+        },
+        "/auth/confirm-password": {
+            "post": {
+                "description": "verify user password",
+                "operationId": "verifyPassword",
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/confirmPassword"
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/PasswordConfirmSuccess"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/UnprocessableEntity"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "summary": "confirm user password",
+                "tags": [
+                    "Authentication"
+                ]
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/login"
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/LoginSuccess"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/UnprocessableEntity"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "summary": "Authentication request to access protected resources",
+                "tags": [
+                    "Authentication"
+                ]
+            }
+        },
+        "/auth/logout": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/LogoutSuccessful"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/NotAuthorizedOrNoAuthToken"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "summary": "Authentication request to logout",
+                "tags": [
+                    "Authentication"
+                ]
+            },
+            "post": {
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/LogoutSuccessful"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/NotAuthorizedOrNoAuthToken"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "summary": "Authentication request to logout",
+                "tags": [
+                    "Authentication"
+                ]
+            }
+        },
+        "/auth/logout/othersessions": {
+            "post": {
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/logoutOtherSessions"
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/LogoutSuccessful"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/InvalidCredential"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/NotAuthorizedOrNoAuthToken"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "summary": "Authentication request to logout from other sessions",
+                "tags": [
+                    "Authentication"
+                ]
+            }
+        },
+        "/auth/request-reset-password": {
+            "post": {
+                "description": "Reset user password",
+                "operationId": "resetPassword",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "format": "email",
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/UnprocessableEntity"
+                    },
+                    "default": {
+                        "description": "if no errors email for a password reset is sent to the submitted email"
+                    }
+                },
+                "summary": "Reset user password",
+                "tags": [
+                    "Authentication"
+                ]
+            }
+        },
+        "/auth/verify-token": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/TokenVerified"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "summary": "validates the user before access is granted.",
+                "tags": [
+                    "Authentication"
+                ]
+            }
+        }
+    },
+    "servers": [
+        {
+            "description": "Zuri Chat Core API",
+            "url": "https://api.zuri.chat/"
+        }
+    ]
+};
+
+  // Build a system
+  const ui = SwaggerUIBundle({
+    spec: spec,
+    dom_id: '#swagger-ui',
+    deepLinking: true,
+    presets: [
+      SwaggerUIBundle.presets.apis,
+      SwaggerUIStandalonePreset
+    ],
+    plugins: [
+      SwaggerUIBundle.plugins.DownloadUrl
+    ],
+    layout: "StandaloneLayout"
+  })
+
+  window.ui = ui
+}
+</script>
+</body>
+
+</html>

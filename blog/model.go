@@ -10,6 +10,7 @@ const (
 	BlogCollectionName         = "blogs"
 	BlogLikesCollectionName    = "blogslikes"
 	BlogCommentsCollectionName = "blogscomments"
+	BlogMailingList            = "mailinglist"
 )
 
 type BlogPost struct {
@@ -45,4 +46,10 @@ type BlogsComment struct {
 type BlogLikes struct {
 	ID        string   `bson:"_id" json:"_id,omitempty"`
 	UsersList []string `bson:"users_list" json:"users_list"`
+}
+
+type MailLists struct {
+	ID              primitive.ObjectID 		`bson:"_id,omitempty" json:".id,omitempty"`
+	Email			string					`bson:"email" json:"email"`
+	SubscribedAt 	time.Time				`bson:"subscribed_at" json:"subscribed_at"`
 }
