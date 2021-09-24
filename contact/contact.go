@@ -44,7 +44,7 @@ func ContactUs(w http.ResponseWriter, r *http.Request) {
 	ValidateAttachedFiles(*validator, attachments)
 
 	if !validator.Valid() {
-		utils.GetDetailedError("invalid form data", http.StatusInternalServerError, validator.Errors, w)
+		utils.GetDetailedError("invalid form data", http.StatusBadRequest, validator.Errors, w)
 		return
 	}
 

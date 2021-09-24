@@ -17,7 +17,7 @@ import (
 )
 
 // Get a single member of an organization
-func GetMember(w http.ResponseWriter, r *http.Request) {
+func (oh *OrganizationHandler) GetMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	member_collection, org_collection := "members", "organizations"
@@ -55,7 +55,7 @@ func GetMember(w http.ResponseWriter, r *http.Request) {
 }
 
 // Get all members of an organization
-func GetMembers(w http.ResponseWriter, r *http.Request) {
+func (oh *OrganizationHandler) GetMembers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	member_collection, org_collection := "members", "organizations"
@@ -121,7 +121,7 @@ func GetMembers(w http.ResponseWriter, r *http.Request) {
 }
 
 // Add member to an organization
-func CreateMember(w http.ResponseWriter, r *http.Request) {
+func (oh *OrganizationHandler) CreateMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	loggedInUser := r.Context().Value("user").(*auth.AuthUser)
 	org_collection, user_collection, member_collection := "organizations", "users", "members"
@@ -233,7 +233,7 @@ func CreateMember(w http.ResponseWriter, r *http.Request) {
 }
 
 // endpoint to update a member's profile picture
-func UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
+func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-Type", "application/json")
 	org_collection, member_collection := "organizations", "members"
 
@@ -289,7 +289,7 @@ func UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
 }
 
 // an endpoint to update a user status
-func UpdateMemberStatus(w http.ResponseWriter, r *http.Request) {
+func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 
 	org_collection, member_collection := "organizations", "members"
@@ -347,7 +347,7 @@ func UpdateMemberStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 // Delete single member from an organization
-func DeactivateMember(w http.ResponseWriter, r *http.Request) {
+func (oh *OrganizationHandler) DeactivateMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	member_collection, org_collection := "members", "organizations"
@@ -387,7 +387,7 @@ func DeactivateMember(w http.ResponseWriter, r *http.Request) {
 }
 
 // Update a member profile
-func UpdateProfile(w http.ResponseWriter, r *http.Request) {
+func (oh *OrganizationHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	org_collection, member_collection := "organizations", "members"
 
@@ -459,7 +459,7 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 // Toggle a member's presence
-func TogglePresence(w http.ResponseWriter, r *http.Request) {
+func (oh *OrganizationHandler) TogglePresence(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	org_collection, member_collection := "organizations", "members"
@@ -517,7 +517,7 @@ func TogglePresence(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("Member presence toggled", nil, w)
 }
 
-func UpdateMemberSettings(w http.ResponseWriter, r *http.Request) {
+func (oh *OrganizationHandler) UpdateMemberSettings(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	org_collection, member_collection := "organizations", "members"
 
@@ -586,7 +586,7 @@ func UpdateMemberSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 // Activate single member in an organization
-func ReactivateMember(w http.ResponseWriter, r *http.Request) {
+func (oh *OrganizationHandler) ReactivateMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	member_collection, org_collection := "members", "organizations"

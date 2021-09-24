@@ -38,6 +38,8 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	auth := auth.NewAuthHandler(configs, mailService)
 	user := user.NewUserHandler(configs, mailService)
+	external := external.NewExternalHandler(configs, mailService)
+	organizations := organizations.NewOrganizationHandler(configs, mailService)
 
 	// Setup and init
 	r.HandleFunc("/", VersionHandler)
@@ -54,9 +56,13 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/posts/{post_id}/comments", blog.GetBlogComments).Methods("GET")
 	r.HandleFunc("/posts/{post_id}/comments", blog.CommentBlog).Methods("POST")
 	r.HandleFunc("/posts/search", blog.SearchBlog).Methods("GET")
+	r.HandleFunc("/posts/mail", blog.MailingList).Methods("POST")
 
 	// Authentication
 	r.HandleFunc("/auth/login", auth.LoginIn).Methods(http.MethodPost)
+	// r.HandleFunc("/auth/template", auth.HtmlTemplate)
+	r.HandleFunc("/auth/{provider}/callback", auth.CompleteGoogleAuth).Methods("GET")
+	r.HandleFunc("/auth/{provider}", auth.BeginGoogleAuth)
 	// r.HandleFunc("/auth/test", auth.AuthTest).Methods(http.MethodPost)
 	r.HandleFunc("/auth/logout", auth.LogOutUser).Methods(http.MethodPost)
 	r.HandleFunc("/auth/logout/othersessions", auth.LogOutOtherSessions).Methods(http.MethodPost)
@@ -72,6 +78,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.Create)).Methods("POST")
 	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.GetOrganizations)).Methods("GET")
 	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
+	r.HandleFunc("/organizations/{id}/send-invite", auth.IsAuthenticated(organizations.SendInvite)).Methods("POST")
 	r.HandleFunc("/organizations/{id}", auth.IsAuthenticated(organizations.DeleteOrganization)).Methods("DELETE")
 	r.HandleFunc("/organizations/url/{url}", organizations.GetOrganizationByURL).Methods("GET")
 
@@ -134,6 +141,7 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	// Email subscription
 	r.HandleFunc("/external/subscribe", external.EmailSubscription).Methods("POST")
+	r.HandleFunc("/external/download-client", external.DownloadClient).Methods("GET")
 
 	//ping endpoint
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -150,14 +158,17 @@ func Router(Server *socketio.Server) *mux.Router {
 	// Home
 	http.Handle("/", r)
 
+	// Docs
+	r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.FileServer(http.Dir("./docs/"))))
+
 	return r
 }
 
 func main() {
-	////////////////////////////////////Socket  events////////////////////////////////////////////////
+
+	//Socket  events
 	var Server = socketio.NewServer(nil)
 	messaging.SocketEvents(Server)
-	////////////////////////////////////Socket  events////////////////////////////////////////////////
 
 	// load .env file if it exists
 	err := godotenv.Load(".env")
@@ -179,16 +190,7 @@ func main() {
 
 	r := Router(Server)
 
-	// c := cors.New(cors.Options{
-	// 	AllowedOrigins:   []string{"*"},
-	// 	AllowCredentials: true,
-	// })
-
 	c := cors.AllowAll()
-
-	// headersOK := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type"})
-	// originsOK := handlers.AllowedOrigins([]string{"*"})
-	// methodsOK := handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS", "DELETE", "PUT"})
 
 	srv := &http.Server{
 		Handler:      handlers.LoggingHandler(os.Stdout, c.Handler(r)),
@@ -196,12 +198,7 @@ func main() {
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
-	// srv := &http.Server{
-	// 	Handler:      handlers.CombinedLoggingHandler(os.Stderr, handlers.CORS(headersOK, originsOK, methodsOK)(r)),
-	// 	Addr:         ":" + port,
-	// 	WriteTimeout: 15 * time.Second,
-	// 	ReadTimeout:  15 * time.Second,
-	// }
+
 	go Server.Serve()
 	fmt.Println("Socket Served")
 	defer Server.Close()
@@ -230,5 +227,5 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("user").(*auth.AuthUser)
 
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, fmt.Sprintf("Welcome %s to Zuri Core Developer.", user.Email))
+	fmt.Fprintf(w, "Welcome %s to Zuri Core Developer.", user.Email)
 }

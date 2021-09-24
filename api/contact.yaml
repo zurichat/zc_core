@@ -1,0 +1,104 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Zuri Chat Core API (Contact Us Endpoint)
+  description: Zuri Chat is an open source slack clone. However, it offers a lot more functionality via a plugin system where each room can be provided by a different plugin provider.
+  contact:
+    email: developer@zuri.chat
+servers:
+  - description: Zuri Chat Core API 
+    url: "https://api.zuri.chat/"
+
+paths:
+  /contact:
+    post:
+      tags:
+        - Contact Us
+      summary: Contact Zuri Chat 
+      requestBody:
+        description: Contact form processing complaints and/or inquiries from users
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                subject:
+                  type: string
+                content:
+                  type: string
+                file:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+            encoding:
+              file:
+                contentType: image/png, image/jpg, image/jpeg, application/pdf, application/msword application/vnd.openxmlformats-officedocument.wordprocessingml.document
+             
+        
+      responses:
+        '201':
+            description: contact successful
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/SuccessResponse'
+
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponse'
+
+components:
+  schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 201
+        message:
+          type: string
+          example: contact information sent successfully
+        data:
+          type: object
+          properties:
+            InsertedID:
+              type: string
+              example: 614cd3091df928467cc56253
+
+    BadRequestResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: contact information sent successfully
+        data:
+          type: object
+          properties:
+            email:
+              type: string
+              example: invalid email
+            content:
+              type: string
+              example: field cannot be empty
+            subject:
+              type: string
+              example: field cannot be empty
+            file:
+              type: string
+              example: invalid file type
+            
+
+
+          
+
+        

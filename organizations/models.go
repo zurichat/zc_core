@@ -6,13 +6,17 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
 
 const (
 	OrganizationCollectionName     = "organizations"
 	InstalledPluginsCollectionName = "installed_plugins"
+	OrganizationInviteCollection   = "organizations_invites"
 	OrganizationSettings           = "organizations_settings"
+	MemberCollectionName           = "members"
+	UserCollectionName             = "users"
 )
 
 type MemberPassword struct {
@@ -32,6 +36,16 @@ type Organization struct {
 	WorkspaceURL string                   `json:"workspace_url" bson:"workspace_url"`
 	CreatedAt    time.Time                `json:"created_at" bson:"created_at"`
 	UpdatedAt    time.Time                `json:"updated_at" bson:"updated_at"`
+}
+type Invite struct {
+	ID    string `json:"_id,omitempty" bson:"_id,omitempty"`
+	OrgID string `json:"org_id" bson:"org_id"`
+	Uuid  string `json:"uuid" bson:"uuid"`
+	Email string `json:"email" bson:"email"`
+}
+type SendInviteResponse struct {
+	InvalidEmails []interface{}
+	InviteIDs     []interface{}
 }
 
 func (o *Organization) OrgPlugins() []map[string]interface{} {
@@ -59,6 +73,10 @@ type InstalledPlugin struct {
 	ApprovedBy  string                 `json:"approved_by" bson:"approved_by"`
 	InstalledAt time.Time              `json:"installed_at" bson:"installed_at"`
 	UpdatedAt   time.Time              `json:"updated_at" bson:"updated_at"`
+}
+
+type SendInviteBody struct {
+	Emails []string `json:"emails" bson:"emails"`
 }
 
 type OrganizationAdmin struct {
@@ -169,4 +187,12 @@ type ChatSettings struct {
 	EnterIsSend     bool   `json:"enter_is_send" bson:"enter_is_send"`
 	MediaVisibility bool   `json:"media_visibility" bson:"media_visibility"`
 	FontSize        string `json:"font_size" bson:"font_size"`
+}
+type OrganizationHandler struct {
+	configs     *utils.Configurations
+	mailService service.MailService
+}
+
+func NewOrganizationHandler(c *utils.Configurations, mail service.MailService) *OrganizationHandler {
+	return &OrganizationHandler{configs: c, mailService: mail}
 }
