@@ -128,8 +128,8 @@ func ValidateAttachedFiles(validator Validator, attachments []*multipart.FileHea
 	if len(attachments) > 0 {
 		validator.Check(AttachmentLength(attachments), "attachments", "file count exceeded")
 		for _, attachment := range attachments {
-			validator.Check(AcceptFileType(attachment, exts), "attachments", "invalid file type")
-			validator.Check(FileSize(attachment), "attachments", "maximum file size exceeded")
+			validator.Check(AcceptFileType(attachment, exts), "file", "invalid file type")
+			validator.Check(FileSize(attachment), "file", "maximum file size exceeded")
 		}
 
 	}

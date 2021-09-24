@@ -55,6 +55,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/posts/{post_id}/comments", blog.GetBlogComments).Methods("GET")
 	r.HandleFunc("/posts/{post_id}/comments", blog.CommentBlog).Methods("POST")
 	r.HandleFunc("/posts/search", blog.SearchBlog).Methods("GET")
+	r.HandleFunc("/posts/mail", blog.MailingList).Methods("POST")
 
 	// Authentication
 	r.HandleFunc("/auth/login", auth.LoginIn).Methods(http.MethodPost)
@@ -85,7 +86,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/logo", auth.IsAuthenticated(organizations.UpdateLogo)).Methods("PATCH")
 
 	r.HandleFunc("/organizations/{id}/members", auth.IsAuthenticated(organizations.CreateMember)).Methods("POST")
-	r.HandleFunc("/organizations/{id}/members", auth.IsAuthenticated(organizations.GetMembers)).Methods("GET")
+	r.HandleFunc("/organizations/{id}/members", organizations.GetMembers).Methods("GET")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.GetMember)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.DeactivateMember)).Methods("DELETE")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.ReactivateMember)).Methods("PATCH")
