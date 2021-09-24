@@ -18,7 +18,7 @@ import (
 
 var NoAuthToken = errors.New("No Authorization header provided.")
 
-func AddOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
+func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	plugin_collection, member_collection := "plugins", "members"
@@ -72,7 +72,7 @@ func AddOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
 
 	userName := user["first_name"].(string) + " " + user["last_name"].(string)
 
-	installedPlugin := InstalledPlugin {
+	installedPlugin := InstalledPlugin{
 		PluginID:    orgPlugin.PluginId,
 		Plugin:      plugin,
 		AddedBy:     userName,
@@ -93,7 +93,7 @@ func AddOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("plugin saved successfully", save, w)
 }
 
-func GetOrganizationPlugins(w http.ResponseWriter, r *http.Request) {
+func (oh *OrganizationHandler) GetOrganizationPlugins(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	// loggedInUser := r.Context().Value("user").(auth.AuthUser)
 
@@ -138,7 +138,7 @@ func GetOrganizationPlugins(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("Plugins Retrived successfully", org.OrgPlugins(), w)
 }
 
-func GetOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
+func (oh *OrganizationHandler) GetOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	// loggedInUser := r.Context().Value("user").(auth.AuthUser)
 

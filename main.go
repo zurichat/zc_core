@@ -39,6 +39,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	auth := auth.NewAuthHandler(configs, mailService)
 	user := user.NewUserHandler(configs, mailService)
 	external := external.NewExternalHandler(configs, mailService)
+	organizations := organizations.NewOrganizationHandler(configs, mailService)
 
 	// Setup and init
 	r.HandleFunc("/", VersionHandler)
@@ -74,6 +75,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.Create)).Methods("POST")
 	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.GetOrganizations)).Methods("GET")
 	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
+	r.HandleFunc("/organizations/{id}/send-invite", auth.IsAuthenticated(organizations.SendInvite)).Methods("POST")
 	r.HandleFunc("/organizations/{id}", auth.IsAuthenticated(organizations.DeleteOrganization)).Methods("DELETE")
 	r.HandleFunc("/organizations/url/{url}", organizations.GetOrganizationByURL).Methods("GET")
 
