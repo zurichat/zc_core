@@ -6,3 +6,4 @@ views/
 files
 contact_test.go
 validator_test.go
+test.rest

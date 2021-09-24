@@ -16,7 +16,6 @@ import (
 )
 
 // Team Invite to workspace
-
 type UserHandler struct {
 	configs     *utils.Configurations
 	mailService service.MailService
@@ -28,7 +27,7 @@ var validate = validator.New()
 func TeamInvitation(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	orgURL := mux.Vars(r)["url"]
-	org_collection, user_collection := "organizations", "users"
+	org_collection := "organizations"
 
 	orgDoc, _ := utils.GetMongoDbDoc(org_collection, bson.M{"workspace_url": orgURL})
 	if orgDoc == nil {
@@ -56,11 +55,11 @@ func TeamInvitation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"email": email.Email})
-	if userDoc == nil {
-		utils.GetError(errors.New("user with this email does not exist"), http.StatusBadRequest, w)
-		return
-	}
+	// userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"email": email.Email})
+	// if userDoc == nil {
+	// 	utils.GetError(errors.New("user with this email does not exist"), http.StatusBadRequest, w)
+	// 	return
+	// }
 
 	// send invite email null
 	uniquestring := randomString(36)
