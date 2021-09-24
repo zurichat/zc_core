@@ -72,6 +72,7 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 	user.Password = hashPassword
 	user.Deactivated = false
 	user.IsVerified = false
+	user.Social = false
 	user.EmailVerification = con
 	detail, _ := utils.StructToMap(user)
 
@@ -83,18 +84,18 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 	}
 	// Email Service <- send confirmation mail
 	msger := uh.mailService.NewMail(
-		[]string{user.Email}, "Account Confirmation", service.MailConfirmation, 
-		&service.MailData{ 
-			Username: user.Email, 
-			Code: comfimationToken,
+		[]string{user.Email}, "Account Confirmation", service.MailConfirmation,
+		&service.MailData{
+			Username: user.Email,
+			Code:     comfimationToken,
 		})
 
 	if err := uh.mailService.SendMail(msger); err != nil {
 		fmt.Printf("Error occured while sending mail: %s", err.Error())
-	}	
+	}
 
 	respse := map[string]interface{}{
-		"InsertedID": res.InsertedID,
+		"InsertedID":        res.InsertedID,
 		"verification_code": comfimationToken,
 	}
 
@@ -249,7 +250,7 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 		// Get the images of all memebers of the organization
 		var member_imgs []interface{}
 		for _, member := range orgMembers {
-			member_imgs = append(member_imgs,member["image_url"] )
+			member_imgs = append(member_imgs, member["image_url"])
 		}
 		// Return 10 images or less
 		if len(member_imgs) < 11 {
