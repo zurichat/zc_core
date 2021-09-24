@@ -75,16 +75,6 @@ func (oh *OrganizationHandler) GetMembers(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	//members := utils.GetCollection("members")
-
-	//mod := mongo.IndexModel{
-	//Keys: bson.M{"$**": "text"},
-	//WildcardProjection : bson.M{},
-	//mod.options
-	//}
-
-	//_, er := members.Indexes().CreateOne(context.Background(), mod)
-
 	// query allows you to be able to browse people given the right query param
 	query := r.URL.Query().Get("query")
 
