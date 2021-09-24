@@ -1,7 +1,9 @@
 package organizations
 
 import (
+	"context"
 	"encoding/json"
+	"os"
 	"strings"
 	"time"
 
@@ -169,4 +171,19 @@ type ChatSettings struct {
 	EnterIsSend     bool   `json:"enter_is_send" bson:"enter_is_send"`
 	MediaVisibility bool   `json:"media_visibility" bson:"media_visibility"`
 	FontSize        string `json:"font_size" bson:"font_size"`
+}
+
+
+// gets the details of a member in a workspace using parameters such as email, username etc
+// returns parameters based on the member struct
+func FetchMember(filter map[string]interface{}) (*Member, error) {
+	member_collection := "members"
+	member := &Member{}
+	memberCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), member_collection)
+	if err != nil {
+		return member, err
+	}
+	result := memberCollection.FindOne(context.TODO(), filter)
+	err = result.Decode(&member)
+	return member, err
 }
