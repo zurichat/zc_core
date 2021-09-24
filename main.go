@@ -58,7 +58,6 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	// Authentication
 	r.HandleFunc("/auth/login", auth.LoginIn).Methods(http.MethodPost)
-	// r.HandleFunc("/auth/test", auth.AuthTest).Methods(http.MethodPost)
 	r.HandleFunc("/auth/logout", auth.LogOutUser).Methods(http.MethodPost)
 	r.HandleFunc("/auth/logout/othersessions", auth.LogOutOtherSessions).Methods(http.MethodPost)
 	r.HandleFunc("/auth/verify-token", auth.IsAuthenticated(auth.VerifyTokenHandler)).Methods(http.MethodGet, http.MethodPost)
@@ -158,7 +157,7 @@ func Router(Server *socketio.Server) *mux.Router {
 }
 
 func main() {
-	
+
 	//Socket  events
 	var Server = socketio.NewServer(nil)
 	messaging.SocketEvents(Server)

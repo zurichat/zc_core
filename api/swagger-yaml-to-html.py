@@ -14,6 +14,8 @@ Usage:
 
     python swagger-yaml-to-html.py < /path/to/api.yaml > doc.html
 
+    E.g python api/swagger-yaml-to-html.py < api/doc.yaml > docs/doc.html 
+
     Note: Windows users should avoid using Powershell to run the script. Use normal command prompt.
 
 """
