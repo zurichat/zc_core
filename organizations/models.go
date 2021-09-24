@@ -196,3 +196,17 @@ type OrganizationHandler struct {
 func NewOrganizationHandler(c *utils.Configurations, mail service.MailService) *OrganizationHandler {
 	return &OrganizationHandler{configs: c, mailService: mail}
 }
+
+// gets the details of a member in a workspace using parameters such as email, username etc
+// returns parameters based on the member struct
+func FetchMember(filter map[string]interface{}) (*Member, error) {
+	member_collection := MemberCollectionName
+	member := &Member{}
+	memberCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), member_collection)
+	if err != nil {
+		return member, err
+	}
+	result := memberCollection.FindOne(context.TODO(), filter)
+	err = result.Decode(&member)
+	return member, err
+}
