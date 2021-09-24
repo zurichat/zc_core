@@ -151,14 +151,17 @@ func Router(Server *socketio.Server) *mux.Router {
 	// Home
 	http.Handle("/", r)
 
+	// Docs
+	r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.FileServer(http.Dir("./docs/"))))
+
 	return r
 }
 
 func main() {
-	////////////////////////////////////Socket  events////////////////////////////////////////////////
+	
+	//Socket  events
 	var Server = socketio.NewServer(nil)
 	messaging.SocketEvents(Server)
-	////////////////////////////////////Socket  events////////////////////////////////////////////////
 
 	// load .env file if it exists
 	err := godotenv.Load(".env")
@@ -180,16 +183,7 @@ func main() {
 
 	r := Router(Server)
 
-	// c := cors.New(cors.Options{
-	// 	AllowedOrigins:   []string{"*"},
-	// 	AllowCredentials: true,
-	// })
-
 	c := cors.AllowAll()
-
-	// headersOK := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type"})
-	// originsOK := handlers.AllowedOrigins([]string{"*"})
-	// methodsOK := handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS", "DELETE", "PUT"})
 
 	srv := &http.Server{
 		Handler:      handlers.LoggingHandler(os.Stdout, c.Handler(r)),
@@ -197,12 +191,7 @@ func main() {
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
-	// srv := &http.Server{
-	// 	Handler:      handlers.CombinedLoggingHandler(os.Stderr, handlers.CORS(headersOK, originsOK, methodsOK)(r)),
-	// 	Addr:         ":" + port,
-	// 	WriteTimeout: 15 * time.Second,
-	// 	ReadTimeout:  15 * time.Second,
-	// }
+
 	go Server.Serve()
 	fmt.Println("Socket Served")
 	defer Server.Close()
@@ -231,5 +220,5 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("user").(*auth.AuthUser)
 
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, fmt.Sprintf("Welcome %s to Zuri Core Developer.", user.Email))
+	fmt.Fprintf(w, "Welcome %s to Zuri Core Developer.", user.Email)
 }
