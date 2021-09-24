@@ -1,0 +1,1536 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Swagger UI</title>
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700|Source+Code+Pro:300,600|Titillium+Web:400,600,700" rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.24.2/swagger-ui.css" >
+  <style>
+    html
+    {
+      box-sizing: border-box;
+      overflow: -moz-scrollbars-vertical;
+      overflow-y: scroll;
+    }
+    *,
+    *:before,
+    *:after
+    {
+      box-sizing: inherit;
+    }
+
+    body {
+      margin:0;
+      background: #fafafa;
+    }
+  </style>
+</head>
+<body>
+
+<div id="swagger-ui"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.24.2/swagger-ui-bundle.js"> </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.24.2/swagger-ui-standalone-preset.js"> </script>
+<script>
+window.onload = function() {
+
+  var spec = {
+    "components": {
+        "parameters": {
+            "email": {
+                "in": "path",
+                "name": "email",
+                "required": true,
+                "schema": {
+                    "example": "janedoe@email.com",
+                    "type": "string"
+                }
+            },
+            "first_name": {
+                "in": "path",
+                "name": "first_name",
+                "required": true,
+                "schema": {
+                    "example": "Jane",
+                    "type": "string"
+                }
+            },
+            "last_name": {
+                "in": "path",
+                "name": "last_name",
+                "required": true,
+                "schema": {
+                    "example": "Doe",
+                    "type": "string"
+                }
+            },
+            "member_id": {
+                "in": "path",
+                "name": "member_id",
+                "required": true,
+                "schema": {
+                    "example": "6137d69b21d3c78fc9a84bdf",
+                    "type": "string"
+                }
+            },
+            "organization_id": {
+                "in": "path",
+                "name": "organization_id",
+                "required": true,
+                "schema": {
+                    "example": "6137d69b21d3c78fc9a84bdf",
+                    "type": "string"
+                }
+            }
+        },
+        "requestBodies": {
+            "orgCreateRequestBody": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/OrgCreateRB"
+                        }
+                    }
+                }
+            }
+        },
+        "responses": {
+            "BadRequest": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "code": {
+                                    "example": 400,
+                                    "format": "int32",
+                                    "type": "integer"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "code",
+                                "message"
+                            ],
+                            "type": "object"
+                        }
+                    }
+                },
+                "description": "Bad Request, e.g wrong user id"
+            },
+            "InternalServerError": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "code": {
+                                    "example": 500,
+                                    "format": "int32",
+                                    "type": "integer"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "code",
+                                "message"
+                            ],
+                            "type": "object"
+                        }
+                    }
+                },
+                "description": "Internal server error occured during operation"
+            },
+            "UnauthorizedError": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "code": {
+                                    "example": 401,
+                                    "format": "int32",
+                                    "type": "integer"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "code",
+                                "message"
+                            ],
+                            "type": "object"
+                        }
+                    }
+                },
+                "description": "Access token is missing or invalid"
+            },
+            "getMemberResponse": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "code": {
+                                    "example": 200,
+                                    "format": "int32",
+                                    "type": "integer"
+                                },
+                                "data": {
+                                    "$ref": "#/components/schemas/Member"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "code",
+                                "message"
+                            ],
+                            "type": "object"
+                        }
+                    }
+                },
+                "description": "Successfully returned record of a member in an organization"
+            },
+            "getMembersResponse": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "code": {
+                                    "example": 200,
+                                    "format": "int32",
+                                    "type": "integer"
+                                },
+                                "data": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/Member"
+                                    },
+                                    "type": "array"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "code",
+                                "message"
+                            ],
+                            "type": "object"
+                        }
+                    }
+                },
+                "description": "Successfully returned list of members in an organization, including an empty array if there are no members"
+            },
+            "getOrgResponse": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "code": {
+                                    "example": 200,
+                                    "format": "int32",
+                                    "type": "integer"
+                                },
+                                "data": {
+                                    "$ref": "#/components/schemas/Organization"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "code",
+                                "message"
+                            ],
+                            "type": "object"
+                        }
+                    }
+                },
+                "description": "Successfully retrieve the resource"
+            },
+            "getOrgsResponse": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "code": {
+                                    "example": 200,
+                                    "format": "int32",
+                                    "type": "integer"
+                                },
+                                "data": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/Organization"
+                                    },
+                                    "type": "array"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "code",
+                                "message"
+                            ],
+                            "type": "object"
+                        }
+                    }
+                },
+                "description": "Successfully returned list of organizations, including an empty array if there are no organizations"
+            },
+            "getPluginsResponse": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "code": {
+                                    "example": 200,
+                                    "format": "int32",
+                                    "type": "integer"
+                                },
+                                "data": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/Plugin"
+                                    },
+                                    "type": "array"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "code",
+                                "message"
+                            ],
+                            "type": "object"
+                        }
+                    }
+                },
+                "description": "Successfully returned list of plugins from an organization, including an empty array if there are no plugins"
+            },
+            "resourceCreated": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "code": {
+                                    "example": 201,
+                                    "format": "int32",
+                                    "type": "integer"
+                                },
+                                "data": {
+                                    "example": {
+                                        "InsertedID": "6137d69b21d3c78fc9a84bdf"
+                                    },
+                                    "type": "object"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "code",
+                                "message"
+                            ],
+                            "type": "object"
+                        }
+                    }
+                },
+                "description": "Successfully created the resource"
+            },
+            "resourceDeleted": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "code": {
+                                    "example": 200,
+                                    "format": "int32",
+                                    "type": "integer"
+                                },
+                                "message": {
+                                    "example": "resource deleted successfully",
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "code",
+                                "message"
+                            ],
+                            "type": "object"
+                        }
+                    }
+                },
+                "description": "Successfully deleted the resource"
+            },
+            "resourceUpdated": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "code": {
+                                    "example": 200,
+                                    "format": "int32",
+                                    "type": "integer"
+                                },
+                                "message": {
+                                    "example": "resource updated successfully",
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "code",
+                                "message"
+                            ],
+                            "type": "object"
+                        }
+                    }
+                },
+                "description": "Successfully updated the resource"
+            }
+        },
+        "schemas": {
+            "Member": {
+                "properties": {
+                    "_id": {
+                        "example": "6137d69b21d3c78fc9a84bdf",
+                        "type": "string"
+                    },
+                    "bio": {
+                        "type": "string"
+                    },
+                    "display_name": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "format": "email",
+                        "type": "string"
+                    },
+                    "files": {
+                        "type": "object"
+                    },
+                    "image_url": {
+                        "example": "https://image.location/image.png",
+                        "type": "string"
+                    },
+                    "joined_at": {
+                        "format": "date",
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "orgId": {
+                        "example": "6137d69b21d3c78fc9a84bdf",
+                        "type": "string"
+                    },
+                    "phone": {
+                        "type": "string"
+                    },
+                    "pronouns": {
+                        "type": "string"
+                    },
+                    "socials": {
+                        "items": {
+                            "properties": {
+                                "title": {
+                                    "type": "integer"
+                                },
+                                "url": {
+                                    "type": "integer"
+                                }
+                            },
+                            "type": "object"
+                        },
+                        "type": "array"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "time_zone": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "OrgCreateRB": {
+                "description": "The structure for the create organization request",
+                "properties": {
+                    "creator_email": {
+                        "description": "Email of the owner of the organization",
+                        "example": "hng@email.com",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "Organization": {
+                "properties": {
+                    "_id": {
+                        "example": "6137d69b21d3c78fc9a84bdf",
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "format": "date",
+                        "type": "string"
+                    },
+                    "creator_email": {
+                        "example": "hng@email.com",
+                        "type": "string"
+                    },
+                    "creator_id": {
+                        "example": "6137d69b21d3c78fc9a84bdf",
+                        "type": "string"
+                    },
+                    "deleted_at": {
+                        "format": "date",
+                        "type": "string"
+                    },
+                    "logo_url": {
+                        "example": "hng.zuri.chat",
+                        "type": "string"
+                    },
+                    "name": {
+                        "example": "HNG",
+                        "type": "string"
+                    },
+                    "organization_settings": {
+                        "example": {
+                            "global_settings": {
+                                "allow_only_admin_invite": true,
+                                "allow_user_add_plugins": true
+                            },
+                            "plugin_settings": {
+                                "chess_plugin": {
+                                    "allow_in_every_channel": false
+                                }
+                            }
+                        },
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "Plugin": {
+                "properties": {
+                    "plugin_id": {
+                        "example": "6137d69b21d3c78fc9a84bdf",
+                        "type": "string"
+                    },
+                    "user_id": {
+                        "example": "6137d69b21d3c78fc9a84bdf",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "bearerFormat": "JWT",
+                "scheme": "bearer",
+                "type": "http"
+            },
+            "cookieAuth": {
+                "in": "cookie",
+                "name": "JSESSIONID",
+                "type": "apiKey"
+            }
+        }
+    },
+    "info": {
+        "contact": {
+            "email": "developer@zuri.chat"
+        },
+        "description": "Zuri Chat is an open source slack clone. However, it offers a lot more functionality via a plugin system where each room can be provided by a different plugin provider.",
+        "title": "Zuri Chat Core API (Organization Endpoints)",
+        "version": "1.0.0"
+    },
+    "openapi": "3.0.0",
+    "paths": {
+        "/organizations": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/getOrgsResponse"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "summary": "Displays a list of organizations",
+                "tags": [
+                    "Organization"
+                ]
+            },
+            "post": {
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/orgCreateRequestBody"
+                },
+                "responses": {
+                    "201": {
+                        "$ref": "#/components/responses/resourceCreated"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "summary": "Create an organization",
+                "tags": [
+                    "Organization"
+                ]
+            }
+        },
+        "/organizations/url/{workspace_url}": {
+            "get": {
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "workspace_url",
+                        "required": true,
+                        "schema": {
+                            "example": "hngi8.zuri.chat",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/getOrgResponse"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "summary": "Get an organization by its URL",
+                "tags": [
+                    "Organization"
+                ]
+            }
+        },
+        "/organizations/{organization_id}": {
+            "delete": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/organization_id"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/resourceDeleted"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "summary": "Delete organization information",
+                "tags": [
+                    "Organization"
+                ]
+            },
+            "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/organization_id"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/getOrgResponse"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "summary": "Get an organization",
+                "tags": [
+                    "Organization"
+                ]
+            }
+        },
+        "/organizations/{organization_id}/logo": {
+            "patch": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/organization_id"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "example": {
+                                    "url": "https://image.storage/image.png"
+                                },
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "description": "The structure for the entire request"
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/resourceUpdated"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "summary": "Update organization logo",
+                "tags": [
+                    "Organization"
+                ]
+            }
+        },
+        "/organizations/{organization_id}/members": {
+            "get": {
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "query",
+                        "schema": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/parameters/first_name"
+                                },
+                                {
+                                    "$ref": "#/components/parameters/last_name"
+                                },
+                                {
+                                    "$ref": "#/components/parameters/email"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/organization_id"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/getMembersResponse"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "summary": "Get a list of members in an organization",
+                "tags": [
+                    "Organization-Member"
+                ]
+            },
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/organization_id"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "user_email": {
+                                        "description": "This is the email of the user to be added to the organization",
+                                        "example": "user@email.com",
+                                        "type": "integer"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "description": "The structure for the entire request"
+                },
+                "responses": {
+                    "201": {
+                        "$ref": "#/components/responses/resourceCreated"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "summary": "Add user to an organization",
+                "tags": [
+                    "Organization-Member"
+                ]
+            }
+        },
+        "/organizations/{organization_id}/members/{member_id}": {
+            "delete": {
+                "description": "Remove a user from an organization",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/organization_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/member_id"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/resourceUpdated"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "summary": "Delete user (deactivate)",
+                "tags": [
+                    "Organization-Member"
+                ]
+            },
+            "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/organization_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/member_id"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/getMemberResponse"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "summary": "Get a record of a member in an organization",
+                "tags": [
+                    "Organization-Member"
+                ]
+            },
+            "patch": {
+                "description": "This endpoint will be used to reactivate a member of an organization",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/organization_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/member_id"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/resourceUpdated"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "summary": "Reactivate a deactivated member",
+                "tags": [
+                    "Organization-Member"
+                ]
+            }
+        },
+        "/organizations/{organization_id}/members/{member_id}/photo": {
+            "patch": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/organization_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/member_id"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "image": {
+                            "schema": {
+                                "properties": {
+                                    "image": {
+                                        "format": "binary",
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "description": "The structure for the entire request"
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/resourceUpdated"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "summary": "Update member profile picture for an organization",
+                "tags": [
+                    "Organization-Member"
+                ]
+            }
+        },
+        "/organizations/{organization_id}/members/{member_id}/presence": {
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/organization_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/member_id"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/resourceUpdated"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "summary": "Toggle a member presence (Away/Active)",
+                "tags": [
+                    "Organization-Member"
+                ]
+            }
+        },
+        "/organizations/{organization_id}/members/{member_id}/profile": {
+            "patch": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/organization_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/member_id"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "bio": {
+                                        "type": "string"
+                                    },
+                                    "display_name": {
+                                        "type": "string"
+                                    },
+                                    "first_name": {
+                                        "type": "string"
+                                    },
+                                    "last_name": {
+                                        "type": "string"
+                                    },
+                                    "phone": {
+                                        "type": "string"
+                                    },
+                                    "pronouns": {
+                                        "type": "string"
+                                    },
+                                    "socials": {
+                                        "items": {
+                                            "properties": {
+                                                "title": {
+                                                    "type": "string"
+                                                },
+                                                "url": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "type": "array"
+                                    },
+                                    "time_zone": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "description": "The structure for the entire request"
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/resourceUpdated"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "summary": "Update member profile for an organization",
+                "tags": [
+                    "Organization-Member"
+                ]
+            }
+        },
+        "/organizations/{organization_id}/members/{member_id}/settings": {
+            "patch": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/organization_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/member_id"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "example": {
+                                    "messages_and_media": {
+                                        "additional_options": [
+                                            "id",
+                                            "nunc",
+                                            "nisl"
+                                        ],
+                                        "bring_emails_into_zuri bson:": "magna",
+                                        "convert_emoticons_to_emoji": true,
+                                        "custom": false,
+                                        "emoji": "libero",
+                                        "emoji_as_text": true,
+                                        "frequently_used_emoji": true,
+                                        "inline_media_and_links": [
+                                            "nisi",
+                                            "euismod",
+                                            "pellentesque"
+                                        ],
+                                        "messages_one_click_reaction": [
+                                            "pede",
+                                            "at",
+                                            "montes"
+                                        ],
+                                        "names": "odio",
+                                        "show_jumbomoji": false,
+                                        "theme": "dui"
+                                    },
+                                    "notifications": {
+                                        "channel_hurdle_notification": false,
+                                        "email_notifications_for_mentions_and_dm": [
+                                            "ut",
+                                            "posuere",
+                                            "nulla"
+                                        ],
+                                        "message_preview_in_each_notification": false,
+                                        "mute_all_sounds": true,
+                                        "my_keywords": "eleifend",
+                                        "notification_schedule": "rutrum",
+                                        "notify_me_about": "lectus",
+                                        "thread_replies_notification": true,
+                                        "use_different_settings_mobile": "nunc",
+                                        "when_iam_not_active_on_desktop": "venenatis"
+                                    },
+                                    "sidebar": {
+                                        "always_show_in_the_sidebar": [
+                                            "interdum",
+                                            "a",
+                                            "at"
+                                        ],
+                                        "list_private_channels_seperately": false,
+                                        "organize_external_conversations": true,
+                                        "show_conversations": "phasellus",
+                                        "show_profile_picture_next_to_dm": false,
+                                        "sidebar_sort": "ullamcorper"
+                                    },
+                                    "themes": {
+                                        "colors": "orci",
+                                        "themes": "cursus"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "description": "The structure for the entire request"
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/resourceUpdated"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "summary": "update a member settings field(s)",
+                "tags": [
+                    "Organization-Member"
+                ]
+            }
+        },
+        "/organizations/{organization_id}/members/{member_id}/status": {
+            "patch": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/organization_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/member_id"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "status": {
+                                        "description": "Status to be updated",
+                                        "example": "Available",
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "description": "The structure for the entire request"
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/resourceUpdated"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "summary": "Update member status for an organization",
+                "tags": [
+                    "Organization-Member"
+                ]
+            }
+        },
+        "/organizations/{organization_id}/name": {
+            "patch": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/organization_id"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "example": {
+                                    "organization_name": "hngworkspace"
+                                },
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "description": "The structure for the entire request"
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/resourceUpdated"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "summary": "Update organization name",
+                "tags": [
+                    "Organization"
+                ]
+            }
+        },
+        "/organizations/{organization_id}/plugins": {
+            "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/organization_id"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/getPluginsResponse"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "summary": "Get all plugins from an organization",
+                "tags": [
+                    "Organization-Plugin"
+                ]
+            },
+            "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/organization_id"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "plugin_id": {
+                                        "description": "This is the id of the plugin to be added to the organization",
+                                        "example": "6137d69b21d3c78fc9a84bdf",
+                                        "type": "integer"
+                                    },
+                                    "user_id": {
+                                        "description": "This is the id of the user adding a plugin to the organization",
+                                        "example": "6137d69b21d3c78fc9a84bdf",
+                                        "type": "integer"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "description": "The structure for the entire request"
+                },
+                "responses": {
+                    "201": {
+                        "$ref": "#/components/responses/resourceCreated"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "summary": "Add a plugin to an organization",
+                "tags": [
+                    "Organization-Plugin"
+                ]
+            }
+        },
+        "/organizations/{organization_id}/url": {
+            "patch": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/organization_id"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "example": {
+                                    "url": "https://hngworkspace.zuri.chat"
+                                },
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "description": "The structure for the entire request"
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/resourceUpdated"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "summary": "Update organization url",
+                "tags": [
+                    "Organization"
+                ]
+            }
+        }
+    },
+    "servers": [
+        {
+            "description": "Zuri Chat Core API",
+            "url": "https://api.zuri.chat/"
+        }
+    ]
+};
+
+  // Build a system
+  const ui = SwaggerUIBundle({
+    spec: spec,
+    dom_id: '#swagger-ui',
+    deepLinking: true,
+    presets: [
+      SwaggerUIBundle.presets.apis,
+      SwaggerUIStandalonePreset
+    ],
+    plugins: [
+      SwaggerUIBundle.plugins.DownloadUrl
+    ],
+    layout: "StandaloneLayout"
+  })
+
+  window.ui = ui
+}
+</script>
+</body>
+
+</html>

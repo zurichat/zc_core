@@ -15,6 +15,8 @@ const (
 	OrganizationCollectionName     = "organizations"
 	InstalledPluginsCollectionName = "installed_plugins"
 	OrganizationSettings           = "organizations_settings"
+	MemberCollectionName		   = "members"
+	UserCollectionName			   = "users"
 )
 
 type MemberPassword struct {
