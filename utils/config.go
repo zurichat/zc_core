@@ -26,8 +26,9 @@ type Configurations struct {
 	MailGunDomain      string
 	MailGunSenderEmail string
 
-	ConfirmEmailTemplate  string
-	PasswordResetTemplate string
+	ConfirmEmailTemplate   string
+	PasswordResetTemplate  string
+	DownloadClientTemplate string
 }
 
 func NewConfigurations() *Configurations {
@@ -48,6 +49,7 @@ func NewConfigurations() *Configurations {
 	viper.SetDefault("SESSION_COLLECTION", "session_store")
 	viper.SetDefault("CONFIRM_EMAIL_TEMPLATE", "./templates/confirm_email.html")
 	viper.SetDefault("PASSWORD_RESET_TEMPLATE", "./templates/password_reset.html")
+	viper.SetDefault("DOWNLOAD_CLIENT_TEMPLATE", "./templates/download_clients.html")
 
 	configs := &Configurations{
 		ClusterUrl:          mgURL,
@@ -60,8 +62,9 @@ func NewConfigurations() *Configurations {
 		SendGridApiKey:      viper.GetString("SENDGRID_API_KEY"),
 		ESPType:             viper.GetString("ESP_TYPE"),
 
-		ConfirmEmailTemplate:  viper.GetString("CONFIRM_EMAIL_TEMPLATE"),
-		PasswordResetTemplate: viper.GetString("PASSWORD_RESET_TEMPLATE"),
+		ConfirmEmailTemplate:   viper.GetString("CONFIRM_EMAIL_TEMPLATE"),
+		PasswordResetTemplate:  viper.GetString("PASSWORD_RESET_TEMPLATE"),
+		DownloadClientTemplate: viper.GetString("DOWNLOAD_CLIENT_TEMPLATE"),
 
 		SmtpUsername:  viper.GetString("SMTP_USERNAME"),
 		SmtpPassword:  viper.GetString("SMTP_PASSWORD"),

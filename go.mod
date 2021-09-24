@@ -20,7 +20,7 @@ require (
 	github.com/klauspost/compress v1.13.5 // indirect
 	github.com/mailgun/mailgun-go/v4 v4.5.3
 	github.com/mitchellh/mapstructure v1.4.1
-	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pkg/errors v0.9.1
 	github.com/rs/cors v1.8.0
 	github.com/sendgrid/rest v2.6.4+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.10.0+incompatible
