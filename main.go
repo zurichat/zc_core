@@ -38,6 +38,7 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	auth := auth.NewAuthHandler(configs, mailService)
 	user := user.NewUserHandler(configs, mailService)
+	external := external.NewExternalHandler(configs, mailService)
 
 	// Setup and init
 	r.HandleFunc("/", VersionHandler)
@@ -134,6 +135,7 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	// Email subscription
 	r.HandleFunc("/external/subscribe", external.EmailSubscription).Methods("POST")
+	r.HandleFunc("/external/download-client", external.DownloadClient).Methods("GET")
 
 	//ping endpoint
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
