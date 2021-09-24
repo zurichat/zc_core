@@ -29,6 +29,7 @@ type Configurations struct {
 	ConfirmEmailTemplate  string
 	PasswordResetTemplate string
 	TeamInvitationTemplate string
+	DownloadClientTemplate string
 }
 
 func NewConfigurations() *Configurations {
@@ -50,6 +51,7 @@ func NewConfigurations() *Configurations {
 	viper.SetDefault("CONFIRM_EMAIL_TEMPLATE", "./templates/confirm_email.html")
 	viper.SetDefault("PASSWORD_RESET_TEMPLATE", "./templates/password_reset.html")
 	viper.SetDefault("TEAM_INVITATION_TEMPLATE", "./templates/team_invite.html")
+	viper.SetDefault("DOWNLOAD_CLIENT_TEMPLATE", "./templates/download_clients.html")
 
 	configs := &Configurations{
 		ClusterUrl:          mgURL,
@@ -65,6 +67,7 @@ func NewConfigurations() *Configurations {
 		ConfirmEmailTemplate:  viper.GetString("CONFIRM_EMAIL_TEMPLATE"),
 		PasswordResetTemplate: viper.GetString("PASSWORD_RESET_TEMPLATE"),
 		TeamInvitationTemplate: viper.GetString("TEAM_INVITATION_TEMPLATE"),
+		DownloadClientTemplate: viper.GetString("DOWNLOAD_CLIENT_TEMPLATE"),
 
 		SmtpUsername:  viper.GetString("SMTP_USERNAME"),
 		SmtpPassword:  viper.GetString("SMTP_PASSWORD"),
