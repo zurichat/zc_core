@@ -275,3 +275,87 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 
 	utils.GetSuccess("user organizations retrieved successfully", orgs, response)
 }
+
+// Create a new user from UUID guest invite sent to user and a supplied password.
+func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("content-type", "application/json")
+
+	user_collection, orgInvite := "users", "organizations_invites"
+
+	type UUIDPassword struct {
+		Uuid     string `bson:"uuid" json:"uuid"`
+		Password string `bson:"password" json:"password"`
+	}
+
+	var uRequest UUIDPassword
+	err := utils.ParseJsonFromRequest(r, &uRequest)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	// Validate UUID
+	_, err = utils.ValidateUUID(uRequest.Uuid)
+	if err != nil {
+		utils.GetError(errors.New("invalid uuid"), http.StatusBadRequest, w)
+		return
+	}
+
+	// Check that UUID exists
+	res, err := utils.GetMongoDbDoc(orgInvite, bson.M{"uuid": uRequest.Uuid})
+	if err != nil {
+		utils.GetError(errors.New("uuid does not exist"), http.StatusBadRequest, w)
+		return
+	}
+
+	// Validate email
+	email := res["email"].(string) // extract email from UUID
+	userEmail := strings.ToLower(email)
+	if !utils.IsValidEmail(userEmail) {
+		utils.GetError(EMAIL_NOT_VALID, http.StatusBadRequest, w)
+		return
+	}
+
+	// Check if user_email exists
+	result, _ := utils.GetMongoDbDoc(user_collection, bson.M{"email": userEmail})
+	if result != nil {
+		utils.GetError(
+			fmt.Errorf("user with email %s exists", userEmail),
+			http.StatusBadRequest,
+			w,
+		)
+		return
+	}
+
+	// Verify Email
+	_, comfimationToken := utils.RandomGen(6, "d")
+	con := &UserEmailVerification{true, comfimationToken, time.Now().Add(time.Minute * time.Duration(24))}
+
+	// Hash password
+	hashPassword, err := GenerateHashPassword(uRequest.Password)
+	if err != nil {
+		utils.GetError(HASHING_FAILED, http.StatusBadRequest, w)
+		return
+	}
+
+	user := &User{
+		Email:             email,
+		Password:          hashPassword,
+		IsVerified:        true,
+		EmailVerification: con,
+		CreatedAt:         time.Now(),
+		Deactivated:       false,
+		Social:            false,
+	}
+
+	// Save user to DB
+	data, _ := utils.StructToMap(user)
+	resp, err := utils.CreateMongoDbDoc(user_collection, data)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("user successfully created", resp, w)
+
+}

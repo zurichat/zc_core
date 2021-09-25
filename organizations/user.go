@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gofrs/uuid"
 	"github.com/gorilla/mux"
 	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
@@ -620,7 +619,7 @@ func (oh *OrganizationHandler) ReactivateMember(w http.ResponseWriter, r *http.R
 func (oh *OrganizationHandler) CheckGuestStatus(w http.ResponseWriter, r *http.Request) {
 	// 0. Extract and validate UUID
 	guestUUID := mux.Vars(r)["uuid"]
-	_, err := ValidateUUID(guestUUID)
+	_, err := utils.ValidateUUID(guestUUID)
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
@@ -638,27 +637,17 @@ func (oh *OrganizationHandler) CheckGuestStatus(w http.ResponseWriter, r *http.R
 	fmt.Println(guestEmail)
 	userExist, err := utils.GetMongoDbDoc(UserCollectionName, bson.M{"email": guestEmail})
 	if err == nil {
-		utils.GetError(errors.New("guest status: rejected - user exist on zurichat"), http.StatusBadRequest, w)
+		utils.GetError(
+			errors.New("guest status: rejected - user exist on zurichat"),
+			http.StatusBadRequest,
+			w,
+		)
 		return
 	}
 	fmt.Println(userExist)
 	// 3. If email does not exist, add to
 	utils.GetSuccess("guest status: accepted - user does not exist on zurichat", userExist, w)
 
-}
-
-// Check the validaity of a UUID. Returns a valid UUID from a string input. Returns an error otherwise
-func ValidateUUID(s string) (uuid.UUID, error) {
-	if len(s) != 36 {
-		return uuid.Nil, errors.New("invalid uuid format")
-	}
-
-	b, err := uuid.FromString(s)
-	if err != nil {
-		return uuid.Nil, err
-	}
-
-	return b, nil
 }
 
 // Add accepted guest as member to organization
