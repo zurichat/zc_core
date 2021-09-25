@@ -26,10 +26,10 @@ type Plugin struct {
 	InstallCount   int64              `json:"install_count,omitempty" bson:"install_count"`
 	Approved       bool               `json:"approved" bson:"approved"`
 	Deleted        bool               `json:"deleted" bson:"deleted"`
-	Images         []string           `json:"images" bson:"images"`
+	Images         []string           `json:"images,omitempty" bson:"images,omitempty"`
 	Version        string             `json:"version" bson:"version"`
 	Category       string             `json:"category" bson:"category"`
-	Tags           []string           `json:"tags" bson:"tags"`
+	Tags           []string           `json:"tags,omitempty" bson:"tags,omitempty"`
 	ApprovedAt     string             `json:"approved_at" bson:"approved_at"`
 	CreatedAt      string             `json:"created_at" bson:"created_at"`
 	UpdatedAt      string             `json:"updated_at" bson:"updated_at"`
