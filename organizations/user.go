@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/smtp"
 	"strings"
 	"time"
 
@@ -226,7 +227,6 @@ func UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
 
 	orgId := mux.Vars(r)["id"]
 	member_Id := mux.Vars(r)["mem_id"]
-	
 
 	pMemId, err := primitive.ObjectIDFromHex(member_Id)
 	if err != nil {
@@ -611,4 +611,58 @@ func ReactivateMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.GetSuccess("successfully reactivated member", nil, w)
+}
+
+func InviteMembers(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// user_collection := "users"
+
+	// sOrgId := mux.Vars(r)["id"]
+	// orgId, err := primitive.ObjectIDFromHex(sOrgId)
+
+	// if err != nil {
+	// 	utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+	// 	return
+	// }
+
+	requestData := make(map[string][]string)
+
+	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	to := requestData["receivers"]
+
+	configs := utils.NewConfigurations()
+
+	// Sender data.
+	from := configs.SmtpUsername
+	password := configs.SmtpPassword
+
+	// Receiver email address.
+	// to := []string{
+	// 	"wakyutuk@gmail.com",
+	// 	"utukphd@gmail.com",
+	// }
+
+	// smtp server configuration.
+	smtpHost := "smtp.gmail.com"
+	smtpPort := "587"
+
+	// Message.
+	message := []byte("Workspace invitation!")
+
+	// Authentication.
+	auth := smtp.PlainAuth("", from, password, smtpHost)
+
+	// Sending email.
+
+	if err := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, message); err != nil {
+		fmt.Println(err)
+		return
+	}
+	utils.GetSuccess("Email Sent Successfully!", to, w)
+
 }

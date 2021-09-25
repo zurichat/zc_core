@@ -6,10 +6,12 @@ import (
 	"net/http"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
 
 func EmailSubscription(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Entered email subscrciption func")
 	w.Header().Set("Content-Type", "application/json")
 	newsletter_collection := "subscription"
 	var NewSubscription Subscription
@@ -25,7 +27,8 @@ func EmailSubscription(w http.ResponseWriter, r *http.Request) {
 	SubDoc, _ := utils.GetMongoDbDoc(newsletter_collection, bson.M{"email": NewSubscription.Email})
 	if SubDoc != nil {
 		// fmt.Printf("user with email %s already subscribed!", NewSubscription.Email)
-		utils.GetSuccess("Thanks for subscribing to for or Newsletter", sub_res{status: true}, w)
+		SendSubscriptionMail(NewSubscription.Email)
+		utils.GetSuccess("Thanks for subscribing for our Newsletter", sub_res{status: true}, w)
 		return
 	}
 
@@ -36,6 +39,26 @@ func EmailSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Println(res.InsertedID)
+	SendSubscriptionMail(NewSubscription.Email)
 	utils.GetSuccess("Thanks for subscribing for our Newsletter", sub_res{status: true}, w)
+
+}
+
+func SendSubscriptionMail(email string) {
+
+	ms := service.NewZcMailService(utils.NewConfigurations())
+
+	msger := ms.NewMail(
+		[]string{email},
+		"Newsletter Subscription",
+		service.EmailSubscription,
+		&service.MailData{
+			Username: email,
+			Code:     "",
+		})
+
+	if err := ms.SendMail(msger); err != nil {
+		fmt.Println(err)
+	}
 
 }
