@@ -18,8 +18,8 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
-var ClientId string = "107847729811-1i98f99fhamo3rg9930430tsua2he1ig.apps.googleusercontent.com" // api.zuri.chat
-var ClientSecret string = "W1sRuhVfIJzdJgO_Ryyj-pkQ"                                             // api.zuri.chat
+var ClientId string = "166440807442-tsshvt0pub07pnp09q7e2frac0f24ljf.apps.googleusercontent.com"
+var ClientSecret string = "AW2eHnMh9O5uXHb9kLX6LiHQ"
 
 var Store *MongoStore
 var defaultStore *MongoStore
