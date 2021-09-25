@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gorilla/mux"
 	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
@@ -226,7 +227,6 @@ func UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
 
 	orgId := mux.Vars(r)["id"]
 	member_Id := mux.Vars(r)["mem_id"]
-	
 
 	pMemId, err := primitive.ObjectIDFromHex(member_Id)
 	if err != nil {
@@ -611,4 +611,39 @@ func ReactivateMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.GetSuccess("successfully reactivated member", nil, w)
+}
+
+// Add invited guest to an organization
+func InviteGuest(w http.ResponseWriter, r *http.Request) {
+	// 0. Extract and validate UUID
+	guestUUID := mux.Vars(r)["uuid"]
+	validUUID, err := ValidateUUID(guestUUID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	fmt.Println(validUUID)
+	// 1. Query organization  invites collection
+	orgInvitesCollection := "organizations_invites"
+	res, err := utils.GetMongoDbDoc(orgInvitesCollection, bson.M{"uuid": validUUID})
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+	fmt.Println(res)
+
+}
+
+func ValidateUUID(s string) (uuid.UUID, error) {
+	if len(s) != 36 {
+		return uuid.Nil, errors.New("invalid uuid format")
+	}
+
+	b, err := uuid.FromString(s)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return b, nil
 }
