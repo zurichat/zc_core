@@ -35,7 +35,7 @@ type MailData struct {
 	Username   string
 	Code       string
 	OrgName    string
-	InviteLink string
+	InviteLink template.URL
 }
 
 type Mail struct {
