@@ -28,11 +28,15 @@ const (
 	MailConfirmation MailType = iota + 1
 	PasswordReset
 	EmailSubscription
+	DownloadClient
+	WorkspaceInvite
 )
 
 type MailData struct {
-	Username string
-	Code     string
+	Username   string
+	Code       string
+	OrgName    string
+	InviteLink string
 }
 
 type Mail struct {
@@ -62,6 +66,10 @@ func (ms *ZcMailService) SetupSmtp(mailReq *Mail) (string, error) {
 		templateFileName = ms.configs.PasswordResetTemplate
 	} else if mailReq.mtype == EmailSubscription {
 		templateFileName = ms.configs.EmailSubscriptionTemplate
+	} else if mailReq.mtype == DownloadClient {
+		templateFileName = ms.configs.DownloadClientTemplate
+	} else if mailReq.mtype == WorkspaceInvite {
+		templateFileName = ms.configs.WorkspaceInviteTemplate
 	}
 
 	t, err := template.ParseFiles(templateFileName)
@@ -87,6 +95,10 @@ func (ms *ZcMailService) SetupSendgrid(mailReq *Mail) ([]byte, error) {
 		templateFileName = ms.configs.PasswordResetTemplate
 	} else if mailReq.mtype == EmailSubscription {
 		templateFileName = ms.configs.EmailSubscriptionTemplate
+	} else if mailReq.mtype == DownloadClient {
+		templateFileName = ms.configs.DownloadClientTemplate
+	} else if mailReq.mtype == WorkspaceInvite {
+		templateFileName = ms.configs.WorkspaceInviteTemplate
 	}
 
 	t, err := template.ParseFiles(templateFileName)

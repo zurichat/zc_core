@@ -6,20 +6,23 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
 
 const (
 	OrganizationCollectionName     = "organizations"
 	InstalledPluginsCollectionName = "installed_plugins"
+	OrganizationInviteCollection   = "organizations_invites"
 	OrganizationSettings           = "organizations_settings"
+	MemberCollectionName           = "members"
+	UserCollectionName             = "users"
 )
 
 type MemberPassword struct {
-	MemberID string	`bson:"member_id"`
-	Password string	`bson:"password"`
+	MemberID string `bson:"member_id"`
+	Password string `bson:"password"`
 }
-
 
 type Organization struct {
 	ID           string                   `json:"_id,omitempty" bson:"_id,omitempty"`
@@ -33,6 +36,16 @@ type Organization struct {
 	WorkspaceURL string                   `json:"workspace_url" bson:"workspace_url"`
 	CreatedAt    time.Time                `json:"created_at" bson:"created_at"`
 	UpdatedAt    time.Time                `json:"updated_at" bson:"updated_at"`
+}
+type Invite struct {
+	ID    string `json:"_id,omitempty" bson:"_id,omitempty"`
+	OrgID string `json:"org_id" bson:"org_id"`
+	Uuid  string `json:"uuid" bson:"uuid"`
+	Email string `json:"email" bson:"email"`
+}
+type SendInviteResponse struct {
+	InvalidEmails []interface{}
+	InviteIDs     []interface{}
 }
 
 func (o *Organization) OrgPlugins() []map[string]interface{} {
@@ -62,6 +75,10 @@ type InstalledPlugin struct {
 	UpdatedAt   time.Time              `json:"updated_at" bson:"updated_at"`
 }
 
+type SendInviteBody struct {
+	Emails []string `json:"emails" bson:"emails"`
+}
+
 type OrganizationAdmin struct {
 	ID             primitive.ObjectID `bson:"id"`
 	OrganizationID string             `bson:"organization_id"`
@@ -75,44 +92,43 @@ func GetOrgPluginCollectionName(orgName string) string {
 }
 
 type Social struct {
-	Url   string             `json:"url" bson:"url"`
-	Title string             `json:"title" bson:"title"`
+	Url   string `json:"url" bson:"url"`
+	Title string `json:"title" bson:"title"`
 }
 
 type Member struct {
-	ID          primitive.ObjectID     `json:"_id" bson:"_id"`
-	OrgId       string                 `json:"org_id" bson:"org_id"`
-	Files       []string               `json:"files" bson:"files"`
-	ImageURL    string                 `json:"image_url" bson:"image_url"`
-	FirstName   string                 `json:"first_name" bson:"first_name"`
-	LastName    string                 `json:"last_name" bson:"last_name"`
-	Email       string                 `json:"email" bson:"email"`
-	UserName    string                 `bson:"user_name" json:"user_name"`
-	DisplayName string                 `json:"display_name" bson:"display_name"`
-	Bio         string                 `json:"bio" bson:"bio"`
-	Status      string                 `json:"status" bson:"status"`
-	Presence    string                 `json:"presence" bson:"presence"`
-	Pronouns    string                 `json:"pronouns" bson:"pronouns"`
-	Phone       string                 `json:"phone" bson:"phone"`
-	TimeZone    string                 `json:"time_zone" bson:"time_zone"`
-	Role        string                 `json:"role" bson:"role"`
-	JoinedAt    time.Time              `json:"joined_at" bson:"joined_at"`
-	Settings    *Settings         	   `json:"settings" bson:"settings"`
-	Deleted     bool                   `json:"deleted" bson:"deleted"`
-	DeletedAt   time.Time              `json:"deleted_at" bson:"deleted_at"`
-	Socials     []Social      		   `json:"socials" bson:"socials"`
+	ID          primitive.ObjectID `json:"_id" bson:"_id"`
+	OrgId       string             `json:"org_id" bson:"org_id"`
+	Files       []string           `json:"files" bson:"files"`
+	ImageURL    string             `json:"image_url" bson:"image_url"`
+	FirstName   string             `json:"first_name" bson:"first_name"`
+	LastName    string             `json:"last_name" bson:"last_name"`
+	Email       string             `json:"email" bson:"email"`
+	UserName    string             `bson:"user_name" json:"user_name"`
+	DisplayName string             `json:"display_name" bson:"display_name"`
+	Bio         string             `json:"bio" bson:"bio"`
+	Status      string             `json:"status" bson:"status"`
+	Presence    string             `json:"presence" bson:"presence"`
+	Pronouns    string             `json:"pronouns" bson:"pronouns"`
+	Phone       string             `json:"phone" bson:"phone"`
+	TimeZone    string             `json:"time_zone" bson:"time_zone"`
+	Role        string             `json:"role" bson:"role"`
+	JoinedAt    time.Time          `json:"joined_at" bson:"joined_at"`
+	Settings    *Settings          `json:"settings" bson:"settings"`
+	Deleted     bool               `json:"deleted" bson:"deleted"`
+	DeletedAt   time.Time          `json:"deleted_at" bson:"deleted_at"`
+	Socials     []Social           `json:"socials" bson:"socials"`
 }
-
 type Profile struct {
-	ID          string      `json:"id" bson:"_id"`
-	FirstName   string      `json:"first_name" bson:"first_name"`
-	LastName    string      `json:"last_name" bson:"last_name"`
-	DisplayName string      `json:"display_name" bson:"display_name"`
-	Bio         string      `json:"bio" bson:"bio"`
-	Pronouns    string      `json:"pronouns" bson:"pronouns"`
-	Phone       string      `json:"phone" bson:"phone"`
-	TimeZone    string      `json:"time_zone" bson:"time_zone"`
-	Socials     []Social	`json:"socials" bson:"socials"`
+	ID          string   `json:"id" bson:"_id"`
+	FirstName   string   `json:"first_name" bson:"first_name"`
+	LastName    string   `json:"last_name" bson:"last_name"`
+	DisplayName string   `json:"display_name" bson:"display_name"`
+	Bio         string   `json:"bio" bson:"bio"`
+	Pronouns    string   `json:"pronouns" bson:"pronouns"`
+	Phone       string   `json:"phone" bson:"phone"`
+	TimeZone    string   `json:"time_zone" bson:"time_zone"`
+	Socials     []Social `json:"socials" bson:"socials"`
 }
 
 type Settings struct {
@@ -120,6 +136,7 @@ type Settings struct {
 	Sidebar          Sidebar          `json:"sidebar" bson:"sidebar"`
 	Themes           Themes           `json:"themes" bson:"themes"`
 	MessagesAndMedia MessagesAndMedia `json:"messages_and_media" bson:"messages_and_media"`
+	ChatSettings     ChatSettings     `json:"chat_settings" bson:"chat_settings"`
 }
 
 type Notifications struct {
@@ -162,4 +179,20 @@ type MessagesAndMedia struct {
 	Custom                   bool     `json:"custom" bson:"custom"`
 	InlineMediaAndLinks      []string `json:"inline_media_and_links" bson:"inline_media_and_links"`
 	BringEmailsIntoZuri      string   `json:"bring_emails_into_zuri" bson:"bring_emails_into_zuri"`
+}
+
+type ChatSettings struct {
+	Theme           string `json:"theme" bson:"theme"`
+	Wallpaper       string `json:"wallpaper" bson:"wallpaper"`
+	EnterIsSend     bool   `json:"enter_is_send" bson:"enter_is_send"`
+	MediaVisibility bool   `json:"media_visibility" bson:"media_visibility"`
+	FontSize        string `json:"font_size" bson:"font_size"`
+}
+type OrganizationHandler struct {
+	configs     *utils.Configurations
+	mailService service.MailService
+}
+
+func NewOrganizationHandler(c *utils.Configurations, mail service.MailService) *OrganizationHandler {
+	return &OrganizationHandler{configs: c, mailService: mail}
 }

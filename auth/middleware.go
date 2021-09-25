@@ -17,6 +17,7 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 
 		store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(secretKey))
 		var session *sessions.Session
+		var SessionEmail string
 		var err error
 		session, err = store.Get(r, sessionKey)
 		status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
@@ -25,14 +26,18 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
 			return
 		}
+		if session.Values["email"] != nil {
+			SessionEmail = session.Values["email"].(string)
+		}
 		var erro error
 		if status == true {
-			session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName)
+			session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName, sessData.Gothic)
 			fmt.Println(session)
 			if err != nil && erro != nil {
 				utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
 				return
 			}
+			SessionEmail = sessData.GothicEmail
 		}
 
 		// use is coming in newly, no cookies
@@ -46,10 +51,9 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 			utils.GetError(ErrorInvalid, http.StatusUnauthorized, w)
 			return
 		}
-
 		user := &AuthUser{
 			ID:    objID,
-			Email: session.Values["email"].(string),
+			Email: SessionEmail,
 		}
 
 		ctx := context.WithValue(r.Context(), "user", user)
@@ -64,7 +68,7 @@ func (au *AuthHandler) OptionalAuthentication(nextHandler http.HandlerFunc, auth
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("content-type", "application/json")
 
-		store := NewMongoStore(utils.GetCollection(session_collection), SESSION_MAX_AGE, true, []byte(secretKey))
+		store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(secretKey))
 		session, err := store.Get(r, sessionKey)
 		status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
 

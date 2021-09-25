@@ -12,6 +12,7 @@ import (
 
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
+	"github.com/markbates/goth"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -33,11 +34,15 @@ type Session struct {
 }
 
 type ResToken struct {
-	Id          string            `json:"id,omitempty"`
-	Email       string            `json:"email,omitempty"`
-	SessionName string            `json:"session_name"`
-	Cookie      string            `json:"cookie,omitempty"`
-	Options     *sessions.Options `json:"options,omitempty"`
+	Id            string            `json:"id,omitempty"`
+	Email         string            `json:"email,omitempty"`
+	SessionName   string            `json:"session_name"`
+	Cookie        string            `json:"cookie,omitempty"`
+	Options       *sessions.Options `json:"options,omitempty"`
+	GothicUser    goth.User         `json:"gothuser"`
+	GothicEmail   string            `json:"gothicemail"`
+	Gothic        interface{}       `json:"gothic"`
+	SocialSession *sessions.Session `json:"social_session"`
 }
 
 type MongoStore struct {
@@ -60,15 +65,15 @@ func NewMongoStore(c *mongo.Collection, maxAge int, ensureTTL bool, keyPairs ...
 
 	store.MaxAge(maxAge)
 
-	if ensureTTL {
-		x := (time.Duration(maxAge) * time.Second)
+	// if ensureTTL {
+	// 	x := (time.Duration(maxAge) * time.Second)
 
-		indexModel := mongo.IndexModel{
-			Keys:    bson.M{"modified": 1},
-			Options: options.Index().SetExpireAfterSeconds(int32(x.Seconds())),
-		}
-		c.Indexes().CreateOne(context.Background(), indexModel)
-	}
+	// 	indexModel := mongo.IndexModel{
+	// 		Keys: bson.M{"modified": 1},
+	// 		Options: options.Index().SetExpireAfterSeconds(int32(x.Seconds())),
+	// 	}
+	// 	c.Indexes().CreateOne(context.Background(), indexModel)
+	// }
 
 	return store
 }
@@ -104,7 +109,7 @@ func (m *MongoStore) New(r *http.Request, name string) (*sessions.Session, error
 
 	return session, err
 }
-func NewS(m *MongoStore, cookie string, id string, email string, r *http.Request, name string) (*sessions.Session, error) {
+func NewS(m *MongoStore, cookie string, id string, email string, r *http.Request, name string, Gothic interface{}) (*sessions.Session, error) {
 	session := sessions.NewSession(m, name)
 	session.Options = &sessions.Options{
 		Path:     m.Options.Path,
@@ -115,18 +120,24 @@ func NewS(m *MongoStore, cookie string, id string, email string, r *http.Request
 	}
 
 	session.IsNew = true
-	session.Values["id"] = id
-	session.Values["email"] = email
 	// session.ID = id
 	var err error
 	err = securecookie.DecodeMulti(name, cookie, &session.ID, m.Codecs...)
 	if err == nil {
-		errb := m.load(session)
+		var errb error
+		if Gothic != nil {
+			session.Values["gothic"] = Gothic
+		} else {
+			session.Values["id"] = id
+			session.Values["email"] = email
+		}
+		errb = m.load(session)
 		if errb == nil {
 			session.IsNew = false
 		} else {
 			err = nil
 		}
+
 	}
 
 	return session, err
@@ -148,18 +159,42 @@ func ClearSession(m *MongoStore, w http.ResponseWriter, session *sessions.Sessio
 
 func (m *MongoStore) Save(r *http.Request, w http.ResponseWriter, session *sessions.Session) error {
 
-	if session.Options.MaxAge < 0 {
-		if err := m.delete(session); err != nil {
-			return err
-		}
-		m.Token.SetToken(w, session.Name(), "", session.Options)
-		Resptoken = ResToken{
-			SessionName: session.Name(),
-			Cookie:      "",
-			Options:     session.Options,
-		}
-		return nil
+	// if session.Options.MaxAge < 0 {
+	// 	if err := m.delete(session); err != nil {
+	// 		return err
+	// 	}
+	// 	m.Token.SetToken(w, session.Name(), "", session.Options)
+	// 	Resptoken = ResToken{
+	// 		SessionName: session.Name(),
+	// 		Cookie:      "",
+	// 		Options:     session.Options,
+	// 	}
+	// 	return nil
+	// }
+
+	if session.ID == "" {
+		session.ID = primitive.NewObjectID().Hex()
 	}
+
+	if err := m.upsert(session); err != nil {
+		return err
+	}
+
+	encoded, err := securecookie.EncodeMulti(session.Name(), session.ID, m.Codecs...)
+	if err != nil {
+		return err
+	}
+	Resptoken = ResToken{
+		Id:          session.ID,
+		SessionName: session.Name(),
+		Cookie:      encoded,
+		Options:     session.Options,
+	}
+	m.Token.SetToken(w, session.Name(), encoded, session.Options)
+	return nil
+}
+
+func SaveSocialSession(r *http.Request, w http.ResponseWriter, session *sessions.Session, m *MongoStore) error {
 
 	if session.ID == "" {
 		session.ID = primitive.NewObjectID().Hex()
@@ -216,7 +251,17 @@ func (m *MongoStore) upsert(session *sessions.Session) error {
 	ctx := context.Background()
 
 	objID, err := primitive.ObjectIDFromHex(session.ID)
-	userID, _ := primitive.ObjectIDFromHex(session.Values["id"].(string))
+	var userID primitive.ObjectID
+	var eeer error
+	if session.Values["id"] != nil && session.Values["id"] != "" {
+		userID, eeer = primitive.ObjectIDFromHex(session.Values["id"].(string))
+	}
+
+	if eeer != nil {
+		// tmpid := primitive.NewObjectID().Hex()
+		// userID, _ = primitive.ObjectIDFromHex(tmpid)
+		userID, _ = primitive.ObjectIDFromHex("")
+	}
 
 	if err != nil {
 		return errors.New("zuri Core session: invalid session id")
