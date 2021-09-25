@@ -263,6 +263,69 @@ func (oh *OrganizationHandler) UpdateName(w http.ResponseWriter, r *http.Request
 	utils.GetSuccess("organization name updated successfully", nil, w)
 }
 
+// transfer workspace ownership
+func TransferOwnership(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	org_Id := mux.Vars(r)["id"]
+
+	// Check if organization id is valid
+	orgId, err := primitive.ObjectIDFromHex(org_Id)
+	if err != nil {
+		utils.GetError(errors.New("invalid organization id"), http.StatusBadRequest, w)
+		return
+	}
+
+	// Check if organization id exists in the database
+	orgDoc, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": orgId})
+	if orgDoc == nil {
+		utils.GetError(errors.New("organization does not exist"), http.StatusBadRequest, w)
+		return
+	}
+
+	requestData := make(map[string]string)
+	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	email := requestData["email"]
+	
+	// confirm if email supplied is valid
+	if !utils.IsValidEmail(strings.ToLower(email)) {
+		utils.GetError(errors.New("email is not valid"), http.StatusBadRequest, w)
+		return
+	}
+
+	orgMember, err := FetchMember(bson.M{"org_id": org_Id, "email": email})
+
+	if err != nil {
+		utils.GetError(errors.New("user not a member of this work space"), http.StatusBadRequest, w)
+		return
+	}
+
+	if orgMember.Role == "owner" {
+		utils.GetError(errors.New("this member already owns this organization"), http.StatusBadRequest, w)
+		return
+	}
+
+	memberID :=orgMember.ID.Hex()
+
+	updateRes, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberID, bson.M{"role":"owner"})
+
+	if err != nil {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	if updateRes.ModifiedCount == 0 {
+		utils.GetError(errors.New("could not upgrade member role"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("workspace owner changed successfully", nil, w)
+}
+
 // Update organization logo
 func (oh *OrganizationHandler) UpdateLogo(w http.ResponseWriter, r *http.Request) {
 
