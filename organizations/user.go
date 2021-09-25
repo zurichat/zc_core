@@ -74,6 +74,7 @@ func (oh *OrganizationHandler) GetMembers(w http.ResponseWriter, r *http.Request
 		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
 		return
 	}
+
 	// query allows you to be able to browse people given the right query param
 	query := r.URL.Query().Get("query")
 
@@ -85,15 +86,17 @@ func (oh *OrganizationHandler) GetMembers(w http.ResponseWriter, r *http.Request
 	}
 
 	//set filter based on query presence
+	regex := bson.M{"$regex": primitive.Regex{Pattern: query, Options: "i"}}
+
 	if query != "" {
 		filter = bson.M{
 			"org_id":  orgId,
 			"deleted": bson.M{"$ne": true},
 			"$or": []bson.M{
-				{"first_name": query},
-				{"last_name": query},
-				{"email": query},
-				{"display_name": query},
+				{"first_name": regex},
+				{"last_name": regex},
+				{"email": regex},
+				{"display_name": regex},
 			},
 		}
 	}
