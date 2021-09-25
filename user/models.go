@@ -64,6 +64,7 @@ type User struct {
 	Phone             string                 `bson:"phone" validate:"required" json:"phone"`
 	Settings          *UserSettings          `bson:"settings" json:"settings"`
 	Timezone          string                 `bson:"time_zone" json:"time_zone"`
+	Role              string                 `bson:"role" json:"role"`
 	CreatedAt         time.Time              `bson:"created_at" json:"created_at"`
 	UpdatedAt         time.Time              `bson:"updated_at" json:"updated_at"`
 	Deactivated       bool                   `default:"false" bson:"deactivated" json:"deactivated"`
