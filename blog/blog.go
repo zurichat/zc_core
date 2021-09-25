@@ -429,3 +429,43 @@ func SearchBlog(w http.ResponseWriter, r *http.Request) {
 	}
 	utils.GetSuccess("successful", docs, w)
 }
+
+
+// function to subscribe to a mailing list
+func MailingList(response http.ResponseWriter, request *http.Request) {
+	response.Header().Add("content-type", "application/json")
+
+	var mail MailLists
+	if err := utils.ParseJsonFromRequest(request, &mail); err != nil {
+		utils.GetError(errors.New("bad update data"), http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	blogMail := strings.ToLower(mail.Email)
+
+	if !utils.IsValidEmail(blogMail) {
+		utils.GetError(errors.New("invalid email supplied"), http.StatusBadRequest, response)
+		return
+	}
+
+	// confirm if email has not already been subscribed
+	result, _ := utils.GetMongoDbDoc(BlogMailingList, bson.M{"email": blogMail})
+	if result != nil {
+		utils.GetError(errors.New("you already subscribed"), http.StatusBadRequest, response)
+		return
+	}	
+
+	mail.Email = blogMail
+	mail.SubscribedAt = time.Now() 
+
+	detail, _ := utils.StructToMap(mail)
+
+	res, err := utils.CreateMongoDbDoc(BlogMailingList, detail)
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, response)
+		return
+	}
+
+	utils.GetSuccess("subscribed", res, response)
+}

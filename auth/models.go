@@ -37,14 +37,14 @@ type RoleMember struct {
 	JoinedAt    time.Time          `json:"joined_at" bson:"joined_at"`
 }
 
-const SESSION_MAX_AGE int = 31536000 * 200
+var SESSION_MAX_AGE int = int(time.Now().Unix() + (31536000 * 200))
 
 var (
-	NoAuthToken     = errors.New("No Authorization or session expired.")
-	TokenExp        = errors.New("Session expired.")
-	NotAuthorized   = errors.New("Not Authorized.")
+	NoAuthToken          = errors.New("No Authorization or session expired.")
+	TokenExp             = errors.New("Session expired.")
+	NotAuthorized        = errors.New("Not Authorized.")
 	ConfirmPasswordError = errors.New("The password confirmation does not match")
-	UserDetails     = UserKey("userDetails")
+	UserDetails          = UserKey("userDetails")
 )
 
 type Credentials struct {
@@ -112,61 +112,67 @@ func FetchUserByEmail(filter map[string]interface{}) (*user.User, error) {
 }
 
 // middleware to check if user is authorized
-func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("content-type", "application/json")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type,access-control-allow-origin, access-control-allow-headers")
+// func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
+// 	return func(w http.ResponseWriter, r *http.Request) {
+// 		w.Header().Add("content-type", "application/json")
+// 		w.Header().Set("Access-Control-Allow-Origin", "*")
+// 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type,access-control-allow-origin, access-control-allow-headers")
 
-		store := NewMongoStore(utils.GetCollection(session_collection), SESSION_MAX_AGE, true, []byte(secretKey))
-		var session *sessions.Session
-		var err error
-		session, err = store.Get(r, sessionKey)
-		status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
+// 		store := NewMongoStore(utils.GetCollection(session_collection), SESSION_MAX_AGE, true, []byte(secretKey))
+// 		var session *sessions.Session
+// 		var err error
+// 		session, err = store.Get(r, sessionKey)
+// 		status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
 
-		if err != nil && status == false {
-			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
-			return
-		}
-		var erro error
-		if status == true {
-			session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName)
-			// fmt.Println(session)
-			if err != nil && erro != nil {
-				utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
-				return
-			}
-		}
+// 		if err != nil && status == false {
+// 			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
+// 			return
+// 		}
+// 		var erro error
+// 		if status == true {
+// 			session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName)
+// 			// fmt.Println(session)
+// 			if err != nil && erro != nil {
+// 				utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
+// 				return
+// 			}
+// 		}
 
-		// use is coming in newly, no cookies
-		if session.IsNew == true {
-			utils.GetError(NoAuthToken, http.StatusUnauthorized, w)
-			return
-		}
+// 		// use is coming in newly, no cookies
+// 		if session.IsNew == true {
+// 			utils.GetError(NoAuthToken, http.StatusUnauthorized, w)
+// 			return
+// 		}
 
-		objID, err := primitive.ObjectIDFromHex(session.ID)
-		if err != nil {
-			utils.GetError(ErrorInvalid, http.StatusUnauthorized, w)
-			return
-		}
+// 		objID, err := primitive.ObjectIDFromHex(session.ID)
+// 		if err != nil {
+// 			utils.GetError(ErrorInvalid, http.StatusUnauthorized, w)
+// 			return
+// 		}
 
-		user := &AuthUser{
-			ID:    objID,
-			Email: session.Values["email"].(string),
-		}
+// 		user := &AuthUser{
+// 			ID:    objID,
+// 			Email: session.Values["email"].(string),
+// 		}
 
-		ctx := context.WithValue(r.Context(), "user", user)
-		nextHandler.ServeHTTP(w, r.WithContext(ctx))
-	}
-}
+// 		ctx := context.WithValue(r.Context(), "user", user)
+// 		nextHandler.ServeHTTP(w, r.WithContext(ctx))
+// 	}
+// }
 
 // Checks if a user is authorized to access a particular function, and either returns a 403 error or continues the process
-// First Option is user id
-// second is the Organisation's Id
-// third Option is the role necessary for accessing your endpoint, options are "owner" or "admin" or "member" or "guest"
-// fourth is response writer
-func IsAuthorized(user_id string, orgId string, role string, w http.ResponseWriter) bool {
-
+// First is the Organisation's Id
+// Second Option is the role necessary for accessing your endpoint, options are "owner" or "admin" or "member" or "guest"
+// Third is response writer
+// Fourth request reader
+func IsAuthorized(orgId string, role string, w http.ResponseWriter, r *http.Request) bool {
+	loggedInUser := r.Context().Value("user").(*AuthUser)
+	lguser, ee := FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
+	if ee != nil {
+		utils.GetError(errors.New("Error Fetching Logged in User"), http.StatusBadRequest, w)
+		return false
+	}
+	user_id := lguser.ID
 	// collections
 	_, user_collection, member_collection := "organizations", "users", "members"
 	// org_collection
@@ -183,6 +189,16 @@ func IsAuthorized(user_id string, orgId string, role string, w http.ResponseWrit
 
 	var user user.User
 	mapstructure.Decode(userDoc, &user)
+
+	if role == "zuri_admin" {
+		if user.Role == role {
+			return true
+		} else {
+			utils.GetError(errors.New("Access Denied"), http.StatusUnauthorized, w)
+			return false
+		}
+
+	}
 
 	// Getting member's document from db
 	orgMember, _ := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "email": user.Email})
@@ -227,7 +243,7 @@ func (au *AuthHandler) AuthTest(w http.ResponseWriter, r *http.Request) {
 	}
 	var erro error
 	if status == true {
-		session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName)
+		session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName, sessData.Gothic)
 		fmt.Println(session)
 		if err != nil && erro != nil {
 			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)

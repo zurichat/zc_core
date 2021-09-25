@@ -48,11 +48,11 @@ type UserEmailVerification struct {
 }
 
 type UserPasswordReset struct {
-	IPAddress string             `bson:"ip_address" json:"ip_address"`
-	Token     string             `bson:"token" json:"token"`
-	ExpiredAt time.Time          `bson:"expired_at" json:"expired_at"`
-	UpdatedAt time.Time          `bson:"updated_at" json:"updated_at"`
-	CreatedAt time.Time          `bson:"created_at" json:"created_at"`
+	IPAddress string    `bson:"ip_address" json:"ip_address"`
+	Token     string    `bson:"token" json:"token"`
+	ExpiredAt time.Time `bson:"expired_at" json:"expired_at"`
+	UpdatedAt time.Time `bson:"updated_at" json:"updated_at"`
+	CreatedAt time.Time `bson:"created_at" json:"created_at"`
 }
 
 type User struct {
@@ -64,14 +64,16 @@ type User struct {
 	Phone             string                 `bson:"phone" validate:"required" json:"phone"`
 	Settings          *UserSettings          `bson:"settings" json:"settings"`
 	Timezone          string                 `bson:"time_zone" json:"time_zone"`
+	Role              string                 `bson:"role" json:"role"`
 	CreatedAt         time.Time              `bson:"created_at" json:"created_at"`
 	UpdatedAt         time.Time              `bson:"updated_at" json:"updated_at"`
 	Deactivated       bool                   `default:"false" bson:"deactivated" json:"deactivated"`
 	DeactivatedAt     time.Time              `bson:"deactivated_at" json:"deactivated_at"`
-	IsVerified        bool          		 `bson:"isverified" json:"isverified"`
+	IsVerified        bool                   `bson:"isverified" json:"isverified"`
+	Social            bool                   `bson:"social" json:"social"`
 	Organizations     []string               `bson:"workspaces" json:"workspaces"` // should contain (organization) workspace ids
 	EmailVerification *UserEmailVerification `bson:"email_verification" json:"email_verification"`
-	PasswordResets    *UserPasswordReset     `bson:"password_resets" json:"password_resets"`  // remove the array
+	PasswordResets    *UserPasswordReset     `bson:"password_resets" json:"password_resets"` // remove the array
 }
 
 // Struct that user can update directly
@@ -81,9 +83,9 @@ type UserUpdate struct {
 	Phone     string `bson:"phone" validate:"required" json:"phone"`
 }
 
-type UserHandler struct{
+type UserHandler struct {
 	configs     *utils.Configurations
-	mailService service.MailService	
+	mailService service.MailService
 }
 
 func NewUserHandler(c *utils.Configurations, mail service.MailService) *UserHandler {
