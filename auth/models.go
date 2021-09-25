@@ -184,6 +184,16 @@ func IsAuthorized(user_id string, orgId string, role string, w http.ResponseWrit
 	var user user.User
 	mapstructure.Decode(userDoc, &user)
 
+	if role == "zuri_admin" {
+		if user.Role == role {
+			return true
+		} else {
+			utils.GetError(errors.New("Access Denied"), http.StatusUnauthorized, w)
+			return false
+		}
+
+	}
+
 	// Getting member's document from db
 	orgMember, _ := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "email": user.Email})
 	if orgMember == nil {

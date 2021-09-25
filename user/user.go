@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
+	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
@@ -210,6 +211,12 @@ func (uh *UserHandler) GetUsers(response http.ResponseWriter, request *http.Requ
 	response.Header().Set("Access-Control-Allow-Origin", "*")
 	response.Header().Set("Access-Control-Allow-Headers", "Content-Type,access-control-allow-origin, access-control-allow-headers")
 	response.Header().Set("content-type", "application/json")
+	loggedInUser := request.Context().Value("user").(*auth.AuthUser)
+	user, _ := auth.FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
+
+	if !auth.IsAuthorized(user.ID, "", "zuri_admin", response) {
+		return
+	}
 	collectionName := "users"
 	res, _ := utils.GetMongoDbDocs(collectionName, bson.M{"deactivated": false})
 	utils.GetSuccess("users retrieved successfully", res, response)
