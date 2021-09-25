@@ -161,12 +161,18 @@ func FetchUserByEmail(filter map[string]interface{}) (*user.User, error) {
 // }
 
 // Checks if a user is authorized to access a particular function, and either returns a 403 error or continues the process
-// First Option is user id
-// second is the Organisation's Id
-// third Option is the role necessary for accessing your endpoint, options are "owner" or "admin" or "member" or "guest"
-// fourth is response writer
-func IsAuthorized(user_id string, orgId string, role string, w http.ResponseWriter) bool {
-
+// First is the Organisation's Id
+// Second Option is the role necessary for accessing your endpoint, options are "owner" or "admin" or "member" or "guest"
+// Third is response writer
+// Fourth request reader
+func IsAuthorized(orgId string, role string, w http.ResponseWriter, r *http.Request) bool {
+	loggedInUser := r.Context().Value("user").(*AuthUser)
+	lguser, ee := FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
+	if ee != nil {
+		utils.GetError(errors.New("Error Fetching Logged in User"), http.StatusBadRequest, w)
+		return false
+	}
+	user_id := lguser.ID
 	// collections
 	_, user_collection, member_collection := "organizations", "users", "members"
 	// org_collection

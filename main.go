@@ -61,13 +61,13 @@ func Router(Server *socketio.Server) *mux.Router {
 	// Authentication
 	r.HandleFunc("/auth/login", auth.LoginIn).Methods(http.MethodPost)
 	// r.HandleFunc("/auth/template", auth.HtmlTemplate)
-	r.HandleFunc("/auth/{provider}/callback", auth.CompleteGoogleAuth).Methods("GET")
-	r.HandleFunc("/auth/{provider}", auth.BeginGoogleAuth)
 	// r.HandleFunc("/auth/test", auth.AuthTest).Methods(http.MethodPost)
 	r.HandleFunc("/auth/logout", auth.LogOutUser).Methods(http.MethodPost)
 	r.HandleFunc("/auth/logout/othersessions", auth.LogOutOtherSessions).Methods(http.MethodPost)
 	r.HandleFunc("/auth/verify-token", auth.IsAuthenticated(auth.VerifyTokenHandler)).Methods(http.MethodGet, http.MethodPost)
 	r.HandleFunc("/auth/confirm-password", auth.IsAuthenticated(auth.ConfirmUserPassword)).Methods(http.MethodPost)
+	r.HandleFunc("/auth/{provider}/callback", auth.CompleteGoogleAuth).Methods("GET")
+	r.HandleFunc("/auth/{provider}", auth.BeginGoogleAuth)
 
 	r.HandleFunc("/account/verify-account", auth.VerifyAccount).Methods(http.MethodPost)
 	r.HandleFunc("/account/request-password-reset-code", auth.RequestResetPasswordCode).Methods(http.MethodPost)
