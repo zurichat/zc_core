@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	// "zuri.chat/zccore/auth"/
@@ -218,22 +219,29 @@ func GenWorkspaceUrl(orgName string) string {
 func GenJwtToken(data, tokenType string) (string, error) {
 	SECRET_KEY, _ := os.LookupEnv("AUTH_SECRET_KEY")
 
-	claims := struct{
-		Data	string
-		TokenType	string
+	claims := struct {
+		Data      string
+		TokenType string
 		jwt.StandardClaims
-	}{ 
+	}{
 		data,
 		tokenType,
 		jwt.StandardClaims{
 			ExpiresAt: 15000,
-			Issuer: "api.zuri.chat",
+			Issuer:    "api.zuri.chat",
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	ss, err := token.SignedString([]byte(SECRET_KEY))
 
-	if err != nil {return "", err}
+	if err != nil {
+		return "", err
+	}
 	return ss, nil
+}
+
+func GenUUID() string {
+	id := uuid.New()
+	return id.String()
 }

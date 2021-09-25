@@ -1,0 +1,202 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Swagger UI</title>
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700|Source+Code+Pro:300,600|Titillium+Web:400,600,700" rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.24.2/swagger-ui.css" >
+  <style>
+    html
+    {
+      box-sizing: border-box;
+      overflow: -moz-scrollbars-vertical;
+      overflow-y: scroll;
+    }
+    *,
+    *:before,
+    *:after
+    {
+      box-sizing: inherit;
+    }
+
+    body {
+      margin:0;
+      background: #fafafa;
+    }
+  </style>
+</head>
+<body>
+
+<div id="swagger-ui"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.24.2/swagger-ui-bundle.js"> </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.24.2/swagger-ui-standalone-preset.js"> </script>
+<script>
+window.onload = function() {
+
+  var spec = {
+    "components": {
+        "schemas": {
+            "BadRequestResponse": {
+                "properties": {
+                    "data": {
+                        "properties": {
+                            "content": {
+                                "example": "field cannot be empty",
+                                "type": "string"
+                            },
+                            "email": {
+                                "example": "invalid email",
+                                "type": "string"
+                            },
+                            "file": {
+                                "example": "invalid file type",
+                                "type": "string"
+                            },
+                            "subject": {
+                                "example": "field cannot be empty",
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "message": {
+                        "example": "contact information sent successfully",
+                        "type": "string"
+                    },
+                    "status": {
+                        "example": 400,
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "SuccessResponse": {
+                "properties": {
+                    "data": {
+                        "properties": {
+                            "InsertedID": {
+                                "example": "614cd3091df928467cc56253",
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "message": {
+                        "example": "contact information sent successfully",
+                        "type": "string"
+                    },
+                    "status": {
+                        "example": 201,
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            }
+        }
+    },
+    "info": {
+        "contact": {
+            "email": "developer@zuri.chat"
+        },
+        "description": "Zuri Chat is an open source slack clone. However, it offers a lot more functionality via a plugin system where each room can be provided by a different plugin provider.",
+        "title": "Zuri Chat Core API (Contact Us Endpoint)",
+        "version": "1.0.0"
+    },
+    "openapi": "3.0.0",
+    "paths": {
+        "/contact": {
+            "post": {
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "encoding": {
+                                "file": {
+                                    "contentType": "image/png, image/jpg, image/jpeg, application/pdf, application/msword application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                }
+                            },
+                            "schema": {
+                                "properties": {
+                                    "content": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "file": {
+                                        "items": {
+                                            "format": "binary",
+                                            "type": "string"
+                                        },
+                                        "type": "array"
+                                    },
+                                    "subject": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "description": "Contact form processing complaints and/or inquiries from users",
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        },
+                        "description": "contact successful"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestResponse"
+                                }
+                            }
+                        },
+                        "description": "bad request"
+                    }
+                },
+                "summary": "Contact Zuri Chat",
+                "tags": [
+                    "Contact Us"
+                ]
+            }
+        }
+    },
+    "servers": [
+        {
+            "description": "Zuri Chat Core API",
+            "url": "https://api.zuri.chat/"
+        }
+    ]
+};
+
+  // Build a system
+  const ui = SwaggerUIBundle({
+    spec: spec,
+    dom_id: '#swagger-ui',
+    deepLinking: true,
+    presets: [
+      SwaggerUIBundle.presets.apis,
+      SwaggerUIStandalonePreset
+    ],
+    plugins: [
+      SwaggerUIBundle.plugins.DownloadUrl
+    ],
+    layout: "StandaloneLayout"
+  })
+
+  window.ui = ui
+}
+</script>
+</body>
+
+</html>
