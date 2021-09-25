@@ -264,7 +264,7 @@ func (oh *OrganizationHandler) UpdateName(w http.ResponseWriter, r *http.Request
 }
 
 // transfer workspace ownership
-func TransferOwnership(w http.ResponseWriter, r *http.Request) {
+func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	org_Id := mux.Vars(r)["id"]
