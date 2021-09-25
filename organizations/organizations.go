@@ -290,7 +290,7 @@ func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.
 	}
 
 	email := requestData["email"]
-	
+
 	// confirm if email supplied is valid
 	if !utils.IsValidEmail(strings.ToLower(email)) {
 		utils.GetError(errors.New("email is not valid"), http.StatusBadRequest, w)
@@ -309,9 +309,9 @@ func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.
 		return
 	}
 
-	memberID :=orgMember.ID.Hex()
+	memberID := orgMember.ID.Hex()
 
-	updateRes, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberID, bson.M{"role":"owner"})
+	updateRes, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberID, bson.M{"role": "owner"})
 
 	if err != nil {
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
@@ -358,10 +358,10 @@ func (oh *OrganizationHandler) UpdateLogo(w http.ResponseWriter, r *http.Request
 func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	loggedInUser := r.Context().Value("user").(*auth.AuthUser)
-	user, _ := auth.FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
+	// user, _ := auth.FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
 	sOrgId := mux.Vars(r)["id"]
 
-	if !auth.IsAuthorized(user.ID, sOrgId, "admin", w) {
+	if !auth.IsAuthorized(sOrgId, "admin", w, r) {
 		return
 	}
 	var guests SendInviteBody

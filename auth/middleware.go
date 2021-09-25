@@ -37,7 +37,9 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 				utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
 				return
 			}
-			SessionEmail = sessData.GothicEmail
+			if sessData.GothicEmail != "" {
+				SessionEmail = sessData.GothicEmail
+			}
 		}
 
 		// use is coming in newly, no cookies
@@ -55,7 +57,6 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 			ID:    objID,
 			Email: SessionEmail,
 		}
-
 		ctx := context.WithValue(r.Context(), "user", user)
 		nextHandler.ServeHTTP(w, r.WithContext(ctx))
 	}
