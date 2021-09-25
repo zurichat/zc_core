@@ -616,28 +616,38 @@ func (oh *OrganizationHandler) ReactivateMember(w http.ResponseWriter, r *http.R
 	utils.GetSuccess("successfully reactivated member", nil, w)
 }
 
-// Add invited guest to an organization
-func InviteGuest(w http.ResponseWriter, r *http.Request) {
+// Check the guest status of an email embedded in an invite UUID
+func (oh *OrganizationHandler) CheckGuestStatus(w http.ResponseWriter, r *http.Request) {
 	// 0. Extract and validate UUID
 	guestUUID := mux.Vars(r)["uuid"]
-	validUUID, err := ValidateUUID(guestUUID)
+	_, err := ValidateUUID(guestUUID)
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
 
-	fmt.Println(validUUID)
-	// 1. Query organization  invites collection
-	orgInvitesCollection := "organizations_invites"
-	res, err := utils.GetMongoDbDoc(orgInvitesCollection, bson.M{"uuid": validUUID})
+	// 1. Query organization invites collection for uuid
+	res, err := utils.GetMongoDbDoc(OrganizationInviteCollection, bson.M{"uuid": guestUUID})
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
 	fmt.Println(res)
+	// 2. Check if email already is registered in zurichat (return 403 user already exist)
+	guestEmail := res["email"]
+	fmt.Println(guestEmail)
+	userExist, err := utils.GetMongoDbDoc(UserCollectionName, bson.M{"email": guestEmail})
+	if err == nil {
+		utils.GetError(errors.New("guest status: rejected - user exist on zurichat"), http.StatusBadRequest, w)
+		return
+	}
+	fmt.Println(userExist)
+	// 3. If email does not exist, add to
+	utils.GetSuccess("guest status: accepted - user does not exist on zurichat", userExist, w)
 
 }
 
+// Check the validaity of a UUID. Returns a valid UUID from a string input. Returns an error otherwise
 func ValidateUUID(s string) (uuid.UUID, error) {
 	if len(s) != 36 {
 		return uuid.Nil, errors.New("invalid uuid format")
@@ -649,4 +659,12 @@ func ValidateUUID(s string) (uuid.UUID, error) {
 	}
 
 	return b, nil
+}
+
+// Add accepted guest as member to organization
+func AddGuestToOrganization(w http.ResponseWriter, r *http.Request) {
+	// TODO 1: Verify guest email
+	// TODO 2: Check that guest does not already exist in organization
+	// TODO 3: Create a member profile for the guest
+	// TODO 4: Add member to organization
 }
