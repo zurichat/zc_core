@@ -26,9 +26,6 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
 			return
 		}
-		if session.Values["email"] != nil {
-			SessionEmail = session.Values["email"].(string)
-		}
 		var erro error
 		if status == true {
 			session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName, sessData.Gothic)
@@ -37,9 +34,12 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 				utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
 				return
 			}
-			if sessData.GothicEmail != "" {
-				SessionEmail = sessData.GothicEmail
-			}
+
+		}
+		if sessData.Gothic != nil {
+			SessionEmail = sessData.GothicEmail
+		} else {
+			SessionEmail = session.Values["email"].(string)
 		}
 
 		// use is coming in newly, no cookies
