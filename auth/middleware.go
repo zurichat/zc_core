@@ -76,16 +76,15 @@ func (au *AuthHandler) OptionalAuthentication(nextHandler http.HandlerFunc, auth
 		w.Header().Add("content-type", "application/json")
 
 		store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(secretKey))
-		session, err := store.Get(r, sessionKey)
+		_, err := store.Get(r, sessionKey)
 		status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
 
 		if err != nil {
-			fmt.Println(session)
 			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
 			return
 		}
 
-		if status == false && sessData.Email == "" {
+		if !status && sessData.Email == "" {
 			nextHandler.ServeHTTP(w, r)
 			return
 		} else {
