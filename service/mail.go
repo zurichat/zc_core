@@ -31,15 +31,6 @@ const (
 	WorkspaceInvite
 )
 
-// type MailData struct {
-// 	Username   string
-// 	Code       string
-// 	OrgName    string
-// 	InviteLink string
-// 	ZuriLogo   string
-// 	Image2     string
-// }
-
 type Mail struct {
 	to      []string
 	subject string
