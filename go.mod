@@ -11,17 +11,16 @@ require (
 	// github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible // indirect
-	github.com/google/uuid v1.3.0 // indirect
+	github.com/google/uuid v1.3.0
 	github.com/googollee/go-socket.io v1.6.1
-	github.com/gorilla/handlers v1.5.1 // indirect
+	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
-	github.com/gorilla/pat v1.0.1 // indirect
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
 	github.com/joho/godotenv v1.3.0
 	github.com/klauspost/compress v1.13.5 // indirect
 	github.com/mailgun/mailgun-go/v4 v4.5.3
-	github.com/markbates/goth v1.68.0 // indirect
+	github.com/markbates/goth v1.68.0
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/pkg/errors v0.9.1
 	github.com/rs/cors v1.8.0

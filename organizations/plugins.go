@@ -61,6 +61,17 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 		return
 	}
 
+	var member Member
+	if err = utils.ConvertStructure(user, &member); err != nil {
+		utils.GetError(errors.New(err.Error()), http.StatusInternalServerError, w)
+		return
+	}
+
+	if member.Role != "owner" {
+		utils.GetError(errors.New("member must be an admin"), http.StatusBadRequest, w)
+		return
+	}
+
 	orgCollectionName := GetOrgPluginCollectionName(OrgId)
 
 	p, _ := utils.GetMongoDbDoc(orgCollectionName, bson.M{"plugin_id": orgPlugin.PluginId})
