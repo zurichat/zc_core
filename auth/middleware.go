@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/sessions"
@@ -19,7 +18,7 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 		var session *sessions.Session
 		var SessionEmail string
 		var err error
-		session, _ = store.Get(r, sessionKey)
+
 		status, err, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
 
 		if err != nil && !status {
@@ -31,7 +30,6 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 
 		if status {
 			session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName, sessData.Gothic)
-			fmt.Println(session)
 			if err != nil && erro != nil {
 				utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
 				return
@@ -74,12 +72,9 @@ func (au *AuthHandler) OptionalAuthentication(nextHandler http.HandlerFunc, auth
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("content-type", "application/json")
 
-		store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(secretKey))
-		session, err := store.Get(r, sessionKey)
-		status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
+		status, err, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
 
 		if err != nil {
-			fmt.Println(session)
 			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
 			return
 		}
