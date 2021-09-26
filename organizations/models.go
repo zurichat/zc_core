@@ -22,7 +22,9 @@ const (
 )
 
 const (
-	AdminRole = "owner"
+	OwnerRole = "owner"
+	AdminRole = "admin"
+	EditorRole = "editor"
 	MemberRole = "member"
 	GuestRole = "guest"
 )

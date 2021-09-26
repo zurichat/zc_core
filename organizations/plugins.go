@@ -67,8 +67,8 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 		return
 	}
 
-	if member.Role != AdminRole {
-		utils.GetError(errors.New("member must be an admin"), http.StatusBadRequest, w)
+	if member.Role != OwnerRole && member.Role != AdminRole {
+		utils.GetError(errors.New("access denied"), http.StatusForbidden, w)
 		return
 	}
 
