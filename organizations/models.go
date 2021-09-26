@@ -21,6 +21,12 @@ const (
 	UserCollectionName             = "users"
 )
 
+const (
+	AdminRole = "owner"
+	MemberRole = "member"
+	GuestRole = "guest"
+)
+
 type MemberPassword struct {
 	MemberID string `bson:"member_id"`
 	Password string `bson:"password"`
