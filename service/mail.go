@@ -16,7 +16,7 @@ import (
 )
 
 type MailService interface {
-	LoadTemplate(mailReq *Mail) ([]byte, error)
+	LoadTemplate(mailReq *Mail) (string, error)
 	SendMail(mailReq *Mail) error
 	NewMail(to []string, subject string, mailType MailType, data *MailData) *Mail
 }
