@@ -18,7 +18,7 @@ import (
 type MailService interface {
 	LoadTemplate(mailReq *Mail) (string, error)
 	SendMail(mailReq *Mail) error
-	NewMail(to []string, subject string, mailType MailType, data *MailData) *Mail
+	NewMail(to []string, subject string, mailType MailType, data map[string]interface{}) *Mail
 }
 
 type MailType int
@@ -45,7 +45,7 @@ type Mail struct {
 	subject string
 	body    string
 	mtype   MailType
-	data    *MailData
+	data    map[string]interface{}
 }
 
 type ZcMailService struct {
@@ -159,7 +159,7 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 
 }
 
-func (ms *ZcMailService) NewMail(to []string, subject string, mailType MailType, data *MailData) *Mail {
+func (ms *ZcMailService) NewMail(to []string, subject string, mailType MailType, data map[string]interface{}) *Mail {
 	return &Mail{
 		to:      to,
 		subject: subject,
