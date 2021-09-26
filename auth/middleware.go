@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/sessions"
@@ -19,27 +18,23 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 		var session *sessions.Session
 		var SessionEmail string
 		var err error
-		session, err = store.Get(r, sessionKey)
-		status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
 
-		if err != nil && status == false {
+		status, err, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
+
+		if err != nil && !status {
 			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
 			return
 		}
+
 		var erro error
-		if status == true {
+
+		if status {
 			session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName, sessData.Gothic)
-			fmt.Println(session)
 			if err != nil && erro != nil {
 				utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
 				return
 			}
 
-		}
-
-		if status == false && sessData.Email == "" && sessData.Id == "" {
-			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
-			return
 		}
 
 		if sessData.Gothic != nil {
@@ -49,7 +44,7 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 		}
 
 		// use is coming in newly, no cookies
-		if session.IsNew == true {
+		if session.IsNew {
 			utils.GetError(NoAuthToken, http.StatusUnauthorized, w)
 			return
 		}
@@ -59,10 +54,12 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 			utils.GetError(ErrorInvalid, http.StatusUnauthorized, w)
 			return
 		}
+
 		user := &AuthUser{
 			ID:    objID,
 			Email: SessionEmail,
 		}
+
 		ctx := context.WithValue(r.Context(), "user", user)
 		nextHandler.ServeHTTP(w, r.WithContext(ctx))
 	}
@@ -77,7 +74,7 @@ func (au *AuthHandler) OptionalAuthentication(nextHandler http.HandlerFunc, auth
 
 		store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(secretKey))
 		_, err := store.Get(r, sessionKey)
-		status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
+		status, err, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
 
 		if err != nil {
 			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
