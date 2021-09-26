@@ -34,10 +34,10 @@ func (eh *ExternalHandler) EmailSubscription(w http.ResponseWriter, r *http.Requ
 		// fmt.Printf("user with email %s already subscribed!", NewSubscription.Email)
 		msger := eh.mailService.NewMail(
 			[]string{NewSubscription.Email}, "Zuri Chat Newsletter Subscription", service.EmailSubscription,
-			&service.MailData{
-				Username: NewSubscription.Email,
-				ZuriLogo: utils.ConvertImageTo64("./templates/email_sub/images/zuri_logo.png"),
-				Image2:   utils.ConvertImageTo64("./templates/email_sub/images/people_chatting.png"),
+			map[string]interface{}{
+				"Username": NewSubscription.Email,
+				"ZuriLogo": utils.ConvertImageTo64("./templates/email_sub/images/zuri_logo.png"),
+				"Image2":   utils.ConvertImageTo64("./templates/email_sub/images/people_chatting.png"),
 			})
 
 		if err := eh.mailService.SendMail(msger); err != nil {
@@ -57,10 +57,10 @@ func (eh *ExternalHandler) EmailSubscription(w http.ResponseWriter, r *http.Requ
 
 	msger := eh.mailService.NewMail(
 		[]string{NewSubscription.Email}, "Zuri Chat Newsletter Subscription", service.EmailSubscription,
-		&service.MailData{
-			Username: NewSubscription.Email,
-			ZuriLogo: utils.ConvertImageTo64("./templates/email_sub/images/zuri_logo.png"),
-			Image2:   utils.ConvertImageTo64("./templates/email_sub/images/people_chatting.png"),
+		map[string]interface{}{
+			"Username": NewSubscription.Email,
+			"ZuriLogo": utils.ConvertImageTo64("./templates/email_sub/images/zuri_logo.png"),
+			"Image2":   utils.ConvertImageTo64("./templates/email_sub/images/people_chatting.png"),
 		})
 
 	if err := eh.mailService.SendMail(msger); err != nil {
@@ -105,9 +105,9 @@ func (eh *ExternalHandler) DownloadClient(w http.ResponseWriter, r *http.Request
 		[]string{email},
 		"Zuri Chat Desktop",
 		service.DownloadClient,
-		&service.MailData{
-			Username: email,
-			Code:     url,
+		map[string]interface{}{
+			"Username": email,
+			"Code":     url,
 		},
 	)
 

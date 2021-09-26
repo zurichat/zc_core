@@ -192,10 +192,9 @@ func (au *AuthHandler) RequestResetPasswordCode(w http.ResponseWriter, r *http.R
 
 	msger := au.mailService.NewMail(
 		[]string{user.Email}, 
-		"Reset Password Code", service.PasswordReset, 
-		&service.MailData{ 
-			Username: user.Email, 
-			Code: userPasswordReset["token"].(string),
+		"Reset Password Code", service.PasswordReset, map[string]interface{}{
+			"Username": user.Email, 
+			"Code": userPasswordReset["token"].(string),
 		})
 
 	if err := au.mailService.SendMail(msger); err != nil {

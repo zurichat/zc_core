@@ -84,10 +84,9 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 	}
 	// Email Service <- send confirmation mail
 	msger := uh.mailService.NewMail(
-		[]string{user.Email}, "Account Confirmation", service.MailConfirmation,
-		&service.MailData{
-			Username: user.Email,
-			Code:     comfimationToken,
+		[]string{user.Email}, "Account Confirmation", service.MailConfirmation, map[string]interface{}{
+			"Username": user.Email,
+			"Code":     comfimationToken,
 		})
 
 	if err := uh.mailService.SendMail(msger); err != nil {
