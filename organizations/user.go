@@ -698,7 +698,7 @@ func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *htt
 	// TODO 3: Check that guest is (now) registered on zurichat
 	email := guestEmail.(string)
 	user, err := auth.FetchUserByEmail(bson.M{"email": email})
-	if err != nil {
+	if err == nil {
 		utils.GetError(errors.New("user with "+email+" does not exist. register to proceed"), http.StatusBadRequest, w)
 		return
 	}
