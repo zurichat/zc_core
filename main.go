@@ -184,6 +184,7 @@ func main() {
 		fmt.Println("Could not connect to MongoDB")
 	}
 
+	// sentry: enables reporting messages, errors, and panics.
 	err = sentry.Init(sentry.ClientOptions{
 		Dsn: "https://82e17f3bba86400a9a38e2437b884d4a@o1013682.ingest.sentry.io/5979019",
 	})
@@ -191,6 +192,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("sentry.Init: %s", err)
 	}
+
+	// Flush buffered events before the program terminates.
+	defer sentry.Flush(2 * time.Second)
+
+	sentry.CaptureMessage("It works!")
 
 	// get PORT from environment variables
 	port, _ := os.LookupEnv("PORT")
