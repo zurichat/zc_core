@@ -62,7 +62,7 @@ func (ms *ZcMailService) LoadTemplate(mailReq *Mail) (string, error) {
 	}
 	
 	templateFileName, ok := m[mailReq.mtype]
-	if !ok { return "", errors.New("Invalid email type or email template does not exists") }
+	if !ok { return "", errors.New("Invalid email type, email template does not exists!") }
 
 	t, err := template.ParseFiles(templateFileName)
 	if err != nil {
