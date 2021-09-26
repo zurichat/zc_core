@@ -61,14 +61,12 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	// Authentication
 	r.HandleFunc("/auth/login", auth.LoginIn).Methods(http.MethodPost)
-	// r.HandleFunc("/auth/template", auth.HtmlTemplate)
-	// r.HandleFunc("/auth/test", auth.AuthTest).Methods(http.MethodPost)
 	r.HandleFunc("/auth/logout", auth.LogOutUser).Methods(http.MethodPost)
 	r.HandleFunc("/auth/logout/othersessions", auth.LogOutOtherSessions).Methods(http.MethodPost)
 	r.HandleFunc("/auth/verify-token", auth.IsAuthenticated(auth.VerifyTokenHandler)).Methods(http.MethodGet, http.MethodPost)
 	r.HandleFunc("/auth/confirm-password", auth.IsAuthenticated(auth.ConfirmUserPassword)).Methods(http.MethodPost)
-	r.HandleFunc("/auth/{provider}/callback", auth.CompleteGoogleAuth).Methods("GET")
-	r.HandleFunc("/auth/{provider}", auth.BeginGoogleAuth)
+	// r.HandleFunc("/auth/{provider}/callback", auth.CompleteGoogleAuth).Methods("GET")
+	// r.HandleFunc("/auth/{provider}", auth.BeginGoogleAuth)
 
 	r.HandleFunc("/account/verify-account", auth.VerifyAccount).Methods(http.MethodPost)
 	r.HandleFunc("/account/request-password-reset-code", auth.RequestResetPasswordCode).Methods(http.MethodPost)
@@ -83,7 +81,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	// Organization: Guest Invites
 	r.HandleFunc("/organizations/{id}/send-invite", auth.IsAuthenticated(organizations.SendInvite)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/invites/{uuid}", organizations.CheckGuestStatus).Methods(http.MethodGet)
-	r.HandleFunc("/organizations/{id}/guests/{uuid}", organizations.GuestToOrganization).Methods(http.MethodPost)
+	r.HandleFunc("/organizations/guests/{uuid}", organizations.GuestToOrganization).Methods(http.MethodPost)
 
 	r.HandleFunc("/organizations/{id}", auth.IsAuthenticated(organizations.DeleteOrganization)).Methods("DELETE")
 	r.HandleFunc("/organizations/url/{url}", organizations.GetOrganizationByURL).Methods("GET")
@@ -113,7 +111,6 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/reports", report.GetReports).Methods("GET")
 	r.HandleFunc("/organizations/{id}/reports/{report_id}", report.GetReport).Methods("GET")
 	r.HandleFunc("/organizations/{id}/change-owner", auth.IsAuthenticated(organizations.TransferOwnership)).Methods("PATCH")
-
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
