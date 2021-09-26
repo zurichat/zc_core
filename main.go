@@ -27,6 +27,7 @@ import (
 	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
+	"github.com/getsentry/sentry-go"
 )
 
 func Router(Server *socketio.Server) *mux.Router {
@@ -181,6 +182,14 @@ func main() {
 
 	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
 		fmt.Println("Could not connect to MongoDB")
+	}
+
+	err = sentry.Init(sentry.ClientOptions{
+		Dsn: "https://82e17f3bba86400a9a38e2437b884d4a@o1013682.ingest.sentry.io/5979019",
+	})
+
+	if err != nil {
+		log.Fatalf("sentry.Init: %s", err)
 	}
 
 	// get PORT from environment variables

@@ -3,6 +3,7 @@ module zuri.chat/zccore
 go 1.16
 
 require (
+	github.com/getsentry/sentry-go v0.11.0
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/go-stack/stack v1.8.1 // indirect
