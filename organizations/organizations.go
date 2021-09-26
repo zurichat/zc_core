@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"net/http"
 	"strings"
 	"time"
@@ -409,14 +410,14 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 		// Append new invite to array of generated invites
 		inviteIDs = append(inviteIDs, save.InsertedID)
 		// Parse data for customising email template
-		inviteLink := fmt.Sprintf("http://%v/join/%s", org["workspace_url"], uuid)
+		inviteLink := fmt.Sprintf("https://www.zuri.chat/%s", uuid)
 		orgName := fmt.Sprintf("%v", org["name"])
 		msger := oh.mailService.NewMail(
 			[]string{email}, "Zuri Chat Workspace Invite", service.WorkspaceInvite,
 			&service.MailData{
 				Username:   loggedInUser.Email,
 				OrgName:    orgName,
-				InviteLink: inviteLink,
+				InviteLink: template.URL(inviteLink),
 			})
 		// error with sending main
 		if err := oh.mailService.SendMail(msger); err != nil {

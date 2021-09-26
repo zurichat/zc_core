@@ -36,7 +36,7 @@ type MailData struct {
 	Username   string
 	Code       string
 	OrgName    string
-	InviteLink string
+	InviteLink template.URL
 	ZuriLogo   string
 	Image2     string
 }
