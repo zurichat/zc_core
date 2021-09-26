@@ -81,7 +81,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	// Organization: Guest Invites
 	r.HandleFunc("/organizations/{id}/send-invite", auth.IsAuthenticated(organizations.SendInvite)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/invites/{uuid}", organizations.CheckGuestStatus).Methods(http.MethodGet)
-	r.HandleFunc("/organizations/{id}/guests/{uuid}", organizations.GuestToOrganization).Methods(http.MethodPost)
+	r.HandleFunc("/organizations/guests/{uuid}", organizations.GuestToOrganization).Methods(http.MethodPost)
 
 	r.HandleFunc("/organizations/{id}", auth.IsAuthenticated(organizations.DeleteOrganization)).Methods("DELETE")
 	r.HandleFunc("/organizations/url/{url}", organizations.GetOrganizationByURL).Methods("GET")
@@ -111,7 +111,6 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/reports", report.GetReports).Methods("GET")
 	r.HandleFunc("/organizations/{id}/reports/{report_id}", report.GetReport).Methods("GET")
 	r.HandleFunc("/organizations/{id}/change-owner", auth.IsAuthenticated(organizations.TransferOwnership)).Methods("PATCH")
-
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
