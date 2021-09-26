@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style type="text/css">
+        @import url('https://fonts.googleapis.com/css2?family=Lato:wght@300&display=swap');
+        body {
+            padding: 0;
+            margin: 0;
+            height: 95vh;
+            font-family: Lato;
+            box-sizing: border-box;
+        }
+
+        .container,
+        .content,
+        main {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            background: #F3F6F8;
+            align-items: center;
+        }
+
+        .content {
+            align-items: center;
+            height: fit-content;
+            margin: 2em;
+            background: #FFFFFF;
+        }
+
+        .header {
+            width: 85%;
+            margin-top: 3em;
+            height: max-content;
+        }
+
+        .logo {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .logo img {
+            width: 3.5em;
+            height: 3.5em;
+        }
+
+        .logo_name,
+        .logo_name_footer {
+            margin-left: .6em;
+            font-weight: 900;
+            font-size: 30px;
+            line-height: 37px;
+        }
+
+        .logo_name_footer {
+            font-size: 20px;
+        }
+
+        main img {
+            width: 300.57px;
+            height: 210.11px;
+            padding: 0 .5em;
+        }
+
+        .paragraph {
+            width: 310px;
+            height: 100px;
+            font-size: 18px;
+            text-align: justify;
+            color: #1f1d1d;
+        }
+
+        p {
+            padding-left: .5em;
+        }
+
+        .text_greetings {
+            padding-top: 1.5em;
+            padding-bottom: 1em;
+            height: fit-content;
+        }
+
+        .text_body,
+        .text_closing,
+        .text_signature {
+            height: fit-content;
+        }
+
+        .text_body {
+            margin-bottom: 1.5em;
+        }
+
+        .text_signature {
+            padding-top: 1.5em;
+        }
+
+        main {
+            justify-content: center;
+        }
+
+        footer {
+            align-items: flex-start;
+            border-top: solid #C4C4C4;
+            width: 18rem;
+            padding-top: .5em;
+            margin-top: 5em;
+        }
+
+        .footer_link,
+        .footer_logo {
+            display: flex;
+        }
+
+        .footer_link {
+            font-size: 18px;
+        }
+
+        .footer_link a {
+            margin-left: .5em;
+            text-decoration: none;
+            color: #00B87C;
+        }
+
+        .footer_link_tags {
+            margin-top: 2em;
+            border-top: solid #C4C4C4;
+            font-size: 18px;
+            width: 90%;
+        }
+
+        .footer_link_tags_text {
+            height: fit-content;
+            line-height: 30px;
+            text-align: justify;
+            color: #1f1d1d;
+        }
+
+        .footer_link_tags ul {
+            list-style: none;
+        }
+
+        .footer_link_tags ul li {
+            margin-top: .5em;
+        }
+
+        .footer_link_tags ul li a {
+            color: #999999;
+            text-decoration: none;
+        }
+
+        .footer_logo {
+            width: 75vw;
+        }
+
+        .quick_links {
+            margin-top: 2em;
+        }
+
+        .text_closing a {
+            text-decoration: none;
+            color: #98baf8;
+        }
+
+        @media only screen and (min-width: 768px) {
+            .header {
+                margin-top: 5em;
+                height: max-content;
+            }
+            .logo,
+            .footer_link_tags_text,
+            .footer_link_tags ul {
+                display: flex;
+                justify-content: center;
+            }
+            .logo {
+                height: 100%;
+                width: 100%;
+            }
+            main {
+                height: fit-content;
+            }
+            main img {
+                width: 490px;
+                height: 400.11px;
+            }
+            .content {
+                margin: 8em;
+                margin-bottom: 0;
+                background: #FFFFFF;
+                height: fit-content;
+            }
+            .paragraph {
+                width: 100%;
+                font-size: 28px;
+            }
+            .header,
+            main,
+            footer {
+                width: 85%;
+            }
+            .footer_link {
+                font-size: 21px;
+            }
+            .footer_link_tags {
+                width: 95%;
+                font-size: 25px;
+            }
+            .footer_link_tags_text {
+                width: 100%;
+            }
+            .footer_link_tags ul li {
+                margin-left: 2.5em;
+            }
+            .footer_link_tags ul {
+                display: flex;
+                justify-content: flex-start;
+                align-content: center;
+            }
+        }
+
+        @media only screen and (min-width: 958px) {
+            main img {
+                margin-left: .5em;
+                width: 95%;
+                height: fit-content;
+            }
+        }    
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <div><img src="https://res.cloudinary.com/engage-cloud/image/upload/v1632683837/zuri_logo_noizec.png" alt="Zuri logo"></div>
+                <div class="logo_name">Zuri</div>
+            </div>
+        </div>
+        <div class="content">
+
+            <main>
+                <div class="paragraph text_greetings">
+                    <p>Hello {{.Username}}</p>
+                </div>
+                <div><img src="https://res.cloudinary.com/engage-cloud/image/upload/v1632683744/people_chatting_b9bsgj.png" alt="people chatting"></div>
+                <div class="paragraph text_body">
+                    <p>We're thrilled to welcome you to the Zuri Chat community. Thank you for signing up for updates from Zuri Chat.</p>
+                    <p>To make your journey with Zuri Chat smooth and easy, we will give you regular tips on how to maximize your team's productivity with Zuri Chat. Also, because you are our VVIP, you will also be the first to get exclusive offers geared
+                        to you and your team.</p>
+                </div>
+                <div class="paragraph text_closing">
+                    <p>If you need any help at all, get in touch with us at <a href=".">contact-us@gmail.com</a>.</p>
+                </div>
+                <div class="paragraph text_signature">
+                    <p>We'll be delighted to assist!</p>
+                </div>
+
+            </main>
+            <footer>
+                <div class="footer_logo">
+                    <div><img src="https://res.cloudinary.com/engage-cloud/image/upload/v1632683837/zuri_logo_noizec.png" alt="Zuri logo"></div>
+                    <div class="logo_name_footer">Zuri</div>
+                </div>
+                <div class="footer_link">
+                    <div>Workspace URL</div>
+                    <a href="zuri.chat">Go to Zuri Chat</a>
+                </div>
+            </footer>
+            <div class="footer_link_tags">
+                <div class="footer_link_tags_text">Have questions about your new workspace? Drop us a note at help@Zuri.com. We're glad you are here</div>
+                <div class="quick_links">
+                    <ul>
+                        <li><a href=".">Our Blog</a></li>
+                        <li><a href=".">Email Preferences</a></li>
+                        <li><a href=".">Policies</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
