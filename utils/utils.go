@@ -248,6 +248,20 @@ func GenUUID() string {
 	return id.String()
 }
 
+// Check the validaity of a UUID. Returns a valid UUID from a string input. Returns an error otherwise
+func ValidateUUID(s string) (uuid.UUID, error) {
+	if len(s) != 36 {
+		return uuid.Nil, errors.New("invalid uuid format")
+	}
+
+	b, err := uuid.Parse(s)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return b, nil
+}
+
 func ConvertImageTo64(ImgDirectory string) string {
 	// Read the entire file into a byte slice
 	bytes, err := ioutil.ReadFile(ImgDirectory)
