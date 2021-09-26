@@ -299,7 +299,7 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		utils.GetError(errors.New("invalid organization id"), http.StatusBadRequest, w)
 		return
 	}
-
+	// confirm if user_id exists
 	requestData := make(map[string]string)
 	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
@@ -380,7 +380,6 @@ func (oh *OrganizationHandler) DeactivateMember(w http.ResponseWriter, r *http.R
 func (oh *OrganizationHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	org_collection, member_collection := "organizations", "members"
-
 	id := mux.Vars(r)["id"]
 	memId := mux.Vars(r)["mem_id"]
 
