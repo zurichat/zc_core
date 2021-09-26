@@ -11,8 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	// "zuri.chat/zccore/auth"
-
 	"zuri.chat/zccore/utils"
 )
 
