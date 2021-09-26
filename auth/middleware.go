@@ -19,15 +19,17 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 		var session *sessions.Session
 		var SessionEmail string
 		var err error
-		session, err = store.Get(r, sessionKey)
-		status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
+		session, _ = store.Get(r, sessionKey)
+		status, err, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
 
-		if err != nil && status == false {
+		if err != nil && !status {
 			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
 			return
 		}
+
 		var erro error
-		if status == true {
+
+		if status {
 			session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName, sessData.Gothic)
 			fmt.Println(session)
 			if err != nil && erro != nil {
@@ -37,11 +39,6 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 
 		}
 
-		if status == false && sessData.Email == "" && sessData.Id == "" {
-			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
-			return
-		}
-
 		if sessData.Gothic != nil {
 			SessionEmail = sessData.GothicEmail
 		} else {
@@ -49,7 +46,7 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 		}
 
 		// use is coming in newly, no cookies
-		if session.IsNew == true {
+		if session.IsNew {
 			utils.GetError(NoAuthToken, http.StatusUnauthorized, w)
 			return
 		}
@@ -59,10 +56,12 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 			utils.GetError(ErrorInvalid, http.StatusUnauthorized, w)
 			return
 		}
+
 		user := &AuthUser{
 			ID:    objID,
 			Email: SessionEmail,
 		}
+
 		ctx := context.WithValue(r.Context(), "user", user)
 		nextHandler.ServeHTTP(w, r.WithContext(ctx))
 	}
@@ -85,7 +84,7 @@ func (au *AuthHandler) OptionalAuthentication(nextHandler http.HandlerFunc, auth
 			return
 		}
 
-		if status == false && sessData.Email == "" {
+		if !status && sessData.Email == "" {
 			nextHandler.ServeHTTP(w, r)
 			return
 		} else {
