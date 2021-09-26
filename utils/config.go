@@ -51,7 +51,7 @@ func NewConfigurations() *Configurations {
 	viper.SetDefault("SESSION_COLLECTION", "session_store")
 	viper.SetDefault("CONFIRM_EMAIL_TEMPLATE", "./templates/confirm_email.html")
 	viper.SetDefault("PASSWORD_RESET_TEMPLATE", "./templates/password_reset.html")
-	viper.SetDefault("EMAIL_SUBSCRIPTION_TEMPLATE", "./templates/email_subscription.html")
+	viper.SetDefault("EMAIL_SUBSCRIPTION_TEMPLATE", "./templates/email_sub/email_subscription.html")
 	viper.SetDefault("DOWNLOAD_CLIENT_TEMPLATE", "./templates/download_clients.html")
 	viper.SetDefault("WORKSPACE_INVITE_TEMPLATE", "./templates/workspace_invite.html")
 
