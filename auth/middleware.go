@@ -36,6 +36,12 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 			}
 
 		}
+
+		if status == false && sessData.Email == "" && sessData.Id == "" {
+			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
+			return
+		}
+
 		if sessData.Gothic != nil {
 			SessionEmail = sessData.GothicEmail
 		} else {

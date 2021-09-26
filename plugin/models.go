@@ -37,14 +37,14 @@ type Plugin struct {
 }
 
 type PluginPatch struct {
-	Name        *string  `json:"name"`
-	Description *string  `json:"description"`
-	Images      []string `json:"images" bson:"images"`
-	Tags        []string `json:"tags"`
-	Version     *string  `json:"version"`
-	SidebarURL  *string  `json:"sidebar_url"`
-	InstallURL  *string  `json:"install_url"`
-	TemplateURL *string  `json:"template_url"`
+	Name        *string  `json:"name,omitempty" bson:"name,omitempty"`
+	Description *string  `json:"description,omitempty"  bson:"description,omitempty"`
+	Images      []string `json:"images,omitempty" bson:"images,omitempty"`
+	Tags        []string `json:"tags,omitempty"  bson:"tags,omitempty"`
+	Version     *string  `json:"version,omitempty"  bson:"version,omitempty"`
+	SidebarURL  *string  `json:"sidebar_url,omitempty"  bson:"sidebar_url,omitempty"`
+	InstallURL  *string  `json:"install_url,omitempty"  bson:"install_url,omitempty"`
+	TemplateURL *string  `json:"template_url,omitempty"  bson:"template_url,omitempty"`
 }
 
 func CreatePlugin(ctx context.Context, p *Plugin) error {
