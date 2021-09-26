@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"net/smtp"
 	"strings"
 	"time"
 
@@ -123,7 +124,20 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 		return nil
 
 	case "smtp":
+		auth := smtp.PlainAuth(
+			"",
+			ms.configs.SmtpUsername,
+			ms.configs.SmtpPassword,
+			"smtp.gmail.com",
+		)
 
+		body, err  := ms.LoadTemplate(mailReq)
+		if err != nil { return err }
+
+		addr := "smtp.gmail.com:587"
+		if err := smtp.SendMail(addr, auth, ms.configs.SmtpUsername, mailReq.to, []byte(body)); err != nil {
+			return err
+		}
 		return nil
 
 	case "mailgun":
