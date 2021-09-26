@@ -78,7 +78,8 @@ func (ms *ZcMailService) LoadTemplate(mailReq *Mail) (string, error) {
 
 func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 	// if ms.configs.ESPType == "sendgrid"
-	switch esp := strings.ToLower(ms.configs.ESPType); esp {
+	// ms.configs.ESPType
+	switch esp := strings.ToLower("mailgun"); esp {
 
 	case "sendgrid":
 
