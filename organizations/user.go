@@ -617,6 +617,8 @@ func (oh *OrganizationHandler) ReactivateMember(w http.ResponseWriter, r *http.R
 
 // Check the guest status of an email embedded in an invite UUID
 func (oh *OrganizationHandler) CheckGuestStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	// 0. Extract and validate UUID
 	guestUUID := mux.Vars(r)["uuid"]
 	_, err := utils.ValidateUUID(guestUUID)
@@ -650,10 +652,114 @@ func (oh *OrganizationHandler) CheckGuestStatus(w http.ResponseWriter, r *http.R
 
 }
 
-// Add accepted guest as member to organization
-func AddGuestToOrganization(w http.ResponseWriter, r *http.Request) {
-	// TODO 1: Verify guest email
-	// TODO 2: Check that guest does not already exist in organization
-	// TODO 3: Create a member profile for the guest
-	// TODO 4: Add member to organization
+// Add accepted guest as member to organization without requiring admin or workspace owner rights
+func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	gUUID := mux.Vars(r)["uuid"]
+	orgID := mux.Vars(r)["id"]
+
+	// TODO 0: Check that organization exists
+	validOrgID, err := primitive.ObjectIDFromHex(orgID)
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	orgDoc, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": validOrgID})
+	if orgDoc == nil {
+		fmt.Printf("organization with id %s doesn't exist!", orgID)
+		utils.GetError(errors.New("organization with id "+orgID+" doesn't exist!"), http.StatusBadRequest, w)
+		return
+	}
+
+	// TODO 1: Validate UUID
+	_, err = utils.ValidateUUID(gUUID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	res, err := utils.GetMongoDbDoc(OrganizationInviteCollection, bson.M{"uuid": gUUID})
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+	linkedOrgID := res["org_id"]
+
+	if linkedOrgID.(string) != orgID {
+		utils.GetError(errors.New("organization id mismatch"), http.StatusBadRequest, w)
+		return
+	}
+
+	// TODO 2: Verify guest email
+	guestEmail := res["email"]
+	if !utils.IsValidEmail(guestEmail.(string)) {
+		utils.GetError(errors.New("invalid email address"), http.StatusBadRequest, w)
+		return
+	}
+
+	// TODO 3: Check that guest is (now) registered on zurichat
+	email := guestEmail.(string)
+	user, err := auth.FetchUserByEmail(bson.M{"email": email})
+	if err != nil {
+		utils.GetError(errors.New("user with "+email+" does not exist. register to proceed"), http.StatusBadRequest, w)
+		return
+	}
+
+	// TODO 4: Check that guest does not already exist (as a member) in organization
+	memDoc, _ := utils.GetMongoDbDocs(MemberCollectionName, bson.M{"org_id": validOrgID, "email": user.Email})
+	if memDoc != nil {
+		utils.GetError(errors.New("user is already in this organization"), http.StatusBadRequest, w)
+		return
+	}
+
+	// TODO 5: Create a member profile for the guest
+	setting := new(Settings)
+	username := strings.Split(user.Email, "@")[0]
+
+	memberStruct := Member{
+		ID:       primitive.NewObjectID(),
+		Email:    user.Email,
+		UserName: username,
+		OrgId:    validOrgID.Hex(),
+		Role:     "member",
+		Presence: "true",
+		JoinedAt: time.Now(),
+		Settings: setting,
+		Deleted:  false,
+	}
+	data, err := utils.StructToMap(memberStruct)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	resp, err := utils.CreateMongoDbDoc(MemberCollectionName, data)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+	fmt.Println(resp)
+
+	// TODO 6: Add member to organization
+	organizationStruct := new(Organization)
+	err = mapstructure.Decode(orgDoc, &organizationStruct)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	// update user organizations collection
+	updateFields := make(map[string]interface{})
+	user.Organizations = append(user.Organizations, validOrgID.Hex())
+	updateFields["Organizations"] = user.Organizations
+	_, err = utils.UpdateOneMongoDbDoc(UserCollectionName, user.ID, updateFields)
+	if err != nil {
+		utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("Member created successfully", utils.M{"member_id": resp.InsertedID}, w)
+
 }
