@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/rs/cors"
 	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/blog"
@@ -78,13 +79,19 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.Create)).Methods("POST")
 	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.GetOrganizations)).Methods("GET")
 	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
+
+	// Organization: Guest Invites
 	r.HandleFunc("/organizations/{id}/send-invite", auth.IsAuthenticated(organizations.SendInvite)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/invites/{uuid}", organizations.CheckGuestStatus).Methods(http.MethodGet)
+	r.HandleFunc("/organizations/{id}/guests/{uuid}", organizations.GuestToOrganization).Methods(http.MethodPost)
+
 	r.HandleFunc("/organizations/{id}", auth.IsAuthenticated(organizations.DeleteOrganization)).Methods("DELETE")
 	r.HandleFunc("/organizations/url/{url}", organizations.GetOrganizationByURL).Methods("GET")
 
 	r.HandleFunc("/organizations/{id}/plugins", auth.IsAuthenticated(organizations.AddOrganizationPlugin)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/plugins", auth.IsAuthenticated(organizations.GetOrganizationPlugins)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/plugins/{plugin_id}", auth.IsAuthenticated(organizations.GetOrganizationPlugin)).Methods("GET")
+	r.HandleFunc("/organizations/{id}/plugins/{plugin_id}", auth.IsAuthenticated(organizations.RemoveOrganizationPlugin)).Methods("DELETE")
 
 	r.HandleFunc("/organizations/{id}/url", auth.IsAuthenticated(organizations.UpdateUrl)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/name", auth.IsAuthenticated(organizations.UpdateName)).Methods("PATCH")
@@ -100,11 +107,13 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/profile", auth.IsAuthenticated(organizations.UpdateProfile)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/presence", auth.IsAuthenticated(organizations.TogglePresence)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings", auth.IsAuthenticated(organizations.UpdateMemberSettings)).Methods("PATCH")
+	// r.HandleFunc("/organizations/{id}/invite-members", auth.IsAuthenticated(organizations.InviteMembers)).Methods("POST")
 
 	r.HandleFunc("/organizations/{id}/reports", report.AddReport).Methods("POST")
 	r.HandleFunc("/organizations/{id}/reports", report.GetReports).Methods("GET")
 	r.HandleFunc("/organizations/{id}/reports/{report_id}", report.GetReport).Methods("GET")
 	r.HandleFunc("/organizations/{id}/change-owner", auth.IsAuthenticated(organizations.TransferOwnership)).Methods("PATCH")
+
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
@@ -131,6 +140,8 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.DeleteUser)).Methods("DELETE")
 	r.HandleFunc("/users", auth.IsAuthenticated(user.GetUsers)).Methods("GET")
 	r.HandleFunc("/users/{email}/organizations", auth.IsAuthenticated(user.GetUserOrganizations)).Methods("GET")
+
+	r.HandleFunc("/guests/invite", user.CreateUserFromUUID).Methods("POST")
 
 	// Contact Us
 	r.HandleFunc("/contact", auth.OptionalAuthentication(contact.ContactUs, auth)).Methods("POST")
@@ -182,6 +193,20 @@ func main() {
 	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
 		fmt.Println("Could not connect to MongoDB")
 	}
+
+	// sentry: enables reporting messages, errors, and panics.
+	err = sentry.Init(sentry.ClientOptions{
+		Dsn: "https://82e17f3bba86400a9a38e2437b884d4a@o1013682.ingest.sentry.io/5979019",
+	})
+
+	if err != nil {
+		log.Fatalf("sentry.Init: %s", err)
+	}
+
+	// Flush buffered events before the program terminates.
+	defer sentry.Flush(2 * time.Second)
+
+	sentry.CaptureMessage("It works!")
 
 	// get PORT from environment variables
 	port, _ := os.LookupEnv("PORT")

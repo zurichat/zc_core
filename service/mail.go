@@ -27,6 +27,7 @@ type MailType int
 const (
 	MailConfirmation MailType = iota + 1
 	PasswordReset
+	EmailSubscription
 	DownloadClient
 	WorkspaceInvite
 )
@@ -36,6 +37,8 @@ type MailData struct {
 	Code       string
 	OrgName    string
 	InviteLink template.URL
+	ZuriLogo   string
+	Image2     string
 }
 
 type Mail struct {
@@ -63,6 +66,8 @@ func (ms *ZcMailService) SetupSmtp(mailReq *Mail) (string, error) {
 		templateFileName = ms.configs.ConfirmEmailTemplate
 	} else if mailReq.mtype == PasswordReset {
 		templateFileName = ms.configs.PasswordResetTemplate
+	} else if mailReq.mtype == EmailSubscription {
+		templateFileName = ms.configs.EmailSubscriptionTemplate
 	} else if mailReq.mtype == DownloadClient {
 		templateFileName = ms.configs.DownloadClientTemplate
 	} else if mailReq.mtype == WorkspaceInvite {
@@ -76,8 +81,9 @@ func (ms *ZcMailService) SetupSmtp(mailReq *Mail) (string, error) {
 
 	buf := new(bytes.Buffer)
 	if err = t.Execute(buf, mailReq.data); err != nil {
+		fmt.Println(err)
+		return "", err
 	}
-
 	return buf.String(), nil
 }
 
@@ -89,6 +95,8 @@ func (ms *ZcMailService) SetupSendgrid(mailReq *Mail) ([]byte, error) {
 		templateFileName = ms.configs.ConfirmEmailTemplate
 	} else if mailReq.mtype == PasswordReset {
 		templateFileName = ms.configs.PasswordResetTemplate
+	} else if mailReq.mtype == EmailSubscription {
+		templateFileName = ms.configs.EmailSubscriptionTemplate
 	} else if mailReq.mtype == DownloadClient {
 		templateFileName = ms.configs.DownloadClientTemplate
 	} else if mailReq.mtype == WorkspaceInvite {
@@ -166,7 +174,6 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 		if _, _, err := mg.Send(ctx, message); err != nil {
 			return err
 		}
-
 		return nil
 
 	default:
