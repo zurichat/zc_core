@@ -653,24 +653,8 @@ func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *htt
 	w.Header().Set("Content-Type", "application/json")
 
 	gUUID := mux.Vars(r)["uuid"]
-	orgID := mux.Vars(r)["id"]
-
-	// TODO 0: Check that organization exists
-	validOrgID, err := primitive.ObjectIDFromHex(orgID)
-	if err != nil {
-		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
-		return
-	}
-
-	orgDoc, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": validOrgID})
-	if orgDoc == nil {
-		fmt.Printf("organization with id %s doesn't exist!", orgID)
-		utils.GetError(errors.New("organization with id "+orgID+" doesn't exist!"), http.StatusBadRequest, w)
-		return
-	}
-
 	// TODO 1: Validate UUID
-	_, err = utils.ValidateUUID(gUUID)
+	_, err := utils.ValidateUUID(gUUID)
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
@@ -681,10 +665,18 @@ func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *htt
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
-	linkedOrgID := res["org_id"]
 
-	if linkedOrgID.(string) != orgID {
-		utils.GetError(errors.New("organization id mismatch"), http.StatusBadRequest, w)
+	// // TODO 0: Check that organization exists
+	orgID := res["org_id"].(string)
+	validOrgID, err := primitive.ObjectIDFromHex(orgID)
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	orgDoc, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": validOrgID})
+	if orgDoc == nil {
+		utils.GetError(errors.New("organization with id "+orgID+" doesn't exist!"), http.StatusBadRequest, w)
 		return
 	}
 
@@ -704,8 +696,8 @@ func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *htt
 	}
 
 	// TODO 4: Check that guest does not already exist (as a member) in organization
-	memDoc, _ := utils.GetMongoDbDocs(MemberCollectionName, bson.M{"org_id": validOrgID, "email": user.Email})
-	if memDoc != nil {
+	memDoc, err := utils.GetMongoDbDocs(MemberCollectionName, bson.M{"org_id": orgID, "email": user.Email})
+	if memDoc != nil && err == nil {
 		utils.GetError(errors.New("user is already in this organization"), http.StatusBadRequest, w)
 		return
 	}
