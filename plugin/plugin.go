@@ -50,15 +50,37 @@ func approvePlugin(id string) {
 }
 
 func Update(w http.ResponseWriter, r *http.Request) {
-	pp := PluginPatch{}
+	// pp := PluginPatch{}
+	var pp PluginPatch
 	id := mux.Vars(r)["id"]
 	if err := utils.ParseJsonFromRequest(r, &pp); err != nil {
 		utils.GetError(errors.WithMessage(err, "error processing request"), 422, w)
 		return
 	}
-	if err := updatePlugin(r.Context(), id, pp); err != nil {
-		utils.GetError(errors.WithMessage(err, "cannot update, bad request"), 400, w)
+	// if err := updatePlugin(r.Context(), id, pp); err != nil {
+	// 	utils.GetError(errors.WithMessage(err, "cannot update, bad request"), 400, w)
+	// 	return
+	// }
+	pluginMap, err := utils.StructToMap(pp)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+	}
+
+	updateFields := make(map[string]interface{})
+	for key, value := range pluginMap {
+		if value != "" {
+			updateFields[key] = value
+		}
+	}
+	if len(updateFields) == 0 {
+		utils.GetError(errors.New("empty/invalid user input data"), http.StatusBadRequest, w)
 		return
+	} else {
+		_, err := utils.UpdateOneMongoDbDoc(PluginCollectionName, id, updateFields)
+		if err != nil {
+			utils.GetError(errors.New("Plugin update failed"), http.StatusInternalServerError, w)
+			return
+		}
 	}
 
 	utils.GetSuccess("updated plugin successfully", nil, w)
