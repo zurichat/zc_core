@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/rs/cors"
 	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/blog"
@@ -27,7 +28,6 @@ import (
 	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
-	"github.com/getsentry/sentry-go"
 )
 
 func Router(Server *socketio.Server) *mux.Router {
@@ -138,7 +138,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/users", auth.IsAuthenticated(user.GetUsers)).Methods("GET")
 	r.HandleFunc("/users/{email}/organizations", auth.IsAuthenticated(user.GetUserOrganizations)).Methods("GET")
 
-	r.HandleFunc("/users/invite", user.CreateUserFromUUID).Methods("POST")
+	r.HandleFunc("/guests/invite", user.CreateUserFromUUID).Methods("POST")
 
 	// Contact Us
 	r.HandleFunc("/contact", auth.OptionalAuthentication(contact.ContactUs, auth)).Methods("POST")

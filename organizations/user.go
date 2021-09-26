@@ -633,22 +633,19 @@ func (oh *OrganizationHandler) CheckGuestStatus(w http.ResponseWriter, r *http.R
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
-	fmt.Println(res)
 	// 2. Check if email already is registered in zurichat (return 403 user already exist)
 	guestEmail := res["email"]
-	fmt.Println(guestEmail)
-	userExist, err := utils.GetMongoDbDoc(UserCollectionName, bson.M{"email": guestEmail})
-	if err == nil {
+	_, err = utils.GetMongoDbDoc(UserCollectionName, bson.M{"email": guestEmail})
+	if err != nil {
 		utils.GetError(
-			errors.New("guest status: rejected - user exist on zurichat"),
-			http.StatusBadRequest,
+			errors.New("guest status: user does not exist on zurichat"),
+			http.StatusNotFound,
 			w,
 		)
 		return
 	}
-	fmt.Println(userExist)
 	// 3. If email does not exist, add to
-	utils.GetSuccess("guest status: accepted - user does not exist on zurichat", userExist, w)
+	utils.GetSuccess("guest status: user exist on zurichat", "protected", w)
 
 }
 

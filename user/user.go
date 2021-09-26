@@ -280,12 +280,7 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("content-type", "application/json")
 
-	user_collection, orgInvite := "users", "organizations_invites"
-
-	type UUIDPassword struct {
-		Uuid     string `bson:"uuid" json:"uuid"`
-		Password string `bson:"password" json:"password"`
-	}
+	user_collection, orgInvite := UserCollectionName, OrganizationsInvitesCollectionName
 
 	var uRequest UUIDPassword
 	err := utils.ParseJsonFromRequest(r, &uRequest)
@@ -345,7 +340,6 @@ func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request
 		EmailVerification: con,
 		CreatedAt:         time.Now(),
 		Deactivated:       false,
-		Social:            false,
 	}
 
 	// Save user to DB
