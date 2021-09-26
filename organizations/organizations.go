@@ -410,7 +410,7 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 		// Append new invite to array of generated invites
 		inviteIDs = append(inviteIDs, save.InsertedID)
 		// Parse data for customising email template
-		inviteLink := fmt.Sprintf("https://%v/join/%s", org["workspace_url"], uuid)
+		inviteLink := fmt.Sprintf("https://www.zuri.chat/%s", uuid)
 		orgName := fmt.Sprintf("%v", org["name"])
 		msger := oh.mailService.NewMail(
 			[]string{email}, "Zuri Chat Workspace Invite", service.WorkspaceInvite,
