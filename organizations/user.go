@@ -737,7 +737,6 @@ func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *htt
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
-	fmt.Println(resp)
 
 	// TODO 6: Add member to organization
 	organizationStruct := new(Organization)
