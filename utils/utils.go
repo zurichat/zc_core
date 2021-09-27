@@ -1,9 +1,11 @@
 package utils
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/mail"
@@ -244,4 +246,46 @@ func GenJwtToken(data, tokenType string) (string, error) {
 func GenUUID() string {
 	id := uuid.New()
 	return id.String()
+}
+
+// Check the validaity of a UUID. Returns a valid UUID from a string input. Returns an error otherwise
+func ValidateUUID(s string) (uuid.UUID, error) {
+	if len(s) != 36 {
+		return uuid.Nil, errors.New("invalid uuid format")
+	}
+
+	b, err := uuid.Parse(s)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return b, nil
+}
+
+func ConvertImageTo64(ImgDirectory string) string {
+	// Read the entire file into a byte slice
+	bytes, err := ioutil.ReadFile(ImgDirectory)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var base64Encoding string
+
+	// Determine the content type of the image file
+	// mimeType := http.DetectContentType(bytes)
+
+	// Prepend the appropriate URI scheme header depending
+	// on the MIME type
+	// switch mimeType {
+	// case "image/jpeg":
+	// 	base64Encoding += "data:image/jpeg;base64,"
+	// case "image/png":
+	// 	base64Encoding += "data:image/png;base64,"
+	// }
+
+	// Append the base64 encoded output
+	base64Encoding += base64.StdEncoding.EncodeToString(bytes)
+
+	// Print the full base64 representation of the image
+	return base64Encoding
 }

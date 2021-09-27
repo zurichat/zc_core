@@ -32,6 +32,17 @@ func (eh *ExternalHandler) EmailSubscription(w http.ResponseWriter, r *http.Requ
 	SubDoc, _ := utils.GetMongoDbDoc(newsletter_collection, bson.M{"email": NewSubscription.Email})
 	if SubDoc != nil {
 		// fmt.Printf("user with email %s already subscribed!", NewSubscription.Email)
+		msger := eh.mailService.NewMail(
+			[]string{NewSubscription.Email}, "Zuri Chat Newsletter Subscription", service.EmailSubscription,
+			map[string]interface{}{
+				"Username": NewSubscription.Email,
+				"ZuriLogo": utils.ConvertImageTo64("./templates/email_sub/images/zuri_logo.png"),
+				"Image2":   utils.ConvertImageTo64("./templates/email_sub/images/people_chatting.png"),
+			})
+
+		if err := eh.mailService.SendMail(msger); err != nil {
+			fmt.Printf("Error occured while sending mail: %s", err.Error())
+		}
 		utils.GetSuccess("Thanks for subscribing to for or Newsletter", sub_res{status: true}, w)
 		return
 	}
@@ -43,6 +54,18 @@ func (eh *ExternalHandler) EmailSubscription(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	fmt.Println(res.InsertedID)
+
+	msger := eh.mailService.NewMail(
+		[]string{NewSubscription.Email}, "Zuri Chat Newsletter Subscription", service.EmailSubscription,
+		map[string]interface{}{
+			"Username": NewSubscription.Email,
+			"ZuriLogo": utils.ConvertImageTo64("./templates/email_sub/images/zuri_logo.png"),
+			"Image2":   utils.ConvertImageTo64("./templates/email_sub/images/people_chatting.png"),
+		})
+
+	if err := eh.mailService.SendMail(msger); err != nil {
+		fmt.Printf("Error occured while sending mail: %s", err.Error())
+	}
 	utils.GetSuccess("Thanks for subscribing for our Newsletter", sub_res{status: true}, w)
 
 }
@@ -79,11 +102,15 @@ func (eh *ExternalHandler) DownloadClient(w http.ResponseWriter, r *http.Request
 		return
 	}
 	msger := eh.mailService.NewMail(
-		[]string{email}, "Zuri Chat Desktop", service.DownloadClient,
-		&service.MailData{
-			Username: email,
-			Code:     url,
-		})
+		[]string{email},
+		"Zuri Chat Desktop",
+		service.DownloadClient,
+		map[string]interface{}{
+			"Username": email,
+			"Code":     url,
+		},
+	)
+
 	if err := eh.mailService.SendMail(msger); err != nil {
 		fmt.Printf("Error occured while sending mail: %s", err.Error())
 	}
