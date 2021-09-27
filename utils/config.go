@@ -33,6 +33,7 @@ type Configurations struct {
 	WorkspaceInviteTemplate   string
 
 	GoogleOAuthUrl			  string
+	GoogleOAuthV3Url		  string
 	FacebookOAuthUrl		  string
 }
 
@@ -84,6 +85,7 @@ func NewConfigurations() *Configurations {
 		MailGunSenderEmail: viper.GetString("MAILGUN_EMAIL"),
 
 		GoogleOAuthUrl: viper.GetString("GOOGLE_OAUTH"),
+		GoogleOAuthV3Url: viper.GetString("GOOGLE_OAUTH_V3"),
 		FacebookOAuthUrl: viper.GetString("FACEBOOK_OAUTH"),
 	}
 

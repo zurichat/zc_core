@@ -260,7 +260,7 @@ func (au *AuthHandler) SocialAuth(w http.ResponseWriter, r *http.Request){
 
 	// default providers
 	providers := map[string]string{
-		"google": au.configs.GoogleOAuthUrl,
+		"google": au.configs.GoogleOAuthV3Url,
 		"facebook": au.configs.FacebookOAuthUrl,
 	}
 
