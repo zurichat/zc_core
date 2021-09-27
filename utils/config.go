@@ -58,6 +58,7 @@ func NewConfigurations() *Configurations {
 	viper.SetDefault("EMAIL_SUBSCRIPTION_TEMPLATE", "./templates/email_subscription.html")
 	viper.SetDefault("DOWNLOAD_CLIENT_TEMPLATE", "./templates/download_clients.html")
 	viper.SetDefault("WORKSPACE_INVITE_TEMPLATE", "./templates/workspace_invite.html")
+	viper.SetDefault("GOOGLE_OAUTH_V3", "https://www.googleapis.com/oauth2/v3/userinfo?access_token=:access_token")
 
 	configs := &Configurations{
 		ClusterUrl:          mgURL,
