@@ -43,7 +43,17 @@ window.onload = function() {
                 "name": "post_id",
                 "required": true,
                 "schema": {
-                    "type": "integer"
+                    "example": "6137d69b21d3c78fc9a84bdf",
+                    "type": "string"
+                }
+            },
+            "user_id": {
+                "in": "path",
+                "name": "user_id",
+                "required": true,
+                "schema": {
+                    "example": "6137d69b21d3c78fc9a84bdf",
+                    "type": "string"
                 }
             }
         },
@@ -116,6 +126,18 @@ window.onload = function() {
                 ],
                 "type": "object"
             }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "bearerFormat": "JWT",
+                "scheme": "bearer",
+                "type": "http"
+            },
+            "cookieAuth": {
+                "in": "cookie",
+                "name": "JSESSIONID",
+                "type": "apiKey"
+            }
         }
     },
     "info": {
@@ -153,6 +175,9 @@ window.onload = function() {
                     }
                 },
                 "security": [
+                    {
+                        "cookieAuth": []
+                    },
                     {
                         "bearerAuth": []
                     }
@@ -247,6 +272,9 @@ window.onload = function() {
                 },
                 "security": [
                     {
+                        "cookieAuth": []
+                    },
+                    {
                         "bearerAuth": []
                     }
                 ],
@@ -309,6 +337,9 @@ window.onload = function() {
                 },
                 "security": [
                     {
+                        "cookieAuth": []
+                    },
+                    {
                         "bearerAuth": []
                     }
                 ],
@@ -354,6 +385,9 @@ window.onload = function() {
                 },
                 "security": [
                     {
+                        "cookieAuth": []
+                    },
+                    {
                         "bearerAuth": []
                     }
                 ],
@@ -365,6 +399,11 @@ window.onload = function() {
         },
         "/posts/{post_id}": {
             "delete": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/post_id"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "content": {
@@ -408,6 +447,9 @@ window.onload = function() {
                     }
                 },
                 "security": [
+                    {
+                        "cookieAuth": []
+                    },
                     {
                         "bearerAuth": []
                     }
@@ -470,6 +512,9 @@ window.onload = function() {
                 },
                 "security": [
                     {
+                        "cookieAuth": []
+                    },
+                    {
                         "bearerAuth": []
                     }
                 ],
@@ -479,6 +524,11 @@ window.onload = function() {
                 ]
             },
             "put": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/post_id"
+                    }
+                ],
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -573,6 +623,9 @@ window.onload = function() {
                 },
                 "security": [
                     {
+                        "cookieAuth": []
+                    },
+                    {
                         "bearerAuth": []
                     }
                 ],
@@ -584,6 +637,11 @@ window.onload = function() {
         },
         "/posts/{post_id}/comments": {
             "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/post_id"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "content": {
@@ -638,6 +696,9 @@ window.onload = function() {
                 },
                 "security": [
                     {
+                        "cookieAuth": []
+                    },
+                    {
                         "bearerAuth": []
                     }
                 ],
@@ -647,6 +708,11 @@ window.onload = function() {
                 ]
             },
             "post": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/post_id"
+                    }
+                ],
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -727,6 +793,9 @@ window.onload = function() {
                 },
                 "security": [
                     {
+                        "cookieAuth": []
+                    },
+                    {
                         "bearerAuth": []
                     }
                 ],
@@ -738,6 +807,14 @@ window.onload = function() {
         },
         "/posts/{post_id}/like/{user_id}": {
             "patch": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/post_id"
+                    },
+                    {
+                        "$ref": "#/components/parameters/user_id"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "content": {
@@ -781,6 +858,9 @@ window.onload = function() {
                     }
                 },
                 "security": [
+                    {
+                        "cookieAuth": []
+                    },
                     {
                         "bearerAuth": []
                     }
