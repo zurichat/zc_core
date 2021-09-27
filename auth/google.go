@@ -159,7 +159,6 @@ func CreateSocialUser(useremail string) error {
 	user.Password = ""
 	user.Deactivated = false
 	user.IsVerified = true
-	user.Social = true
 
 	detail, _ := utils.StructToMap(user)
 
