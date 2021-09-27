@@ -72,7 +72,6 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 	user.Password = hashPassword
 	user.Deactivated = false
 	user.IsVerified = false
-	user.Social = false
 	user.EmailVerification = con
 	detail, _ := utils.StructToMap(user)
 

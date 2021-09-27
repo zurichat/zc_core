@@ -1,15 +1,21 @@
 package auth
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt"
+	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 )
 
@@ -26,8 +32,39 @@ var (
 	UserNotFound        = errors.New("User not found, confirm and try again!")
 	InvalidCredentials  = errors.New("Invalid login credentials, confirm and try again")
 	AccountConfirmError = errors.New("Your account is not verified, kindly check your email for verification code.")
+	AccessExpired		= errors.New("error fetching user info, access token expired, kindly login again")
 	hmacSampleSecret    = []byte("u7b8be9bd9b9ebd9b9dbdbee")
 )
+
+func (au *AuthHandler) GetAuthToken(user *user.User, sess *sessions.Session) (*Token, error) {
+	retoken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"session_name": Resptoken.SessionName,
+		"cookie":       Resptoken.Cookie,
+		"options":      Resptoken.Options,
+		"id":           Resptoken.Id,
+		"email":        user.Email,
+	})
+
+	tokenString, err := retoken.SignedString(hmacSampleSecret)
+	if err != nil { return nil, err }
+
+	resp := &Token{
+		SessionID: sess.ID,
+		User: UserResponse{
+			ID:        user.ID,
+			FirstName: user.FirstName,
+			LastName:  user.LastName,
+			Email:     user.Email,
+			Phone:     user.Phone,
+			Timezone:  user.Timezone,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+			Token:     tokenString,
+		},
+	}
+	
+	return resp, nil
+}
 
 func (au *AuthHandler) LoginIn(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
@@ -75,34 +112,13 @@ func (au *AuthHandler) LoginIn(response http.ResponseWriter, request *http.Reque
 		fmt.Printf("Error saving session: %s", err)
 		return
 	}
-	retoken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"session_name": Resptoken.SessionName,
-		"cookie":       Resptoken.Cookie,
-		"options":      Resptoken.Options,
-		"id":           Resptoken.Id,
-		"email":        user.Email,
-	})
+	resp, err := au.GetAuthToken(user, session)
 
-	tokenString, eert := retoken.SignedString(hmacSampleSecret)
-	if eert != nil {
-		utils.GetError(eert, http.StatusInternalServerError, response)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, response)
 		return
 	}
 
-	resp := &Token{
-		SessionID: session.ID,
-		User: UserResponse{
-			ID:        user.ID,
-			FirstName: user.FirstName,
-			LastName:  user.LastName,
-			Email:     user.Email,
-			Phone:     user.Phone,
-			Timezone:  user.Timezone,
-			CreatedAt: user.CreatedAt,
-			UpdatedAt: user.UpdatedAt,
-			Token:     tokenString,
-		},
-	}
 	utils.GetSuccess("login successful", resp, response)
 }
 
@@ -237,4 +253,132 @@ func (au *AuthHandler) LogOutOtherSessions(w http.ResponseWriter, r *http.Reques
 	}
 
 	utils.GetSuccess("successfully logged out of other sessions", nil, w)
+}
+
+func (au *AuthHandler) SocialAuth(w http.ResponseWriter, r *http.Request){
+	w.Header().Add("content-type", "application/json")
+
+	// default providers
+	providers := map[string]string{
+		"google": au.configs.GoogleOAuthV3Url,
+		"facebook": au.configs.FacebookOAuthUrl,
+	}
+
+	params := mux.Vars(r)
+	social := struct {
+		Provider    string `json:"provider" validate:"required"`
+		AccessToken string `json:"access_token" validate:"required"`
+	}{
+		Provider:    params["provider"],
+		AccessToken: params["access_token"],
+	}
+	
+	if err := validate.Struct(social); err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	providerUrl, ok := providers[strings.ToLower(social.Provider)]
+	if !ok {
+		errMsg := fmt.Sprintf("Implementation error: %s does not exists!", social.Provider)
+		utils.GetError(errors.New(errMsg), http.StatusBadRequest, w)
+		return
+	}
+
+	url := strings.Replace(providerUrl, ":access_token", social.AccessToken, 1)
+	resp, err := http.Get(url)
+	if err != nil || resp.StatusCode != 200 {
+		utils.GetError(AccessExpired, http.StatusBadRequest, w)
+		return
+	}
+	defer resp.Body.Close()
+	fmt.Print(resp.Body)
+
+	store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(secretKey))
+	var session, e = store.Get(r, sessionKey)
+	if e != nil {
+		utils.GetError(e, http.StatusBadRequest, w)
+		return
+	}
+
+	switch p := strings.ToLower(social.Provider); p {
+	case "google":
+		socialUser := struct {
+			ID				string		`json:"sub"`
+			Email			string		`json:"email"`
+			EmailVerified	string		`json:"email_verified"`
+			FirstName		string		`json:"given_name"`
+			LastName		string		`json:"family_name"`
+			Picture			string		`json:"picture"`
+		}{}
+
+		//check if user exists
+		json.NewDecoder(resp.Body).Decode(&socialUser)
+		vser, err := FetchUserByEmail(bson.M{"social.provider": p, "social.provider_id": socialUser.ID})
+		if err != nil {
+			// user not found, create one
+			social := &user.Social{ID: socialUser.ID, Provider: p}
+			b := &user.User{
+				FirstName: socialUser.FirstName,
+				LastName: socialUser.LastName,
+				Email: socialUser.Email,
+				Password: "",
+				Deactivated: false,
+				IsVerified: true,
+				Social: *social,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			detail, _ := utils.StructToMap(b)
+			res, err := utils.CreateMongoDbDoc(user_collection, detail)
+
+			if err != nil {
+				utils.GetError(err, http.StatusInternalServerError, w)
+				return
+			}
+
+			session.Values["id"] = res.InsertedID
+			session.Values["email"] = b.Email						
+		} else {
+			// update record
+			social := map[string]interface{}{
+				"provider_id": socialUser.ID,
+				"provider": p,
+			}
+
+			id, _ := primitive.ObjectIDFromHex(vser.ID)
+			filter := bson.M{"_id": id}
+			update := bson.M{"$set": bson.M{"social": social, "email": strings.ToLower(socialUser.Email), "password": "x" }}
+			
+			if _, err := utils.GetCollection(user_collection).UpdateOne(context.Background(), filter, update); err != nil {
+				utils.GetError(err, http.StatusInternalServerError, w)
+				return		
+			}
+
+			session.Values["id"] = vser.ID
+			session.Values["email"] = vser.Email
+		}
+
+		fmt.Print("<----- i got here ---->")
+		if err = sessions.Save(r, w); err != nil {
+			fmt.Printf("Error saving session: %s", err)
+			return
+		}
+
+		resp, err := au.GetAuthToken(vser, session)
+		if err != nil {
+			utils.GetError(err, http.StatusBadRequest, w)
+			return
+		}
+	
+		utils.GetSuccess("login successful", resp, w)	
+		return 	
+	case "facebook":
+		utils.GetError(errors.New("Facebook: Pending implementation"), http.StatusBadRequest, w)
+		return
+	default:
+		msg := fmt.Sprintf("Implementation error: %s does not exists!", p)
+		utils.GetError(errors.New(msg), http.StatusBadRequest, w)
+		return
+	}
 }

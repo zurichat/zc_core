@@ -31,6 +31,10 @@ type Configurations struct {
 	PasswordResetTemplate     string
 	DownloadClientTemplate    string
 	WorkspaceInviteTemplate   string
+
+	GoogleOAuthUrl			  string
+	GoogleOAuthV3Url		  string
+	FacebookOAuthUrl		  string
 }
 
 func NewConfigurations() *Configurations {
@@ -54,7 +58,8 @@ func NewConfigurations() *Configurations {
 	viper.SetDefault("EMAIL_SUBSCRIPTION_TEMPLATE", "./templates/email_subscription.html")
 	viper.SetDefault("DOWNLOAD_CLIENT_TEMPLATE", "./templates/download_clients.html")
 	viper.SetDefault("WORKSPACE_INVITE_TEMPLATE", "./templates/workspace_invite.html")
-	// viper.SetDefault("ESP_TYPE", "mailgun")
+	viper.SetDefault("GOOGLE_OAUTH_V3", "https://www.googleapis.com/oauth2/v3/userinfo?access_token=:access_token")
+
 
 	configs := &Configurations{
 		ClusterUrl:          mgURL,
@@ -80,6 +85,10 @@ func NewConfigurations() *Configurations {
 		MailGunKey:         viper.GetString("MAILGUN_KEY"),
 		MailGunDomain:      viper.GetString("MAILGUN_DOMAIN"),
 		MailGunSenderEmail: viper.GetString("MAILGUN_EMAIL"),
+
+		GoogleOAuthUrl: viper.GetString("GOOGLE_OAUTH"),
+		GoogleOAuthV3Url: viper.GetString("GOOGLE_OAUTH_V3"),
+		FacebookOAuthUrl: viper.GetString("FACEBOOK_OAUTH"),
 	}
 
 	return configs
