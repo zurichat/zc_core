@@ -1,10 +1,13 @@
 openapi: '3.0.2'
 info:
-  title: Zuri Chat Core API
-  description: Zuri Chat is an open source slack clone. However, it offers a lot more functionality via a plugin system where each room can be provided by a different plugin provider.
   version: 1.0.0
+  title: Zuri Chat Core API (Blog Endpoints)
+  description: Zuri Chat is an open source slack clone. However, it offers a lot more functionality via a plugin system where each room can be provided by a different plugin provider.
+  contact:
+    email: developer@zuri.chat
 servers:
-  - url: 'https://api.zuri.chat/v1'
+  - description: Zuri Chat Core API
+    url: 'https://api.zuri.chat/'
 paths:
   /posts:
     get:

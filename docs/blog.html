@@ -141,8 +141,11 @@ window.onload = function() {
         }
     },
     "info": {
+        "contact": {
+            "email": "developer@zuri.chat"
+        },
         "description": "Zuri Chat is an open source slack clone. However, it offers a lot more functionality via a plugin system where each room can be provided by a different plugin provider.",
-        "title": "Zuri Chat Core API",
+        "title": "Zuri Chat Core API (Blog Endpoints)",
         "version": "1.0.0"
     },
     "openapi": "3.0.2",
@@ -874,7 +877,8 @@ window.onload = function() {
     },
     "servers": [
         {
-            "url": "https://api.zuri.chat/v1"
+            "description": "Zuri Chat Core API",
+            "url": "https://api.zuri.chat/"
         }
     ]
 };
