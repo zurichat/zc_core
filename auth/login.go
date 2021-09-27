@@ -304,12 +304,12 @@ func (au *AuthHandler) SocialAuth(w http.ResponseWriter, r *http.Request){
 	switch p := strings.ToLower(social.Provider); p {
 	case "google":
 		socialUser := struct {
-			ID				string	`json:"sub"`
-			Email			string	`json:"email"`
-			EmailVerified	string	`json:"email_verified"`
-			FirstName		string	`json:"given_name"`
-			LastName		string	`json:"family_name"`
-			Picture			string	`json:"picture"`
+			ID				string		`json:"sub"`
+			Email			string		`json:"email"`
+			EmailVerified	string		`json:"email_verified"`
+			FirstName		string		`json:"given_name"`
+			LastName		string		`json:"family_name"`
+			Picture			string		`json:"picture"`
 		}{}
 
 		//check if user exists
