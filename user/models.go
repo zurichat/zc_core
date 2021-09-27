@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	UserCollectionName        = "users"
-	UserProfileCollectionName = "user_workspace_profiles"
+	UserCollectionName                 = "users"
+	UserProfileCollectionName          = "user_workspace_profiles"
+	OrganizationsInvitesCollectionName = "organizations_invites"
 )
 
 type M map[string]interface{}
@@ -86,6 +87,11 @@ type UserUpdate struct {
 type UserHandler struct {
 	configs     *utils.Configurations
 	mailService service.MailService
+}
+
+type UUIDPassword struct {
+	Uuid     string `bson:"uuid" json:"uuid"`
+	Password string `bson:"password" json:"password"`
 }
 
 func NewUserHandler(c *utils.Configurations, mail service.MailService) *UserHandler {
