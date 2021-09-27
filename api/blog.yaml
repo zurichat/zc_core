@@ -12,6 +12,7 @@ paths:
         - Blog
       summary: Displays a list of blog posts
       security:
+        - cookieAuth: []
         - bearerAuth: []
       responses:
         '200':
@@ -34,6 +35,7 @@ paths:
         - Blog
       summary: Create a Blog Post
       security:
+        - cookieAuth: []
         - bearerAuth: []
       requestBody:
         description: The structure for the entire request
@@ -98,6 +100,7 @@ paths:
         - Blog
       summary: Retrieves the content of a blog post
       security:
+        - cookieAuth: []
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/post_id'
@@ -134,7 +137,10 @@ paths:
         - Blog
       summary: Edit a Blog Post
       security:
+        - cookieAuth: []
         - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/post_id'
       requestBody:
         description: The structure for the entire request
         content:
@@ -203,7 +209,10 @@ paths:
         - Blog
       summary: Delete a Blog Post
       security:
+        - cookieAuth: []
         - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/post_id'
 
       responses:
         '200':
@@ -238,7 +247,11 @@ paths:
         - Blog
       summary: Like or Unlike a Blog Post
       security:
+        - cookieAuth: []
         - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/post_id'
+        - $ref: '#/components/parameters/user_id'
 
       responses:
         '200':
@@ -273,7 +286,10 @@ paths:
         - Blog
       summary: Comment on a Blog Post
       security:
+        - cookieAuth: []
         - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/post_id'
       requestBody:
         description: The structure for the entire request
         content:
@@ -331,7 +347,10 @@ paths:
         - Blog
       summary: Retrieves comments of a blog post
       security:
+        - cookieAuth: []
         - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/post_id'
 
       responses:
         '200':
@@ -372,6 +391,7 @@ paths:
         - Blog
       summary: Retrieves blog posts based on the parameters searched
       security:
+        - cookieAuth: []
         - bearerAuth: []
 
       responses:
@@ -401,6 +421,7 @@ paths:
         - Blog
       summary: Subscribe to zuri mail
       security:
+        - cookieAuth: []
         - bearerAuth: []
       requestBody:
         description: The structure for the entire request
@@ -496,4 +517,23 @@ components:
       name: post_id
       required: true
       schema:
-        type: integer
+        type: string
+        example: '6137d69b21d3c78fc9a84bdf'
+
+    user_id:
+      in: path
+      name: user_id
+      required: true
+      schema:
+        type: string
+        example: '6137d69b21d3c78fc9a84bdf'
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
