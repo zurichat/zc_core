@@ -239,6 +239,8 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 
 		orgid := value["org_id"].(string)
 
+		basic["isOwner"] = value["role"] == "owner"
+
 		objId, _ := primitive.ObjectIDFromHex(orgid)
 
 		// find all members of an org
@@ -249,11 +251,13 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 			utils.GetError(err, http.StatusUnprocessableEntity, response)
 			return
 		}
+
 		// Get the images of all memebers of the organization
 		var member_imgs []interface{}
 		for _, member := range orgMembers {
 			member_imgs = append(member_imgs, member["image_url"])
 		}
+
 		// Return 10 images or less
 		if len(member_imgs) < 11 {
 			basic["imgs"] = member_imgs
@@ -264,7 +268,6 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 		basic["id"] = orgDetails["_id"]
 		basic["logo_url"] = orgDetails["logo_url"]
 		basic["name"] = orgDetails["name"]
-		basic["isOwner"] = orgDetails["creator_email"] == params["email"]
 		basic["workspace_url"] = orgDetails["workspace_url"]
 		basic["no_of_members"] = len(orgMembers)
 

@@ -154,11 +154,11 @@ func (au *AuthHandler) LogOutUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// fmt.Println(session)
-	// session.Options.MaxAge = -1
+	session.Options.MaxAge = -1
 
 	if err = ClearSession(store, w, session); err != nil {
 		fmt.Printf("Error saving session: %s", err)
-		utils.GetError(fmt.Errorf("Logout Failed"), http.StatusUnauthorized, w)
+		utils.GetError(fmt.Errorf("logout Failed"), http.StatusUnauthorized, w)
 		return
 	}
 	// if err = sessions.Save(r, w); err != nil {

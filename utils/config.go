@@ -60,6 +60,7 @@ func NewConfigurations() *Configurations {
 	viper.SetDefault("WORKSPACE_INVITE_TEMPLATE", "./templates/workspace_invite.html")
 	viper.SetDefault("GOOGLE_OAUTH_V3", "https://www.googleapis.com/oauth2/v3/userinfo?access_token=:access_token")
 
+
 	configs := &Configurations{
 		ClusterUrl:          mgURL,
 		DbName:              viper.GetString("DB_NAME"),

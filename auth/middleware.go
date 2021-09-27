@@ -19,12 +19,13 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 		var SessionEmail string
 		var err error
 
-		status, err, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
-
-		if err != nil && !status {
-			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
-			return
-		}
+		session, _ = store.Get(r, sessionKey)
+		status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
+		
+		// if err == nil && !status {
+		// 	utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
+		// 	return
+		// }
 
 		var erro error
 
@@ -34,12 +35,11 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 				utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
 				return
 			}
-
 		}
 
 		if sessData.Gothic != nil {
 			SessionEmail = sessData.GothicEmail
-		} else {
+		} else if session.Values["email"] != nil {
 			SessionEmail = session.Values["email"].(string)
 		}
 
