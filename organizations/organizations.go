@@ -143,16 +143,7 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	setting := new(Settings)
 
-	newMember := Member{
-		ID:       primitive.NewObjectID(),
-		Email:    user.Email,
-		UserName: userName,
-		OrgId:    iiid,
-		Role:     "owner",
-		Presence: "true",
-		Deleted:  false,
-		Settings: setting,
-	}
+	newMember := newMember(user.Email, userName, iiid, OwnerRole, setting)
 
 	// add new member to member collection
 	coll := utils.GetCollection(MemberCollectionName)

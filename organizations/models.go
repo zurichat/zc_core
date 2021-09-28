@@ -219,5 +219,23 @@ func FetchMember(filter map[string]interface{}) (*Member, error) {
 	}
 	result := memberCollection.FindOne(context.TODO(), filter)
 	err = result.Decode(&member)
-	return member, err
+	return member, 
+	err
+}
+
+func newMember(email string, userName string, orgId string, role string, setting *Settings) Member {
+	defaultImageUrl := ""
+	return Member{
+		ID:       primitive.NewObjectID(),
+		ImageURL: defaultImageUrl,
+		IsImageDefault: true,
+		Email:    email,
+		UserName: userName,
+		OrgId:    orgId,
+		Role:     role,
+		Presence: "true",
+		JoinedAt: time.Now(),
+		Deleted:  false,
+		Settings: setting,
+	}
 }
