@@ -240,7 +240,7 @@ func LoadApp(w http.ResponseWriter, r *http.Request) {
 
 func VersionHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Zuri Chat API - Version 0.0005\n")
+	fmt.Fprintf(w, "Zuri Chat API - Version 0.0255\n")
 
 }
 

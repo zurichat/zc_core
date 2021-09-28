@@ -359,7 +359,6 @@ func (au *AuthHandler) SocialAuth(w http.ResponseWriter, r *http.Request){
 			session.Values["email"] = vser.Email
 		}
 
-		fmt.Print("<----- i got here ---->")
 		if err = sessions.Save(r, w); err != nil {
 			fmt.Printf("Error saving session: %s", err)
 			return
