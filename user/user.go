@@ -72,8 +72,8 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 	user.Password = hashPassword
 	user.Deactivated = false
 	user.IsVerified = false
-	user.Social = false
 	user.EmailVerification = con
+	user.Timezone = "Africa/Lagos" // set default timezone
 	detail, _ := utils.StructToMap(user)
 
 	res, err := utils.CreateMongoDbDoc(user_collection, detail)
@@ -210,9 +210,6 @@ func (uh *UserHandler) GetUsers(response http.ResponseWriter, request *http.Requ
 	response.Header().Set("Access-Control-Allow-Headers", "Content-Type,access-control-allow-origin, access-control-allow-headers")
 	response.Header().Set("content-type", "application/json")
 
-	// if !auth.IsAuthorized("", "zuri_admin", response, request) {
-	// 	return
-	// }
 	collectionName := "users"
 	res, _ := utils.GetMongoDbDocs(collectionName, bson.M{"deactivated": false})
 	utils.GetSuccess("users retrieved successfully", res, response)

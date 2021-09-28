@@ -119,10 +119,6 @@ func (oh *OrganizationHandler) CreateMember(w http.ResponseWriter, r *http.Reque
 
 	sOrgId := mux.Vars(r)["id"]
 
-	if !auth.IsAuthorized(sOrgId, "admin", w, r) {
-		return
-	}
-
 	orgId, err := primitive.ObjectIDFromHex(sOrgId)
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)

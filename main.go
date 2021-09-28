@@ -12,7 +12,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 
-	"github.com/getsentry/sentry-go"
+	sentry "github.com/getsentry/sentry-go"
 	"github.com/rs/cors"
 	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/blog"
@@ -65,8 +65,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/auth/logout/othersessions", auth.LogOutOtherSessions).Methods(http.MethodPost)
 	r.HandleFunc("/auth/verify-token", auth.IsAuthenticated(auth.VerifyTokenHandler)).Methods(http.MethodGet, http.MethodPost)
 	r.HandleFunc("/auth/confirm-password", auth.IsAuthenticated(auth.ConfirmUserPassword)).Methods(http.MethodPost)
-	// r.HandleFunc("/auth/{provider}/callback", auth.CompleteGoogleAuth).Methods("GET")
-	// r.HandleFunc("/auth/{provider}", auth.BeginGoogleAuth)
+	r.HandleFunc("/auth/social-login/{provider}/{access_token}", auth.SocialAuth).Methods(http.MethodGet)
 
 	r.HandleFunc("/account/verify-account", auth.VerifyAccount).Methods(http.MethodPost)
 	r.HandleFunc("/account/request-password-reset-code", auth.RequestResetPasswordCode).Methods(http.MethodPost)
@@ -79,7 +78,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
 
 	// Organization: Guest Invites
-	r.HandleFunc("/organizations/{id}/send-invite", auth.IsAuthenticated(organizations.SendInvite)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/send-invite", auth.IsAuthenticated(auth.IsAuthorized(organizations.SendInvite, "admin"))).Methods("POST")
 	r.HandleFunc("/organizations/invites/{uuid}", organizations.CheckGuestStatus).Methods(http.MethodGet)
 	r.HandleFunc("/organizations/guests/{uuid}", organizations.GuestToOrganization).Methods(http.MethodPost)
 
@@ -95,7 +94,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/name", auth.IsAuthenticated(organizations.UpdateName)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/logo", auth.IsAuthenticated(organizations.UpdateLogo)).Methods("PATCH")
 
-	r.HandleFunc("/organizations/{id}/members", auth.IsAuthenticated(organizations.CreateMember)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/members", auth.IsAuthenticated(auth.IsAuthorized(organizations.CreateMember, "admin"))).Methods("POST")
 	r.HandleFunc("/organizations/{id}/members", organizations.GetMembers).Methods("GET")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.GetMember)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.DeactivateMember)).Methods("DELETE")
@@ -135,7 +134,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.UpdateUser)).Methods("PATCH")
 	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.GetUser)).Methods("GET")
 	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.DeleteUser)).Methods("DELETE")
-	r.HandleFunc("/users", auth.IsAuthenticated(user.GetUsers)).Methods("GET")
+	r.HandleFunc("/users", auth.IsAuthenticated(auth.IsAuthorized(user.GetUsers, "zuri_admin"))).Methods("GET")
 	r.HandleFunc("/users/{email}/organizations", auth.IsAuthenticated(user.GetUserOrganizations)).Methods("GET")
 
 	r.HandleFunc("/guests/invite", user.CreateUserFromUUID).Methods("POST")
@@ -241,7 +240,7 @@ func LoadApp(w http.ResponseWriter, r *http.Request) {
 
 func VersionHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Zuri Chat API - Version 0.0005\n")
+	fmt.Fprintf(w, "Zuri Chat API - Version 0.0255\n")
 
 }
 
