@@ -324,7 +324,7 @@ func (au *AuthHandler) SocialAuth(w http.ResponseWriter, r *http.Request){
 				Password: "",
 				Deactivated: false,
 				IsVerified: true,
-				Social: *social,
+				Social: social,
 				Timezone : "Africa/Lagos", // set default timezone
 				Organizations: []string{"614679ee1a5607b13c00bcb7"}, // set default org
 				CreatedAt: time.Now(),
