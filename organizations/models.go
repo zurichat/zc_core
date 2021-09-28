@@ -107,27 +107,28 @@ type Social struct {
 }
 
 type Member struct {
-	ID          primitive.ObjectID `json:"_id" bson:"_id"`
-	OrgId       string             `json:"org_id" bson:"org_id"`
-	Files       []string           `json:"files" bson:"files"`
-	ImageURL    string             `json:"image_url" bson:"image_url"`
-	FirstName   string             `json:"first_name" bson:"first_name"`
-	LastName    string             `json:"last_name" bson:"last_name"`
-	Email       string             `json:"email" bson:"email"`
-	UserName    string             `bson:"user_name" json:"user_name"`
-	DisplayName string             `json:"display_name" bson:"display_name"`
-	Bio         string             `json:"bio" bson:"bio"`
-	Status      string             `json:"status" bson:"status"`
-	Presence    string             `json:"presence" bson:"presence"`
-	Pronouns    string             `json:"pronouns" bson:"pronouns"`
-	Phone       string             `json:"phone" bson:"phone"`
-	TimeZone    string             `json:"time_zone" bson:"time_zone"`
-	Role        string             `json:"role" bson:"role"`
-	JoinedAt    time.Time          `json:"joined_at" bson:"joined_at"`
-	Settings    *Settings          `json:"settings" bson:"settings"`
-	Deleted     bool               `json:"deleted" bson:"deleted"`
-	DeletedAt   time.Time          `json:"deleted_at" bson:"deleted_at"`
-	Socials     []Social           `json:"socials" bson:"socials"`
+	ID             primitive.ObjectID `json:"_id" bson:"_id"`
+	OrgId          string             `json:"org_id" bson:"org_id"`
+	Files          []string           `json:"files" bson:"files"`
+	ImageURL       string             `json:"image_url" bson:"image_url"`
+	IsImageDefault bool               `json:"is_image_default" bson:"is_image_default"`
+	FirstName      string             `json:"first_name" bson:"first_name"`
+	LastName       string             `json:"last_name" bson:"last_name"`
+	Email          string             `json:"email" bson:"email"`
+	UserName       string             `bson:"user_name" json:"user_name"`
+	DisplayName    string             `json:"display_name" bson:"display_name"`
+	Bio            string             `json:"bio" bson:"bio"`
+	Status         string             `json:"status" bson:"status"`
+	Presence       string             `json:"presence" bson:"presence"`
+	Pronouns       string             `json:"pronouns" bson:"pronouns"`
+	Phone          string             `json:"phone" bson:"phone"`
+	TimeZone       string             `json:"time_zone" bson:"time_zone"`
+	Role           string             `json:"role" bson:"role"`
+	JoinedAt       time.Time          `json:"joined_at" bson:"joined_at"`
+	Settings       *Settings          `json:"settings" bson:"settings"`
+	Deleted        bool               `json:"deleted" bson:"deleted"`
+	DeletedAt      time.Time          `json:"deleted_at" bson:"deleted_at"`
+	Socials        []Social           `json:"socials" bson:"socials"`
 }
 type Profile struct {
 	ID          string   `json:"id" bson:"_id"`
