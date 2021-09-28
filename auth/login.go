@@ -313,7 +313,12 @@ func (au *AuthHandler) SocialAuth(w http.ResponseWriter, r *http.Request){
 
 		//check if user exists
 		json.NewDecoder(resp.Body).Decode(&socialUser)
-		vser, err := FetchUserByEmail(bson.M{"social.provider": p, "social.provider_id": socialUser.ID})
+		filter := bson.M{"$or": []bson.M{
+			{"email": socialUser.Email},
+			{"social.provider": p, "social.provider_id": socialUser.ID},
+		} }
+
+		vser, err := FetchUserByEmail(filter)
 		if err != nil {
 			// user not found, create one
 			social := &user.Social{ID: socialUser.ID, Provider: p}
