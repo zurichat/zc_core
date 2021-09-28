@@ -292,7 +292,6 @@ func (au *AuthHandler) SocialAuth(w http.ResponseWriter, r *http.Request){
 		return
 	}
 	defer resp.Body.Close()
-	fmt.Print(resp.Body)
 
 	store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(secretKey))
 	var session, e = store.Get(r, sessionKey)
