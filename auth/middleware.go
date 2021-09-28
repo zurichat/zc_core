@@ -2,11 +2,17 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
+	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
+	"github.com/mitchellh/mapstructure"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 )
 
@@ -88,5 +94,71 @@ func (au *AuthHandler) OptionalAuthentication(nextHandler http.HandlerFunc, auth
 			nextHandler.ServeHTTP(w, r)
 		}
 
+	}
+}
+
+func (au *AuthHandler) IsAuthorized(nextHandler http.HandlerFunc, role string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		var orgId string
+
+		if mux.Vars(r)["id"] != "" {
+			orgId = mux.Vars(r)["id"]
+		}
+		loggedInUser := r.Context().Value("user").(*AuthUser)
+		lguser, ee := FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
+		if ee != nil {
+			utils.GetError(errors.New("Error Fetching Logged in User"), http.StatusBadRequest, w)
+		}
+		user_id := lguser.ID
+
+		// collections
+		_, user_collection, member_collection := "organizations", "users", "members"
+		// org_collection
+
+		// fmt.Println(user_id)
+
+		// Getting user's document from db
+		var luHexid, _ = primitive.ObjectIDFromHex(user_id)
+		userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"_id": luHexid})
+		if userDoc == nil {
+			utils.GetError(errors.New("User not found"), http.StatusBadRequest, w)
+		}
+
+		var authuser user.User
+		mapstructure.Decode(userDoc, &authuser)
+
+		if role == "zuri_admin" {
+			if authuser.Role != role {
+				utils.GetError(errors.New("Access Denied"), http.StatusUnauthorized, w)
+				return
+			}
+
+		} else {
+			// Getting member's document from db
+			orgMember, _ := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "email": authuser.Email})
+			if orgMember == nil {
+				utils.GetError(errors.New("Access Denied"), http.StatusUnauthorized, w)
+				return
+			}
+
+			var memb RoleMember
+			mapstructure.Decode(orgMember, &memb)
+
+			// check role's access
+			nA := map[string]int{"owner": 4, "admin": 3, "member": 2, "guest": 1}
+
+			if nA[role] > nA[memb.Role] {
+				utils.GetError(errors.New("Access Denied"), http.StatusUnauthorized, w)
+				return
+			}
+		}
+
+		user := &AuthUser{
+			ID:    luHexid,
+			Email: loggedInUser.Email,
+		}
+		ctx := context.WithValue(r.Context(), "user", user)
+		nextHandler.ServeHTTP(w, r.WithContext(ctx))
 	}
 }
