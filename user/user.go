@@ -238,6 +238,7 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 		orgid := value["org_id"].(string)
 
 		basic["isOwner"] = value["role"] == "owner"
+		basic["member_id"] = value["_id"]
 
 		objId, _ := primitive.ObjectIDFromHex(orgid)
 
