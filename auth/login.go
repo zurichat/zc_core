@@ -325,8 +325,8 @@ func (au *AuthHandler) SocialAuth(w http.ResponseWriter, r *http.Request){
 				Deactivated: false,
 				IsVerified: true,
 				Social: *social,
+				Timezone : "Africa/Lagos", // set default timezone
 				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
 			}
 			detail, _ := utils.StructToMap(b)
 			res, err := utils.CreateMongoDbDoc(user_collection, detail)
