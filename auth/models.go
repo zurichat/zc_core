@@ -45,6 +45,7 @@ var (
 	NotAuthorized        = errors.New("Not Authorized.")
 	ConfirmPasswordError = errors.New("The password confirmation does not match")
 	UserDetails          = UserKey("userDetails")
+	AccessDenied         = errors.New("Access Denied")
 )
 
 type Credentials struct {
@@ -111,55 +112,6 @@ func FetchUserByEmail(filter map[string]interface{}) (*user.User, error) {
 	return user, err
 }
 
-// middleware to check if user is authorized
-// func IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 		w.Header().Add("content-type", "application/json")
-// 		w.Header().Set("Access-Control-Allow-Origin", "*")
-// 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type,access-control-allow-origin, access-control-allow-headers")
-
-// 		store := NewMongoStore(utils.GetCollection(session_collection), SESSION_MAX_AGE, true, []byte(secretKey))
-// 		var session *sessions.Session
-// 		var err error
-// 		session, err = store.Get(r, sessionKey)
-// 		status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
-
-// 		if err != nil && status == false {
-// 			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
-// 			return
-// 		}
-// 		var erro error
-// 		if status == true {
-// 			session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName)
-// 			// fmt.Println(session)
-// 			if err != nil && erro != nil {
-// 				utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
-// 				return
-// 			}
-// 		}
-
-// 		// use is coming in newly, no cookies
-// 		if session.IsNew == true {
-// 			utils.GetError(NoAuthToken, http.StatusUnauthorized, w)
-// 			return
-// 		}
-
-// 		objID, err := primitive.ObjectIDFromHex(session.ID)
-// 		if err != nil {
-// 			utils.GetError(ErrorInvalid, http.StatusUnauthorized, w)
-// 			return
-// 		}
-
-// 		user := &AuthUser{
-// 			ID:    objID,
-// 			Email: session.Values["email"].(string),
-// 		}
-
-// 		ctx := context.WithValue(r.Context(), "user", user)
-// 		nextHandler.ServeHTTP(w, r.WithContext(ctx))
-// 	}
-// }
-
 // Checks if a user is authorized to access a particular function, and either returns a 403 error or continues the process
 // First is the Organisation's Id
 // Second Option is the role necessary for accessing your endpoint, options are "owner" or "admin" or "member" or "guest"
@@ -225,7 +177,7 @@ func IsAuthorized(orgId string, role string, w http.ResponseWriter, r *http.Requ
 // user, _ := auth.FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
 // sOrgId := mux.Vars(r)["id"]
 
-// if !auth.IsAuthorized(user.ID, sOrgId, "admin", w) {
+// if !auth.IsAuthorized(sOrgId, "admin", w, r) {
 // 	return
 // }
 

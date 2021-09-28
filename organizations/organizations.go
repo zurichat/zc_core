@@ -393,10 +393,6 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 	loggedInUser := r.Context().Value("user").(*auth.AuthUser)
 	// user, _ := auth.FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
 	sOrgId := mux.Vars(r)["id"]
-
-	if !auth.IsAuthorized(sOrgId, "admin", w, r) {
-		return
-	}
 	var guests SendInviteBody
 
 	err_ := utils.ParseJsonFromRequest(r, &guests)
