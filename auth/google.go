@@ -18,8 +18,11 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
-var ClientId string = "166440807442-tsshvt0pub07pnp09q7e2frac0f24ljf.apps.googleusercontent.com"
-var ClientSecret string = "AW2eHnMh9O5uXHb9kLX6LiHQ"
+const (
+	CALLBACK_URL = "http://localhost:8080/auth/google/callback"
+	ClientId = "166440807442-tsshvt0pub07pnp09q7e2frac0f24ljf.apps.googleusercontent.com"
+	ClientSecret = "AW2eHnMh9O5uXHb9kLX6LiHQ"
+)
 
 var Store *MongoStore
 var defaultStore *MongoStore
@@ -156,7 +159,6 @@ func CreateSocialUser(useremail string) error {
 	user.Password = ""
 	user.Deactivated = false
 	user.IsVerified = true
-	user.Social = true
 
 	detail, _ := utils.StructToMap(user)
 
@@ -221,7 +223,7 @@ func getProviderName(req *http.Request) (string, error) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 func (au *AuthHandler) BeginGoogleAuth(w http.ResponseWriter, r *http.Request) {
 	goth.UseProviders(
-		google.New(ClientId, ClientSecret, "http://localhost:8080/auth/google/callback", "email", "profile"),
+		google.New(ClientId, ClientSecret, CALLBACK_URL, "email", "profile"),
 	)
 	BeginAuthHandler(w, r)
 }

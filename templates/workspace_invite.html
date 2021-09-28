@@ -1,233 +1,312 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <title></title>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <style type="text/css">
-      @media screen {
-        @font-face {
-          font-family: "Lato";
-          font-style: normal;
-          font-weight: 400;
-          src: local("Lato Regular"), local("Lato-Regular"),
-            url(https://fonts.gstatic.com/s/lato/v11/qIIYRU-oROkIk8vfvxw6QvesZW2xOQ-xsNqO47m55DA.woff)
-              format("woff");
-        }
-
-        @font-face {
-          font-family: "Lato";
-          font-style: normal;
-          font-weight: 700;
-          src: local("Lato Bold"), local("Lato-Bold"),
-            url(https://fonts.gstatic.com/s/lato/v11/qdgUG4U09HnJwhYI-uK18wLUuEpTyoUstqEm5AMlJo4.woff)
-              format("woff");
-        }
-
-        @font-face {
-          font-family: "Lato";
-          font-style: italic;
-          font-weight: 400;
-          src: local("Lato Italic"), local("Lato-Italic"),
-            url(https://fonts.gstatic.com/s/lato/v11/RYyZNoeFgb0l7W3Vu1aSWOvvDin1pK8aKteLpeZ5c0A.woff)
-              format("woff");
-        }
-
-        @font-face {
-          font-family: "Lato";
-          font-style: italic;
-          font-weight: 700;
-          src: local("Lato Bold Italic"), local("Lato-BoldItalic"),
-            url(https://fonts.gstatic.com/s/lato/v11/HkF_qI1x_noxlxhrhMQYELO3LdcAZYWl9Si6vvxL-qU.woff)
-              format("woff");
-        }
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Email confirmation</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
       }
 
-      /* CLIENT-SPECIFIC STYLES */
-      body,
-      table,
-      td,
-      a {
-        -webkit-text-size-adjust: 100%;
-        -ms-text-size-adjust: 100%;
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
       }
 
-      table,
-      td {
-        mso-table-lspace: 0pt;
-        mso-table-rspace: 0pt;
+      /* General page styling */
+
+      .confirmation_wrapper {
+        width: 100%;
+        max-width: 515px;
+        padding: 0 0.948rem;
+        margin: 0 auto;
+        --type-scale: 0.7;
+        --primary-color: #3a3a3a;
+        --secondary-color: #03a9f4;
       }
 
-      img {
-        -ms-interpolation-mode: bicubic;
+      .logo {
+        width: 6.5625rem;
+        height: 1.9475rem;
       }
 
-      /* RESET STYLES */
-      img {
-        border: 0;
-        height: auto;
-        line-height: 100%;
-        outline: none;
-        text-decoration: none;
+      .confirmation_wrapper p {
+        font-size: calc(1.3125rem * var(--type-scale, 1));
+        line-height: calc(1.575rem * var(--type-scale, 1));
+        font-weight: 400;
+        margin: 0;
+        font-style: normal;
+        color: var(--primary-color, black);
       }
 
-      table {
-        border-collapse: collapse !important;
-      }
-
-      body {
-        height: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        width: 100% !important;
-      }
-
-      /* iOS BLUE LINKS */
-      a[x-apple-data-detectors] {
-        color: inherit !important;
-        text-decoration: none !important;
-        font-size: inherit !important;
-        font-family: inherit !important;
-        font-weight: inherit !important;
-        line-height: inherit !important;
-      }
       .btn {
-        background: rgb(17, 151, 17);
-        padding: 12px;
-        margin: 10px 0;
-        border: 1px solid rgba(17, 151, 17, 0.5);
+        background: transparent;
+        display: inline-block;
+        padding: 0.625rem 1.5rem;
+        font-size: calc(1.1875rem * var(--type-scale, 1));
+        line-height: calc(1.6875rem * var(--type-scale, 1));
+        border: none;
+        outline: none;
         border-radius: 3px;
-        text-decoration: none;
-        color: #fff;
+        -webkit-transition: all 0.3s ease-out;
+        -moz-transition: all 0.3s ease-out;
+        transition: all 0.3s ease-out;
       }
-      /* MOBILE STYLES */
-      @media screen and (max-width: 600px) {
-        h1 {
-          font-size: 32px !important;
-          line-height: 32px !important;
+
+      .confirmation_wrapper h3 {
+        font-size: calc(1.72rem * var(--type-scale, 1));
+        line-height: calc(2.1rem * var(--type-scale, 1));
+        font-weight: 900;
+        margin-bottom: 0.625rem;
+      }
+
+      .confirmation_wrapper header {
+        padding-top: 1.5rem;
+      }
+
+      .confirmation_wrapper header .primary-name {
+        display: none;
+      }
+
+      .confirmation_wrapper header .secondary-name {
+        display: inline-block;
+      }
+
+      .top-logo {
+        margin-bottom: 1.8rem;
+      }
+
+      .confirmation_content {
+        padding-bottom: 2.5rem;
+        border-bottom: 0.5px solid #999999;
+      }
+
+      .confirm_btn_wrapper {
+        text-align: center;
+      }
+
+      .confirm_btn {
+        background: #00b87c;
+        color: #ffffff;
+        border: 1px solid #00b87c;
+        margin: 2rem 0;
+      }
+
+      p.question_msg {
+        margin-bottom: 0.625rem;
+      }
+
+      p.ignore_msg {
+        font-weight: 300;
+      }
+
+      .workspace_link {
+        padding: 1rem 0 2rem;
+      }
+
+      .bottom_logo {
+        display: none;
+      }
+
+      .mobile_logo {
+        display: flex;
+        align-items: center;
+      }
+
+      .mobile_logo h5 {
+        font-size: 0.8125rem;
+        line-height: 0.975rem;
+        margin-left: 0.4rem;
+      }
+
+      .url {
+        padding: 0.625rem 0;
+      }
+
+      .url p {
+        font-size: calc(0.9375rem * var(--type-scale));
+        line-height: calc(1.125rem * var(--type-scale));
+      }
+
+      .url a {
+        color: var(--secondary-color, cyan);
+        text-decoration: none;
+      }
+
+      .url a:hover {
+        text-decoration: underline;
+      }
+
+      /* Footer */
+
+      .confirmation_footer {
+        padding: 2rem 0 1rem;
+        display: none;
+        justify-content: center;
+        border-top: 0.5px solid #999999;
+        text-align: center;
+      }
+
+      .confirmation_footer p,
+      .sub-nav_link {
+        font-size: calc(0.9375rem * var(--type-scale));
+        line-height: calc(1.125rem * var(--type-scale));
+        font-weight: 900;
+        color: rgba(58, 58, 58, 0.502);
+      }
+
+      .sub-nav_list {
+        display: flex;
+        align-items: center;
+        justify-content: space-evenly;
+        padding: 1rem 0;
+        list-style: none;
+        width: 80%;
+        margin: 0 auto;
+      }
+
+      .sub-nav_link {
+        text-decoration: none;
+      }
+
+      .sub-nav_link:hover {
+        text-decoration: underline;
+      }
+
+      @media only screen and (min-width: 768px) {
+        .confirmation_wrapper {
+          --type-scale: 0.85;
+        }
+
+        .confirmation_wrapper header .primary-name {
+          display: inline-block;
+        }
+
+        .confirmation_wrapper header .secondary-name {
+          display: none;
+        }
+
+        .confirm_btn_wrapper {
+          text-align: left;
+        }
+
+        .mobile_logo {
+          display: none;
+        }
+
+        .bottom-logo {
+          display: inline-block;
+        }
+
+        .confirmation_footer {
+          display: grid;
         }
       }
 
-      /* ANDROID CENTER FIX */
-      div[style*="margin: 16px 0;"] {
-        margin: 0 !important;
+      @media only screen and (min-width: 985px) {
+        .confirmation_wrapper {
+          --type-scale: 1;
+        }
       }
     </style>
+    <link rel="stylesheet" href="/CSS/base.css" />
+    <link rel="stylesheet" href="/CSS/confirm-email.css" />
   </head>
-  <body
-    style="
-      background-color: #f4f4f4;
-      margin: 0 !important;
-      padding: 0 !important;
-    "
-  >
-    <table border="0" cellpadding="0" cellspacing="0" width="100%">
-      <!-- LOGO -->
-      <tr>
-        <td bgcolor="#FFA73B" align="center">
-          <table
-            border="0"
-            cellpadding="0"
-            cellspacing="0"
-            width="100%"
-            style="max-width: 600px"
-          >
-            <tr>
-              <td
-                align="center"
-                valign="top"
-                style="padding: 40px 10px 40px 10px"
-              ></td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-      <tr>
-        <td bgcolor="#FFA73B" align="center" style="padding: 0px 10px 0px 10px">
-          <table
-            border="0"
-            cellpadding="0"
-            cellspacing="0"
-            width="100%"
-            style="max-width: 600px"
-          >
-            <tr>
-              <td
-                bgcolor="#ffffff"
-                align="center"
-                valign="top"
-                style="
-                  padding: 40px 20px 20px 20px;
-                  border-radius: 4px 4px 0px 0px;
-                  color: #111111;
-                  font-family: 'Lato', Helvetica, Arial, sans-serif;
-                  font-size: 48px;
-                  font-weight: 400;
-                  letter-spacing: 4px;
-                  line-height: 48px;
-                "
-              >
-                <h1 style="font-size: 48px; font-weight: 400; margin: 2">
-                  Invitation to join {{.OrgName}} workspace
-                </h1>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-      <tr>
-        <td bgcolor="#f4f4f4" align="center" style="padding: 0px 10px 0px 10px">
-          <table
-            border="0"
-            cellpadding="0"
-            cellspacing="0"
-            width="100%"
-            style="max-width: 600px"
-          >
-            <tr>
-              <td
-                bgcolor="#ffffff"
-                align="left"
-                style="
-                  padding: 20px 30px 40px 30px;
-                  color: #666666;
-                  font-family: 'Lato', Helvetica, Arial, sans-serif;
-                  font-size: 18px;
-                  font-weight: 400;
-                  line-height: 25px;
-                "
-              >
-                <p style="margin: 0">
-                  Hi <br /><br />{{.Username}} is inviting you to join a workspace called {{.OrgName}}
-                </p>
-                <br />
-                <h3>Follow this link to join the workspace </h3> 
-                <p>{{.InviteLink}}</p>
-                <p style="margin: 0"><strong></strong></p>
-              </td>
-            </tr>
 
-            <tr>
-              <td
-                bgcolor="#ffffff"
-                align="left"
-                style="
-                  padding: 0px 30px 40px 30px;
-                  border-radius: 0px 0px 4px 4px;
-                  color: #666666;
-                  font-family: 'Lato', Helvetica, Arial, sans-serif;
-                  font-size: 18px;
-                  font-weight: 400;
-                  line-height: 25px;
-                "
-              >
-                <p style="margin: 0">Cheers,<br />Zuri Chat Team</p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
+  <body>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 105 31"
+      style="position: absolute; visibility: hidden"
+    >
+      <defs>
+        <symbol id="zuriLogo">
+          <path
+            fill="#393939"
+            d="M48.6 8.5v.6l-.3.5L40 21.3h8.4V24H35.6V22.2l.3-.5L44.2 10h-8V7.3h12.4v1.2Zm14.7 12.7c.5 0 1 0 1.5-.2a3.2 3.2 0 0 0 1.8-2.1c.2-.5.3-1 .3-1.7v-10h3.4v10c0 1-.1 2-.5 2.8a6.3 6.3 0 0 1-3.6 3.7c-.8.3-1.8.5-3 .5-1 0-2-.2-2.9-.5a6.4 6.4 0 0 1-3.6-3.7c-.3-.8-.5-1.8-.5-2.8v-10h3.5v10c0 .6 0 1.2.2 1.7s.4.9.7 1.2c.3.4.7.7 1.2.9l1.5.2Zm21-6c.6 0 1 0 1.5-.2l1-.6.6-.9.2-1.1c0-.8-.3-1.4-.8-1.9-.6-.4-1.4-.6-2.4-.6h-1.8v5.3h1.7Zm8.2 8.8h-3.2c-.6 0-1-.2-1.2-.7l-3.2-5.1c-.2-.2-.3-.4-.5-.4l-.7-.2h-1.1V24H79V7.3h5.3c1.1 0 2.1 0 3 .3.8.3 1.5.6 2 1 .5.5 1 1 1.2 1.6.2.6.3 1.2.3 2A5.1 5.1 0 0 1 90 15a5 5 0 0 1-1 1c-.5.4-1 .6-1.6.8a3.2 3.2 0 0 1 1.1 1l4 6.1Zm10.5 0h-3.4V7.3h3.5V24Z"
+          />
+          <rect width="11.8" height="11.8" x="3.9" fill="#00B87C" rx="1.1" />
+          <rect width="11.8" height="11.8" y="13.4" fill="#FEA162" rx="1.1" />
+          <rect
+            width="11.8"
+            height="11.8"
+            x="17.3"
+            y="5.6"
+            fill="#1A61DB"
+            rx="1.1"
+          />
+          <rect
+            width="11.8"
+            height="11.8"
+            x="13.4"
+            y="19"
+            fill="#DC1AA3"
+            rx="1.1"
+          />
+        </symbol>
+      </defs>
+    </svg>
+    <article class="confirmation_wrapper">
+      <header>
+        <svg class="logo top-logo">
+          <use xlink:href="#zuriLogo"></use>
+        </svg>
+        <h3>
+          Invitation to join Zuri Chat Workspace
+          <span class="primary-name">{{.OrgName}}</span
+          ><span class="secondary-name">Zuri</span>
+        </h3>
+      </header>
+      <section class="confirmation_content">
+        <p classs="intro_msg">
+          Hi! <br />
+          {{.Username}} is inviting you to join the Zuri Chat Workspace.
+        </p>
+        <br>
+        <br>
+
+         <div class="question_msg">
+            <p>Follow this link to join the Workspace; {{.InviteLink}}</p>
+            </div>
+           <br>
+        <div class="confirm_btn_wrapper">
+          <a href="{{.InviteLink}}"><button class="btn confirm_btn">Accept Invitation</button></a>
+        </div>
+          <br>
+          <br>
+          <br>
+
+        <p class="question_msg">
+          Cheers,
+        </p>
+        
+        <p class="ignore_msg">
+          Zuri Chat Team.
+        </p>
+      
+      </section>
+    </article>
+    <footer class="confirmation_footer">
+      <p>
+        Have questions about your new workspace? Drop us a note at
+        help@Zuri.com. We’re glad you’re here!
+      </p>
+      <ul class="sub-nav_list">
+        <li class="sub-nav_item">
+          <a href="" class="sub-nav_link">Blog</a>
+        </li>
+        <li class="sub-nav_item">
+          <a href="" class="sub-nav_link">Email Preferences</a>
+        </li>
+        <li class="sub-nav_item">
+          <a href="" class="sub-nav_link">Policies</a>
+        </li>
+      </ul>
+    </footer>
   </body>
 </html>

@@ -269,14 +269,19 @@ func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.
 
 	org_Id := mux.Vars(r)["id"]
 
-	// Check if organization id is valid
+	// checks if the logged in user trying to make changes is the owner the workspaceace
+	if !auth.IsAuthorized(org_Id, "owner", w, r) {
+		return
+	}
+
+	// Checks if organization id is valid
 	orgId, err := primitive.ObjectIDFromHex(org_Id)
 	if err != nil {
 		utils.GetError(errors.New("invalid organization id"), http.StatusBadRequest, w)
 		return
 	}
 
-	// Check if organization id exists in the database
+	// Checks if organization exists in the database
 	orgDoc, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": orgId})
 	if orgDoc == nil {
 		utils.GetError(errors.New("organization does not exist"), http.StatusBadRequest, w)
@@ -289,14 +294,16 @@ func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// email is that of the proposed new owner
 	email := requestData["email"]
 
-	// confirm if email supplied is valid
+	// confirms if email supplied is valid
 	if !utils.IsValidEmail(strings.ToLower(email)) {
 		utils.GetError(errors.New("email is not valid"), http.StatusBadRequest, w)
 		return
 	}
 
+	// fetches the details of the proposed new owner patterned after member's struct
 	orgMember, err := FetchMember(bson.M{"org_id": org_Id, "email": email})
 
 	if err != nil {
@@ -304,13 +311,16 @@ func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// checks if proposed owner does not have an ownership status already
 	if orgMember.Role == "owner" {
 		utils.GetError(errors.New("this member already owns this organization"), http.StatusBadRequest, w)
 		return
 	}
 
+	// member ID of the proposed new owner
 	memberID := orgMember.ID.Hex()
 
+	// upgrades status from member to owner
 	updateRes, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberID, bson.M{"role": "owner"})
 
 	if err != nil {
@@ -319,10 +329,33 @@ func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.
 	}
 
 	if updateRes.ModifiedCount == 0 {
-		utils.GetError(errors.New("could not upgrade member role"), http.StatusInternalServerError, w)
+		utils.GetError(errors.New("could not upgrade member's role"), http.StatusInternalServerError, w)
 		return
 	}
 
+	// fetches details of the former owner so we can get keys to downgrade status to member
+	// checks like isOwner and memberExists are not made since auth.IsAuthorized function already
+	// this user pass marks
+	loggedInUser := r.Context().Value("user").(*auth.AuthUser)
+	formerOwner, _ := FetchMember(bson.M{"org_id": org_Id, "email": loggedInUser.Email})
+
+	// ID of former owner
+	formerOwnerID := formerOwner.ID.Hex()
+
+	// role downgraded from owner to member 
+	update, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, formerOwnerID, bson.M{"role": "member"})
+
+	if err != nil {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("could not downgrade owner's role"), http.StatusInternalServerError, w)
+		return
+	}
+
+	// and we are done!!!
 	utils.GetSuccess("workspace owner changed successfully", nil, w)
 }
 
@@ -405,14 +438,14 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 		// Append new invite to array of generated invites
 		inviteIDs = append(inviteIDs, save.InsertedID)
 		// Parse data for customising email template
-		inviteLink := fmt.Sprintf("http://%v/join/%s", org["workspace_url"], uuid)
+		inviteLink := fmt.Sprintf("https://zuri.chat/invites/%s", uuid)
 		orgName := fmt.Sprintf("%v", org["name"])
+
 		msger := oh.mailService.NewMail(
-			[]string{email}, "Zuri Chat Workspace Invite", service.WorkspaceInvite,
-			&service.MailData{
-				Username:   loggedInUser.Email,
-				OrgName:    orgName,
-				InviteLink: inviteLink,
+			[]string{email}, "Zuri Chat Workspace Invite", service.WorkspaceInvite, map[string]interface{}{
+				"Username":   loggedInUser.Email,
+				"OrgName":    orgName,
+				"InviteLink": inviteLink,
 			})
 		// error with sending main
 		if err := oh.mailService.SendMail(msger); err != nil {

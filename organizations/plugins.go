@@ -11,8 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	// "zuri.chat/zccore/auth"
-
 	"zuri.chat/zccore/utils"
 )
 
@@ -21,14 +19,14 @@ var NoAuthToken = errors.New("No Authorization header provided.")
 func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	plugin_collection, member_collection := "plugins", "members"
+	plugin_collection := "plugins"
 	var orgPlugin OrgPluginBody
 
 	OrgId := mux.Vars(r)["id"]
 
 	err := json.NewDecoder(r.Body).Decode(&orgPlugin)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
 
@@ -55,9 +53,20 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 		return
 	}
 
-	user, _ := utils.GetMongoDbDoc(member_collection, bson.M{"_id": creatorId, "org_id": OrgId})
+	user, _ := utils.GetMongoDbDoc(MemberCollectionName, bson.M{"_id": creatorId, "org_id": OrgId})
 	if user == nil {
 		utils.GetError(errors.New("member doesn't exist in the organization"), http.StatusBadRequest, w)
+		return
+	}
+
+	var member Member
+	if err = utils.ConvertStructure(user, &member); err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if member.Role != OwnerRole && member.Role != AdminRole {
+		utils.GetError(errors.New("access denied"), http.StatusForbidden, w)
 		return
 	}
 
@@ -142,8 +151,6 @@ func (oh *OrganizationHandler) GetOrganizationPlugin(w http.ResponseWriter, r *h
 	w.Header().Set("Content-Type", "application/json")
 	// loggedInUser := r.Context().Value("user").(auth.AuthUser)
 
-	organizations_collection := "organizations"
-
 	orgId := mux.Vars(r)["id"]
 	pluginId := mux.Vars(r)["plugin_id"]
 
@@ -154,7 +161,7 @@ func (oh *OrganizationHandler) GetOrganizationPlugin(w http.ResponseWriter, r *h
 		return
 	}
 
-	save, _ := utils.GetMongoDbDoc(organizations_collection, bson.M{"_id": objId})
+	save, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": objId})
 
 	if save == nil {
 		utils.GetError(fmt.Errorf("organization %s not found", orgId), http.StatusNotFound, w)
@@ -172,4 +179,71 @@ func (oh *OrganizationHandler) GetOrganizationPlugin(w http.ResponseWriter, r *h
 	}
 
 	utils.GetSuccess("Plugins returned successfully", doc, w)
+}
+
+func (oh *OrganizationHandler) RemoveOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	
+	var orgPlugin OrgPluginBody
+
+	orgId := mux.Vars(r)["id"]
+	pluginId := mux.Vars(r)["plugin_id"]
+
+	err := json.NewDecoder(r.Body).Decode(&orgPlugin)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	// confirm if user_id exists
+	creatorId, err := primitive.ObjectIDFromHex(orgPlugin.UserId)
+
+	if err != nil {
+		utils.GetError(errors.New("invalid user id"), http.StatusBadRequest, w)
+		return
+	}
+
+	user, _ := utils.GetMongoDbDoc(MemberCollectionName, bson.M{"_id": creatorId, "org_id": orgId})
+	if user == nil {
+		utils.GetError(errors.New("member doesn't exist in the organization"), http.StatusBadRequest, w)
+		return
+	}
+
+	var member Member
+	if err = utils.ConvertStructure(user, &member); err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if member.Role != OwnerRole && member.Role != AdminRole {
+		utils.GetError(errors.New("access denied"), http.StatusForbidden, w)
+		return
+	}
+
+	orgCollectionName := GetOrgPluginCollectionName(orgId)
+
+	orgPluginDoc, _ := utils.GetMongoDbDoc(orgCollectionName, bson.M{"plugin_id": pluginId})
+	if orgPluginDoc == nil {
+		// plugin not found in organiztion.
+		utils.GetError(errors.New("plugin does not exist"), http.StatusBadRequest, w)
+		return
+	}
+	
+	orgPluginObjId := orgPluginDoc["_id"]
+	orgPluginId := orgPluginObjId.(primitive.ObjectID).Hex()
+	
+	doc, err := utils.DeleteOneMongoDoc(orgCollectionName, orgPluginId)
+
+	if err != nil {
+		// plugin not found in organiztion.
+		utils.GetError(err, http.StatusNotFound, w)
+		return
+	}
+
+	if doc.DeletedCount == 0 {
+		utils.GetError(errors.New("plugin failed to uninstall"), http.StatusBadRequest, w)
+		return
+	}
+
+	utils.GetSuccess("plugin removed successfully", doc, w)
 }
