@@ -131,7 +131,7 @@ func (au *AuthHandler) IsAuthorized(nextHandler http.HandlerFunc, role string) h
 		mapstructure.Decode(userDoc, &authuser)
 
 		if role == "zuri_admin" {
-			if authuser.Role != role {
+			if authuser.Role != "admin" {
 				utils.GetError(errors.New("Access Denied"), http.StatusUnauthorized, w)
 				return
 			}
