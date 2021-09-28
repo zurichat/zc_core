@@ -348,7 +348,7 @@ func (au *AuthHandler) SocialAuth(w http.ResponseWriter, r *http.Request){
 
 			id, _ := primitive.ObjectIDFromHex(vser.ID)
 			filter := bson.M{"_id": id}
-			update := bson.M{"$set": bson.M{"social": social, "email": strings.ToLower(socialUser.Email), "password": "x" }}
+			update := bson.M{"$set": bson.M{"social": social, "email": strings.ToLower(socialUser.Email) }}
 			
 			if _, err := utils.GetCollection(user_collection).UpdateOne(context.Background(), filter, update); err != nil {
 				utils.GetError(err, http.StatusInternalServerError, w)
