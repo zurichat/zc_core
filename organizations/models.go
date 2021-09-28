@@ -129,6 +129,7 @@ type Member struct {
 	Deleted        bool               `json:"deleted" bson:"deleted"`
 	DeletedAt      time.Time          `json:"deleted_at" bson:"deleted_at"`
 	Socials        []Social           `json:"socials" bson:"socials"`
+	Language       string             `json:"language" bson:"language"`
 }
 type Profile struct {
 	ID          string   `json:"id" bson:"_id"`
@@ -140,6 +141,7 @@ type Profile struct {
 	Phone       string   `json:"phone" bson:"phone"`
 	TimeZone    string   `json:"time_zone" bson:"time_zone"`
 	Socials     []Social `json:"socials" bson:"socials"`
+	Language    string   `json:"language" bson:"language"`
 }
 
 type Settings struct {
@@ -219,8 +221,7 @@ func FetchMember(filter map[string]interface{}) (*Member, error) {
 	}
 	result := memberCollection.FindOne(context.TODO(), filter)
 	err = result.Decode(&member)
-	return member, 
-	err
+	return member, err
 }
 
 func newMember(email string, userName string, orgId string, role string, setting *Settings) Member {

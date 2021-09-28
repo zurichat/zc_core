@@ -1,0 +1,542 @@
+openapi: '3.0.2'
+info:
+  version: 1.0.0
+  title: Zuri Chat Core API (Blog Endpoints)
+  description: Zuri Chat is an open source slack clone. However, it offers a lot more functionality via a plugin system where each room can be provided by a different plugin provider.
+  contact:
+    email: developer@zuri.chat
+servers:
+  - description: Zuri Chat Core API
+    url: 'https://api.zuri.chat/'
+paths:
+  /posts:
+    get:
+      tags:
+        - Blog
+      summary: Displays a list of blog posts
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK. Successfully returned a list of blog posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Blog'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - Blog
+      summary: Create a Blog Post
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      requestBody:
+        description: The structure for the entire request
+        content:
+          'application/json':
+            schema:
+              properties:
+                image_url:
+                  type: string
+                  description: This is the image url of the blog post
+                title:
+                  type: string
+                  description: Title of the blog post
+                  example: The pros and cons of HNG internship
+                author:
+                  type: string
+                  description: Author of the blog post
+                  example: David Oluwatobi
+                content:
+                  type: string
+                  description: Body of the blog post
+                  example: One of the pros of HNG internship is that it teaches you to adapt fast....
+                tags:
+                  type: string
+                  description: Tags of the blog post
+                  example: Tech
+                socials:
+                  type: string
+                  description: Social media url of the author or organization
+                  example: https://twitter.com/HNG
+
+      responses:
+        '201':
+          description: Blog post successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Blog'
+
+        '401':
+          description: Unauthorized
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Unprocessable request
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /posts/{post_id}:
+    get:
+      tags:
+        - Blog
+      summary: Retrieves the content of a blog post
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/post_id'
+      responses:
+        '200':
+          description: OK. Successfully retrieved blog post
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Blog'
+        '400':
+          description: Bad request. Invalid blog post id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found. Blog post does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - Blog
+      summary: Edit a Blog Post
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/post_id'
+      requestBody:
+        description: The structure for the entire request
+        content:
+          'application/json':
+            schema:
+              properties:
+                image_url:
+                  type: string
+                  description: This is the image url of the blog post
+                title:
+                  type: string
+                  description: Title of the blog post
+                  example: The pros and cons of HNG internship
+                author:
+                  type: string
+                  description: Author of the blog post
+                  example: David Oluwatobi
+                content:
+                  type: string
+                  description: Body of the blog post
+                  example: One of the pros of HNG internship is that it teaches you to adapt fast....
+                tags:
+                  type: string
+                  description: Tags of the blog post
+                  example: Tech
+                socials:
+                  type: string
+                  description: Social media url of the author or organization
+                  example: https://twitter.com/HNG
+
+      responses:
+        '201':
+          description: Blog post successfully edited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Blog'
+
+        '400':
+          description: Bad request. Invalid blog post id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found. Blog post does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Unprocessable request
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Blog
+      summary: Delete a Blog Post
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/post_id'
+
+      responses:
+        '200':
+          description: OK. Blog post successfully deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Blog'
+
+        '400':
+          description: Bad request. Invalid blog post id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found. Blog post does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /posts/{post_id}/like/{user_id}:
+    patch:
+      tags:
+        - Blog
+      summary: Like or Unlike a Blog Post
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/post_id'
+        - $ref: '#/components/parameters/user_id'
+
+      responses:
+        '200':
+          description: OK. Blog post successfully liked or unliked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Blog'
+
+        '400':
+          description: Bad request. Invalid blog post id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found. Blog post does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /posts/{post_id}/comments:
+    post:
+      tags:
+        - Blog
+      summary: Comment on a Blog Post
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/post_id'
+      requestBody:
+        description: The structure for the entire request
+        content:
+          'application/json':
+            schema:
+              properties:
+                comment_author:
+                  type: string
+                  description: This is the name of the commenter
+                  example: David Oluwatobi
+                comment_content:
+                  type: string
+                  description: Body of the blog post comment
+                  example: HNG builds an excellent spirit in you...
+                comment_at:
+                  type: string
+                  description: Blog post comment date and time creation. Automatically calculated
+                  example: 25 August 2021. 10:42:05
+
+      responses:
+        '201':
+          description: Blog post comment successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '400':
+          description: Bad request. Invalid blog post id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found. Blog post does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Unprocessable request
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags:
+        - Blog
+      summary: Retrieves comments of a blog post
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/post_id'
+
+      responses:
+        '200':
+          description: OK. Comments successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Blog'
+
+        '400':
+          description: Bad request. Invalid blog post id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found. Blog post does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Unprocessable request
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /posts/search:
+    get:
+      tags:
+        - Blog
+      summary: Retrieves blog posts based on the parameters searched
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+
+      responses:
+        '200':
+          description: OK. Successful search
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Blog'
+
+        '422':
+          description: Unprocessable request
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /posts/mail:
+    post:
+      tags:
+        - Blog
+      summary: Subscribe to zuri mail
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      requestBody:
+        description: The structure for the entire request
+        content:
+          'application/json':
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: Email of the subscriber
+                  example: subscriber@gmail.com
+
+      responses:
+        '201':
+          description: OK. Subscription Successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Blog'
+
+        '422':
+          description: Unprocessable request
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Error:
+      required:
+        - code
+        - message
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        metadata:
+          type: object
+
+    Blog:
+      type: object
+      properties:
+        image_url:
+          type: string
+          description: This is the image url of the blog post
+        title:
+          type: string
+          description: Title of the blog post
+          example: The pros and cons of HNG internship
+        author:
+          type: string
+          description: Author of the blog post
+          example: David Oluwatobi
+        content:
+          type: string
+          description: Body of the blog post
+          example: One of the pros of HNG internship is that it teaches you to adapt fast....
+        tags:
+          type: string
+          description: Tags of the blog post
+          example: Tech
+        socials:
+          type: string
+          description: Social media url of the author or organization
+          example: https://twitter.com/HNG
+        length:
+          type: integer
+          description: Estimated reading time of a blog post. Automatically calculated
+          example: 5
+        created_at:
+          type: string
+          description: Blog post date and time creation. Automatically calculated
+          example: 25 August 2021. 10:42:05
+        edited_at:
+          type: string
+          description: Blog post date and time edition. Automatically calculated
+          example: 25 August 2021. 10:42:05
+
+  parameters:
+    post_id:
+      in: path
+      name: post_id
+      required: true
+      schema:
+        type: string
+        example: '6137d69b21d3c78fc9a84bdf'
+
+    user_id:
+      in: path
+      name: user_id
+      required: true
+      schema:
+        type: string
+        example: '6137d69b21d3c78fc9a84bdf'
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"net/smtp"
 	"strings"
 	"time"
 
@@ -16,10 +17,9 @@ import (
 )
 
 type MailService interface {
-	SetupSmtp(mailReq *Mail) (string, error)
-	SetupSendgrid(mailReq *Mail) ([]byte, error)
+	LoadTemplate(mailReq *Mail) (string, error)
 	SendMail(mailReq *Mail) error
-	NewMail(to []string, subject string, mailType MailType, data *MailData) *Mail
+	NewMail(to []string, subject string, mailType MailType, data map[string]interface{}) *Mail
 }
 
 type MailType int
@@ -27,23 +27,17 @@ type MailType int
 const (
 	MailConfirmation MailType = iota + 1
 	PasswordReset
+	EmailSubscription
 	DownloadClient
 	WorkspaceInvite
 )
-
-type MailData struct {
-	Username   string
-	Code       string
-	OrgName    string
-	InviteLink string
-}
 
 type Mail struct {
 	to      []string
 	subject string
 	body    string
 	mtype   MailType
-	data    *MailData
+	data    map[string]interface{}
 }
 
 type ZcMailService struct {
@@ -56,18 +50,19 @@ func NewZcMailService(c *utils.Configurations) *ZcMailService {
 
 // Gmail smtp setup
 // To use this, Gmail need to set allowed unsafe app
-func (ms *ZcMailService) SetupSmtp(mailReq *Mail) (string, error) {
-	var templateFileName string
-
-	if mailReq.mtype == MailConfirmation {
-		templateFileName = ms.configs.ConfirmEmailTemplate
-	} else if mailReq.mtype == PasswordReset {
-		templateFileName = ms.configs.PasswordResetTemplate
-	} else if mailReq.mtype == DownloadClient {
-		templateFileName = ms.configs.DownloadClientTemplate
-	} else if mailReq.mtype == WorkspaceInvite {
-		templateFileName = ms.configs.WorkspaceInviteTemplate
+func (ms *ZcMailService) LoadTemplate(mailReq *Mail) (string, error) {
+	
+	// include your email template here
+	m := map[MailType]string{
+		MailConfirmation: ms.configs.ConfirmEmailTemplate,
+		PasswordReset: ms.configs.PasswordResetTemplate,
+		EmailSubscription: ms.configs.EmailSubscriptionTemplate,
+		DownloadClient: ms.configs.DownloadClientTemplate,
+		WorkspaceInvite: ms.configs.WorkspaceInviteTemplate,
 	}
+	
+	templateFileName, ok := m[mailReq.mtype]
+	if !ok { return "", errors.New("Invalid email type, email template does not exists!") }
 
 	t, err := template.ParseFiles(templateFileName)
 	if err != nil {
@@ -76,53 +71,9 @@ func (ms *ZcMailService) SetupSmtp(mailReq *Mail) (string, error) {
 
 	buf := new(bytes.Buffer)
 	if err = t.Execute(buf, mailReq.data); err != nil {
+		return "", err
 	}
-
 	return buf.String(), nil
-}
-
-// sendgrid setup
-func (ms *ZcMailService) SetupSendgrid(mailReq *Mail) ([]byte, error) {
-	var templateFileName string
-
-	if mailReq.mtype == MailConfirmation {
-		templateFileName = ms.configs.ConfirmEmailTemplate
-	} else if mailReq.mtype == PasswordReset {
-		templateFileName = ms.configs.PasswordResetTemplate
-	} else if mailReq.mtype == DownloadClient {
-		templateFileName = ms.configs.DownloadClientTemplate
-	} else if mailReq.mtype == WorkspaceInvite {
-		templateFileName = ms.configs.WorkspaceInviteTemplate
-	}
-
-	t, err := template.ParseFiles(templateFileName)
-	if err != nil {
-		return nil, err
-	}
-
-	buf := new(bytes.Buffer)
-	if err = t.Execute(buf, mailReq.data); err != nil {
-		return nil, err
-	}
-
-	x, a := mailReq.to[0], mailReq.to[1:]
-
-	from := mail.NewEmail("name", ms.configs.SendgridEmail)
-	to := mail.NewEmail("name", x)
-
-	content := mail.NewContent("text/html", buf.String())
-
-	m := mail.NewV3MailInit(from, mailReq.subject, to, content)
-	if len(a) > 0 {
-
-		tos := make([]*mail.Email, 0)
-		for _, to := range mailReq.to {
-			tos = append(tos, mail.NewEmail("user", to))
-		}
-
-		m.Personalizations[0].AddTos(tos...)
-	}
-	return mail.GetRequestBody(m), nil
 }
 
 func (ms *ZcMailService) SendMail(mailReq *Mail) error {
@@ -130,6 +81,10 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 	switch esp := strings.ToLower(ms.configs.ESPType); esp {
 
 	case "sendgrid":
+
+		body, err := ms.LoadTemplate(mailReq)
+		if err != nil { return err }
+
 		request := sendgrid.GetRequest(
 			ms.configs.SendGridApiKey,
 			"/v3/mail/send",
@@ -138,8 +93,27 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 
 		request.Method = "POST"
 
-		body, err := ms.SetupSendgrid(mailReq)
-		request.Body = body
+		x, a := mailReq.to[0], mailReq.to[1:]
+		reziever := strings.Split(x, "@")
+
+		from := mail.NewEmail("Zuri Chat", ms.configs.SendgridEmail)
+		to := mail.NewEmail(reziever[0], x)
+	
+		content := mail.NewContent("text/html", body)
+	
+		m := mail.NewV3MailInit(from, mailReq.subject, to, content)
+		if len(a) > 0 {
+	
+			tos := make([]*mail.Email, 0)
+			for _, to := range mailReq.to {
+				user := strings.Split(to, "@")
+				tos = append(tos, mail.NewEmail(user[0], to))
+			}
+	
+			m.Personalizations[0].AddTos(tos...)
+		}
+
+		request.Body = mail.GetRequestBody(m)
 
 		response, err := sendgrid.API(request)
 		if err != nil {
@@ -150,11 +124,30 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 		return nil
 
 	case "smtp":
-		// switch to mailgun temp
-		body, err := ms.SetupSmtp(mailReq)
-		if err != nil {
+		auth := smtp.PlainAuth(
+			"",
+			ms.configs.SmtpUsername,
+			ms.configs.SmtpPassword,
+			"smtp.gmail.com",
+		)
+
+		body, err  := ms.LoadTemplate(mailReq)
+		if err != nil { return err }
+
+		subject := fmt.Sprintf("Subject: %s\n", mailReq.subject)
+		mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+		msg := []byte(subject + mime + body)
+
+		addr := "smtp.gmail.com:587"
+		if err := smtp.SendMail(addr, auth, ms.configs.SmtpUsername, mailReq.to, msg); err != nil {
 			return err
 		}
+		return nil
+
+	case "mailgun":
+		// switch to mailgun temp
+		body, err := ms.LoadTemplate(mailReq)
+		if err != nil { return err }
 
 		mg := mailgun.NewMailgun(ms.configs.MailGunDomain, ms.configs.MailGunKey)
 		message := mg.NewMessage(ms.configs.MailGunSenderEmail, mailReq.subject, "", mailReq.to...)
@@ -166,7 +159,6 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 		if _, _, err := mg.Send(ctx, message); err != nil {
 			return err
 		}
-
 		return nil
 
 	default:
@@ -176,7 +168,7 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 
 }
 
-func (ms *ZcMailService) NewMail(to []string, subject string, mailType MailType, data *MailData) *Mail {
+func (ms *ZcMailService) NewMail(to []string, subject string, mailType MailType, data map[string]interface{}) *Mail {
 	return &Mail{
 		to:      to,
 		subject: subject,
