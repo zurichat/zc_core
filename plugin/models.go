@@ -95,7 +95,9 @@ func updatePlugin(ctx context.Context, id string, pp PluginPatch) error {
 	if pp.SidebarURL != nil {
 		update["sidebar_url"] = *(pp.SidebarURL)
 	}
-
+	if pp.InstallURL != nil {
+		update["install_url"] = *(pp.SidebarURL)
+	}
 	if pp.TemplateURL != nil {
 		update["template_url"] = *(pp.Description)
 	}

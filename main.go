@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 
+	sentry "github.com/getsentry/sentry-go"
 	"github.com/rs/cors"
 	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/blog"
@@ -60,14 +61,11 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	// Authentication
 	r.HandleFunc("/auth/login", auth.LoginIn).Methods(http.MethodPost)
-	// r.HandleFunc("/auth/template", auth.HtmlTemplate)
-	// r.HandleFunc("/auth/test", auth.AuthTest).Methods(http.MethodPost)
 	r.HandleFunc("/auth/logout", auth.LogOutUser).Methods(http.MethodPost)
 	r.HandleFunc("/auth/logout/othersessions", auth.LogOutOtherSessions).Methods(http.MethodPost)
 	r.HandleFunc("/auth/verify-token", auth.IsAuthenticated(auth.VerifyTokenHandler)).Methods(http.MethodGet, http.MethodPost)
 	r.HandleFunc("/auth/confirm-password", auth.IsAuthenticated(auth.ConfirmUserPassword)).Methods(http.MethodPost)
-	r.HandleFunc("/auth/{provider}/callback", auth.CompleteGoogleAuth).Methods("GET")
-	r.HandleFunc("/auth/{provider}", auth.BeginGoogleAuth)
+	r.HandleFunc("/auth/social-login/{provider}/{access_token}", auth.SocialAuth).Methods(http.MethodGet)
 
 	r.HandleFunc("/account/verify-account", auth.VerifyAccount).Methods(http.MethodPost)
 	r.HandleFunc("/account/request-password-reset-code", auth.RequestResetPasswordCode).Methods(http.MethodPost)
@@ -78,19 +76,25 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.Create)).Methods("POST")
 	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.GetOrganizations)).Methods("GET")
 	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
-	r.HandleFunc("/organizations/{id}/send-invite", auth.IsAuthenticated(organizations.SendInvite)).Methods("POST")
+
+	// Organization: Guest Invites
+	r.HandleFunc("/organizations/{id}/send-invite", auth.IsAuthenticated(auth.IsAuthorized(organizations.SendInvite, "admin"))).Methods("POST")
+	r.HandleFunc("/organizations/invites/{uuid}", organizations.CheckGuestStatus).Methods(http.MethodGet)
+	r.HandleFunc("/organizations/guests/{uuid}", organizations.GuestToOrganization).Methods(http.MethodPost)
+
 	r.HandleFunc("/organizations/{id}", auth.IsAuthenticated(organizations.DeleteOrganization)).Methods("DELETE")
 	r.HandleFunc("/organizations/url/{url}", organizations.GetOrganizationByURL).Methods("GET")
 
 	r.HandleFunc("/organizations/{id}/plugins", auth.IsAuthenticated(organizations.AddOrganizationPlugin)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/plugins", auth.IsAuthenticated(organizations.GetOrganizationPlugins)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/plugins/{plugin_id}", auth.IsAuthenticated(organizations.GetOrganizationPlugin)).Methods("GET")
+	r.HandleFunc("/organizations/{id}/plugins/{plugin_id}", auth.IsAuthenticated(organizations.RemoveOrganizationPlugin)).Methods("DELETE")
 
 	r.HandleFunc("/organizations/{id}/url", auth.IsAuthenticated(organizations.UpdateUrl)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/name", auth.IsAuthenticated(organizations.UpdateName)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/logo", auth.IsAuthenticated(organizations.UpdateLogo)).Methods("PATCH")
 
-	r.HandleFunc("/organizations/{id}/members", auth.IsAuthenticated(organizations.CreateMember)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/members", auth.IsAuthenticated(auth.IsAuthorized(organizations.CreateMember, "admin"))).Methods("POST")
 	r.HandleFunc("/organizations/{id}/members", organizations.GetMembers).Methods("GET")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.GetMember)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.DeactivateMember)).Methods("DELETE")
@@ -100,6 +104,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/profile", auth.IsAuthenticated(organizations.UpdateProfile)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/presence", auth.IsAuthenticated(organizations.TogglePresence)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings", auth.IsAuthenticated(organizations.UpdateMemberSettings)).Methods("PATCH")
+	// r.HandleFunc("/organizations/{id}/invite-members", auth.IsAuthenticated(organizations.InviteMembers)).Methods("POST")
 
 	r.HandleFunc("/organizations/{id}/reports", report.AddReport).Methods("POST")
 	r.HandleFunc("/organizations/{id}/reports", report.GetReports).Methods("GET")
@@ -129,8 +134,10 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.UpdateUser)).Methods("PATCH")
 	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.GetUser)).Methods("GET")
 	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.DeleteUser)).Methods("DELETE")
-	r.HandleFunc("/users", auth.IsAuthenticated(user.GetUsers)).Methods("GET")
+	r.HandleFunc("/users", auth.IsAuthenticated(auth.IsAuthorized(user.GetUsers, "zuri_admin"))).Methods("GET")
 	r.HandleFunc("/users/{email}/organizations", auth.IsAuthenticated(user.GetUserOrganizations)).Methods("GET")
+
+	r.HandleFunc("/guests/invite", user.CreateUserFromUUID).Methods("POST")
 
 	// Contact Us
 	r.HandleFunc("/contact", auth.OptionalAuthentication(contact.ContactUs, auth)).Methods("POST")
@@ -183,6 +190,20 @@ func main() {
 		fmt.Println("Could not connect to MongoDB")
 	}
 
+	// sentry: enables reporting messages, errors, and panics.
+	err = sentry.Init(sentry.ClientOptions{
+		Dsn: "https://82e17f3bba86400a9a38e2437b884d4a@o1013682.ingest.sentry.io/5979019",
+	})
+
+	if err != nil {
+		log.Fatalf("sentry.Init: %s", err)
+	}
+
+	// Flush buffered events before the program terminates.
+	defer sentry.Flush(2 * time.Second)
+
+	sentry.CaptureMessage("It works!")
+
 	// get PORT from environment variables
 	port, _ := os.LookupEnv("PORT")
 	if port == "" {
@@ -219,7 +240,7 @@ func LoadApp(w http.ResponseWriter, r *http.Request) {
 
 func VersionHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Zuri Chat API - Version 0.0005\n")
+	fmt.Fprintf(w, "Zuri Chat API - Version 0.0255\n")
 
 }
 

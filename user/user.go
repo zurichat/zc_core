@@ -72,8 +72,8 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 	user.Password = hashPassword
 	user.Deactivated = false
 	user.IsVerified = false
-	user.Social = false
 	user.EmailVerification = con
+	user.Timezone = "Africa/Lagos" // set default timezone
 	detail, _ := utils.StructToMap(user)
 
 	res, err := utils.CreateMongoDbDoc(user_collection, detail)
@@ -84,10 +84,9 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 	}
 	// Email Service <- send confirmation mail
 	msger := uh.mailService.NewMail(
-		[]string{user.Email}, "Account Confirmation", service.MailConfirmation,
-		&service.MailData{
-			Username: user.Email,
-			Code:     comfimationToken,
+		[]string{user.Email}, "Account Confirmation", service.MailConfirmation, map[string]interface{}{
+			"Username": user.Email,
+			"Code":     comfimationToken,
 		})
 
 	if err := uh.mailService.SendMail(msger); err != nil {
@@ -211,9 +210,6 @@ func (uh *UserHandler) GetUsers(response http.ResponseWriter, request *http.Requ
 	response.Header().Set("Access-Control-Allow-Headers", "Content-Type,access-control-allow-origin, access-control-allow-headers")
 	response.Header().Set("content-type", "application/json")
 
-	// if !auth.IsAuthorized("", "zuri_admin", response, request) {
-	// 	return
-	// }
 	collectionName := "users"
 	res, _ := utils.GetMongoDbDocs(collectionName, bson.M{"deactivated": false})
 	utils.GetSuccess("users retrieved successfully", res, response)
@@ -241,6 +237,8 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 
 		orgid := value["org_id"].(string)
 
+		basic["isOwner"] = value["role"] == "owner"
+
 		objId, _ := primitive.ObjectIDFromHex(orgid)
 
 		// find all members of an org
@@ -251,11 +249,13 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 			utils.GetError(err, http.StatusUnprocessableEntity, response)
 			return
 		}
+
 		// Get the images of all memebers of the organization
 		var member_imgs []interface{}
 		for _, member := range orgMembers {
 			member_imgs = append(member_imgs, member["image_url"])
 		}
+
 		// Return 10 images or less
 		if len(member_imgs) < 11 {
 			basic["imgs"] = member_imgs
@@ -266,7 +266,6 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 		basic["id"] = orgDetails["_id"]
 		basic["logo_url"] = orgDetails["logo_url"]
 		basic["name"] = orgDetails["name"]
-		basic["isOwner"] = orgDetails["creator_email"] == params["email"]
 		basic["workspace_url"] = orgDetails["workspace_url"]
 		basic["no_of_members"] = len(orgMembers)
 
@@ -274,4 +273,82 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 	}
 
 	utils.GetSuccess("user organizations retrieved successfully", orgs, response)
+}
+
+// Create a new user from UUID guest invite sent to user and a supplied password.
+func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("content-type", "application/json")
+
+	user_collection, orgInvite := UserCollectionName, OrganizationsInvitesCollectionName
+
+	var uRequest UUIDPassword
+	err := utils.ParseJsonFromRequest(r, &uRequest)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	// Validate UUID
+	_, err = utils.ValidateUUID(uRequest.Uuid)
+	if err != nil {
+		utils.GetError(errors.New("invalid uuid"), http.StatusBadRequest, w)
+		return
+	}
+
+	// Check that UUID exists
+	res, err := utils.GetMongoDbDoc(orgInvite, bson.M{"uuid": uRequest.Uuid})
+	if err != nil {
+		utils.GetError(errors.New("uuid does not exist"), http.StatusBadRequest, w)
+		return
+	}
+
+	// Validate email
+	email := res["email"].(string) // extract email from UUID
+	userEmail := strings.ToLower(email)
+	if !utils.IsValidEmail(userEmail) {
+		utils.GetError(EMAIL_NOT_VALID, http.StatusBadRequest, w)
+		return
+	}
+
+	// Check if user_email exists
+	result, _ := utils.GetMongoDbDoc(user_collection, bson.M{"email": userEmail})
+	if result != nil {
+		utils.GetError(
+			fmt.Errorf("user with email %s exists", userEmail),
+			http.StatusBadRequest,
+			w,
+		)
+		return
+	}
+
+	// Verify Email
+	_, comfimationToken := utils.RandomGen(6, "d")
+	con := &UserEmailVerification{true, comfimationToken, time.Now().Add(time.Minute * time.Duration(24))}
+
+	// Hash password
+	hashPassword, err := GenerateHashPassword(uRequest.Password)
+	if err != nil {
+		utils.GetError(HASHING_FAILED, http.StatusBadRequest, w)
+		return
+	}
+
+	user := &User{
+		Email:             email,
+		Password:          hashPassword,
+		IsVerified:        true,
+		EmailVerification: con,
+		CreatedAt:         time.Now(),
+		Deactivated:       false,
+	}
+
+	// Save user to DB
+	data, _ := utils.StructToMap(user)
+	resp, err := utils.CreateMongoDbDoc(user_collection, data)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("user successfully created", resp, w)
+
 }
