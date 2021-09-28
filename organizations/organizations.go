@@ -152,6 +152,7 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Presence: "true",
 		Deleted:  false,
 		Settings: setting,
+		JoinedAt: time.Now(),
 	}
 
 	// add new member to member collection
@@ -342,7 +343,7 @@ func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.
 	// ID of former owner
 	formerOwnerID := formerOwner.ID.Hex()
 
-	// role downgraded from owner to member 
+	// role downgraded from owner to member
 	update, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, formerOwnerID, bson.M{"role": "member"})
 
 	if err != nil {
