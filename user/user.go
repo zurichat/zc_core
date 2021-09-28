@@ -73,6 +73,7 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 	user.Deactivated = false
 	user.IsVerified = false
 	user.EmailVerification = con
+	user.Social = nil
 	user.Timezone = "Africa/Lagos" // set default timezone
 	detail, _ := utils.StructToMap(user)
 
