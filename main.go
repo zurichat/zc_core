@@ -114,6 +114,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/reports", report.GetReports).Methods("GET")
 	r.HandleFunc("/organizations/{id}/reports/{report_id}", report.GetReport).Methods("GET")
 	r.HandleFunc("/organizations/{id}/change-owner", auth.IsAuthenticated(organizations.TransferOwnership)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/change-member-role", auth.IsAuthenticated(auth.IsAuthorized(organizations.UpdateMemberRole, "admin"))).Methods("PATCH")
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)

@@ -460,8 +460,6 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 
 }
 
-}
-
 func (oh *OrganizationHandler) UpgradeToPro(w http.ResponseWriter, r *http.Request) {
 	// TO BE IMPLEMENTED SOON
 }

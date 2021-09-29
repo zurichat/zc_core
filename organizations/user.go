@@ -802,34 +802,29 @@ func (oh *OrganizationHandler) UpdateMemberRole(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	if _, ok := Roles[strings.ToLower(role)]; !ok {
+		utils.GetError(errors.New("role is not valid"), http.StatusBadRequest, w)
+		return
+    }
+
 	orgMember, err := FetchMember(bson.M{"org_id": org_Id, "email": email})
 
 	if err != nil {
-		utils.GetError(errors.New("user not a member of this work space"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("user not a member of this workspace"), http.StatusBadRequest, w)
 		return
 	}
-
-	loggedInUser := r.Context().Value("user").(*auth.AuthUser)
-	loggedInMember, _ := FetchMember(bson.M{"org_id": org_Id, "email": loggedInUser.Email})
-
 
 	memberWeight := ConvertRoleToWeight(orgMember.Role)
-	loggedInmemberWeight := ConvertRoleToWeight(loggedInMember.Role)
 	roleWeight := ConvertRoleToWeight(role)
 
-	if loggedInmemberWeight >= memberWeight {
-		utils.GetError(errors.New("access denied"), http.StatusBadRequest, w)
-		return
-	}
-
 	if memberWeight == roleWeight {
-		errorMessage := fmt.Sprintf("member is already %s", role)
+		errorMessage := fmt.Sprintf("member role is already %s", role)
 		utils.GetError(errors.New(errorMessage), http.StatusBadRequest, w)
 		return
 	}
 
 	var action string
-	if roleWeight > memberWeight {
+	if roleWeight < memberWeight {
 		action = "upgrade"
 	} else {
 		action = "downgrade"

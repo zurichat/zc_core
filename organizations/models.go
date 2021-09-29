@@ -43,6 +43,22 @@ const (
 	GuestRole  = "guest"
 )
 
+var Roles = map[string]string {
+	OwnerRole: OwnerRole,
+	AdminRole: AdminRole,
+	EditorRole: EditorRole,
+	MemberRole: MemberRole,
+	GuestRole: GuestRole,
+}
+
+var RolesWeight = map[string]string {
+	OwnerRole: OwnerRole,
+	AdminRole: AdminRole,
+	EditorRole: EditorRole,
+	MemberRole: MemberRole,
+	GuestRole: GuestRole,
+}
+
 const (
 	_ = iota
 	OwnerRoleWeight
@@ -270,7 +286,7 @@ func newMember(email string, userName string, orgId string, role string, setting
 }
 
 func ConvertRoleToWeight(role string) int {
-	switch role {
+	switch strings.ToLower(role) {
 		case OwnerRole: 
 			return OwnerRoleWeight
 		case AdminRole: 
