@@ -120,6 +120,8 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	newOrg.CreatorID = ccreatorid
 	newOrg.CreatorEmail = userEmail
 	newOrg.CreatedAt = time.Now()
+	// initialize organization with 100 free tokens
+	newOrg.Tokens = 100
 
 	// convert to map object
 	var inInterface map[string]interface{}
@@ -457,4 +459,13 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 	resonse := SendInviteResponse{InvalidEmails: invalidEmails, InviteIDs: inviteIDs}
 	utils.GetSuccess("Organization invite operation result", resonse, w)
 
+}
+
+func (oh *OrganizationHandler) UpgradeToPro(w http.ResponseWriter, r *http.Request) {
+	// TO BE IMPLEMENTED SOON
+}
+
+// converts amount in naira to equivalent token value
+func GetTokenAmount(AmountInNaira float64) float64 {
+	return AmountInNaira * NairaToTokenRate
 }
