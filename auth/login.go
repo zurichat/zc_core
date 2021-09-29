@@ -256,6 +256,10 @@ func (au *AuthHandler) LogOutOtherSessions(w http.ResponseWriter, r *http.Reques
 }
 
 func (au *AuthHandler) SocialAuth(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,access-control-allow-origin, access-control-allow-headers")
+
+	// for response content type
 	w.Header().Add("content-type", "application/json")
 
 	// default providers
