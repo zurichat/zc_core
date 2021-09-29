@@ -31,6 +31,9 @@ type Configurations struct {
 	PasswordResetTemplate     string
 	DownloadClientTemplate    string
 	WorkspaceInviteTemplate   string
+
+	CentrifugoKey      string
+	CentrifugoEndpoint string
 }
 
 func NewConfigurations() *Configurations {
@@ -79,6 +82,9 @@ func NewConfigurations() *Configurations {
 		MailGunKey:         viper.GetString("MAILGUN_KEY"),
 		MailGunDomain:      viper.GetString("MAILGUN_DOMAIN"),
 		MailGunSenderEmail: viper.GetString("MAILGUN_EMAIL"),
+
+		CentrifugoKey:      viper.GetString("CENTRIFUGO_KEY"),
+		CentrifugoEndpoint: viper.GetString("CENTRIFUGO_ENDPOINT"),
 	}
 
 	return configs
