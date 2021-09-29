@@ -33,6 +33,10 @@ import (
 func Router(Server *socketio.Server) *mux.Router {
 	r := mux.NewRouter().StrictSlash(true)
 
+	//TO be removed
+	// body := make(map[string]interface{})
+	// realtime.CentrifugoConn(body)
+
 	// Load handlers(Doing this to reduce dependency circle issue, might reverse if not working)
 	configs := utils.NewConfigurations()
 	mailService := service.NewZcMailService(configs)

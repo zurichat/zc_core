@@ -22,6 +22,20 @@ const (
 )
 
 const (
+	CreateOrganizationMember         = "CreateOrganizationMember"
+	UpdateOrganizationName           = "UpdateOrganizationName"
+	UpdateOrganizationMemberPic      = "UpdateOrganizationMemberPic"
+	UpdateOrganizationUrl            = "UpdateOrganizationUrl"
+	UpdateOrganizationLogo           = "UpdateOrganizationUrl"
+	DeactivateOrganizationMember     = "DeactivateOrganizationMember"
+	ReactivateOrganizationMember     = "ReactivateOrganizationMember"
+	UpdateOrganizationMemberStatus   = "UpdateOrganizationMemberStatus"
+	UpdateOrganizationMemberProfile  = "UpdateOrganizationMemberProfile"
+	UpdateOrganizationMemberPresence = "UpdateOrganizationMemberPresence"
+	UpdateOrganizationMemberSettings = "UpdateOrganizationMemberSettings"
+)
+
+const (
 	OwnerRole  = "owner"
 	AdminRole  = "admin"
 	EditorRole = "editor"

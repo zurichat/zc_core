@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -53,6 +54,19 @@ type MyCustomClaims struct {
 	Authorized bool
 	User       AuthUser
 	jwt.StandardClaims
+}
+
+type Event struct {
+	Identifier interface{}            `json:"identifier"`
+	Type       string                 `json:"type"`
+	Event      string                 `json:"event"`
+	Channel    interface{}            `json:"channel"`
+	Payload    map[string]interface{} `json:"payload"`
+}
+
+type CentrifugoRequestBody struct {
+	Method string                 `json:"method"`
+	Params map[string]interface{} `json:"params"`
 }
 
 // GetError : This is helper function to prepare error model.
@@ -288,4 +302,53 @@ func ConvertImageTo64(ImgDirectory string) string {
 
 	// Print the full base64 representation of the image
 	return base64Encoding
+}
+
+func CentrifugoConn(body map[string]interface{}) int {
+	// body["method"] = "publish"
+	// body["params"] = map[string]interface{}{
+	// 	"channel": "hello-world-menh",
+	// 	"data":    "nothign spoil",
+	// }
+	configs := NewConfigurations()
+	jsonData, err := json.Marshal(body)
+	if err != nil {
+		fmt.Printf("Error: %s", err.Error())
+		return 500
+	}
+	requestBody := bytes.NewBuffer(jsonData)
+	client := &http.Client{Timeout: 10 * time.Second}
+	req, err := http.NewRequest("POST", configs.CentrifugoEndpoint, requestBody)
+	if err != nil {
+		fmt.Printf("Error: %s", err.Error())
+		return 500
+	}
+	req.Header.Add("Authorization", "apikey "+configs.CentrifugoKey)
+	req.Header.Add("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Printf("Error: %s", err.Error())
+		return 500
+	}
+	if resp.StatusCode == 403 || resp.StatusCode == 401 {
+		fmt.Println("Unauthorized: Invalid API key for Websocket Server")
+
+	}
+
+	return resp.StatusCode
+}
+
+func Emitter(event Event) int {
+	event.Payload["id"] = event.Identifier
+	event.Payload["type"] = event.Type
+	event.Payload["event"] = event.Event
+	reqBody := CentrifugoRequestBody{Method: "publish",
+		Params: map[string]interface{}{"channel": event.Channel, "data": event.Payload},
+	}
+	body, err := StructToMap(reqBody)
+	if err != nil {
+		fmt.Printf("There is an error")
+	}
+	status := CentrifugoConn(body)
+	return status
 }
