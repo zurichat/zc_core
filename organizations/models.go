@@ -20,14 +20,34 @@ const (
 )
 
 const (
-	OwnerRole = "owner"
-	AdminRole = "admin"
+	CreateOrganizationMember         = "CreateOrganizationMember"
+	UpdateOrganizationName           = "UpdateOrganizationName"
+	UpdateOrganizationMemberPic      = "UpdateOrganizationMemberPic"
+	UpdateOrganizationUrl            = "UpdateOrganizationUrl"
+	UpdateOrganizationLogo           = "UpdateOrganizationUrl"
+	DeactivateOrganizationMember     = "DeactivateOrganizationMember"
+	ReactivateOrganizationMember     = "ReactivateOrganizationMember"
+	UpdateOrganizationMemberStatus   = "UpdateOrganizationMemberStatus"
+	UpdateOrganizationMemberProfile  = "UpdateOrganizationMemberProfile"
+	UpdateOrganizationMemberPresence = "UpdateOrganizationMemberPresence"
+	UpdateOrganizationMemberSettings = "UpdateOrganizationMemberSettings"
+)
+
+const (
+	OwnerRole  = "owner"
+	AdminRole  = "admin"
 	EditorRole = "editor"
 	MemberRole = "member"
-	GuestRole = "guest"
+	GuestRole  = "guest"
+)
+
+const (
+	FreeVersion = "free"
+	ProVersion  = "pro"
 )
 
 var RequestData = make(map[string]string)
+const NairaToTokenRate = 0.01
 
 type MemberPassword struct {
 	MemberID string `bson:"member_id"`
@@ -46,7 +66,9 @@ type Organization struct {
 	WorkspaceURL string                   `json:"workspace_url" bson:"workspace_url"`
 	CreatedAt    time.Time                `json:"created_at" bson:"created_at"`
 	UpdatedAt    time.Time                `json:"updated_at" bson:"updated_at"`
+	Tokens       float64                  `json:"tokens" bson:"tokens"`
 }
+
 type Invite struct {
 	ID    string `json:"_id,omitempty" bson:"_id,omitempty"`
 	OrgID string `json:"org_id" bson:"org_id"`

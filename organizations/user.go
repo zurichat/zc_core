@@ -210,6 +210,11 @@ func (oh *OrganizationHandler) CreateMember(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// publish update to subscriber
+	eventChannel := fmt.Sprintf("organizations_%s", orgId)
+	event := utils.Event{Identifier: res.InsertedID, Type: "User", Event: CreateOrganizationMember, Channel: eventChannel, Payload: make(map[string]interface{})}
+	go utils.Emitter(event)
+
 	utils.GetSuccess("Member created successfully", utils.M{"member_id": res.InsertedID}, w)
 }
 
@@ -251,6 +256,11 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
 	}
+
+	// publish update to subscriber
+	eventChannel := fmt.Sprintf("organizations_%s", orgId)
+	event := utils.Event{Identifier: member_Id, Type: "User", Event: UpdateOrganizationMemberPic, Channel: eventChannel, Payload: make(map[string]interface{})}
+	go utils.Emitter(event)
 
 	utils.GetSuccess("image updated successfully", img_url, w)
 }
@@ -300,6 +310,10 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		return
 	}
 
+	// publish update to subscriber
+	eventChannel := fmt.Sprintf("organizations_%s", orgId)
+	event := utils.Event{Identifier: member_Id, Type: "User", Event: UpdateOrganizationMemberStatus, Channel: eventChannel, Payload: make(map[string]interface{})}
+	go utils.Emitter(event)
 	utils.GetSuccess("status updated successfully", nil, w)
 }
 
@@ -335,7 +349,12 @@ func (oh *OrganizationHandler) DeactivateMember(w http.ResponseWriter, r *http.R
 		utils.GetError(errors.New("an error occured, failed to deactivate member"), http.StatusInternalServerError, w)
 		return
 	}
-	
+
+	// publish update to subscriber
+	eventChannel := fmt.Sprintf("organizations_%s", orgId)
+	event := utils.Event{Identifier: memberId, Type: "User", Event: DeactivateOrganizationMember, Channel: eventChannel, Payload: make(map[string]interface{})}
+	go utils.Emitter(event)
+
 	utils.GetSuccess("successfully deactivated member", nil, w)
 }
 
@@ -392,6 +411,11 @@ func (oh *OrganizationHandler) UpdateProfile(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// publish update to subscriber
+	eventChannel := fmt.Sprintf("organizations_%s", orgId)
+	event := utils.Event{Identifier: memberId, Type: "User", Event: UpdateOrganizationMemberProfile, Channel: eventChannel, Payload: make(map[string]interface{})}
+	go utils.Emitter(event)
+
 	utils.GetSuccess("Member Profile updated succesfully", nil, w)
 }
 
@@ -441,6 +465,11 @@ func (oh *OrganizationHandler) TogglePresence(w http.ResponseWriter, r *http.Req
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
 	}
+
+	// publish update to subscriber
+	eventChannel := fmt.Sprintf("organizations_%s", orgId)
+	event := utils.Event{Identifier: memId, Type: "User", Event: UpdateOrganizationMemberPresence, Channel: eventChannel, Payload: make(map[string]interface{})}
+	go utils.Emitter(event)
 
 	utils.GetSuccess("Member presence toggled", nil, w)
 }
@@ -495,6 +524,11 @@ func (oh *OrganizationHandler) UpdateMemberSettings(w http.ResponseWriter, r *ht
 		return
 	}
 
+	// publish update to subscriber
+	eventChannel := fmt.Sprintf("organizations_%s", orgId)
+	event := utils.Event{Identifier: memberId, Type: "User", Event: UpdateOrganizationMemberSettings, Channel: eventChannel, Payload: make(map[string]interface{})}
+	go utils.Emitter(event)
+
 	utils.GetSuccess("Member settings updated successfully", nil, w)
 }
 
@@ -542,6 +576,11 @@ func (oh *OrganizationHandler) ReactivateMember(w http.ResponseWriter, r *http.R
 		utils.GetError(errors.New("an error occured, cannot activate user"), http.StatusInternalServerError, w)
 		return
 	}
+
+	// publish update to subscriber
+	eventChannel := fmt.Sprintf("organizations_%s", orgId)
+	event := utils.Event{Identifier: memberId, Type: "User", Event: ReactivateOrganizationMember, Channel: eventChannel, Payload: make(map[string]interface{})}
+	go utils.Emitter(event)
 	utils.GetSuccess("successfully reactivated member", nil, w)
 }
 
@@ -576,7 +615,6 @@ func (oh *OrganizationHandler) CheckGuestStatus(w http.ResponseWriter, r *http.R
 	}
 	// 3. If email does not exist, add to
 	utils.GetSuccess("guest status: user exist on zurichat", "protected", w)
-
 }
 
 // Add accepted guest as member to organization without requiring admin or workspace owner rights
@@ -679,5 +717,4 @@ func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *htt
 	}
 
 	utils.GetSuccess("Member created successfully", utils.M{"member_id": resp.InsertedID}, w)
-
 }
