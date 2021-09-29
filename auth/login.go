@@ -20,8 +20,6 @@ import (
 )
 
 const (
-	secretKey          = "5d5c7f94e29ba11f6822a2be310d3af4"
-	sessionKey         = "f6822af94e29ba112be310d3af45d5c7"
 	enckry             = "piqenpdan9n-94n49-e-9ad-aononoon"
 	session_collection = "session_store"
 	user_collection    = "users"
@@ -96,8 +94,8 @@ func (au *AuthHandler) LoginIn(response http.ResponseWriter, request *http.Reque
 		utils.GetError(InvalidCredentials, http.StatusBadRequest, response)
 		return
 	}
-	store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(secretKey))
-	var session, e = store.Get(request, sessionKey)
+	store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(au.configs.SecretKey))
+	var session, e = store.Get(request, au.configs.SessionKey)
 	if e != nil {
 		msg := fmt.Errorf("%s", e.Error())
 		utils.GetError(msg, http.StatusBadRequest, response)
@@ -127,11 +125,11 @@ func (au *AuthHandler) LogOutUser(w http.ResponseWriter, r *http.Request) {
 		utils.GetCollection(session_collection),
 		au.configs.SessionMaxAge,
 		true,
-		[]byte(secretKey),
+		[]byte(au.configs.SecretKey),
 	)
 	var session *sessions.Session
 	var err error
-	session, err = store.Get(r, sessionKey)
+	session, err = store.Get(r, au.configs.SessionKey)
 	status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
 
 	if err != nil && status == false {
@@ -198,13 +196,13 @@ func (au *AuthHandler) LogOutOtherSessions(w http.ResponseWriter, r *http.Reques
 		utils.GetCollection(session_collection),
 		au.configs.SessionMaxAge,
 		true,
-		[]byte(secretKey),
+		[]byte(au.configs.SecretKey),
 	)
 	var session *sessions.Session
 	var err error
 
 	// Get  current session
-	session, err = store.Get(r, sessionKey)
+	session, err = store.Get(r, au.configs.SessionKey)
 	status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
 
 	if err != nil && status == false {
@@ -297,8 +295,8 @@ func (au *AuthHandler) SocialAuth(w http.ResponseWriter, r *http.Request){
 	}
 	defer resp.Body.Close()
 
-	store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(secretKey))
-	var session, e = store.Get(r, sessionKey)
+	store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(au.configs.SecretKey))
+	var session, e = store.Get(r, au.configs.SessionKey)
 	if e != nil {
 		utils.GetError(e, http.StatusBadRequest, w)
 		return

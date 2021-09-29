@@ -20,12 +20,12 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("content-type", "application/json")
 
-		store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(secretKey))
+		store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(au.configs.SecretKey))
 		var session *sessions.Session
 		var SessionEmail string
 		var err error
 
-		session, _ = store.Get(r, sessionKey)
+		session, _ = store.Get(r, au.configs.SessionKey)
 		status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
 
 		// if err == nil && !status {
@@ -78,8 +78,8 @@ func (au *AuthHandler) OptionalAuthentication(nextHandler http.HandlerFunc, auth
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("content-type", "application/json")
 
-		store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(secretKey))
-		_, err := store.Get(r, sessionKey)
+		store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(au.configs.SecretKey))
+		_, err := store.Get(r, au.configs.SessionKey)
 		status, err, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
 
 		if err != nil {
