@@ -312,7 +312,7 @@ func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.
 	memberID := orgMember.ID.Hex()
 
 	// upgrades status from member to owner
-	updateRes, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberID, bson.M{"role": "owner"})
+	updateRes, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberID, bson.M{"role": OwnerRole})
 
 	if err != nil {
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
@@ -334,7 +334,7 @@ func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.
 	formerOwnerID := formerOwner.ID.Hex()
 
 	// role downgraded from owner to member
-	update, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, formerOwnerID, bson.M{"role": "member"})
+	update, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, formerOwnerID, bson.M{"role": AdminRole})
 
 	if err != nil {
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)

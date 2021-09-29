@@ -29,6 +29,15 @@ const (
 	GuestRole = "guest"
 )
 
+const (
+	_ = iota
+	OwnerRoleWeight
+	AdminRoleWeight
+	EditorRoleWeight
+	MemberRoleWeight
+	GuestRoleWeight
+)
+
 type MemberPassword struct {
 	MemberID string `bson:"member_id"`
 	Password string `bson:"password"`
@@ -111,7 +120,6 @@ type Member struct {
 	OrgId          string             `json:"org_id" bson:"org_id"`
 	Files          []string           `json:"files" bson:"files"`
 	ImageURL       string             `json:"image_url" bson:"image_url"`
-	IsImageDefault bool               `json:"is_image_default" bson:"is_image_default"`
 	FirstName      string             `json:"first_name" bson:"first_name"`
 	LastName       string             `json:"last_name" bson:"last_name"`
 	Email          string             `json:"email" bson:"email"`
@@ -225,11 +233,8 @@ func FetchMember(filter map[string]interface{}) (*Member, error) {
 }
 
 func newMember(email string, userName string, orgId string, role string, setting *Settings) Member {
-	defaultImageUrl := ""
 	return Member{
 		ID:       primitive.NewObjectID(),
-		ImageURL: defaultImageUrl,
-		IsImageDefault: true,
 		Email:    email,
 		UserName: userName,
 		OrgId:    orgId,
@@ -238,5 +243,20 @@ func newMember(email string, userName string, orgId string, role string, setting
 		JoinedAt: time.Now(),
 		Deleted:  false,
 		Settings: setting,
+	}
+}
+
+func ConvertRoleToWeight(role string) int {
+	switch role {
+		case OwnerRole: 
+			return OwnerRoleWeight
+		case AdminRole: 
+			return AdminRoleWeight
+		case EditorRole: 
+			return EditorRoleWeight
+		case GuestRole: 
+			return GuestRoleWeight
+		default:
+			return MemberRoleWeight
 	}
 }
