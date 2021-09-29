@@ -314,13 +314,14 @@ func CentrifugoConn(body map[string]interface{}) int {
 	jsonData, err := json.Marshal(body)
 	if err != nil {
 		fmt.Printf("Error: %s", err.Error())
+		return 500
 	}
-	fmt.Println(string(jsonData))
 	requestBody := bytes.NewBuffer(jsonData)
 	client := &http.Client{Timeout: 10 * time.Second}
 	req, err := http.NewRequest("POST", configs.CentrifugoEndpoint, requestBody)
 	if err != nil {
 		fmt.Printf("Error: %s", err.Error())
+		return 500
 	}
 	req.Header.Add("Authorization", "apikey "+configs.CentrifugoKey)
 	req.Header.Add("Content-Type", "application/json")
@@ -329,9 +330,14 @@ func CentrifugoConn(body map[string]interface{}) int {
 		fmt.Printf("Error: %s", err.Error())
 		return 500
 	}
+	if resp.StatusCode == 403 || resp.StatusCode == 401 {
+		fmt.Println("Unauthorized: Invalid API key for Websocket Server")
+
+	}
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Printf("Error: %s", err.Error())
+		return 400
 	}
 	fmt.Printf(string(respBody))
 	return resp.StatusCode
