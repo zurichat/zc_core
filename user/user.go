@@ -281,7 +281,7 @@ func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request
 
 	user_collection, orgInvite := UserCollectionName, OrganizationsInvitesCollectionName
 
-	var uRequest UUIDPassword
+	var uRequest UUIDUserData
 	err := utils.ParseJsonFromRequest(r, &uRequest)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
@@ -321,7 +321,7 @@ func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Verify Email
+	// UserEmailVerification
 	_, comfimationToken := utils.RandomGen(6, "d")
 	con := &UserEmailVerification{true, comfimationToken, time.Now().Add(time.Minute * time.Duration(24))}
 
@@ -333,6 +333,8 @@ func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request
 	}
 
 	user := &User{
+		FirstName:         uRequest.FirstName,
+		LastName:          uRequest.LastName,
 		Email:             email,
 		Password:          hashPassword,
 		IsVerified:        true,

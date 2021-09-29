@@ -57,8 +57,8 @@ type UserPasswordReset struct {
 }
 
 type Social struct {
-	ID			string	`bson:"provider_id" json:"provider_id"`
-	Provider	string	`bson:"provider" json:"provider"`
+	ID       string `bson:"provider_id" json:"provider_id"`
+	Provider string `bson:"provider" json:"provider"`
 }
 
 type User struct {
@@ -76,7 +76,7 @@ type User struct {
 	Deactivated       bool                   `default:"false" bson:"deactivated" json:"deactivated"`
 	DeactivatedAt     time.Time              `bson:"deactivated_at" json:"deactivated_at"`
 	IsVerified        bool                   `bson:"isverified" json:"isverified"`
-	Social            Social               	 `bson:"social" json:"social"`
+	Social            Social                 `bson:"social" json:"social"`
 	Organizations     []string               `bson:"workspaces" json:"workspaces"` // should contain (organization) workspace ids
 	EmailVerification *UserEmailVerification `bson:"email_verification" json:"email_verification"`
 	PasswordResets    *UserPasswordReset     `bson:"password_resets" json:"password_resets"` // remove the array
@@ -94,9 +94,11 @@ type UserHandler struct {
 	mailService service.MailService
 }
 
-type UUIDPassword struct {
-	Uuid     string `bson:"uuid" json:"uuid"`
-	Password string `bson:"password" json:"password"`
+type UUIDUserData struct {
+	Uuid      string `bson:"uuid" json:"uuid"`
+	Password  string `bson:"password" json:"password"`
+	FirstName string `bson:"first_name" json:"first_name"`
+	LastName  string `bson:"last_name" json:"last_name"`
 }
 
 func NewUserHandler(c *utils.Configurations, mail service.MailService) *UserHandler {
