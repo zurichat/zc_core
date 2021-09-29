@@ -134,8 +134,12 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 		body, err  := ms.LoadTemplate(mailReq)
 		if err != nil { return err }
 
+		subject := fmt.Sprintf("Subject: %s\n", mailReq.subject)
+		mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+		msg := []byte(subject + mime + body)
+
 		addr := "smtp.gmail.com:587"
-		if err := smtp.SendMail(addr, auth, ms.configs.SmtpUsername, mailReq.to, []byte(body)); err != nil {
+		if err := smtp.SendMail(addr, auth, ms.configs.SmtpUsername, mailReq.to, msg); err != nil {
 			return err
 		}
 		return nil
