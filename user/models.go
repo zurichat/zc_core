@@ -56,6 +56,11 @@ type UserPasswordReset struct {
 	CreatedAt time.Time `bson:"created_at" json:"created_at"`
 }
 
+type Social struct {
+	ID			string	`bson:"provider_id" json:"provider_id"`
+	Provider	string	`bson:"provider" json:"provider"`
+}
+
 type User struct {
 	ID                string                 `bson:"_id,omitempty" json:"_id,omitempty"`
 	FirstName         string                 `bson:"first_name" validate:"required,min=2,max=100" json:"first_name"`
@@ -71,7 +76,7 @@ type User struct {
 	Deactivated       bool                   `default:"false" bson:"deactivated" json:"deactivated"`
 	DeactivatedAt     time.Time              `bson:"deactivated_at" json:"deactivated_at"`
 	IsVerified        bool                   `bson:"isverified" json:"isverified"`
-	Social            bool                   `bson:"social" json:"social"`
+	Social            *Social                `bson:"social" json:"social"`
 	Organizations     []string               `bson:"workspaces" json:"workspaces"` // should contain (organization) workspace ids
 	EmailVerification *UserEmailVerification `bson:"email_verification" json:"email_verification"`
 	PasswordResets    *UserPasswordReset     `bson:"password_resets" json:"password_resets"` // remove the array
