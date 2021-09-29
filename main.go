@@ -187,9 +187,9 @@ func main() {
 
 	fmt.Println("Environment variables successfully loaded. Starting application...")
 
-	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
-		fmt.Println("Could not connect to MongoDB")
-	}
+	// if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
+	// 	fmt.Println("Could not connect to MongoDB")
+	// }
 
 	// sentry: enables reporting messages, errors, and panics.
 	err = sentry.Init(sentry.ClientOptions{
