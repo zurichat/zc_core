@@ -57,11 +57,11 @@ type MyCustomClaims struct {
 }
 
 type Event struct {
-	Identifier interface{}            `json:"identifier"`
-	Type       string                 `json:"type"`
-	Event      string                 `json:"event"`
-	Channel    interface{}            `json:"channel"`
-	Payload    map[string]interface{} `json:"payload"`
+	Identifier interface{}            `json:"identifier" validate:"required"`
+	Type       string                 `json:"type" validate:"required"`
+	Event      string                 `json:"event" validate:"required"`
+	Channel    interface{}            `json:"channel" validate:"required"`
+	Payload    map[string]interface{} `json:"payload" validate:"required"`
 }
 
 type CentrifugoRequestBody struct {
@@ -348,6 +348,7 @@ func Emitter(event Event) int {
 	body, err := StructToMap(reqBody)
 	if err != nil {
 		fmt.Printf("There is an error")
+		return 400
 	}
 	status := CentrifugoConn(body)
 	return status

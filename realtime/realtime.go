@@ -4,7 +4,14 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/go-playground/validator/v10"
+
 	uuid "github.com/gofrs/uuid"
+	"zuri.chat/zccore/utils"
+)
+
+var (
+	validate = validator.New()
 )
 
 type CentrifugoConnectResult struct {
@@ -63,4 +70,22 @@ func Refresh(w http.ResponseWriter, r *http.Request) {
 
 func Test(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "./realtime/test_rtc.html")
+}
+
+func PublishEvent(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var event utils.Event
+	err := utils.ParseJsonFromRequest(r, &event)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+	if err = validate.Struct(event); err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+	res := utils.Emitter(event)
+	utils.GetSuccess("publish event status", res, w)
+
 }
