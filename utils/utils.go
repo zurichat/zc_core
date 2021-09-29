@@ -334,12 +334,7 @@ func CentrifugoConn(body map[string]interface{}) int {
 		fmt.Println("Unauthorized: Invalid API key for Websocket Server")
 
 	}
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Printf("Error: %s", err.Error())
-		return 400
-	}
-	fmt.Printf(string(respBody))
+
 	return resp.StatusCode
 }
 
