@@ -34,6 +34,10 @@ import (
 func Router(Server *socketio.Server) *mux.Router {
 	r := mux.NewRouter().StrictSlash(true)
 
+	//TO be removed
+	// body := make(map[string]interface{})
+	// realtime.CentrifugoConn(body)
+
 	// Load handlers(Doing this to reduce dependency circle issue, might reverse if not working)
 	configs := utils.NewConfigurations()
 	mailService := service.NewZcMailService(configs)
@@ -99,7 +103,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members", organizations.GetMembers).Methods("GET")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.GetMember)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.DeactivateMember)).Methods("DELETE")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.ReactivateMember)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/reactivate", auth.IsAuthenticated(organizations.ReactivateMember)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/status", auth.IsAuthenticated(organizations.UpdateMemberStatus)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/photo", auth.IsAuthenticated(organizations.UpdateProfilePicture)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/profile", auth.IsAuthenticated(organizations.UpdateProfile)).Methods("PATCH")
@@ -151,6 +155,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	// Realtime communications
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
 	r.HandleFunc("/realtime/auth", realtime.Auth).Methods("POST")
+	r.HandleFunc("/realtime/publish-event", realtime.PublishEvent).Methods("POST")
 	r.Handle("/socket.io/", Server)
 
 	// Email subscription
