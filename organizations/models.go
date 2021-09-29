@@ -43,6 +43,13 @@ const (
 	GuestRole  = "guest"
 )
 
+const (
+	FreeVersion = "free"
+	ProVersion  = "pro"
+)
+
+const NairaToTokenRate = 0.01
+
 type MemberPassword struct {
 	MemberID string `bson:"member_id"`
 	Password string `bson:"password"`
@@ -60,7 +67,9 @@ type Organization struct {
 	WorkspaceURL string                   `json:"workspace_url" bson:"workspace_url"`
 	CreatedAt    time.Time                `json:"created_at" bson:"created_at"`
 	UpdatedAt    time.Time                `json:"updated_at" bson:"updated_at"`
+	Tokens       float64                  `json:"tokens" bson:"tokens"`
 }
+
 type Invite struct {
 	ID    string `json:"_id,omitempty" bson:"_id,omitempty"`
 	OrgID string `json:"org_id" bson:"org_id"`
