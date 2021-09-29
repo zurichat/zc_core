@@ -256,6 +256,10 @@ func (au *AuthHandler) LogOutOtherSessions(w http.ResponseWriter, r *http.Reques
 }
 
 func (au *AuthHandler) SocialAuth(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,access-control-allow-origin, access-control-allow-headers")
+
+	// for response content type
 	w.Header().Add("content-type", "application/json")
 
 	// default providers
@@ -313,7 +317,12 @@ func (au *AuthHandler) SocialAuth(w http.ResponseWriter, r *http.Request){
 
 		//check if user exists
 		json.NewDecoder(resp.Body).Decode(&socialUser)
-		vser, err := FetchUserByEmail(bson.M{"social.provider": p, "social.provider_id": socialUser.ID})
+		filter := bson.M{"$or": []bson.M{
+			{"email": socialUser.Email},
+			{"social.provider": p, "social.provider_id": socialUser.ID},
+		} }
+
+		vser, err := FetchUserByEmail(filter)
 		if err != nil {
 			// user not found, create one
 			social := &user.Social{ID: socialUser.ID, Provider: p}
@@ -324,7 +333,7 @@ func (au *AuthHandler) SocialAuth(w http.ResponseWriter, r *http.Request){
 				Password: "",
 				Deactivated: false,
 				IsVerified: true,
-				Social: *social,
+				Social: social,
 				Timezone : "Africa/Lagos", // set default timezone
 				Organizations: []string{"614679ee1a5607b13c00bcb7"}, // set default org
 				CreatedAt: time.Now(),

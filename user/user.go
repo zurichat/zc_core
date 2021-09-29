@@ -73,6 +73,7 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 	user.Deactivated = false
 	user.IsVerified = false
 	user.EmailVerification = con
+	user.Social = nil
 	user.Timezone = "Africa/Lagos" // set default timezone
 	detail, _ := utils.StructToMap(user)
 
@@ -238,6 +239,7 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 		orgid := value["org_id"].(string)
 
 		basic["isOwner"] = value["role"] == "owner"
+		basic["member_id"] = value["_id"]
 
 		objId, _ := primitive.ObjectIDFromHex(orgid)
 
