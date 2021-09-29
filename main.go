@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	"github.com/stripe/stripe-go/v72"
 
 	sentry "github.com/getsentry/sentry-go"
 	"github.com/rs/cors"
@@ -74,7 +75,7 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	// Organization
 	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.Create)).Methods("POST")
-	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.GetOrganizations)).Methods("GET")
+	r.HandleFunc("/organizations", organizations.GetOrganizations).Methods("GET")
 	r.HandleFunc("/organizations/{id}", organizations.GetOrganization).Methods("GET")
 
 	// Organization: Guest Invites
@@ -110,6 +111,11 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/reports", report.GetReports).Methods("GET")
 	r.HandleFunc("/organizations/{id}/reports/{report_id}", report.GetReport).Methods("GET")
 	r.HandleFunc("/organizations/{id}/change-owner", auth.IsAuthenticated(organizations.TransferOwnership)).Methods("PATCH")
+
+	//organization: payments
+	r.HandleFunc("/create-checkout-session", organizations.CreateCheckoutSession).Methods("POST")
+	// r.HandleFunc("/organizations/{id}/payment", auth.IsAuthenticated(organizations.Payment).Methods("POST")
+	r.HandleFunc("/organizations/{id}/payment/convertToTokens", organizations.ConvertToToken).Methods("POST")
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
@@ -185,6 +191,9 @@ func main() {
 	}
 
 	fmt.Println("Environment variables successfully loaded. Starting application...")
+
+	// Set Stripe api key
+	stripe.Key = os.Getenv("STRIPE_KEY")
 
 	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
 		fmt.Println("Could not connect to MongoDB")
