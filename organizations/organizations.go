@@ -120,6 +120,8 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	newOrg.CreatorID = ccreatorid
 	newOrg.CreatorEmail = userEmail
 	newOrg.CreatedAt = time.Now()
+	// initialize organization with 100 free tokens
+	newOrg.Tokens = 100
 
 	// convert to map object
 	var inInterface map[string]interface{}
@@ -143,17 +145,7 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	setting := new(Settings)
 
-	newMember := Member{
-		ID:       primitive.NewObjectID(),
-		Email:    user.Email,
-		UserName: userName,
-		OrgId:    iiid,
-		Role:     "owner",
-		Presence: "true",
-		Deleted:  false,
-		Settings: setting,
-		JoinedAt: time.Now(),
-	}
+	newMember := newMember(user.Email, userName, iiid, OwnerRole, setting)
 
 	// add new member to member collection
 	coll := utils.GetCollection(MemberCollectionName)
@@ -232,6 +224,9 @@ func (oh *OrganizationHandler) UpdateUrl(w http.ResponseWriter, r *http.Request)
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
 	}
+	eventChannel := fmt.Sprintf("organizations_%s", orgId)
+	event := utils.Event{Identifier: orgId, Type: "Organization", Event: UpdateOrganizationUrl, Channel: eventChannel, Payload: make(map[string]interface{})}
+	go utils.Emitter(event)
 
 	utils.GetSuccess("organization url updated successfully", nil, w)
 }
@@ -260,6 +255,9 @@ func (oh *OrganizationHandler) UpdateName(w http.ResponseWriter, r *http.Request
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
 	}
+	eventChannel := fmt.Sprintf("organizations_%s", orgId)
+	event := utils.Event{Identifier: orgId, Type: "Organization", Event: UpdateOrganizationName, Channel: eventChannel, Payload: make(map[string]interface{})}
+	go utils.Emitter(event)
 
 	utils.GetSuccess("organization name updated successfully", nil, w)
 }
@@ -322,7 +320,7 @@ func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.
 	memberID := orgMember.ID.Hex()
 
 	// upgrades status from member to owner
-	updateRes, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberID, bson.M{"role": "owner"})
+	updateRes, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberID, bson.M{"role": OwnerRole})
 
 	if err != nil {
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
@@ -344,7 +342,7 @@ func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.
 	formerOwnerID := formerOwner.ID.Hex()
 
 	// role downgraded from owner to member
-	update, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, formerOwnerID, bson.M{"role": "member"})
+	update, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, formerOwnerID, bson.M{"role": AdminRole})
 
 	if err != nil {
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
@@ -385,6 +383,9 @@ func (oh *OrganizationHandler) UpdateLogo(w http.ResponseWriter, r *http.Request
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
 	}
+	eventChannel := fmt.Sprintf("organizations_%s", orgId)
+	event := utils.Event{Identifier: orgId, Type: "Organization", Event: UpdateOrganizationLogo, Channel: eventChannel, Payload: make(map[string]interface{})}
+	go utils.Emitter(event)
 
 	utils.GetSuccess("organization logo updated successfully", nil, w)
 }
@@ -457,4 +458,13 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 	resonse := SendInviteResponse{InvalidEmails: invalidEmails, InviteIDs: inviteIDs}
 	utils.GetSuccess("Organization invite operation result", resonse, w)
 
+}
+
+func (oh *OrganizationHandler) UpgradeToPro(w http.ResponseWriter, r *http.Request) {
+	// TO BE IMPLEMENTED SOON
+}
+
+// converts amount in naira to equivalent token value
+func GetTokenAmount(AmountInNaira float64) float64 {
+	return AmountInNaira * NairaToTokenRate
 }

@@ -36,8 +36,6 @@ func (eh *ExternalHandler) EmailSubscription(w http.ResponseWriter, r *http.Requ
 			[]string{NewSubscription.Email}, "Zuri Chat Newsletter Subscription", service.EmailSubscription,
 			map[string]interface{}{
 				"Username": NewSubscription.Email,
-				"ZuriLogo": utils.ConvertImageTo64("./templates/email_sub/images/zuri_logo.png"),
-				"Image2":   utils.ConvertImageTo64("./templates/email_sub/images/people_chatting.png"),
 			})
 
 		if err := eh.mailService.SendMail(msger); err != nil {
@@ -59,8 +57,6 @@ func (eh *ExternalHandler) EmailSubscription(w http.ResponseWriter, r *http.Requ
 		[]string{NewSubscription.Email}, "Zuri Chat Newsletter Subscription", service.EmailSubscription,
 		map[string]interface{}{
 			"Username": NewSubscription.Email,
-			"ZuriLogo": utils.ConvertImageTo64("./templates/email_sub/images/zuri_logo.png"),
-			"Image2":   utils.ConvertImageTo64("./templates/email_sub/images/people_chatting.png"),
 		})
 
 	if err := eh.mailService.SendMail(msger); err != nil {
