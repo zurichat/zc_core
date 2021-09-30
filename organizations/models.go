@@ -1,9 +1,7 @@
 package organizations
 
 import (
-	"context"
 	"encoding/json"
-	"os"
 	"strings"
 	"time"
 
@@ -51,28 +49,12 @@ var Roles = map[string]string {
 	GuestRole: GuestRole,
 }
 
-var RolesWeight = map[string]string {
-	OwnerRole: OwnerRole,
-	AdminRole: AdminRole,
-	EditorRole: EditorRole,
-	MemberRole: MemberRole,
-	GuestRole: GuestRole,
-}
-
-const (
-	_ = iota
-	OwnerRoleWeight
-	AdminRoleWeight
-	EditorRoleWeight
-	MemberRoleWeight
-	GuestRoleWeight
-)
-
 const (
 	FreeVersion = "free"
 	ProVersion  = "pro"
 )
 
+var RequestData = make(map[string]string)
 const NairaToTokenRate = 0.01
 
 type MemberPassword struct {
@@ -248,54 +230,8 @@ type ChatSettings struct {
 	MediaVisibility bool   `json:"media_visibility" bson:"media_visibility"`
 	FontSize        string `json:"font_size" bson:"font_size"`
 }
+
 type OrganizationHandler struct {
 	configs     *utils.Configurations
 	mailService service.MailService
-}
-
-func NewOrganizationHandler(c *utils.Configurations, mail service.MailService) *OrganizationHandler {
-	return &OrganizationHandler{configs: c, mailService: mail}
-}
-
-// gets the details of a member in a workspace using parameters such as email, username etc
-// returns parameters based on the member struct
-func FetchMember(filter map[string]interface{}) (*Member, error) {
-	member_collection := MemberCollectionName
-	member := &Member{}
-	memberCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), member_collection)
-	if err != nil {
-		return member, err
-	}
-	result := memberCollection.FindOne(context.TODO(), filter)
-	err = result.Decode(&member)
-	return member, err
-}
-
-func newMember(email string, userName string, orgId string, role string, setting *Settings) Member {
-	return Member{
-		ID:       primitive.NewObjectID(),
-		Email:    email,
-		UserName: userName,
-		OrgId:    orgId,
-		Role:     role,
-		Presence: "true",
-		JoinedAt: time.Now(),
-		Deleted:  false,
-		Settings: setting,
-	}
-}
-
-func ConvertRoleToWeight(role string) int {
-	switch strings.ToLower(role) {
-		case OwnerRole: 
-			return OwnerRoleWeight
-		case AdminRole: 
-			return AdminRoleWeight
-		case EditorRole: 
-			return EditorRoleWeight
-		case GuestRole: 
-			return GuestRoleWeight
-		default:
-			return MemberRoleWeight
-	}
 }
