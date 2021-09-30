@@ -34,8 +34,6 @@ const (
 	ProVersion  = "pro"
 )
 
-const NairaToTokenRate = 0.01
-
 type MemberPassword struct {
 	MemberID string `bson:"member_id"`
 	Password string `bson:"password"`
@@ -54,6 +52,7 @@ type Organization struct {
 	CreatedAt    time.Time                `json:"created_at" bson:"created_at"`
 	UpdatedAt    time.Time                `json:"updated_at" bson:"updated_at"`
 	Tokens       float64                  `json:"tokens" bson:"tokens"`
+	Version      string                   `json:"version" bson:"version"`
 }
 
 type Invite struct {
@@ -230,4 +229,16 @@ func FetchMember(filter map[string]interface{}) (*Member, error) {
 	result := memberCollection.FindOne(context.TODO(), filter)
 	err = result.Decode(&member)
 	return member, err
+}
+
+func FetchOrganization(filter map[string]interface{}) (*Organization, error) {
+	org_collection := OrganizationCollectionName
+	organization := &Organization{}
+	orgCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), org_collection)
+	if err != nil {
+		return organization, err
+	}
+	result := orgCollection.FindOne(context.TODO(), filter)
+	err = result.Decode(&organization)
+	return organization, err
 }
