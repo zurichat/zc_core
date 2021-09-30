@@ -128,6 +128,12 @@ type Social struct {
 	Title string `json:"title" bson:"title"`
 }
 
+type Status struct {
+	Tag   		string `json:"tag" bson:"tag"`
+	Text 		string `json:"text" bson:"text"`
+	ExpiryTime 	string `json:"expiry_time" bson:"expiry_time"`
+}
+
 type Member struct {
 	ID          primitive.ObjectID `json:"_id" bson:"_id"`
 	OrgId       string             `json:"org_id" bson:"org_id"`
@@ -139,7 +145,7 @@ type Member struct {
 	UserName    string             `bson:"user_name" json:"user_name"`
 	DisplayName string             `json:"display_name" bson:"display_name"`
 	Bio         string             `json:"bio" bson:"bio"`
-	Status      string             `json:"status" bson:"status"`
+	Status      Status             `json:"status" bson:"status"`
 	Presence    string             `json:"presence" bson:"presence"`
 	Pronouns    string             `json:"pronouns" bson:"pronouns"`
 	Phone       string             `json:"phone" bson:"phone"`
