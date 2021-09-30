@@ -364,7 +364,7 @@ func (oh *OrganizationHandler) UpdateProfile(w http.ResponseWriter, r *http.Requ
 	w.Header().Set("Content-Type", "application/json")
 
 	orgId := mux.Vars(r)["id"]
-	member_Id := mux.Vars(r)["mem_id"]
+	memberId := mux.Vars(r)["mem_id"]
 
 	// check that org_id is valid
 	err := ValidateOrg(orgId)
@@ -374,7 +374,7 @@ func (oh *OrganizationHandler) UpdateProfile(w http.ResponseWriter, r *http.Requ
 	}
 
 	// check that member_id is valid
-	err = ValidateMember(orgId, member_Id)
+	err = ValidateMember(orgId, memberId)
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
@@ -401,7 +401,7 @@ func (oh *OrganizationHandler) UpdateProfile(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Fetch and update the MemberDoc from collection
-	update, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, member_Id, mProfile)
+	update, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberId, mProfile)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
@@ -414,7 +414,7 @@ func (oh *OrganizationHandler) UpdateProfile(w http.ResponseWriter, r *http.Requ
 
 	// publish update to subscriber
 	eventChannel := fmt.Sprintf("organizations_%s", orgId)
-	event := utils.Event{Identifier: member_Id, Type: "User", Event: UpdateOrganizationMemberProfile, Channel: eventChannel, Payload: make(map[string]interface{})}
+	event := utils.Event{Identifier: memberId, Type: "User", Event: UpdateOrganizationMemberProfile, Channel: eventChannel, Payload: make(map[string]interface{})}
 	go utils.Emitter(event)
 
 	utils.GetSuccess("Member Profile updated succesfully", nil, w)
