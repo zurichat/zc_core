@@ -2,9 +2,11 @@ package organizations
 
 import (
 	"encoding/json"
+	"log"
 	"strings"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
@@ -140,9 +142,9 @@ type Status struct {
 	Tag   			string 		`json:"tag" bson:"tag"`
 	Text 			string 		`json:"text" bson:"text"`
 	ThirtyMins		bool		`json:"thirty_mins" bson:"thirty_mins"`
-	OneMin			bool		`json:"one_min" bson:"one_min"`
 	OneHr			bool		`json:"one_hr" bson:"one_hr"`
 	FourHrs 		bool		`json:"four_hrs" bson:"four_hrs"`
+	EndofWeek		bool		`json:"end_of_week" bson:"end_of_week"`
 	DontClear		bool		`json:"dont_clear" bson:"dont_clear"`
 }
 

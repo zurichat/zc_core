@@ -300,8 +300,11 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		go ClearStatus(member_Id, 60)
 	}
 
-	if status.OneMin{
-		go ClearStatus(member_Id, 1)
+	if status.EndofWeek{
+		day := int(time.Now().Weekday())
+		weekday := 7 - day
+		minutes := weekday * 24 * 60
+		go ClearStatus(member_Id, minutes)
 	}
 
 	statusUpdate, err := utils.StructToMap(status)
@@ -375,7 +378,7 @@ func (oh *OrganizationHandler) UpdateProfile(w http.ResponseWriter, r *http.Requ
 	w.Header().Set("Content-Type", "application/json")
 
 	id := mux.Vars(r)["id"]
-	memId := mux.Vars(r)["mem_id"]
+	memberId := mux.Vars(r)["mem_id"]
 
 	// Check if organization id is valid
 	orgId, err := primitive.ObjectIDFromHex(id)
@@ -393,7 +396,7 @@ func (oh *OrganizationHandler) UpdateProfile(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Check if member id is valid
-	pMemId, err := primitive.ObjectIDFromHex(memId)
+	pMemId, err := primitive.ObjectIDFromHex(memberId)
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
 		return
@@ -401,7 +404,7 @@ func (oh *OrganizationHandler) UpdateProfile(w http.ResponseWriter, r *http.Requ
 
 	memberDoc, _ := utils.GetMongoDbDoc(MemberCollectionName, bson.M{"_id": pMemId, "org_id": id})
 	if memberDoc == nil {
-		fmt.Printf("member with id %s doesn't exist!", memId)
+		fmt.Printf("member with id %s doesn't exist!", memberId)
 		utils.GetError(errors.New("member with id doesn't exist"), http.StatusBadRequest, w)
 		return
 	}
@@ -427,7 +430,7 @@ func (oh *OrganizationHandler) UpdateProfile(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Fetch and update the MemberDoc from collection
-	update, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memId, mProfile)
+	update, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberId, mProfile)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
