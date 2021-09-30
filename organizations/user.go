@@ -248,7 +248,7 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 
-	// Validate the user ID
+	// validate the user ID
 	orgId := mux.Vars(r)["id"]
 	member_Id := mux.Vars(r)["mem_id"]
 
@@ -273,14 +273,41 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		return
 	}
 
-	result, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, member_Id, bson.M{"status": status})
+	// clears the status based on the option selected by user
+	if status.ThirtyMins{
+		go ClearStatus(member_Id, 30)
+	}
+
+	if status.FourHrs{
+		go ClearStatus(member_Id, 240)
+	}
+
+	if status.OneHr{
+		go ClearStatus(member_Id, 60)
+	}
+
+	if status.EndofWeek{
+		day := int(time.Now().Weekday())
+		weekday := 7 - day
+		minutes := weekday * 24 * 60
+		go ClearStatus(member_Id, minutes)
+	}
+
+	statusUpdate, err := utils.StructToMap(status)
 	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	// updates member status
+	result, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, member_Id, statusUpdate)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
 
 	if result.ModifiedCount == 0 {
-		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		utils.GetError(errors.New("operation failed"), http.StatusUnprocessableEntity, w)
 		return
 	}
 
@@ -361,27 +388,27 @@ func (oh *OrganizationHandler) UpdateProfile(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if len(memberProfile.Socials) > 3 {
-		utils.GetError(errors.New("socials must be 3 or less"), http.StatusBadRequest, w)
+	if len(memberProfile.Socials) > 5 {
+		utils.GetError(errors.New("number of socials cannot exceed five"), http.StatusBadRequest, w)
 		return
 	}
 
 	// convert struct to map
 	mProfile, err := utils.StructToMap(memberProfile)
 	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
 
 	// Fetch and update the MemberDoc from collection
 	update, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberId, mProfile)
 	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
 
 	if update.ModifiedCount == 0 {
-		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		utils.GetError(errors.New("operation failed"), http.StatusUnprocessableEntity, w)
 		return
 	}
 
