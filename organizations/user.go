@@ -723,50 +723,39 @@ func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *htt
 func (oh *OrganizationHandler) UpdateMemberRole(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	org_Id := mux.Vars(r)["id"]
+	vars := mux.Vars(r)
+	org_Id, memberId := vars["id"], vars["mem_id"]
 
-	// Check if organization id is valid
-	orgId, err := primitive.ObjectIDFromHex(org_Id)
+	err := ValidateOrg(org_Id)
 	if err != nil {
-		utils.GetError(errors.New("invalid organization id"), http.StatusNotFound, w)
+		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
 
-	// Check if organization id exists in the database
-	orgDoc, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": orgId})
-	if orgDoc == nil {
-		utils.GetError(errors.New("organization does not exist"), http.StatusNotFound, w)
+	// check that member_id is valid
+	err = ValidateMember(org_Id, memberId)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
 
-	requestData := make(map[string]string)
-	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
+	if err := utils.ParseJsonFromRequest(r, &RequestData); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
 
-	email := requestData["email"]
-	role := requestData["role"]
+	role := strings.ToLower(RequestData["role"])
 
-	// confirm if email supplied is valid
-	if !utils.IsValidEmail(strings.ToLower(email)) {
-		utils.GetError(errors.New("email is not valid"), http.StatusBadRequest, w)
-		return
-	}
-
-	if _, ok := Roles[strings.ToLower(role)]; !ok {
+	if _, ok := Roles[role]; !ok {
 		utils.GetError(errors.New("role is not valid"), http.StatusBadRequest, w)
 		return
     }
 
-	orgMember, err := FetchMember(bson.M{"org_id": org_Id, "email": email})
+	memId, _ := primitive.ObjectIDFromHex(memberId)
 
-	if err != nil {
-		utils.GetError(errors.New("user not a member of this organization"), http.StatusBadRequest, w)
-		return
-	}
+	orgMember, _ := FetchMember(bson.M{"org_id": org_Id, "_id": memId})
 
-	if orgMember.Role == strings.ToLower(role) {
+	if orgMember.Role == role {
 		errorMessage := fmt.Sprintf("member role is already %s", role)
 		utils.GetError(errors.New(errorMessage), http.StatusBadRequest, w)
 		return
@@ -774,20 +763,6 @@ func (oh *OrganizationHandler) UpdateMemberRole(w http.ResponseWriter, r *http.R
 
 	// ID of the user whose role is being updated
 	memberID := orgMember.ID.Hex()
-
-	
-	loggedInUser := r.Context().Value("user").(*auth.AuthUser)
-	loggedInMember, err := FetchMember(bson.M{"org_id": org_Id, "email": loggedInUser.Email})
-
-	if err != nil {
-		utils.GetError(errors.New("user not a member of this organization"), http.StatusBadRequest, w)
-		return
-	}
-
-	if memberID == loggedInMember.ID.Hex() {
-		utils.GetError(errors.New("access denied"), http.StatusUnauthorized, w)
-		return
-	}
 
 	updateRes, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberID, bson.M{"role": role})
 
@@ -801,6 +776,10 @@ func (oh *OrganizationHandler) UpdateMemberRole(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	// and we are done!!!
+	// publish update to subscriber
+	eventChannel := fmt.Sprintf("organizations_%s", org_Id)
+	event := utils.Event{Identifier: memberId, Type: "User", Event: UpdateOrganizationMemberRole, Channel: eventChannel, Payload: make(map[string]interface{})}
+	go utils.Emitter(event)
+
 	utils.GetSuccess("member role updated successfully", nil, w)
 }

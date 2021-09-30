@@ -33,6 +33,7 @@ const (
 	UpdateOrganizationMemberProfile  = "UpdateOrganizationMemberProfile"
 	UpdateOrganizationMemberPresence = "UpdateOrganizationMemberPresence"
 	UpdateOrganizationMemberSettings = "UpdateOrganizationMemberSettings"
+	UpdateOrganizationMemberRole     = "UpdateOrganizationMemberRole"
 )
 
 const (
