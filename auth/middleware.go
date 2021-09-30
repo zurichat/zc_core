@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -20,13 +21,13 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("content-type", "application/json")
 
-		store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(secretKey))
+		store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(au.configs.SecretKey))
 		var session *sessions.Session
 		var SessionEmail string
 		var err error
 
-		session, _ = store.Get(r, sessionKey)
-		status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
+		session, _ = store.Get(r, au.configs.SessionKey)
+		status, _, sessData := GetSessionDataFromToken(r, []byte(au.configs.HmacSampleSecret))
 
 		// if err == nil && !status {
 		// 	utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
@@ -78,9 +79,9 @@ func (au *AuthHandler) OptionalAuthentication(nextHandler http.HandlerFunc, auth
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("content-type", "application/json")
 
-		store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(secretKey))
-		_, err := store.Get(r, sessionKey)
-		status, err, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
+		store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(au.configs.SecretKey))
+		_, err := store.Get(r, au.configs.SessionKey)
+		status, err, sessData := GetSessionDataFromToken(r, []byte(au.configs.HmacSampleSecret))
 
 		if err != nil {
 			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
@@ -140,6 +141,7 @@ func (au *AuthHandler) IsAuthorized(nextHandler http.HandlerFunc, role string) h
 			// Getting member's document from db
 			orgMember, _ := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "email": authuser.Email})
 			if orgMember == nil {
+				fmt.Println("no org")
 				utils.GetError(errors.New("Access Denied"), http.StatusUnauthorized, w)
 				return
 			}

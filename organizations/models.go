@@ -2,10 +2,13 @@ package organizations
 
 import (
 	"encoding/json"
+	"log"
 	"strings"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
 
@@ -30,6 +33,7 @@ const (
 	UpdateOrganizationMemberProfile  = "UpdateOrganizationMemberProfile"
 	UpdateOrganizationMemberPresence = "UpdateOrganizationMemberPresence"
 	UpdateOrganizationMemberSettings = "UpdateOrganizationMemberSettings"
+	UpdateOrganizationMemberRole     = "UpdateOrganizationMemberRole"
 )
 
 const (
@@ -39,6 +43,14 @@ const (
 	MemberRole = "member"
 	GuestRole  = "guest"
 )
+
+var Roles = map[string]string {
+	OwnerRole: OwnerRole,
+	AdminRole: AdminRole,
+	EditorRole: EditorRole,
+	MemberRole: MemberRole,
+	GuestRole: GuestRole,
+}
 
 const (
 	FreeVersion = "free"
@@ -128,6 +140,16 @@ type Social struct {
 	Title string `json:"title" bson:"title"`
 }
 
+type Status struct {
+	Tag   			string 		`json:"tag" bson:"tag"`
+	Text 			string 		`json:"text" bson:"text"`
+	ThirtyMins		bool		`json:"thirty_mins" bson:"thirty_mins"`
+	OneHr			bool		`json:"one_hr" bson:"one_hr"`
+	FourHrs 		bool		`json:"four_hrs" bson:"four_hrs"`
+	EndofWeek		bool		`json:"end_of_week" bson:"end_of_week"`
+	DontClear		bool		`json:"dont_clear" bson:"dont_clear"`
+}
+
 type Member struct {
 	ID          primitive.ObjectID `json:"_id" bson:"_id"`
 	OrgId       string             `json:"org_id" bson:"org_id"`
@@ -139,7 +161,7 @@ type Member struct {
 	UserName    string             `bson:"user_name" json:"user_name"`
 	DisplayName string             `json:"display_name" bson:"display_name"`
 	Bio         string             `json:"bio" bson:"bio"`
-	Status      string             `json:"status" bson:"status"`
+	Status      Status             `json:"status" bson:"status"`
 	Presence    string             `json:"presence" bson:"presence"`
 	Pronouns    string             `json:"pronouns" bson:"pronouns"`
 	Phone       string             `json:"phone" bson:"phone"`
@@ -152,6 +174,7 @@ type Member struct {
 	Socials     []Social           `json:"socials" bson:"socials"`
 	Language    string             `json:"language" bson:"language"`
 }
+
 type Profile struct {
 	ID          string   `json:"id" bson:"_id"`
 	FirstName   string   `json:"first_name" bson:"first_name"`
@@ -163,6 +186,7 @@ type Profile struct {
 	TimeZone    string   `json:"time_zone" bson:"time_zone"`
 	Socials     []Social `json:"socials" bson:"socials"`
 	Language    string   `json:"language" bson:"language"`
+	WhatIDo		string	 `json:"what_i_do" bson:"what_i_do"`
 }
 
 type Settings struct {
@@ -221,4 +245,20 @@ type ChatSettings struct {
 	EnterIsSend     bool   `json:"enter_is_send" bson:"enter_is_send"`
 	MediaVisibility bool   `json:"media_visibility" bson:"media_visibility"`
 	FontSize        string `json:"font_size" bson:"font_size"`
+}
+
+type OrganizationHandler struct {
+	configs     *utils.Configurations
+	mailService service.MailService
+}
+
+func ClearStatus(member_id string, period int) {
+	time.Sleep(time.Duration(period) * time.Minute)
+	update := bson.M{"text": "", "tag": ""}
+	_, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, member_id, update)
+	if err != nil {
+		log.Println("could not clear status")
+		return
+	}
+	log.Println("status cleared")
 }

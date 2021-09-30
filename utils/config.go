@@ -38,6 +38,8 @@ type Configurations struct {
 	GoogleOAuthUrl   string
 	GoogleOAuthV3Url string
 	FacebookOAuthUrl string
+
+	HmacSampleSecret	string
 }
 
 func NewConfigurations() *Configurations {
@@ -53,6 +55,7 @@ func NewConfigurations() *Configurations {
 	viper.SetDefault("DB_NAME", "zurichat")
 	viper.SetDefault("SECRET_KEY", "5d5c7f94e29ba12a21f682be310d3af4")
 	viper.SetDefault("SESSION_KEY", "f6822af94e29ba112be310d3af45d5c7")
+	viper.SetDefault("HMAC_SECRET", "u7b8be9bd9b9ebd9b9dbdbee")
 	viper.SetDefault("SESSION_MAX_AGE", time.Now().Unix()+(31536000*200))
 	viper.SetDefault("USER_COLLECTION", "users")
 	viper.SetDefault("SESSION_COLLECTION", "session_store")
@@ -94,6 +97,8 @@ func NewConfigurations() *Configurations {
 		GoogleOAuthUrl:   viper.GetString("GOOGLE_OAUTH"),
 		GoogleOAuthV3Url: viper.GetString("GOOGLE_OAUTH_V3"),
 		FacebookOAuthUrl: viper.GetString("FACEBOOK_OAUTH"),
+
+		HmacSampleSecret: viper.GetString("HMAC_SECRET"),
 	}
 
 	return configs
