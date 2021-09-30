@@ -1,14 +1,11 @@
 package organizations
 
 import (
-	"context"
 	"encoding/json"
-	"log"
-	"os"
+
 	"strings"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
@@ -18,7 +15,6 @@ const (
 	OrganizationCollectionName     = "organizations"
 	InstalledPluginsCollectionName = "installed_plugins"
 	OrganizationInviteCollection   = "organizations_invites"
-	OrganizationSettings           = "organizations_settings"
 	MemberCollectionName           = "members"
 	UserCollectionName             = "users"
 )
@@ -36,6 +32,7 @@ const (
 	UpdateOrganizationMemberPresence = "UpdateOrganizationMemberPresence"
 	UpdateOrganizationMemberSettings = "UpdateOrganizationMemberSettings"
 	UpdateOrganizationMemberRole     = "UpdateOrganizationMemberRole"
+	UpdateOrganizationMemberStatusCleared = "UpdateOrganizationMemberStatusCleared"
 )
 
 const (
@@ -141,14 +138,28 @@ type Social struct {
 	Title string `json:"title" bson:"title"`
 }
 
+const (
+	DontClear = "dont_clear"
+	ThirtyMins= "thirty_mins"
+	OneHr  	  = "one_hour"
+	FourHrs   = "four_hours"
+	Today     = "today"
+	ThisWeek  = "this_week"
+)
+
+var StatusExpiryTime = map[string]string {
+	DontClear : DontClear,
+	ThirtyMins: ThirtyMins,
+	OneHr	  : OneHr,
+	FourHrs   : FourHrs,
+	Today     : Today,
+	ThisWeek  : ThisWeek,
+}
+
 type Status struct {
-	Tag        string `json:"tag" bson:"tag"`
-	Text       string `json:"text" bson:"text"`
-	ThirtyMins bool   `json:"thirty_mins" bson:"thirty_mins"`
-	OneHr      bool   `json:"one_hr" bson:"one_hr"`
-	FourHrs    bool   `json:"four_hrs" bson:"four_hrs"`
-	EndofWeek  bool   `json:"end_of_week" bson:"end_of_week"`
-	DontClear  bool   `json:"dont_clear" bson:"dont_clear"`
+	Tag   			string 		`json:"tag" bson:"tag"`
+	Text 			string 		`json:"text" bson:"text"`
+	ExpiryTime 		string 		`json:"expiry_time" bson:"expiry_time"`
 }
 
 type Member struct {
@@ -187,7 +198,6 @@ type Profile struct {
 	TimeZone    string   `json:"time_zone" bson:"time_zone"`
 	Socials     []Social `json:"socials" bson:"socials"`
 	Language    string   `json:"language" bson:"language"`
-	WhatIDo     string   `json:"what_i_do" bson:"what_i_do"`
 }
 
 type Settings struct {
@@ -253,25 +263,3 @@ type OrganizationHandler struct {
 	mailService service.MailService
 }
 
-func ClearStatus(member_id string, period int) {
-	time.Sleep(time.Duration(period) * time.Minute)
-	update := bson.M{"text": "", "tag": ""}
-	_, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, member_id, update)
-	if err != nil {
-		log.Println("could not clear status")
-		return
-	}
-	log.Println("status cleared")
-}
-
-func FetchOrganization(filter map[string]interface{}) (*Organization, error) {
-	org_collection := OrganizationCollectionName
-	organization := &Organization{}
-	orgCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), org_collection)
-	if err != nil {
-		return organization, err
-	}
-	result := orgCollection.FindOne(context.TODO(), filter)
-	err = result.Decode(&organization)
-	return organization, err
-}
