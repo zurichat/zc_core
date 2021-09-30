@@ -187,7 +187,7 @@ func (au *AuthHandler) AuthTest(w http.ResponseWriter, r *http.Request) {
 	var session *sessions.Session
 	var err error
 	session, err = store.Get(r, au.configs.SessionKey)
-	status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
+	status, _, sessData := GetSessionDataFromToken(r, []byte(au.configs.HmacSampleSecret))
 
 	if err != nil && !status {
 		utils.GetError(NotAuthorized, http.StatusUnauthorized, w)

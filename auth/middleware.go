@@ -26,7 +26,7 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 		var err error
 
 		session, _ = store.Get(r, au.configs.SessionKey)
-		status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
+		status, _, sessData := GetSessionDataFromToken(r, []byte(au.configs.HmacSampleSecret))
 
 		// if err == nil && !status {
 		// 	utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
@@ -80,7 +80,7 @@ func (au *AuthHandler) OptionalAuthentication(nextHandler http.HandlerFunc, auth
 
 		store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(au.configs.SecretKey))
 		_, err := store.Get(r, au.configs.SessionKey)
-		status, err, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
+		status, err, sessData := GetSessionDataFromToken(r, []byte(au.configs.HmacSampleSecret))
 
 		if err != nil {
 			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)

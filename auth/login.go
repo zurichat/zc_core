@@ -31,7 +31,6 @@ var (
 	InvalidCredentials  = errors.New("Invalid login credentials, confirm and try again")
 	AccountConfirmError = errors.New("Your account is not verified, kindly check your email for verification code.")
 	AccessExpired		= errors.New("error fetching user info, access token expired, kindly login again")
-	hmacSampleSecret    = []byte("u7b8be9bd9b9ebd9b9dbdbee")
 )
 
 func (au *AuthHandler) GetAuthToken(user *user.User, sess *sessions.Session) (*Token, error) {
@@ -43,7 +42,7 @@ func (au *AuthHandler) GetAuthToken(user *user.User, sess *sessions.Session) (*T
 		"email":        user.Email,
 	})
 
-	tokenString, err := retoken.SignedString(hmacSampleSecret)
+	tokenString, err := retoken.SignedString([]byte(au.configs.HmacSampleSecret))
 	if err != nil { return nil, err }
 
 	resp := &Token{
@@ -130,7 +129,7 @@ func (au *AuthHandler) LogOutUser(w http.ResponseWriter, r *http.Request) {
 	var session *sessions.Session
 	var err error
 	session, err = store.Get(r, au.configs.SessionKey)
-	status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
+	status, _, sessData := GetSessionDataFromToken(r, []byte(au.configs.HmacSampleSecret))
 
 	if err != nil && status == false {
 		utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
@@ -203,7 +202,7 @@ func (au *AuthHandler) LogOutOtherSessions(w http.ResponseWriter, r *http.Reques
 
 	// Get  current session
 	session, err = store.Get(r, au.configs.SessionKey)
-	status, _, sessData := GetSessionDataFromToken(r, hmacSampleSecret)
+	status, _, sessData := GetSessionDataFromToken(r, []byte(au.configs.HmacSampleSecret))
 
 	if err != nil && status == false {
 		utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
