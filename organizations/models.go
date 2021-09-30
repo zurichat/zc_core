@@ -209,6 +209,12 @@ type OrgSettings struct {
 type OrgPermissions struct {
 	Messaging   map[string]interface{} `json:"messaging" bson:"messaging"`
 	Invitations bool                   `json:"invitations" bson:"invitations"`
+	MessageSettings *MessageSettings  `json:"messagesettings" bson:"messagesettings"`
+}
+
+type MessageSettings struct{
+	MessageEditing bool `json:"messageediting" bson:"messageediting"`
+	MessageDeleting bool `json:"messagedeleting" bson:"messagedeleting"`
 }
 
 type Notifications struct {
