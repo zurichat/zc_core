@@ -14,6 +14,7 @@ import (
 
 const (
 	OrganizationCollectionName     = "organizations"
+	TokenTransactionCollectionName = "token_transaction"
 	InstalledPluginsCollectionName = "installed_plugins"
 	OrganizationInviteCollection   = "organizations_invites"
 	OrganizationSettings           = "organizations_settings"
@@ -44,12 +45,12 @@ const (
 	GuestRole  = "guest"
 )
 
-var Roles = map[string]string {
-	OwnerRole: OwnerRole,
-	AdminRole: AdminRole,
+var Roles = map[string]string{
+	OwnerRole:  OwnerRole,
+	AdminRole:  AdminRole,
 	EditorRole: EditorRole,
 	MemberRole: MemberRole,
-	GuestRole: GuestRole,
+	GuestRole:  GuestRole,
 }
 
 const (
@@ -79,6 +80,17 @@ type Organization struct {
 	CreatedAt    time.Time                `json:"created_at" bson:"created_at"`
 	UpdatedAt    time.Time                `json:"updated_at" bson:"updated_at"`
 	Tokens       float64                  `json:"tokens" bson:"tokens"`
+}
+
+type TokenTransaction struct {
+	OrgId         string    `json:"org_id" bson:"org_id"`
+	Currency      string    `json:"currency" bson:"currency"`
+	Token         float64   `json:"token" bson:"token"`
+	Type          string    `json:"type" bson:"type"`
+	Description   string    `json:"description" bson:"description"`
+	Amount        float64   `json:"amount" bson:"amount"`
+	Time          time.Time `json:"time" bson:"time"`
+	TransactionId string    `json:"transaction_id" bson:"transaction_id"`
 }
 
 type Invite struct {
@@ -141,13 +153,13 @@ type Social struct {
 }
 
 type Status struct {
-	Tag   			string 		`json:"tag" bson:"tag"`
-	Text 			string 		`json:"text" bson:"text"`
-	ThirtyMins		bool		`json:"thirty_mins" bson:"thirty_mins"`
-	OneHr			bool		`json:"one_hr" bson:"one_hr"`
-	FourHrs 		bool		`json:"four_hrs" bson:"four_hrs"`
-	EndofWeek		bool		`json:"end_of_week" bson:"end_of_week"`
-	DontClear		bool		`json:"dont_clear" bson:"dont_clear"`
+	Tag        string `json:"tag" bson:"tag"`
+	Text       string `json:"text" bson:"text"`
+	ThirtyMins bool   `json:"thirty_mins" bson:"thirty_mins"`
+	OneHr      bool   `json:"one_hr" bson:"one_hr"`
+	FourHrs    bool   `json:"four_hrs" bson:"four_hrs"`
+	EndofWeek  bool   `json:"end_of_week" bson:"end_of_week"`
+	DontClear  bool   `json:"dont_clear" bson:"dont_clear"`
 }
 
 type Member struct {
@@ -186,7 +198,7 @@ type Profile struct {
 	TimeZone    string   `json:"time_zone" bson:"time_zone"`
 	Socials     []Social `json:"socials" bson:"socials"`
 	Language    string   `json:"language" bson:"language"`
-	WhatIDo		string	 `json:"what_i_do" bson:"what_i_do"`
+	WhatIDo     string   `json:"what_i_do" bson:"what_i_do"`
 }
 
 type Settings struct {

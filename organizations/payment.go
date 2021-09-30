@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
@@ -41,17 +42,52 @@ func (oh *OrganizationHandler) AddToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	org_filter["tokens"] = org["tokens"].(float64) + (tokens * 2)
+	org_filter["tokens"] = org["tokens"].(float64) + (tokens * 0.2)
 
 	update, err := utils.UpdateOneMongoDbDoc(OrganizationCollectionName, orgId, org_filter)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
+	var transaction TokenTransaction
 
+	transaction.Amount = tokens
+	transaction.Currency = "usd"
+	transaction.Description = "Purchase Token"
+	transaction.OrgId = orgId
+	transaction.TransactionId = utils.GenUUID()
+	transaction.Type = "Purchase"
+	transaction.Time = time.Now()
+	transaction.Token = tokens * 0.2
+	detail, _ := utils.StructToMap(transaction)
+
+	res, err := utils.CreateMongoDbDoc(TokenTransactionCollectionName, detail)
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
 	if update.ModifiedCount == 0 {
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
 	}
 
+	utils.GetSuccess("Successfully loaded token", res, w)
+
+}
+
+// Get an organization record
+func (oh *OrganizationHandler) GetTokenTransaction(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	orgId := mux.Vars(r)["id"]
+
+	save, _ := utils.GetMongoDbDocs(TokenTransactionCollectionName, bson.M{"org_id": orgId})
+
+	if save == nil {
+		utils.GetError(fmt.Errorf("organization transaction %s not found", orgId), http.StatusNotFound, w)
+		return
+	}
+
+	utils.GetSuccess("transactions retrieved successfully", save, w)
 }
