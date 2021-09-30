@@ -118,8 +118,9 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/change-owner", auth.IsAuthenticated(organizations.TransferOwnership)).Methods("PATCH")
 
 	//organization: payment
-	r.HandleFunc("/organizations/{id}/addtoken", organizations.AddToken).Methods("POST")
-	r.HandleFunc("/organizations/{id}/tokentranx", organizations.GetTokenTransaction).Methods("GET")
+	r.HandleFunc("/organizations/{id}/addtoken", auth.IsAuthenticated(organizations.AddToken)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/tokentranx", auth.IsAuthenticated(organizations.GetTokenTransaction)).Methods("GET")
+	r.HandleFunc("/organizations/{id}/upgrade-to-pro", auth.IsAuthenticated(organizations.UpgradeToPro)).Methods("POST")
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
@@ -161,6 +162,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	// Email subscription
 	r.HandleFunc("/external/subscribe", external.EmailSubscription).Methods("POST")
 	r.HandleFunc("/external/download-client", external.DownloadClient).Methods("GET")
+	r.HandleFunc("/external/send-mail", external.SendMail).Methods("POST")
 
 	//ping endpoint
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
