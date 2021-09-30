@@ -1,9 +1,7 @@
 package organizations
 
 import (
-	"context"
 	"encoding/json"
-	"os"
 	"strings"
 	"time"
 
@@ -22,12 +20,42 @@ const (
 )
 
 const (
-	OwnerRole = "owner"
-	AdminRole = "admin"
+	CreateOrganizationMember         = "CreateOrganizationMember"
+	UpdateOrganizationName           = "UpdateOrganizationName"
+	UpdateOrganizationMemberPic      = "UpdateOrganizationMemberPic"
+	UpdateOrganizationUrl            = "UpdateOrganizationUrl"
+	UpdateOrganizationLogo           = "UpdateOrganizationUrl"
+	DeactivateOrganizationMember     = "DeactivateOrganizationMember"
+	ReactivateOrganizationMember     = "ReactivateOrganizationMember"
+	UpdateOrganizationMemberStatus   = "UpdateOrganizationMemberStatus"
+	UpdateOrganizationMemberProfile  = "UpdateOrganizationMemberProfile"
+	UpdateOrganizationMemberPresence = "UpdateOrganizationMemberPresence"
+	UpdateOrganizationMemberSettings = "UpdateOrganizationMemberSettings"
+)
+
+const (
+	OwnerRole  = "owner"
+	AdminRole  = "admin"
 	EditorRole = "editor"
 	MemberRole = "member"
-	GuestRole = "guest"
+	GuestRole  = "guest"
 )
+
+var Roles = map[string]string {
+	OwnerRole: OwnerRole,
+	AdminRole: AdminRole,
+	EditorRole: EditorRole,
+	MemberRole: MemberRole,
+	GuestRole: GuestRole,
+}
+
+const (
+	FreeVersion = "free"
+	ProVersion  = "pro"
+)
+
+var RequestData = make(map[string]string)
+const NairaToTokenRate = 0.01
 
 type MemberPassword struct {
 	MemberID string `bson:"member_id"`
@@ -46,7 +74,9 @@ type Organization struct {
 	WorkspaceURL string                   `json:"workspace_url" bson:"workspace_url"`
 	CreatedAt    time.Time                `json:"created_at" bson:"created_at"`
 	UpdatedAt    time.Time                `json:"updated_at" bson:"updated_at"`
+	Tokens       float64                  `json:"tokens" bson:"tokens"`
 }
+
 type Invite struct {
 	ID    string `json:"_id,omitempty" bson:"_id,omitempty"`
 	OrgID string `json:"org_id" bson:"org_id"`
@@ -106,6 +136,12 @@ type Social struct {
 	Title string `json:"title" bson:"title"`
 }
 
+type Status struct {
+	Tag   		string `json:"tag" bson:"tag"`
+	Text 		string `json:"text" bson:"text"`
+	ExpiryTime 	string `json:"expiry_time" bson:"expiry_time"`
+}
+
 type Member struct {
 	ID          primitive.ObjectID `json:"_id" bson:"_id"`
 	OrgId       string             `json:"org_id" bson:"org_id"`
@@ -117,7 +153,7 @@ type Member struct {
 	UserName    string             `bson:"user_name" json:"user_name"`
 	DisplayName string             `json:"display_name" bson:"display_name"`
 	Bio         string             `json:"bio" bson:"bio"`
-	Status      string             `json:"status" bson:"status"`
+	Status      Status             `json:"status" bson:"status"`
 	Presence    string             `json:"presence" bson:"presence"`
 	Pronouns    string             `json:"pronouns" bson:"pronouns"`
 	Phone       string             `json:"phone" bson:"phone"`
@@ -130,6 +166,7 @@ type Member struct {
 	Socials     []Social           `json:"socials" bson:"socials"`
 	Language    string             `json:"language" bson:"language"`
 }
+
 type Profile struct {
 	ID          string   `json:"id" bson:"_id"`
 	FirstName   string   `json:"first_name" bson:"first_name"`
@@ -200,25 +237,8 @@ type ChatSettings struct {
 	MediaVisibility bool   `json:"media_visibility" bson:"media_visibility"`
 	FontSize        string `json:"font_size" bson:"font_size"`
 }
+
 type OrganizationHandler struct {
 	configs     *utils.Configurations
 	mailService service.MailService
-}
-
-func NewOrganizationHandler(c *utils.Configurations, mail service.MailService) *OrganizationHandler {
-	return &OrganizationHandler{configs: c, mailService: mail}
-}
-
-// gets the details of a member in a workspace using parameters such as email, username etc
-// returns parameters based on the member struct
-func FetchMember(filter map[string]interface{}) (*Member, error) {
-	member_collection := MemberCollectionName
-	member := &Member{}
-	memberCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), member_collection)
-	if err != nil {
-		return member, err
-	}
-	result := memberCollection.FindOne(context.TODO(), filter)
-	err = result.Decode(&member)
-	return member, err
 }
