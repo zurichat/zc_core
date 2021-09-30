@@ -44,12 +44,12 @@ const (
 	GuestRole  = "guest"
 )
 
-var Roles = map[string]string {
-	OwnerRole: OwnerRole,
-	AdminRole: AdminRole,
+var Roles = map[string]string{
+	OwnerRole:  OwnerRole,
+	AdminRole:  AdminRole,
 	EditorRole: EditorRole,
 	MemberRole: MemberRole,
-	GuestRole: GuestRole,
+	GuestRole:  GuestRole,
 }
 
 const (
@@ -58,6 +58,7 @@ const (
 )
 
 var RequestData = make(map[string]string)
+
 const NairaToTokenRate = 0.01
 
 type MemberPassword struct {
@@ -72,7 +73,7 @@ type Organization struct {
 	CreatorID    string                   `json:"creator_id" bson:"creator_id"`
 	Plugins      []map[string]interface{} `json:"plugins" bson:"plugins"`
 	Admins       []string                 `json:"admins" bson:"admins"`
-	Settings     map[string]interface{}   `json:"settings" bson:"settings"`
+	Settings     *OrganizationPreference   `json:"settings" bson:"settings"`
 	LogoURL      string                   `json:"logo_url" bson:"logo_url"`
 	WorkspaceURL string                   `json:"workspace_url" bson:"workspace_url"`
 	CreatedAt    time.Time                `json:"created_at" bson:"created_at"`
@@ -140,13 +141,13 @@ type Social struct {
 }
 
 type Status struct {
-	Tag   			string 		`json:"tag" bson:"tag"`
-	Text 			string 		`json:"text" bson:"text"`
-	ThirtyMins		bool		`json:"thirty_mins" bson:"thirty_mins"`
-	OneHr			bool		`json:"one_hr" bson:"one_hr"`
-	FourHrs 		bool		`json:"four_hrs" bson:"four_hrs"`
-	EndofWeek		bool		`json:"end_of_week" bson:"end_of_week"`
-	DontClear		bool		`json:"dont_clear" bson:"dont_clear"`
+	Tag        string `json:"tag" bson:"tag"`
+	Text       string `json:"text" bson:"text"`
+	ThirtyMins bool   `json:"thirty_mins" bson:"thirty_mins"`
+	OneHr      bool   `json:"one_hr" bson:"one_hr"`
+	FourHrs    bool   `json:"four_hrs" bson:"four_hrs"`
+	EndofWeek  bool   `json:"end_of_week" bson:"end_of_week"`
+	DontClear  bool   `json:"dont_clear" bson:"dont_clear"`
 }
 
 type Member struct {
@@ -185,7 +186,7 @@ type Profile struct {
 	TimeZone    string   `json:"time_zone" bson:"time_zone"`
 	Socials     []Social `json:"socials" bson:"socials"`
 	Language    string   `json:"language" bson:"language"`
-	WhatIDo		string	 `json:"what_i_do" bson:"what_i_do"`
+	WhatIDo     string   `json:"what_i_do" bson:"what_i_do"`
 }
 
 type Settings struct {
@@ -194,6 +195,20 @@ type Settings struct {
 	Themes           Themes           `json:"themes" bson:"themes"`
 	MessagesAndMedia MessagesAndMedia `json:"messages_and_media" bson:"messages_and_media"`
 	ChatSettings     ChatSettings     `json:"chat_settings" bson:"chat_settings"`
+}
+
+type OrganizationPreference struct {
+	Settings    OrgSettings    `json:"settings" bson:"settings"`
+	Permissions OrgPermissions `json:"permissions" bson:"permissions"`
+}
+
+type OrgSettings struct {
+	OrganizationIcon   string                 `json:"workspaceicon" bson:"workspaceicon"`
+	DeleteOrganization map[string]interface{} `json:"deleteorganization" bson:"deleteorganization"`
+}
+type OrgPermissions struct {
+	Messaging   map[string]interface{} `json:"messaging" bson:"messaging"`
+	Invitations bool                   `json:"invitations" bson:"invitations"`
 }
 
 type Notifications struct {
