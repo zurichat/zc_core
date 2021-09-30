@@ -1,12 +1,12 @@
 package organizations
 
 import (
-
 	"encoding/json"
 	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
 
@@ -40,6 +40,14 @@ const (
 	MemberRole = "member"
 	GuestRole  = "guest"
 )
+
+var Roles = map[string]string {
+	OwnerRole: OwnerRole,
+	AdminRole: AdminRole,
+	EditorRole: EditorRole,
+	MemberRole: MemberRole,
+	GuestRole: GuestRole,
+}
 
 const (
 	FreeVersion = "free"
@@ -158,6 +166,7 @@ type Member struct {
 	Socials     []Social           `json:"socials" bson:"socials"`
 	Language    string             `json:"language" bson:"language"`
 }
+
 type Profile struct {
 	ID          string   `json:"id" bson:"_id"`
 	FirstName   string   `json:"first_name" bson:"first_name"`
@@ -227,4 +236,9 @@ type ChatSettings struct {
 	EnterIsSend     bool   `json:"enter_is_send" bson:"enter_is_send"`
 	MediaVisibility bool   `json:"media_visibility" bson:"media_visibility"`
 	FontSize        string `json:"font_size" bson:"font_size"`
+}
+
+type OrganizationHandler struct {
+	configs     *utils.Configurations
+	mailService service.MailService
 }
