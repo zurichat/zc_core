@@ -33,6 +33,10 @@ import (
 func Router(Server *socketio.Server) *mux.Router {
 	r := mux.NewRouter().StrictSlash(true)
 
+	//TO be removed
+	// body := make(map[string]interface{})
+	// realtime.CentrifugoConn(body)
+
 	// Load handlers(Doing this to reduce dependency circle issue, might reverse if not working)
 	configs := utils.NewConfigurations()
 	mailService := service.NewZcMailService(configs)
@@ -98,19 +102,24 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members", organizations.GetMembers).Methods("GET")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.GetMember)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.DeactivateMember)).Methods("DELETE")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.ReactivateMember)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/reactivate", auth.IsAuthenticated(organizations.ReactivateMember)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/status", auth.IsAuthenticated(organizations.UpdateMemberStatus)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/photo", auth.IsAuthenticated(organizations.UpdateProfilePicture)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/profile", auth.IsAuthenticated(organizations.UpdateProfile)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/presence", auth.IsAuthenticated(organizations.TogglePresence)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings", auth.IsAuthenticated(organizations.UpdateMemberSettings)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/role", auth.IsAuthenticated(auth.IsAuthorized(organizations.UpdateMemberRole, "admin"))).Methods("PATCH")
 	// r.HandleFunc("/organizations/{id}/invite-members", auth.IsAuthenticated(organizations.InviteMembers)).Methods("POST")
 
 	r.HandleFunc("/organizations/{id}/reports", report.AddReport).Methods("POST")
 	r.HandleFunc("/organizations/{id}/reports", report.GetReports).Methods("GET")
 	r.HandleFunc("/organizations/{id}/reports/{report_id}", report.GetReport).Methods("GET")
 	r.HandleFunc("/organizations/{id}/change-owner", auth.IsAuthenticated(organizations.TransferOwnership)).Methods("PATCH")
+<<<<<<< HEAD
 	r.HandleFunc("/organizations/{id}/upgrade-to-pro", auth.IsAuthenticated(organizations.UpgradeToPro)).Methods("POST")
+=======
+	
+>>>>>>> 092566e0049b08f3a7ed20ae66bd0197d262c90f
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
@@ -146,6 +155,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	// Realtime communications
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
 	r.HandleFunc("/realtime/auth", realtime.Auth).Methods("POST")
+	r.HandleFunc("/realtime/publish-event", realtime.PublishEvent).Methods("POST")
 	r.Handle("/socket.io/", Server)
 
 	// Email subscription

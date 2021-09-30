@@ -32,9 +32,14 @@ type Configurations struct {
 	DownloadClientTemplate    string
 	WorkspaceInviteTemplate   string
 
-	GoogleOAuthUrl			  string
-	GoogleOAuthV3Url		  string
-	FacebookOAuthUrl		  string
+	CentrifugoKey      string
+	CentrifugoEndpoint string
+
+	GoogleOAuthUrl   string
+	GoogleOAuthV3Url string
+	FacebookOAuthUrl string
+
+	HmacSampleSecret	string
 }
 
 func NewConfigurations() *Configurations {
@@ -50,6 +55,7 @@ func NewConfigurations() *Configurations {
 	viper.SetDefault("DB_NAME", "zurichat")
 	viper.SetDefault("SECRET_KEY", "5d5c7f94e29ba12a21f682be310d3af4")
 	viper.SetDefault("SESSION_KEY", "f6822af94e29ba112be310d3af45d5c7")
+	viper.SetDefault("HMAC_SECRET", "u7b8be9bd9b9ebd9b9dbdbee")
 	viper.SetDefault("SESSION_MAX_AGE", time.Now().Unix()+(31536000*200))
 	viper.SetDefault("USER_COLLECTION", "users")
 	viper.SetDefault("SESSION_COLLECTION", "session_store")
@@ -59,7 +65,6 @@ func NewConfigurations() *Configurations {
 	viper.SetDefault("DOWNLOAD_CLIENT_TEMPLATE", "./templates/download_clients.html")
 	viper.SetDefault("WORKSPACE_INVITE_TEMPLATE", "./templates/workspace_invite.html")
 	viper.SetDefault("GOOGLE_OAUTH_V3", "https://www.googleapis.com/oauth2/v3/userinfo?access_token=:access_token")
-
 
 	configs := &Configurations{
 		ClusterUrl:          mgURL,
@@ -86,9 +91,14 @@ func NewConfigurations() *Configurations {
 		MailGunDomain:      viper.GetString("MAILGUN_DOMAIN"),
 		MailGunSenderEmail: viper.GetString("MAILGUN_EMAIL"),
 
-		GoogleOAuthUrl: viper.GetString("GOOGLE_OAUTH"),
+		CentrifugoKey:      viper.GetString("CENTRIFUGO_KEY"),
+		CentrifugoEndpoint: viper.GetString("CENTRIFUGO_ENDPOINT"),
+
+		GoogleOAuthUrl:   viper.GetString("GOOGLE_OAUTH"),
 		GoogleOAuthV3Url: viper.GetString("GOOGLE_OAUTH_V3"),
 		FacebookOAuthUrl: viper.GetString("FACEBOOK_OAUTH"),
+
+		HmacSampleSecret: viper.GetString("HMAC_SECRET"),
 	}
 
 	return configs
