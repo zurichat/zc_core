@@ -25,17 +25,10 @@ func (oh *OrganizationHandler) GetMember(w http.ResponseWriter, r *http.Request)
 
 	memberIdhex, _ := primitive.ObjectIDFromHex(memId)
 
-	pOrgId, err := primitive.ObjectIDFromHex(orgId)
+	// check that org_id is valid
+	err := ValidateOrg(orgId)
 	if err != nil {
-		utils.GetError(errors.New("invalid Organisation id"), http.StatusBadRequest, w)
-		return
-	}
-
-	// get organization
-	orgDoc, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": pOrgId})
-	if orgDoc == nil {
-		fmt.Printf("org with id %s doesn't exist!", orgId)
-		utils.GetError(fmt.Errorf("org with id %s doesn't exist", orgId), http.StatusBadRequest, w)
+		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
 
@@ -44,10 +37,12 @@ func (oh *OrganizationHandler) GetMember(w http.ResponseWriter, r *http.Request)
 		"_id":     memberIdhex,
 		"deleted": bson.M{"$ne": true},
 	})
+
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
+
 	var member Member
 	utils.ConvertStructure(orgMember, &member)
 	utils.GetSuccess("Member retrieved successfully", orgMember, w)
@@ -59,17 +54,10 @@ func (oh *OrganizationHandler) GetMembers(w http.ResponseWriter, r *http.Request
 
 	orgId := mux.Vars(r)["id"]
 
-	pOrgId, err := primitive.ObjectIDFromHex(orgId)
+	// check that org_id is valid
+	err := ValidateOrg(orgId)
 	if err != nil {
-		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
-		return
-	}
-
-	// get organization
-	orgDoc, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": pOrgId})
-	if orgDoc == nil {
-		fmt.Printf("org with id %s doesn't exist!", orgId)
-		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
+		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
 
@@ -121,14 +109,13 @@ func (oh *OrganizationHandler) CreateMember(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Get data from request json
-	requestData := make(map[string]string)
-	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
+	if err := utils.ParseJsonFromRequest(r, &RequestData); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
 
 	// Validating the user email
-	newUserEmailm, ok := requestData["user_email"]
+	newUserEmailm, ok := RequestData["user_email"]
 	newUserEmail := strings.ToLower(newUserEmailm)
 	newUserName := strings.Split(newUserEmail, "@")[0]
 
@@ -288,18 +275,13 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 	}
 
 	// Get data from requestbody
-	if err := utils.ParseJsonFromRequest(r, &RequestData); err != nil {
+	var status Status
+	if err := utils.ParseJsonFromRequest(r, &status); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
 
-	member_status, ok := RequestData["status"]
-	if !ok {
-		utils.GetError(errors.New("status field required"), http.StatusInternalServerError, w)
-		return
-	} 
-
-	result, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, member_Id, bson.M{"status": member_status})
+	result, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, member_Id, bson.M{"status": status})
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
