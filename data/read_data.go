@@ -85,6 +85,7 @@ type readDataRequest struct {
 	OrganizationID string                 `json:"organization_id"`
 	ObjectID       *string                `json:"object_id,omitempty"`
 	Filter         map[string]interface{} `json:"filter"`
+	
 }
 
 func NewRead(w http.ResponseWriter, r *http.Request) {
