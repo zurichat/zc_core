@@ -137,9 +137,13 @@ type Social struct {
 }
 
 type Status struct {
-	Tag   		string `json:"tag" bson:"tag"`
-	Text 		string `json:"text" bson:"text"`
-	ExpiryTime 	string `json:"expiry_time" bson:"expiry_time"`
+	Tag   			string 		`json:"tag" bson:"tag"`
+	Text 			string 		`json:"text" bson:"text"`
+	ThirtyMins		bool		`json:"thirty_mins" bson:"thirty_mins"`
+	OneMin			bool		`json:"one_min" bson:"one_min"`
+	OneHr			bool		`json:"one_hr" bson:"one_hr"`
+	FourHrs 		bool		`json:"four_hrs" bson:"four_hrs"`
+	DontClear		bool		`json:"dont_clear" bson:"dont_clear"`
 }
 
 type Member struct {
@@ -178,6 +182,7 @@ type Profile struct {
 	TimeZone    string   `json:"time_zone" bson:"time_zone"`
 	Socials     []Social `json:"socials" bson:"socials"`
 	Language    string   `json:"language" bson:"language"`
+	WhatIDo		string	 `json:"what_i_do" bson:"what_i_do"`
 }
 
 type Settings struct {
@@ -241,4 +246,15 @@ type ChatSettings struct {
 type OrganizationHandler struct {
 	configs     *utils.Configurations
 	mailService service.MailService
+}
+
+func ClearStatus(member_id string, period int) {
+	time.Sleep(time.Duration(period) * time.Minute)
+	update := bson.M{"text": "", "tag": ""}
+	_, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, member_id, update)
+	if err != nil {
+		log.Println("could not clear status")
+		return
+	}
+	log.Println("status cleared")
 }
