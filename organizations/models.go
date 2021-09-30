@@ -1,8 +1,10 @@
 package organizations
 
 import (
+	"context"
 	"encoding/json"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -44,12 +46,12 @@ const (
 	GuestRole  = "guest"
 )
 
-var Roles = map[string]string {
-	OwnerRole: OwnerRole,
-	AdminRole: AdminRole,
+var Roles = map[string]string{
+	OwnerRole:  OwnerRole,
+	AdminRole:  AdminRole,
 	EditorRole: EditorRole,
 	MemberRole: MemberRole,
-	GuestRole: GuestRole,
+	GuestRole:  GuestRole,
 }
 
 const (
@@ -58,7 +60,6 @@ const (
 )
 
 var RequestData = make(map[string]string)
-const NairaToTokenRate = 0.01
 
 type MemberPassword struct {
 	MemberID string `bson:"member_id"`
@@ -78,6 +79,7 @@ type Organization struct {
 	CreatedAt    time.Time                `json:"created_at" bson:"created_at"`
 	UpdatedAt    time.Time                `json:"updated_at" bson:"updated_at"`
 	Tokens       float64                  `json:"tokens" bson:"tokens"`
+	Version      string                   `json:"version" bson:"version"`
 }
 
 type Invite struct {
@@ -140,13 +142,13 @@ type Social struct {
 }
 
 type Status struct {
-	Tag   			string 		`json:"tag" bson:"tag"`
-	Text 			string 		`json:"text" bson:"text"`
-	ThirtyMins		bool		`json:"thirty_mins" bson:"thirty_mins"`
-	OneHr			bool		`json:"one_hr" bson:"one_hr"`
-	FourHrs 		bool		`json:"four_hrs" bson:"four_hrs"`
-	EndofWeek		bool		`json:"end_of_week" bson:"end_of_week"`
-	DontClear		bool		`json:"dont_clear" bson:"dont_clear"`
+	Tag        string `json:"tag" bson:"tag"`
+	Text       string `json:"text" bson:"text"`
+	ThirtyMins bool   `json:"thirty_mins" bson:"thirty_mins"`
+	OneHr      bool   `json:"one_hr" bson:"one_hr"`
+	FourHrs    bool   `json:"four_hrs" bson:"four_hrs"`
+	EndofWeek  bool   `json:"end_of_week" bson:"end_of_week"`
+	DontClear  bool   `json:"dont_clear" bson:"dont_clear"`
 }
 
 type Member struct {
@@ -185,7 +187,7 @@ type Profile struct {
 	TimeZone    string   `json:"time_zone" bson:"time_zone"`
 	Socials     []Social `json:"socials" bson:"socials"`
 	Language    string   `json:"language" bson:"language"`
-	WhatIDo		string	 `json:"what_i_do" bson:"what_i_do"`
+	WhatIDo     string   `json:"what_i_do" bson:"what_i_do"`
 }
 
 type Settings struct {
@@ -260,4 +262,16 @@ func ClearStatus(member_id string, period int) {
 		return
 	}
 	log.Println("status cleared")
+}
+
+func FetchOrganization(filter map[string]interface{}) (*Organization, error) {
+	org_collection := OrganizationCollectionName
+	organization := &Organization{}
+	orgCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), org_collection)
+	if err != nil {
+		return organization, err
+	}
+	result := orgCollection.FindOne(context.TODO(), filter)
+	err = result.Decode(&organization)
+	return organization, err
 }
