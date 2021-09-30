@@ -753,7 +753,7 @@ func (oh *OrganizationHandler) UpdateMemberRole(w http.ResponseWriter, r *http.R
 	orgMember, err := FetchMember(bson.M{"org_id": org_Id, "email": email})
 
 	if err != nil {
-		utils.GetError(errors.New("user not a member of this workspace"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("user not a member of this organization"), http.StatusBadRequest, w)
 		return
 	}
 
@@ -765,6 +765,20 @@ func (oh *OrganizationHandler) UpdateMemberRole(w http.ResponseWriter, r *http.R
 
 	// ID of the user whose role is being updated
 	memberID := orgMember.ID.Hex()
+
+	
+	loggedInUser := r.Context().Value("user").(*auth.AuthUser)
+	loggedInMember, err := FetchMember(bson.M{"org_id": org_Id, "email": loggedInUser.Email})
+
+	if err != nil {
+		utils.GetError(errors.New("user not a member of this organization"), http.StatusBadRequest, w)
+		return
+	}
+
+	if memberID == loggedInMember.ID.Hex() {
+		utils.GetError(errors.New("access denied"), http.StatusUnauthorized, w)
+		return
+	}
 
 	updateRes, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberID, bson.M{"role": role})
 
