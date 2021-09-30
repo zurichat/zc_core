@@ -293,13 +293,16 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		return
 	}
 
-	member_status, ok := RequestData["status"]
-	if !ok {
-		utils.GetError(errors.New("status field required"), http.StatusInternalServerError, w)
+	
+	status_text := RequestData["status"]
+	status_tag, tag_ok := RequestData["tag"]
+	status_duration, dur_ok := RequestData["duration"]
+	if !tag_ok || !dur_ok {
+		utils.GetError(errors.New("field required"), http.StatusInternalServerError, w)
 		return
 	} 
 
-	result, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, member_Id, bson.M{"status": member_status})
+	result, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, member_Id, bson.M{"status": status_text, "tag": status_tag, "duration": status_duration})
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
