@@ -120,6 +120,8 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	newOrg.CreatorID = ccreatorid
 	newOrg.CreatorEmail = userEmail
 	newOrg.CreatedAt = time.Now()
+	// initialize organization with 100 free tokens
+	newOrg.Tokens = 100
 
 	// convert to map object
 	var inInterface map[string]interface{}
@@ -152,6 +154,7 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Presence: "true",
 		Deleted:  false,
 		Settings: setting,
+		JoinedAt: time.Now(),
 	}
 
 	// add new member to member collection
@@ -231,6 +234,9 @@ func (oh *OrganizationHandler) UpdateUrl(w http.ResponseWriter, r *http.Request)
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
 	}
+	eventChannel := fmt.Sprintf("organizations_%s", orgId)
+	event := utils.Event{Identifier: orgId, Type: "Organization", Event: UpdateOrganizationUrl, Channel: eventChannel, Payload: make(map[string]interface{})}
+	go utils.Emitter(event)
 
 	utils.GetSuccess("organization url updated successfully", nil, w)
 }
@@ -259,6 +265,9 @@ func (oh *OrganizationHandler) UpdateName(w http.ResponseWriter, r *http.Request
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
 	}
+	eventChannel := fmt.Sprintf("organizations_%s", orgId)
+	event := utils.Event{Identifier: orgId, Type: "Organization", Event: UpdateOrganizationName, Channel: eventChannel, Payload: make(map[string]interface{})}
+	go utils.Emitter(event)
 
 	utils.GetSuccess("organization name updated successfully", nil, w)
 }
@@ -269,14 +278,19 @@ func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.
 
 	org_Id := mux.Vars(r)["id"]
 
-	// Check if organization id is valid
+	// checks if the logged in user trying to make changes is the owner the workspaceace
+	if !auth.IsAuthorized(org_Id, "owner", w, r) {
+		return
+	}
+
+	// Checks if organization id is valid
 	orgId, err := primitive.ObjectIDFromHex(org_Id)
 	if err != nil {
 		utils.GetError(errors.New("invalid organization id"), http.StatusBadRequest, w)
 		return
 	}
 
-	// Check if organization id exists in the database
+	// Checks if organization exists in the database
 	orgDoc, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": orgId})
 	if orgDoc == nil {
 		utils.GetError(errors.New("organization does not exist"), http.StatusBadRequest, w)
@@ -289,14 +303,16 @@ func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// email is that of the proposed new owner
 	email := requestData["email"]
 
-	// confirm if email supplied is valid
+	// confirms if email supplied is valid
 	if !utils.IsValidEmail(strings.ToLower(email)) {
 		utils.GetError(errors.New("email is not valid"), http.StatusBadRequest, w)
 		return
 	}
 
+	// fetches the details of the proposed new owner patterned after member's struct
 	orgMember, err := FetchMember(bson.M{"org_id": org_Id, "email": email})
 
 	if err != nil {
@@ -304,13 +320,16 @@ func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// checks if proposed owner does not have an ownership status already
 	if orgMember.Role == "owner" {
 		utils.GetError(errors.New("this member already owns this organization"), http.StatusBadRequest, w)
 		return
 	}
 
+	// member ID of the proposed new owner
 	memberID := orgMember.ID.Hex()
 
+	// upgrades status from member to owner
 	updateRes, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberID, bson.M{"role": "owner"})
 
 	if err != nil {
@@ -319,10 +338,33 @@ func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.
 	}
 
 	if updateRes.ModifiedCount == 0 {
-		utils.GetError(errors.New("could not upgrade member role"), http.StatusInternalServerError, w)
+		utils.GetError(errors.New("could not upgrade member's role"), http.StatusInternalServerError, w)
 		return
 	}
 
+	// fetches details of the former owner so we can get keys to downgrade status to member
+	// checks like isOwner and memberExists are not made since auth.IsAuthorized function already
+	// this user pass marks
+	loggedInUser := r.Context().Value("user").(*auth.AuthUser)
+	formerOwner, _ := FetchMember(bson.M{"org_id": org_Id, "email": loggedInUser.Email})
+
+	// ID of former owner
+	formerOwnerID := formerOwner.ID.Hex()
+
+	// role downgraded from owner to member
+	update, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, formerOwnerID, bson.M{"role": "member"})
+
+	if err != nil {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("could not downgrade owner's role"), http.StatusInternalServerError, w)
+		return
+	}
+
+	// and we are done!!!
 	utils.GetSuccess("workspace owner changed successfully", nil, w)
 }
 
@@ -351,6 +393,9 @@ func (oh *OrganizationHandler) UpdateLogo(w http.ResponseWriter, r *http.Request
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
 	}
+	eventChannel := fmt.Sprintf("organizations_%s", orgId)
+	event := utils.Event{Identifier: orgId, Type: "Organization", Event: UpdateOrganizationLogo, Channel: eventChannel, Payload: make(map[string]interface{})}
+	go utils.Emitter(event)
 
 	utils.GetSuccess("organization logo updated successfully", nil, w)
 }
@@ -360,10 +405,6 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 	loggedInUser := r.Context().Value("user").(*auth.AuthUser)
 	// user, _ := auth.FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
 	sOrgId := mux.Vars(r)["id"]
-
-	if !auth.IsAuthorized(sOrgId, "admin", w, r) {
-		return
-	}
 	var guests SendInviteBody
 
 	err_ := utils.ParseJsonFromRequest(r, &guests)
@@ -427,4 +468,13 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 	resonse := SendInviteResponse{InvalidEmails: invalidEmails, InviteIDs: inviteIDs}
 	utils.GetSuccess("Organization invite operation result", resonse, w)
 
+}
+
+func (oh *OrganizationHandler) UpgradeToPro(w http.ResponseWriter, r *http.Request) {
+	// TO BE IMPLEMENTED SOON
+}
+
+// converts amount in naira to equivalent token value
+func GetTokenAmount(AmountInNaira float64) float64 {
+	return AmountInNaira * NairaToTokenRate
 }

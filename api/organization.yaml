@@ -352,28 +352,6 @@ paths:
 
         "500":
           $ref: "#/components/responses/InternalServerError"
-    patch:
-      tags:
-        - Organization-Member
-      summary: Reactivate a deactivated member
-      description: This endpoint will be used to reactivate a member of an organization
-      security:
-        - cookieAuth: []
-        - bearerAuth: []
-      parameters:
-        - $ref: "#/components/parameters/organization_id"
-        - $ref: "#/components/parameters/member_id"
-      responses:
-        "200":
-          $ref: "#/components/responses/resourceUpdated"
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-
-        "400":
-          $ref: "#/components/responses/BadRequest"
-
-        "500":
-          $ref: "#/components/responses/InternalServerError"
     delete:
       tags:
         - Organization-Member
@@ -621,6 +599,29 @@ paths:
         "200":
           $ref: "#/components/responses/resourceUpdated"
         
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /organizations/{organization_id}/members/{member_id}/reactivate:
+   post:
+      tags:
+        - Organization-Member
+      summary: Reactivate a deactivated member
+      description: This endpoint will be used to reactivate a member of an organization
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/organization_id"
+        - $ref: "#/components/parameters/member_id"
+      responses:
+        "200":
+          $ref: "#/components/responses/resourceUpdated"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
 

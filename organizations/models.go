@@ -1,14 +1,12 @@
 package organizations
 
 import (
-	"context"
+
 	"encoding/json"
-	"os"
 	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
 
@@ -22,12 +20,34 @@ const (
 )
 
 const (
-	OwnerRole = "owner"
-	AdminRole = "admin"
+	CreateOrganizationMember         = "CreateOrganizationMember"
+	UpdateOrganizationName           = "UpdateOrganizationName"
+	UpdateOrganizationMemberPic      = "UpdateOrganizationMemberPic"
+	UpdateOrganizationUrl            = "UpdateOrganizationUrl"
+	UpdateOrganizationLogo           = "UpdateOrganizationUrl"
+	DeactivateOrganizationMember     = "DeactivateOrganizationMember"
+	ReactivateOrganizationMember     = "ReactivateOrganizationMember"
+	UpdateOrganizationMemberStatus   = "UpdateOrganizationMemberStatus"
+	UpdateOrganizationMemberProfile  = "UpdateOrganizationMemberProfile"
+	UpdateOrganizationMemberPresence = "UpdateOrganizationMemberPresence"
+	UpdateOrganizationMemberSettings = "UpdateOrganizationMemberSettings"
+)
+
+const (
+	OwnerRole  = "owner"
+	AdminRole  = "admin"
 	EditorRole = "editor"
 	MemberRole = "member"
-	GuestRole = "guest"
+	GuestRole  = "guest"
 )
+
+const (
+	FreeVersion = "free"
+	ProVersion  = "pro"
+)
+
+var RequestData = make(map[string]string)
+const NairaToTokenRate = 0.01
 
 type MemberPassword struct {
 	MemberID string `bson:"member_id"`
@@ -46,7 +66,9 @@ type Organization struct {
 	WorkspaceURL string                   `json:"workspace_url" bson:"workspace_url"`
 	CreatedAt    time.Time                `json:"created_at" bson:"created_at"`
 	UpdatedAt    time.Time                `json:"updated_at" bson:"updated_at"`
+	Tokens       float64                  `json:"tokens" bson:"tokens"`
 }
+
 type Invite struct {
 	ID    string `json:"_id,omitempty" bson:"_id,omitempty"`
 	OrgID string `json:"org_id" bson:"org_id"`
@@ -199,26 +221,4 @@ type ChatSettings struct {
 	EnterIsSend     bool   `json:"enter_is_send" bson:"enter_is_send"`
 	MediaVisibility bool   `json:"media_visibility" bson:"media_visibility"`
 	FontSize        string `json:"font_size" bson:"font_size"`
-}
-type OrganizationHandler struct {
-	configs     *utils.Configurations
-	mailService service.MailService
-}
-
-func NewOrganizationHandler(c *utils.Configurations, mail service.MailService) *OrganizationHandler {
-	return &OrganizationHandler{configs: c, mailService: mail}
-}
-
-// gets the details of a member in a workspace using parameters such as email, username etc
-// returns parameters based on the member struct
-func FetchMember(filter map[string]interface{}) (*Member, error) {
-	member_collection := MemberCollectionName
-	member := &Member{}
-	memberCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), member_collection)
-	if err != nil {
-		return member, err
-	}
-	result := memberCollection.FindOne(context.TODO(), filter)
-	err = result.Decode(&member)
-	return member, err
 }

@@ -4,7 +4,6 @@ go 1.16
 
 require (
 	cloud.google.com/go v0.95.0 // indirect
-	github.com/bketelsen/crypt v0.0.4 // indirect
 	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/getsentry/sentry-go v0.11.0
 	github.com/go-playground/validator v9.31.0+incompatible
