@@ -288,7 +288,6 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 	currentTime := time.Now().Local() 
 	switch set := status.ExpiryTime; set {
 	case DontClear: 
-		fmt.Println("OS DontClear")
 	
 	case ThirtyMins: 
 		go ClearStatus(orgId, member_Id, 30)
