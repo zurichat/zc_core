@@ -57,8 +57,8 @@ type UserPasswordReset struct {
 }
 
 type Social struct {
-	ID			string	`bson:"provider_id" json:"provider_id"`
-	Provider	string	`bson:"provider" json:"provider"`
+	ID       string `bson:"provider_id" json:"provider_id"`
+	Provider string `bson:"provider" json:"provider"`
 }
 
 type User struct {
@@ -94,9 +94,11 @@ type UserHandler struct {
 	mailService service.MailService
 }
 
-type UUIDPassword struct {
-	Uuid     string `bson:"uuid" json:"uuid"`
-	Password string `bson:"password" json:"password"`
+type UUIDUserData struct {
+	Uuid      string `bson:"uuid" json:"uuid"`
+	Password  string `bson:"password" json:"password"`
+	FirstName string `bson:"first_name" json:"first_name"`
+	LastName  string `bson:"last_name" json:"last_name"`
 }
 
 func NewUserHandler(c *utils.Configurations, mail service.MailService) *UserHandler {
