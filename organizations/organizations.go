@@ -145,17 +145,7 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	setting := new(Settings)
 
-	newMember := Member{
-		ID:       primitive.NewObjectID(),
-		Email:    user.Email,
-		UserName: userName,
-		OrgId:    iiid,
-		Role:     "owner",
-		Presence: "true",
-		Deleted:  false,
-		Settings: setting,
-		JoinedAt: time.Now(),
-	}
+	newMember := newMember(user.Email, userName, iiid, OwnerRole, setting)
 
 	// add new member to member collection
 	coll := utils.GetCollection(MemberCollectionName)
@@ -330,7 +320,7 @@ func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.
 	memberID := orgMember.ID.Hex()
 
 	// upgrades status from member to owner
-	updateRes, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberID, bson.M{"role": "owner"})
+	updateRes, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberID, bson.M{"role": OwnerRole})
 
 	if err != nil {
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
@@ -352,7 +342,7 @@ func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.
 	formerOwnerID := formerOwner.ID.Hex()
 
 	// role downgraded from owner to member
-	update, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, formerOwnerID, bson.M{"role": "member"})
+	update, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, formerOwnerID, bson.M{"role": AdminRole})
 
 	if err != nil {
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
