@@ -81,7 +81,7 @@ func (oh *OrganizationHandler) GetMembers(w http.ResponseWriter, r *http.Request
 			"$or": []bson.M{
 				{"first_name": regex},
 				{"last_name": regex},
-				{"email": regex},
+				{"email": query},
 				{"display_name": regex},
 			},
 		}

@@ -13,6 +13,7 @@ import (
 
 const (
 	OrganizationCollectionName     = "organizations"
+	TokenTransactionCollectionName = "token_transaction"
 	InstalledPluginsCollectionName = "installed_plugins"
 	OrganizationInviteCollection   = "organizations_invites"
 	MemberCollectionName           = "members"
@@ -77,6 +78,17 @@ type Organization struct {
 	UpdatedAt    time.Time                `json:"updated_at" bson:"updated_at"`
 	Tokens       float64                  `json:"tokens" bson:"tokens"`
 	Version      string                   `json:"version" bson:"version"`
+}
+
+type TokenTransaction struct {
+	OrgId         string    `json:"org_id" bson:"org_id"`
+	Currency      string    `json:"currency" bson:"currency"`
+	Token         float64   `json:"token" bson:"token"`
+	Type          string    `json:"type" bson:"type"`
+	Description   string    `json:"description" bson:"description"`
+	Amount        float64   `json:"amount" bson:"amount"`
+	Time          time.Time `json:"time" bson:"time"`
+	TransactionId string    `json:"transaction_id" bson:"transaction_id"`
 }
 
 type Invite struct {
