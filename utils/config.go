@@ -32,6 +32,8 @@ type Configurations struct {
 	DownloadClientTemplate     string
 	WorkspaceInviteTemplate    string
 	TokenBillingNoticeTemplate string
+	WorkSpaceInviteTemplate	   string
+	WorkSpaceWelcomeTemplate   string
 
 	CentrifugoKey      string
 	CentrifugoEndpoint string
@@ -66,6 +68,8 @@ func NewConfigurations() *Configurations {
 	viper.SetDefault("DOWNLOAD_CLIENT_TEMPLATE", "./templates/download_clients.html")
 	viper.SetDefault("WORKSPACE_INVITE_TEMPLATE", "./templates/workspace_invite.html")
 	viper.SetDefault("TOKEN_BILLING_NOTICE_TEMPLATE", "./templates/token_billing_notice.html")
+	viper.SetDefault("WORKSPACE_INVITE_TEMPLATE", "./templates/workspace_inivte.html")
+	viper.SetDefault("WORKSPACE_WELCOME_TEMPLATE", "./templates/workspace_welcome.html")
 	viper.SetDefault("GOOGLE_OAUTH_V3", "https://www.googleapis.com/oauth2/v3/userinfo?access_token=:access_token")
 
 	configs := &Configurations{
@@ -85,6 +89,9 @@ func NewConfigurations() *Configurations {
 		WorkspaceInviteTemplate:    viper.GetString("WORKSPACE_INVITE_TEMPLATE"),
 		EmailSubscriptionTemplate:  viper.GetString("EMAIL_SUBSCRIPTION_TEMPLATE"),
 		TokenBillingNoticeTemplate: viper.GetString("TOKEN_BILLING_NOTICE_TEMPLATE"),
+		WorkSpaceInviteTemplate: 	viper.GetString("WORKSPACE_INVITE_TEMPLATE"),
+		WorkSpaceWelcomeTemplate: 	viper.GetString("WORKSPACE_WELCOME_TEMPLATE"),
+
 
 		SmtpUsername:  viper.GetString("SMTP_USERNAME"),
 		SmtpPassword:  viper.GetString("SMTP_PASSWORD"),
