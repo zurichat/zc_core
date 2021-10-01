@@ -338,7 +338,6 @@ type MarkAsRead struct {
 	WhenIViewAChannel	string		`json:"when_i_view_a_channel" bson:"when_i_view_a_channel"`
 	PromptToConfirm		bool		`json:"prompt_to_confirm" bson:"language"`
 }
-
 type AudioAndVideo struct {
 	IntegratedWebcam			string		`json:"integrated_webcam" bson:"integrated_webcam"`
 	Microphone					string		`json:"microphone" bson:"microphone"`
@@ -348,12 +347,10 @@ type AudioAndVideo struct {
 	WhenJoiningAHuddle			[]string	`json:"when_joining_a_huddle" bson:"when_joining_a_huddle"`
 	WhenSlackIsInTheBackground	[]string	`json:"when_slack_is_in_the_background" bson:"when_slack_is_in_the_background"`
 }
-
 	type PluginSettings struct {
 	Plugin       string `json:"plugin" bson:"plugin" validate:"required"`
 	AccessLevel  string `json:"access_level" bson:"access_level" validate:"required"`
 }
-
 type OrganizationHandler struct {
 	configs     *utils.Configurations
 	mailService service.MailService
