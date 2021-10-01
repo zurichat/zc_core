@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
@@ -135,6 +136,11 @@ func (eh *ExternalHandler) SendMail(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
+	// ensure email is valid
+	if !utils.IsValidEmail(strings.ToLower(mail.Email)) {
+		utils.GetError(EMAIL_NOT_VALID, http.StatusBadRequest, w)
+		return
+	}	
 
 	if _, ok := service.MailTypes[service.MailType(mail.MailType)]; !ok {
 		utils.GetError(errors.New("Invalid email type, email template does not exists!"), http.StatusBadRequest, w)
