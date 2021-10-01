@@ -122,6 +122,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/tokentranx", auth.IsAuthenticated(organizations.GetTokenTransaction)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/upgrade-to-pro", auth.IsAuthenticated(organizations.UpgradeToPro)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/charge-tokens", auth.IsAuthenticated(organizations.ChargeTokens)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/checkoutsession", organizations.CreateCheckoutSession).Methods("POST")
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
@@ -202,6 +203,7 @@ func main() {
 
 	// Set Stripe api key
 	stripe.Key = os.Getenv("STRIPE_KEY")
+	fmt.Println(stripe.Key)
 
 	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
 		fmt.Println("Could not connect to MongoDB")
