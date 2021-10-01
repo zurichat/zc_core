@@ -186,7 +186,7 @@ type Settings struct {
 	Themes           Themes           `json:"themes" bson:"themes"`
 	MessagesAndMedia MessagesAndMedia `json:"messages_and_media" bson:"messages_and_media"`
 	ChatSettings     ChatSettings     `json:"chat_settings" bson:"chat_settings"`
-	PluginSettings   PluginSettings   `json:"plugin_settings" bson:"plugin_settings"`
+	PluginSettings   []PluginSettings   `json:"plugin_settings" bson:"plugin_settings"`
 }
 
 type Notifications struct {
