@@ -213,12 +213,16 @@ type Profile struct {
 }
 
 type Settings struct {
-	Notifications    Notifications    `json:"notifications" bson:"notifications"`
-	Sidebar          Sidebar          `json:"sidebar" bson:"sidebar"`
-	Themes           Themes           `json:"themes" bson:"themes"`
-	MessagesAndMedia MessagesAndMedia `json:"messages_and_media" bson:"messages_and_media"`
-	ChatSettings     ChatSettings     `json:"chat_settings" bson:"chat_settings"`
-	PluginSettings   []PluginSettings   `json:"plugin_settings" bson:"plugin_settings"`
+	Notifications    		Notifications    		`json:"notifications" bson:"notifications"`
+	Sidebar          		Sidebar          		`json:"sidebar" bson:"sidebar"`
+	Themes           		Themes           		`json:"themes" bson:"themes"`
+	MessagesAndMedia 		MessagesAndMedia 		`json:"messages_and_media" bson:"messages_and_media"`
+	ChatSettings     		ChatSettings     		`json:"chat_settings" bson:"chat_settings"`
+	LanguagesAndRegions		LanguagesAndRegions		`json:"languages_and_regions" bson:"languages_and_regions"`
+	Accessibility			Accessibility			`json:"accessibility" bson:"accessibility"`
+	MarkAsRead				MarkAsRead				`json:"mark_as_read" bson:"mark_as_read"`
+	AudioAndVideo			AudioAndVideo			`json:"audio_and_video" bson:"audio_and_video"`
+	PluginSettings   		[]PluginSettings   		`json:"plugin_settings" bson:"plugin_settings"`
 }
 
 type OrganizationPreference struct {
@@ -243,19 +247,25 @@ type MessageSettings struct{
 
 type Notifications struct {
 	NotifyMeAbout                      string   `json:"notify_me_about" bson:"notify_me_about"`
-	UseDifferentSettingsForMyMobile    string   `json:"use_different_settings_mobile" bson:"use_different_settings_mobile"`
+	UseDifferentSettingsForMyMobile    bool   	`json:"use_different_settings_mobile" bson:"use_different_settings_mobile"`
 	ChannelHurdleNotification          bool     `json:"channel_hurdle_notification" bson:"channel_hurdle_notification"`
+	MeetingRepliesNotification         bool     `json:"meeting_replies_notification" bson:"meeting_replies_notification"`
 	ThreadRepliesNotification          bool     `json:"thread_replies_notification" bson:"thread_replies_notification"`
-	MyKeywords                         string   `json:"my_keywords" bson:"my_keywords"`
+	MyKeywords                         []string `json:"my_keywords" bson:"my_keywords"`
 	NotificationSchedule               string   `json:"notification_schedule" bson:"notification_schedule"`
 	MessagePreviewInEachNotification   bool     `json:"message_preview_in_each_notification" bson:"message_preview_in_each_notification"`
+	SetMessageNotificationsRight	   string	`json:"set_message_notifications_right" bson:"set_message_notifications_right"`
+	SetLoungeNotificationsRight	   	   string	`json:"set_lounge_notifications_right" bson:"set_lounge_notifications_right"`
 	MuteAllSounds                      bool     `json:"mute_all_sounds" bson:"mute_all_sounds"`
+	FlashWindowWhenNotificationComes   string	`json:"flash_window_when_notification_comes" bson:"flash_window_when_notification_comes"`
+	DeliverNotificationsVia			   string	`json:"deliver_notifications_via" bson:"deliver_notifications_via"`
 	WhenIamNotActiveOnDesktop          string   `json:"when_iam_not_active_on_desktop" bson:"when_iam_not_active_on_desktop"`
-	EmailNotificationsForMentionsAndDM []string `json:"email_notifications_for_mentions_and_dm" bson:"email_notifications_for_mentions_and_dm"`
+	EmailNotificationsForMentions 	   bool		`json:"email_notifications_for_mentions" bson:"email_notifications_for_mentions"`
 }
 
 type Sidebar struct {
 	AlwaysShowInTheSidebar        []string `json:"always_show_in_the_sidebar" bson:"always_show_in_the_sidebar"`
+	ShowAllTheFollowing			  string    `json:"show_all_the_following" bson:"show_all_the_following"`
 	SidebarSort                   string   `json:"sidebar_sort" bson:"sidebar_sort"`
 	ShowProfilePictureNextToDM    bool     `json:"show_profile_picture_next_to_dm" bson:"show_profile_picture_next_to_dm"`
 	ListPrivateChannelsSeperately bool     `json:"list_private_channels_seperately" bson:"list_private_channels_seperately"`
@@ -264,8 +274,10 @@ type Sidebar struct {
 }
 
 type Themes struct {
-	Themes string `json:"themes" bson:"themes"`
-	Colors string `json:"colors" bson:"colors"`
+	SyncWithOsSetting					bool 	`json:"sync_with_os_setting" bson:"sync_with_os_setting"`
+	DirectMessagesMentionsAndNetwork	bool	`json:"direct_messages_mentions_and_networks" bson:"direct_messages_mentions_and_networks"`
+	Themes 								string `json:"themes" bson:"themes"`
+	Colors 								string `json:"colors" bson:"colors"`
 }
 
 type MessagesAndMedia struct {
@@ -291,7 +303,36 @@ type ChatSettings struct {
 	FontSize        string `json:"font_size" bson:"font_size"`
 }
 
-type PluginSettings struct {
+type LanguagesAndRegions struct {
+	Language						string		`json:"language" bson:"language"`
+	TimeZone						string		`json:"time_zone" bson:"time_zone"`
+	SetTimeZoneAutomatically		bool		`json:"set_time_zone_automatically" bson:"set_time_zone_automatically"`
+	SpellCheck						bool		`json:"spell_check" bson:"spell_check"`
+	LanguagesZuriShouldSpellCheck	[]string	`json:"languages_zuri_should_spell_check" bson:"languages_zuri_should_spell_check"`
+}
+
+type Accessibility struct {
+	Animation					bool		`json:"animation" bson:"animation"`
+	DirectMessageAnnouncement	[]string	`json:"direct_message_announcement" bson:"direct_message_announcement"`
+	PressEmptyMessageField		string		`json:"press_empty_message_field" bson:"press_empty_message_field"`
+}
+
+type MarkAsRead struct {
+	WhenIViewAChannel	string		`json:"when_i_view_a_channel" bson:"when_i_view_a_channel"`
+	PromptToConfirm		bool		`json:"prompt_to_confirm" bson:"language"`
+}
+
+type AudioAndVideo struct {
+	IntegratedWebcam			string		`json:"integrated_webcam" bson:"integrated_webcam"`
+	Microphone					string		`json:"microphone" bson:"microphone"`
+	EnableAutomaticGainControl	bool	`json:"enable_automatic_gain_control" bson:"enable_automatic_gain_control"`
+	Speaker						string	`json:"speaker" bson:"speaker"`
+	WhenJoiningAZuriChatCall	[]string	`json:"when_joining_a_zuri_chat_call" bson:"when_joining_a_zuri_chat_call"`
+	WhenJoiningAHuddle			[]string	`json:"when_joining_a_huddle" bson:"when_joining_a_huddle"`
+	WhenSlackIsInTheBackground	[]string	`json:"when_slack_is_in_the_background" bson:"when_slack_is_in_the_background"`
+}
+
+	type PluginSettings struct {
 	Plugin       string `json:"plugin" bson:"plugin" validate:"required"`
 	AccessLevel  string `json:"access_level" bson:"access_level" validate:"required"`
 }
@@ -300,4 +341,3 @@ type OrganizationHandler struct {
 	configs     *utils.Configurations
 	mailService service.MailService
 }
-
