@@ -26,11 +26,12 @@ type Configurations struct {
 	MailGunDomain      string
 	MailGunSenderEmail string
 
-	EmailSubscriptionTemplate string
-	ConfirmEmailTemplate      string
-	PasswordResetTemplate     string
-	DownloadClientTemplate    string
-	WorkspaceInviteTemplate   string
+	EmailSubscriptionTemplate  string
+	ConfirmEmailTemplate       string
+	PasswordResetTemplate      string
+	DownloadClientTemplate     string
+	WorkspaceInviteTemplate    string
+	TokenBillingNoticeTemplate string
 
 	CentrifugoKey      string
 	CentrifugoEndpoint string
@@ -39,7 +40,7 @@ type Configurations struct {
 	GoogleOAuthV3Url string
 	FacebookOAuthUrl string
 
-	HmacSampleSecret	string
+	HmacSampleSecret string
 }
 
 func NewConfigurations() *Configurations {
@@ -64,6 +65,7 @@ func NewConfigurations() *Configurations {
 	viper.SetDefault("EMAIL_SUBSCRIPTION_TEMPLATE", "./templates/email_subscription.html")
 	viper.SetDefault("DOWNLOAD_CLIENT_TEMPLATE", "./templates/download_clients.html")
 	viper.SetDefault("WORKSPACE_INVITE_TEMPLATE", "./templates/workspace_invite.html")
+	viper.SetDefault("TOKEN_BILLING_NOTICE_TEMPLATE", "./templates/token_billing_notice.html")
 	viper.SetDefault("GOOGLE_OAUTH_V3", "https://www.googleapis.com/oauth2/v3/userinfo?access_token=:access_token")
 
 	configs := &Configurations{
@@ -77,11 +79,12 @@ func NewConfigurations() *Configurations {
 		SendGridApiKey:      viper.GetString("SENDGRID_API_KEY"),
 		ESPType:             viper.GetString("ESP_TYPE"),
 
-		ConfirmEmailTemplate:      viper.GetString("CONFIRM_EMAIL_TEMPLATE"),
-		PasswordResetTemplate:     viper.GetString("PASSWORD_RESET_TEMPLATE"),
-		DownloadClientTemplate:    viper.GetString("DOWNLOAD_CLIENT_TEMPLATE"),
-		WorkspaceInviteTemplate:   viper.GetString("WORKSPACE_INVITE_TEMPLATE"),
-		EmailSubscriptionTemplate: viper.GetString("EMAIL_SUBSCRIPTION_TEMPLATE"),
+		ConfirmEmailTemplate:       viper.GetString("CONFIRM_EMAIL_TEMPLATE"),
+		PasswordResetTemplate:      viper.GetString("PASSWORD_RESET_TEMPLATE"),
+		DownloadClientTemplate:     viper.GetString("DOWNLOAD_CLIENT_TEMPLATE"),
+		WorkspaceInviteTemplate:    viper.GetString("WORKSPACE_INVITE_TEMPLATE"),
+		EmailSubscriptionTemplate:  viper.GetString("EMAIL_SUBSCRIPTION_TEMPLATE"),
+		TokenBillingNoticeTemplate: viper.GetString("TOKEN_BILLING_NOTICE_TEMPLATE"),
 
 		SmtpUsername:  viper.GetString("SMTP_USERNAME"),
 		SmtpPassword:  viper.GetString("SMTP_PASSWORD"),
