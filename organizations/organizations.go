@@ -500,31 +500,6 @@ func (oh *OrganizationHandler) UpgradeToPro(w http.ResponseWriter, r *http.Reque
 	utils.GetSuccess("Organization successfully updated to pro", nil, w)
 }
 
-// func (oh *OrganizationHandler) ChargeTokens(w http.ResponseWriter, r *http.Request) {
-// 	w.Header().Set("Content-Type", "application/json")
-// 	orgId := mux.Vars(r)["id"]
-
-// 	// if err := SubscriptionBilling(orgId, ProVersionRate); err != nil {
-// 	// 	utils.GetError(err, http.StatusExpectationFailed, w)
-// 	// }
-
-// 	requestData := make(map[string]string)
-// 	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
-// 		utils.GetError(err, http.StatusUnprocessableEntity, w)
-// 		return
-// 	}
-
-// 	amount := float64(requestData["amount"])
-// 	description := string(requestData["description"])
-
-// 	if update.ModifiedCount == 0 {
-// 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
-// 		return
-// 	}
-
-// 	utils.GetSuccess("Billing successful for: " + description, nil, w)
-// }
-
 func IsProVersion(OrgId string) (bool, error) {
 	OrgIdFromHex, err := primitive.ObjectIDFromHex(OrgId)
 	if err != nil {
