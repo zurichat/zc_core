@@ -95,7 +95,7 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 	}
 
 	respse := map[string]interface{}{
-		"InsertedID":        res.InsertedID,
+		"user_id":        res.InsertedID,
 		"verification_code": comfimationToken,
 	}
 
@@ -148,7 +148,8 @@ func (uh *UserHandler) GetUser(response http.ResponseWriter, request *http.Reque
 		utils.GetError(errors.New("user not found"), http.StatusNotFound, response)
 		return
 	}
-
+	
+    DeleteMapProps(res, []string{"password"})
 	utils.GetSuccess("user retrieved successfully", res, response)
 }
 
@@ -195,14 +196,13 @@ func (uh *UserHandler) UpdateUser(response http.ResponseWriter, request *http.Re
 	if len(updateFields) == 0 {
 		utils.GetError(errors.New("empty/invalid user input data"), http.StatusBadRequest, response)
 		return
-	} else {
-		updateRes, err := utils.UpdateOneMongoDbDoc(collectionName, userID, updateFields)
-		if err != nil {
+	}
+	updateRes, err := utils.UpdateOneMongoDbDoc(collectionName, userID, updateFields)
+	if err != nil {
 			utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, response)
 			return
 		}
-		utils.GetSuccess("user successfully updated", updateRes, response)
-	}
+	utils.GetSuccess("user successfully updated", updateRes, response)
 }
 
 // get all users
@@ -213,6 +213,9 @@ func (uh *UserHandler) GetUsers(response http.ResponseWriter, request *http.Requ
 
 	collectionName := "users"
 	res, _ := utils.GetMongoDbDocs(collectionName, bson.M{"deactivated": false})
+	for _, doc := range res {
+		DeleteMapProps(doc, []string{"password"})
+	}
 	utils.GetSuccess("users retrieved successfully", res, response)
 }
 
@@ -353,4 +356,11 @@ func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request
 
 	utils.GetSuccess("user successfully created", resp, w)
 
+}
+
+
+func DeleteMapProps(m map[string]interface{}, s []string) {
+	for _, v := range s {
+        delete(m, v)
+	}
 }
