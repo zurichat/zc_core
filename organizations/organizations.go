@@ -122,6 +122,7 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	newOrg.CreatedAt = time.Now()
 	// initialize organization with 100 free tokens
 	newOrg.Tokens = 100
+	newOrg.Version = FreeVersion
 
 	// convert to map object
 	var inInterface map[string]interface{}
@@ -461,10 +462,54 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 }
 
 func (oh *OrganizationHandler) UpgradeToPro(w http.ResponseWriter, r *http.Request) {
-	// TO BE IMPLEMENTED SOON
+	w.Header().Set("Content-Type", "application/json")
+	orgId := mux.Vars(r)["id"]
+
+	ProVersionRate := float64(1) // 1 token per user per month
+
+	// check whether organization is already pro member
+	is_pro, err := IsProVersion(orgId)
+
+	if err != nil {
+		utils.GetError(err, http.StatusNotAcceptable, w)
+		return
+	}
+	if is_pro {
+		utils.GetError(errors.New("organisation already on pro version"), http.StatusBadRequest, w)
+		return
+	}
+
+	if err := SubscriptionBilling(orgId, ProVersionRate); err != nil {
+		utils.GetError(err, http.StatusExpectationFailed, w)
+	}
+
+	update_data := make(map[string]interface{})
+	update_data["version"] = ProVersion
+
+	update, err := utils.UpdateOneMongoDbDoc(OrganizationCollectionName, orgId, update_data)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("Organization successfully updated to pro", nil, w)
 }
 
-// converts amount in naira to equivalent token value
-func GetTokenAmount(AmountInNaira float64) float64 {
-	return AmountInNaira * NairaToTokenRate
+func IsProVersion(OrgId string) (bool, error) {
+	OrgIdFromHex, err := primitive.ObjectIDFromHex(OrgId)
+	if err != nil {
+		return false, err
+	}
+
+	organization, err := FetchOrganization(bson.M{"_id": OrgIdFromHex})
+	if err != nil {
+		return false, err
+	}
+
+	return organization.Version == ProVersion, nil
 }

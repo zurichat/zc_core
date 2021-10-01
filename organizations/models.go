@@ -2,6 +2,7 @@ package organizations
 
 import (
 	"encoding/json"
+
 	"strings"
 	"time"
 
@@ -12,9 +13,9 @@ import (
 
 const (
 	OrganizationCollectionName     = "organizations"
+	TokenTransactionCollectionName = "token_transaction"
 	InstalledPluginsCollectionName = "installed_plugins"
 	OrganizationInviteCollection   = "organizations_invites"
-	OrganizationSettings           = "organizations_settings"
 	MemberCollectionName           = "members"
 	UserCollectionName             = "users"
 )
@@ -31,6 +32,8 @@ const (
 	UpdateOrganizationMemberProfile  = "UpdateOrganizationMemberProfile"
 	UpdateOrganizationMemberPresence = "UpdateOrganizationMemberPresence"
 	UpdateOrganizationMemberSettings = "UpdateOrganizationMemberSettings"
+	UpdateOrganizationMemberRole     = "UpdateOrganizationMemberRole"
+	UpdateOrganizationMemberStatusCleared = "UpdateOrganizationMemberStatusCleared"
 )
 
 const (
@@ -41,12 +44,12 @@ const (
 	GuestRole  = "guest"
 )
 
-var Roles = map[string]string {
-	OwnerRole: OwnerRole,
-	AdminRole: AdminRole,
+var Roles = map[string]string{
+	OwnerRole:  OwnerRole,
+	AdminRole:  AdminRole,
 	EditorRole: EditorRole,
 	MemberRole: MemberRole,
-	GuestRole: GuestRole,
+	GuestRole:  GuestRole,
 }
 
 const (
@@ -55,7 +58,6 @@ const (
 )
 
 var RequestData = make(map[string]string)
-const NairaToTokenRate = 0.01
 
 type MemberPassword struct {
 	MemberID string `bson:"member_id"`
@@ -69,12 +71,24 @@ type Organization struct {
 	CreatorID    string                   `json:"creator_id" bson:"creator_id"`
 	Plugins      []map[string]interface{} `json:"plugins" bson:"plugins"`
 	Admins       []string                 `json:"admins" bson:"admins"`
-	Settings     map[string]interface{}   `json:"settings" bson:"settings"`
+	Settings     *OrganizationPreference   `json:"settings" bson:"settings"`
 	LogoURL      string                   `json:"logo_url" bson:"logo_url"`
 	WorkspaceURL string                   `json:"workspace_url" bson:"workspace_url"`
 	CreatedAt    time.Time                `json:"created_at" bson:"created_at"`
 	UpdatedAt    time.Time                `json:"updated_at" bson:"updated_at"`
 	Tokens       float64                  `json:"tokens" bson:"tokens"`
+	Version      string                   `json:"version" bson:"version"`
+}
+
+type TokenTransaction struct {
+	OrgId         string    `json:"org_id" bson:"org_id"`
+	Currency      string    `json:"currency" bson:"currency"`
+	Token         float64   `json:"token" bson:"token"`
+	Type          string    `json:"type" bson:"type"`
+	Description   string    `json:"description" bson:"description"`
+	Amount        float64   `json:"amount" bson:"amount"`
+	Time          time.Time `json:"time" bson:"time"`
+	TransactionId string    `json:"transaction_id" bson:"transaction_id"`
 }
 
 type Invite struct {
@@ -136,10 +150,28 @@ type Social struct {
 	Title string `json:"title" bson:"title"`
 }
 
+const (
+	DontClear = "dont_clear"
+	ThirtyMins= "thirty_mins"
+	OneHr  	  = "one_hour"
+	FourHrs   = "four_hours"
+	Today     = "today"
+	ThisWeek  = "this_week"
+)
+
+var StatusExpiryTime = map[string]string {
+	DontClear : DontClear,
+	ThirtyMins: ThirtyMins,
+	OneHr	  : OneHr,
+	FourHrs   : FourHrs,
+	Today     : Today,
+	ThisWeek  : ThisWeek,
+}
+
 type Status struct {
-	Tag   		string `json:"tag" bson:"tag"`
-	Text 		string `json:"text" bson:"text"`
-	ExpiryTime 	string `json:"expiry_time" bson:"expiry_time"`
+	Tag   			string 		`json:"tag" bson:"tag"`
+	Text 			string 		`json:"text" bson:"text"`
+	ExpiryTime 		string 		`json:"expiry_time" bson:"expiry_time"`
 }
 
 type Member struct {
@@ -187,6 +219,26 @@ type Settings struct {
 	MessagesAndMedia MessagesAndMedia `json:"messages_and_media" bson:"messages_and_media"`
 	ChatSettings     ChatSettings     `json:"chat_settings" bson:"chat_settings"`
 	PluginSettings   []PluginSettings   `json:"plugin_settings" bson:"plugin_settings"`
+}
+
+type OrganizationPreference struct {
+	Settings    OrgSettings    `json:"settings" bson:"settings"`
+	Permissions OrgPermissions `json:"permissions" bson:"permissions"`
+}
+
+type OrgSettings struct {
+	OrganizationIcon   string                 `json:"workspaceicon" bson:"workspaceicon"`
+	DeleteOrganization map[string]interface{} `json:"deleteorganization" bson:"deleteorganization"`
+}
+type OrgPermissions struct {
+	Messaging   map[string]interface{} `json:"messaging" bson:"messaging"`
+	Invitations bool                   `json:"invitations" bson:"invitations"`
+	MessageSettings *MessageSettings  `json:"messagesettings" bson:"messagesettings"`
+}
+
+type MessageSettings struct{
+	MessageEditing bool `json:"messageediting" bson:"messageediting"`
+	MessageDeleting bool `json:"messagedeleting" bson:"messagedeleting"`
 }
 
 type Notifications struct {
@@ -248,3 +300,4 @@ type OrganizationHandler struct {
 	configs     *utils.Configurations
 	mailService service.MailService
 }
+
