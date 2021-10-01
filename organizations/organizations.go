@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
@@ -512,4 +513,49 @@ func IsProVersion(OrgId string) (bool, error) {
 	}
 
 	return organization.Version == ProVersion, nil
+}
+
+func (oh *OrganizationHandler) SaveBillingSettings(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	orgId := mux.Vars(r)["id"]
+	
+	var billingSetting BillingSetting
+	err := utils.ParseJsonFromRequest(r, &billingSetting)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	validate := validator.New()
+
+	if err := validate.Struct(billingSetting); err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	billing := Billing {
+		billingSetting,
+	}
+
+	loggedInUser := r.Context().Value("user").(*auth.AuthUser)
+	if  _, err := FetchMember(bson.M{"org_id": orgId, "email": loggedInUser.Email}); err != nil {
+		utils.GetError(errors.New("access denied"), http.StatusNotFound, w)
+		return
+	}
+
+	org_filter := make(map[string]interface{})
+	org_filter["billing"] = billing
+
+	update, err := utils.UpdateOneMongoDbDoc(OrganizationCollectionName, orgId, org_filter)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+	
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	utils.GetSuccess("organization billing settings updated successfully", nil, w)
 }
