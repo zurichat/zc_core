@@ -78,6 +78,22 @@ type Organization struct {
 	UpdatedAt    time.Time                `json:"updated_at" bson:"updated_at"`
 	Tokens       float64                  `json:"tokens" bson:"tokens"`
 	Version      string                   `json:"version" bson:"version"`
+	Billing      Billing                  `json:"billing" bson:"billing"`
+}
+
+type Billing struct {
+	Settings BillingSetting
+}
+
+type BillingSetting struct {
+	Country  			string   `json:"country" bson:"country" validate:"required"`
+	CompanyName  		string   `json:"company_name" bson:"company_name" validate:"required"`
+	StreetAddress  		string   `json:"street_address" bson:"street_address" validate:"required"`
+	Suite  				string   `json:"suite" bson:"suite" validate:"required"`
+	City  				string   `json:"city" bson:"city" validate:"required"`
+	State  				string   `json:"state" bson:"state" validate:"required"`
+	PostalCode  		string   `json:"postal_code" bson:"postal_code" validate:"required"`
+	AdditionalNotes  	string   `json:"additional_notes" bson:"additional_notes" validate:"required"`
 }
 
 type TokenTransaction struct {
