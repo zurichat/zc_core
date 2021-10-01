@@ -216,24 +216,39 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
+	if mux.Vars(r)["action"] == "delete" {
+		result, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, member_Id, bson.M{"image_url": ""})
 
-	uploadPath := "profile_image/" + orgId + "/" + member_Id
-	img_url, erro := service.ProfileImageUpload(uploadPath, r)
-	if erro != nil {
-		utils.GetError(erro, http.StatusInternalServerError, w)
-		return
-	}
+		if err != nil {
+			utils.GetError(err, http.StatusInternalServerError, w)
+			return
+		}
 
-	result, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, member_Id, bson.M{"image_url": img_url})
+		if result.ModifiedCount == 0 {
+			utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+			return
+		}
+		utils.GetSuccess("image deleted successfully", "", w)
+	} else {
+		uploadPath := "profile_image/" + orgId + "/" + member_Id
+		img_url, erro := service.ProfileImageUpload(uploadPath, r)
+		if erro != nil {
+			utils.GetError(erro, http.StatusInternalServerError, w)
+			return
+		}
 
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
+		result, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, member_Id, bson.M{"image_url": img_url})
 
-	if result.ModifiedCount == 0 {
-		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
-		return
+		if err != nil {
+			utils.GetError(err, http.StatusInternalServerError, w)
+			return
+		}
+
+		if result.ModifiedCount == 0 {
+			utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+			return
+		}
+		utils.GetSuccess("image updated successfully", img_url, w)
 	}
 
 	// publish update to subscriber
@@ -241,7 +256,6 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 	event := utils.Event{Identifier: member_Id, Type: "User", Event: UpdateOrganizationMemberPic, Channel: eventChannel, Payload: make(map[string]interface{})}
 	go utils.Emitter(event)
 
-	utils.GetSuccess("image updated successfully", img_url, w)
 }
 
 // an endpoint to update a user status
@@ -276,38 +290,38 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 	// check the value in expiry field
 	var choosenTime time.Time
 	if _, ok := StatusExpiryTime[status.ExpiryTime]; !ok {
-		
+
 		choosenTime, err = time.Parse(time.RFC3339, status.ExpiryTime)
 
 		if err != nil {
 			utils.GetError(errors.New("invalid selection of expiry time"), http.StatusBadRequest, w)
 			return
 		}
-    }
+	}
 
-	currentTime := time.Now().Local() 
+	currentTime := time.Now().Local()
 	switch set := status.ExpiryTime; set {
-	case DontClear: 
-	
-	case ThirtyMins: 
+	case DontClear:
+
+	case ThirtyMins:
 		go ClearStatus(orgId, member_Id, 30)
 
-	case OneHr: 
+	case OneHr:
 		go ClearStatus(orgId, member_Id, 60)
 
-	case FourHrs: 
+	case FourHrs:
 		go ClearStatus(orgId, member_Id, 240)
 
-	case Today: 
+	case Today:
 		go ClearStatus(orgId, member_Id, 60*int(24-currentTime.Hour()))
 
-	case ThisWeek: 
+	case ThisWeek:
 		day := int(time.Now().Weekday())
 		weekday := 7 - day
 		minutes := weekday * 24 * 60
 		go ClearStatus(orgId, member_Id, minutes)
 
-	default: 
+	default:
 		diff := choosenTime.Local().Sub(currentTime)
 		go ClearStatus(orgId, member_Id, int(diff.Minutes()))
 	}
@@ -771,7 +785,7 @@ func (oh *OrganizationHandler) UpdateMemberRole(w http.ResponseWriter, r *http.R
 	if _, ok := Roles[role]; !ok {
 		utils.GetError(errors.New("role is not valid"), http.StatusBadRequest, w)
 		return
-    }
+	}
 
 	memId, _ := primitive.ObjectIDFromHex(memberId)
 
