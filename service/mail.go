@@ -31,6 +31,8 @@ const (
 	DownloadClient
 	WorkspaceInvite
 	TokenBillingNotice
+	WorkSpaceInvite
+	WorkSpaceWelcome
 )
 
 var MailTypes = map[MailType]MailType{
@@ -40,6 +42,8 @@ var MailTypes = map[MailType]MailType{
 	DownloadClient:     DownloadClient,
 	WorkspaceInvite:    WorkspaceInvite,
 	TokenBillingNotice: TokenBillingNotice,
+	WorkSpaceInvite: 	WorkSpaceInvite,
+	WorkSpaceWelcome: 	WorkSpaceWelcome,
 }
 
 type Mail struct {
@@ -70,6 +74,8 @@ func (ms *ZcMailService) LoadTemplate(mailReq *Mail) (string, error) {
 		DownloadClient:     ms.configs.DownloadClientTemplate,
 		WorkspaceInvite:    ms.configs.WorkspaceInviteTemplate,
 		TokenBillingNotice: ms.configs.TokenBillingNoticeTemplate,
+		WorkSpaceInvite:	ms.configs.WorkSpaceInviteTemplate,
+		WorkSpaceWelcome:	ms.configs.WorkSpaceWelcomeTemplate,
 	}
 
 	templateFileName, ok := m[mailReq.mtype]
