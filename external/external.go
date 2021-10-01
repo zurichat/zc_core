@@ -126,7 +126,7 @@ func (eh *ExternalHandler) SendMail(w http.ResponseWriter, r *http.Request) {
 		Subject	 string	`json:"subject" validate:"subject,required"`
 		MailType int	`json:"mail_type" validate:"mail_type,required"`
 		Data     map[string]interface{} `json:"data" validate:"data,required"`
-		}{}
+	}{}
 
 	if err := utils.ParseJsonFromRequest(r, &mail); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
@@ -159,5 +159,5 @@ func (eh *ExternalHandler) SendMail(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("Error occured while sending mail: %s", err.Error())
 	}
 
-	utils.GetSuccess("Password reset code sent", nil, w)
+	utils.GetSuccess("Mail sent", nil, w)
 }
