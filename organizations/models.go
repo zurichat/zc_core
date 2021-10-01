@@ -42,6 +42,7 @@ const (
 	EditorRole = "editor"
 	MemberRole = "member"
 	GuestRole  = "guest"
+	Bot  	   = "bot"
 )
 
 var Roles = map[string]string{
