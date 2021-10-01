@@ -122,10 +122,10 @@ func (eh *ExternalHandler) SendMail(w http.ResponseWriter, r *http.Request) {
 
 	mail := struct {
 		Email	 string	`json:"email" validate:"email,required"`
-		Subject	 string	`json:"subject" validate:"subject,required"`
-		MailType int	`json:"mail_type" validate:"mail_type,required"`
-		Data     map[string]interface{} `json:"data" validate:"data,required"`
-	}{}
+		Subject	 string	`json:"subject" validate:"required"`
+		MailType int	`json:"mail_type" validate:"required"`
+		Data     map[string]interface{} `json:"data" validate:"required"`
+	} {}
 
 	if err := utils.ParseJsonFromRequest(r, &mail); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
@@ -157,6 +157,6 @@ func (eh *ExternalHandler) SendMail(w http.ResponseWriter, r *http.Request) {
 	if err := eh.mailService.SendMail(msgr); err != nil {
 		fmt.Printf("Error occured while sending mail: %s", err.Error())
 	}
-
-	utils.GetSuccess("Mail sent", nil, w)
+	
+	utils.GetSuccess("Mail sent successfully", nil, w)
 }
