@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -181,4 +182,34 @@ func (oh *OrganizationHandler) GetTokenTransaction(w http.ResponseWriter, r *htt
 	}
 
 	utils.GetSuccess("transactions retrieved successfully", save, w)
+}
+
+func (oh *OrganizationHandler) ChargeTokens(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	orgId := mux.Vars(r)["id"]
+
+	// if err := SubscriptionBilling(orgId, ProVersionRate); err != nil {
+	// 	utils.GetError(err, http.StatusExpectationFailed, w)
+	// }
+
+	requestData := make(map[string]string)
+	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	amount, err := strconv.ParseFloat(requestData["amount"], 64)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	description := string(requestData["description"])
+
+	if err := DeductToken(orgId, amount); err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	utils.GetSuccess("Billing successful for: "+description, nil, w)
 }
