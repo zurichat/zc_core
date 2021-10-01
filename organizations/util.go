@@ -71,7 +71,8 @@ func ValidateMember(orgId, member_Id string) error{
 	return nil
 }
 
-func newMember(email string, userName string, orgId string, role string, setting *Settings) Member {
+// create member instance 
+func NewMember(email string, userName string, orgId string, role string, setting *Settings) Member {
 	return Member{
 		ID:       primitive.NewObjectID(),
 		Email:    email,
