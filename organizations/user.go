@@ -81,7 +81,7 @@ func (oh *OrganizationHandler) GetMembers(w http.ResponseWriter, r *http.Request
 			"$or": []bson.M{
 				{"first_name": regex},
 				{"last_name": regex},
-				{"email": regex},
+				{"email": query},
 				{"display_name": regex},
 			},
 		}
@@ -168,7 +168,7 @@ func (oh *OrganizationHandler) CreateMember(w http.ResponseWriter, r *http.Reque
 
 	setting := new(Settings)
 
-	newMember := newMember(user.Email, newUserName, orgId.Hex(), MemberRole, setting)
+	newMember := NewMember(user.Email, newUserName, orgId.Hex(), MemberRole, setting)
 
 	coll := utils.GetCollection(MemberCollectionName)
 
@@ -273,24 +273,43 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		return
 	}
 
-	// clears the status based on the option selected by user
-	if status.ThirtyMins{
-		go ClearStatus(member_Id, 30)
-	}
+	// check the value in expiry field
+	var choosenTime time.Time
+	if _, ok := StatusExpiryTime[status.ExpiryTime]; !ok {
+		
+		choosenTime, err = time.Parse(time.RFC3339, status.ExpiryTime)
 
-	if status.FourHrs{
-		go ClearStatus(member_Id, 240)
-	}
+		if err != nil {
+			utils.GetError(errors.New("invalid selection of expiry time"), http.StatusBadRequest, w)
+			return
+		}
+    }
 
-	if status.OneHr{
-		go ClearStatus(member_Id, 60)
-	}
+	currentTime := time.Now().Local() 
+	switch set := status.ExpiryTime; set {
+	case DontClear: 
+	
+	case ThirtyMins: 
+		go ClearStatus(orgId, member_Id, 30)
 
-	if status.EndofWeek{
+	case OneHr: 
+		go ClearStatus(orgId, member_Id, 60)
+
+	case FourHrs: 
+		go ClearStatus(orgId, member_Id, 240)
+
+	case Today: 
+		go ClearStatus(orgId, member_Id, 60*int(24-currentTime.Hour()))
+
+	case ThisWeek: 
 		day := int(time.Now().Weekday())
 		weekday := 7 - day
 		minutes := weekday * 24 * 60
-		go ClearStatus(member_Id, minutes)
+		go ClearStatus(orgId, member_Id, minutes)
+
+	default: 
+		diff := choosenTime.Local().Sub(currentTime)
+		go ClearStatus(orgId, member_Id, int(diff.Minutes()))
 	}
 
 	statusUpdate, err := utils.StructToMap(status)
@@ -299,8 +318,11 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		return
 	}
 
+	memberStatus := make(map[string]interface{})
+	memberStatus["status"] = statusUpdate
+
 	// updates member status
-	result, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, member_Id, statusUpdate)
+	result, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, member_Id, memberStatus)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return

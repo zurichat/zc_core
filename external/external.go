@@ -5,13 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
+	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
 	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
 
 var (
+	validate         = validator.New()
 	CLIENT_NOT_VALID = errors.New("client type is not valid is not valid. Choose from windows, linux, mac, ios, android")
 	EMAIL_NOT_VALID  = errors.New("Email address is not valid")
 )
@@ -112,4 +115,48 @@ func (eh *ExternalHandler) DownloadClient(w http.ResponseWriter, r *http.Request
 	}
 	utils.GetSuccess("Download Link Successfully sent", url, w)
 
+}
+
+func (eh *ExternalHandler) SendMail(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	mail := struct {
+		Email	 string	`json:"email" validate:"email,required"`
+		Subject	 string	`json:"subject" validate:"required"`
+		MailType int	`json:"mail_type" validate:"required"`
+		Data     map[string]interface{} `json:"data" validate:"required"`
+	} {}
+
+	if err := utils.ParseJsonFromRequest(r, &mail); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	if err := validate.Struct(mail); err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+	// ensure email is valid
+	if !utils.IsValidEmail(strings.ToLower(mail.Email)) {
+		utils.GetError(EMAIL_NOT_VALID, http.StatusBadRequest, w)
+		return
+	}	
+
+	if _, ok := service.MailTypes[service.MailType(mail.MailType)]; !ok {
+		utils.GetError(errors.New("Invalid email type, email template does not exists!"), http.StatusBadRequest, w)
+		return
+    }	
+
+	msgr := eh.mailService.NewMail(
+		[]string{mail.Email},
+		mail.Subject, 
+		service.MailType(mail.MailType), 
+		mail.Data,
+	)
+
+	if err := eh.mailService.SendMail(msgr); err != nil {
+		fmt.Printf("Error occured while sending mail: %s", err.Error())
+	}
+	
+	utils.GetSuccess("Mail sent successfully", nil, w)
 }

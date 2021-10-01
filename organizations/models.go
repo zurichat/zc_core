@@ -2,11 +2,10 @@ package organizations
 
 import (
 	"encoding/json"
-	"log"
+
 	"strings"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
@@ -14,9 +13,9 @@ import (
 
 const (
 	OrganizationCollectionName     = "organizations"
+	TokenTransactionCollectionName = "token_transaction"
 	InstalledPluginsCollectionName = "installed_plugins"
 	OrganizationInviteCollection   = "organizations_invites"
-	OrganizationSettings           = "organizations_settings"
 	MemberCollectionName           = "members"
 	UserCollectionName             = "users"
 )
@@ -34,6 +33,7 @@ const (
 	UpdateOrganizationMemberPresence = "UpdateOrganizationMemberPresence"
 	UpdateOrganizationMemberSettings = "UpdateOrganizationMemberSettings"
 	UpdateOrganizationMemberRole     = "UpdateOrganizationMemberRole"
+	UpdateOrganizationMemberStatusCleared = "UpdateOrganizationMemberStatusCleared"
 )
 
 const (
@@ -42,14 +42,15 @@ const (
 	EditorRole = "editor"
 	MemberRole = "member"
 	GuestRole  = "guest"
+	Bot  	   = "bot"
 )
 
-var Roles = map[string]string {
-	OwnerRole: OwnerRole,
-	AdminRole: AdminRole,
+var Roles = map[string]string{
+	OwnerRole:  OwnerRole,
+	AdminRole:  AdminRole,
 	EditorRole: EditorRole,
 	MemberRole: MemberRole,
-	GuestRole: GuestRole,
+	GuestRole:  GuestRole,
 }
 
 const (
@@ -58,7 +59,6 @@ const (
 )
 
 var RequestData = make(map[string]string)
-const NairaToTokenRate = 0.01
 
 type MemberPassword struct {
 	MemberID string `bson:"member_id"`
@@ -72,12 +72,40 @@ type Organization struct {
 	CreatorID    string                   `json:"creator_id" bson:"creator_id"`
 	Plugins      []map[string]interface{} `json:"plugins" bson:"plugins"`
 	Admins       []string                 `json:"admins" bson:"admins"`
-	Settings     map[string]interface{}   `json:"settings" bson:"settings"`
+	Settings     *OrganizationPreference   `json:"settings" bson:"settings"`
 	LogoURL      string                   `json:"logo_url" bson:"logo_url"`
 	WorkspaceURL string                   `json:"workspace_url" bson:"workspace_url"`
 	CreatedAt    time.Time                `json:"created_at" bson:"created_at"`
 	UpdatedAt    time.Time                `json:"updated_at" bson:"updated_at"`
 	Tokens       float64                  `json:"tokens" bson:"tokens"`
+	Version      string                   `json:"version" bson:"version"`
+	Billing      Billing                  `json:"billing" bson:"billing"`
+}
+
+type Billing struct {
+	Settings BillingSetting
+}
+
+type BillingSetting struct {
+	Country  			string   `json:"country" bson:"country" validate:"required"`
+	CompanyName  		string   `json:"company_name" bson:"company_name" validate:"required"`
+	StreetAddress  		string   `json:"street_address" bson:"street_address" validate:"required"`
+	Suite  				string   `json:"suite" bson:"suite" validate:"required"`
+	City  				string   `json:"city" bson:"city" validate:"required"`
+	State  				string   `json:"state" bson:"state" validate:"required"`
+	PostalCode  		string   `json:"postal_code" bson:"postal_code" validate:"required"`
+	AdditionalNotes  	string   `json:"additional_notes" bson:"additional_notes" validate:"required"`
+}
+
+type TokenTransaction struct {
+	OrgId         string    `json:"org_id" bson:"org_id"`
+	Currency      string    `json:"currency" bson:"currency"`
+	Token         float64   `json:"token" bson:"token"`
+	Type          string    `json:"type" bson:"type"`
+	Description   string    `json:"description" bson:"description"`
+	Amount        float64   `json:"amount" bson:"amount"`
+	Time          time.Time `json:"time" bson:"time"`
+	TransactionId string    `json:"transaction_id" bson:"transaction_id"`
 }
 
 type Invite struct {
@@ -139,14 +167,28 @@ type Social struct {
 	Title string `json:"title" bson:"title"`
 }
 
+const (
+	DontClear = "dont_clear"
+	ThirtyMins= "thirty_mins"
+	OneHr  	  = "one_hour"
+	FourHrs   = "four_hours"
+	Today     = "today"
+	ThisWeek  = "this_week"
+)
+
+var StatusExpiryTime = map[string]string {
+	DontClear : DontClear,
+	ThirtyMins: ThirtyMins,
+	OneHr	  : OneHr,
+	FourHrs   : FourHrs,
+	Today     : Today,
+	ThisWeek  : ThisWeek,
+}
+
 type Status struct {
 	Tag   			string 		`json:"tag" bson:"tag"`
 	Text 			string 		`json:"text" bson:"text"`
-	ThirtyMins		bool		`json:"thirty_mins" bson:"thirty_mins"`
-	OneHr			bool		`json:"one_hr" bson:"one_hr"`
-	FourHrs 		bool		`json:"four_hrs" bson:"four_hrs"`
-	EndofWeek		bool		`json:"end_of_week" bson:"end_of_week"`
-	DontClear		bool		`json:"dont_clear" bson:"dont_clear"`
+	ExpiryTime 		string 		`json:"expiry_time" bson:"expiry_time"`
 }
 
 type Member struct {
@@ -185,32 +227,62 @@ type Profile struct {
 	TimeZone    string   `json:"time_zone" bson:"time_zone"`
 	Socials     []Social `json:"socials" bson:"socials"`
 	Language    string   `json:"language" bson:"language"`
-	WhatIDo		string	 `json:"what_i_do" bson:"what_i_do"`
 }
 
 type Settings struct {
-	Notifications    Notifications    `json:"notifications" bson:"notifications"`
-	Sidebar          Sidebar          `json:"sidebar" bson:"sidebar"`
-	Themes           Themes           `json:"themes" bson:"themes"`
-	MessagesAndMedia MessagesAndMedia `json:"messages_and_media" bson:"messages_and_media"`
-	ChatSettings     ChatSettings     `json:"chat_settings" bson:"chat_settings"`
+	Notifications    		Notifications    		`json:"notifications" bson:"notifications"`
+	Sidebar          		Sidebar          		`json:"sidebar" bson:"sidebar"`
+	Themes           		Themes           		`json:"themes" bson:"themes"`
+	MessagesAndMedia 		MessagesAndMedia 		`json:"messages_and_media" bson:"messages_and_media"`
+	ChatSettings     		ChatSettings     		`json:"chat_settings" bson:"chat_settings"`
+	LanguagesAndRegions		LanguagesAndRegions		`json:"languages_and_regions" bson:"languages_and_regions"`
+	Accessibility			Accessibility			`json:"accessibility" bson:"accessibility"`
+	MarkAsRead				MarkAsRead				`json:"mark_as_read" bson:"mark_as_read"`
+	AudioAndVideo			AudioAndVideo			`json:"audio_and_video" bson:"audio_and_video"`
+	PluginSettings   		[]PluginSettings   		`json:"plugin_settings" bson:"plugin_settings"`
+}
+
+type OrganizationPreference struct {
+	Settings    OrgSettings    `json:"settings" bson:"settings"`
+	Permissions OrgPermissions `json:"permissions" bson:"permissions"`
+}
+
+type OrgSettings struct {
+	OrganizationIcon   string                 `json:"workspaceicon" bson:"workspaceicon"`
+	DeleteOrganization map[string]interface{} `json:"deleteorganization" bson:"deleteorganization"`
+}
+type OrgPermissions struct {
+	Messaging   map[string]interface{} `json:"messaging" bson:"messaging"`
+	Invitations bool                   `json:"invitations" bson:"invitations"`
+	MessageSettings *MessageSettings  `json:"messagesettings" bson:"messagesettings"`
+}
+
+type MessageSettings struct{
+	MessageEditing bool `json:"messageediting" bson:"messageediting"`
+	MessageDeleting bool `json:"messagedeleting" bson:"messagedeleting"`
 }
 
 type Notifications struct {
 	NotifyMeAbout                      string   `json:"notify_me_about" bson:"notify_me_about"`
-	UseDifferentSettingsForMyMobile    string   `json:"use_different_settings_mobile" bson:"use_different_settings_mobile"`
+	UseDifferentSettingsForMyMobile    bool   	`json:"use_different_settings_mobile" bson:"use_different_settings_mobile"`
 	ChannelHurdleNotification          bool     `json:"channel_hurdle_notification" bson:"channel_hurdle_notification"`
+	MeetingRepliesNotification         bool     `json:"meeting_replies_notification" bson:"meeting_replies_notification"`
 	ThreadRepliesNotification          bool     `json:"thread_replies_notification" bson:"thread_replies_notification"`
-	MyKeywords                         string   `json:"my_keywords" bson:"my_keywords"`
+	MyKeywords                         []string `json:"my_keywords" bson:"my_keywords"`
 	NotificationSchedule               string   `json:"notification_schedule" bson:"notification_schedule"`
 	MessagePreviewInEachNotification   bool     `json:"message_preview_in_each_notification" bson:"message_preview_in_each_notification"`
+	SetMessageNotificationsRight	   string	`json:"set_message_notifications_right" bson:"set_message_notifications_right"`
+	SetLoungeNotificationsRight	   	   string	`json:"set_lounge_notifications_right" bson:"set_lounge_notifications_right"`
 	MuteAllSounds                      bool     `json:"mute_all_sounds" bson:"mute_all_sounds"`
+	FlashWindowWhenNotificationComes   string	`json:"flash_window_when_notification_comes" bson:"flash_window_when_notification_comes"`
+	DeliverNotificationsVia			   string	`json:"deliver_notifications_via" bson:"deliver_notifications_via"`
 	WhenIamNotActiveOnDesktop          string   `json:"when_iam_not_active_on_desktop" bson:"when_iam_not_active_on_desktop"`
-	EmailNotificationsForMentionsAndDM []string `json:"email_notifications_for_mentions_and_dm" bson:"email_notifications_for_mentions_and_dm"`
+	EmailNotificationsForMentions 	   bool		`json:"email_notifications_for_mentions" bson:"email_notifications_for_mentions"`
 }
 
 type Sidebar struct {
 	AlwaysShowInTheSidebar        []string `json:"always_show_in_the_sidebar" bson:"always_show_in_the_sidebar"`
+	ShowAllTheFollowing			  string    `json:"show_all_the_following" bson:"show_all_the_following"`
 	SidebarSort                   string   `json:"sidebar_sort" bson:"sidebar_sort"`
 	ShowProfilePictureNextToDM    bool     `json:"show_profile_picture_next_to_dm" bson:"show_profile_picture_next_to_dm"`
 	ListPrivateChannelsSeperately bool     `json:"list_private_channels_seperately" bson:"list_private_channels_seperately"`
@@ -219,8 +291,10 @@ type Sidebar struct {
 }
 
 type Themes struct {
-	Themes string `json:"themes" bson:"themes"`
-	Colors string `json:"colors" bson:"colors"`
+	SyncWithOsSetting					bool 	`json:"sync_with_os_setting" bson:"sync_with_os_setting"`
+	DirectMessagesMentionsAndNetwork	bool	`json:"direct_messages_mentions_and_networks" bson:"direct_messages_mentions_and_networks"`
+	Themes 								string `json:"themes" bson:"themes"`
+	Colors 								string `json:"colors" bson:"colors"`
 }
 
 type MessagesAndMedia struct {
@@ -246,18 +320,38 @@ type ChatSettings struct {
 	FontSize        string `json:"font_size" bson:"font_size"`
 }
 
+type LanguagesAndRegions struct {
+	Language						string		`json:"language" bson:"language"`
+	TimeZone						string		`json:"time_zone" bson:"time_zone"`
+	SetTimeZoneAutomatically		bool		`json:"set_time_zone_automatically" bson:"set_time_zone_automatically"`
+	SpellCheck						bool		`json:"spell_check" bson:"spell_check"`
+	LanguagesZuriShouldSpellCheck	[]string	`json:"languages_zuri_should_spell_check" bson:"languages_zuri_should_spell_check"`
+}
+
+type Accessibility struct {
+	Animation					bool		`json:"animation" bson:"animation"`
+	DirectMessageAnnouncement	[]string	`json:"direct_message_announcement" bson:"direct_message_announcement"`
+	PressEmptyMessageField		string		`json:"press_empty_message_field" bson:"press_empty_message_field"`
+}
+
+type MarkAsRead struct {
+	WhenIViewAChannel	string		`json:"when_i_view_a_channel" bson:"when_i_view_a_channel"`
+	PromptToConfirm		bool		`json:"prompt_to_confirm" bson:"language"`
+}
+type AudioAndVideo struct {
+	IntegratedWebcam			string		`json:"integrated_webcam" bson:"integrated_webcam"`
+	Microphone					string		`json:"microphone" bson:"microphone"`
+	EnableAutomaticGainControl	bool	`json:"enable_automatic_gain_control" bson:"enable_automatic_gain_control"`
+	Speaker						string	`json:"speaker" bson:"speaker"`
+	WhenJoiningAZuriChatCall	[]string	`json:"when_joining_a_zuri_chat_call" bson:"when_joining_a_zuri_chat_call"`
+	WhenJoiningAHuddle			[]string	`json:"when_joining_a_huddle" bson:"when_joining_a_huddle"`
+	WhenSlackIsInTheBackground	[]string	`json:"when_slack_is_in_the_background" bson:"when_slack_is_in_the_background"`
+}
+	type PluginSettings struct {
+	Plugin       string `json:"plugin" bson:"plugin" validate:"required"`
+	AccessLevel  string `json:"access_level" bson:"access_level" validate:"required"`
+}
 type OrganizationHandler struct {
 	configs     *utils.Configurations
 	mailService service.MailService
-}
-
-func ClearStatus(member_id string, period int) {
-	time.Sleep(time.Duration(period) * time.Minute)
-	update := bson.M{"text": "", "tag": ""}
-	_, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, member_id, update)
-	if err != nil {
-		log.Println("could not clear status")
-		return
-	}
-	log.Println("status cleared")
 }

@@ -80,12 +80,12 @@ func GetMongoDbCollection(DbName string, CollectionName string) (*mongo.Collecti
 }
 
 // get MongoDb documents for a collection
-func GetMongoDbDocs(collectionName string, filter map[string]interface{}) ([]bson.M, error) {
+func GetMongoDbDocs(collectionName string, filter map[string]interface{}, opts ...*options.FindOptions) ([]bson.M, error) {
 	ctx := context.Background()
 	collection := defaultMongoHandle.GetCollection(collectionName)
 
 	var data []bson.M
-	filterCursor, err := collection.Find(ctx, MapToBson(filter))
+	filterCursor, err := collection.Find(ctx, MapToBson(filter), opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -97,12 +97,12 @@ func GetMongoDbDocs(collectionName string, filter map[string]interface{}) ([]bso
 }
 
 // get single MongoDb document for a collection
-func GetMongoDbDoc(collectionName string, filter map[string]interface{}) (bson.M, error) {
+func GetMongoDbDoc(collectionName string, filter map[string]interface{}, opts ...*options.FindOneOptions) (bson.M, error) {
 	ctx := context.Background()
 	collection := defaultMongoHandle.GetCollection(collectionName)
 
 	var data bson.M
-	if err := collection.FindOne(ctx, MapToBson(filter)).Decode(&data); err != nil {
+	if err := collection.FindOne(ctx, MapToBson(filter), opts...).Decode(&data); err != nil {
 		return nil, err
 	}
 
