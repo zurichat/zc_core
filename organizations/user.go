@@ -168,7 +168,7 @@ func (oh *OrganizationHandler) CreateMember(w http.ResponseWriter, r *http.Reque
 
 	setting := new(Settings)
 
-	newMember := newMember(user.Email, newUserName, orgId.Hex(), MemberRole, setting)
+	newMember := NewMember(user.Email, newUserName, orgId.Hex(), MemberRole, setting)
 
 	coll := utils.GetCollection(MemberCollectionName)
 

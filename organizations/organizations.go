@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
@@ -77,8 +78,6 @@ func (oh *OrganizationHandler) GetOrganizationByURL(w http.ResponseWriter, r *ht
 // Create an organization record
 func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	// loggedIn := r.Context().Value("user").(*auth.AuthUser)
-	// loggedInUser, _ := auth.FetchUserByEmail(bson.M{"email": strings.ToLower(loggedIn.Email)})
 
 	var newOrg Organization
 
@@ -107,8 +106,6 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	creator, _ := auth.FetchUserByEmail(bson.M{"email": userEmail})
 	var ccreatorid string = creator.ID
 
-	// extract user document
-	// var luHexid, _ = primitive.ObjectIDFromHex(loggedInUser.ID.Hex())
 
 	userDoc, _ := utils.GetMongoDbDoc(UserCollectionName, bson.M{"email": newOrg.CreatorEmail})
 	if userDoc == nil {
@@ -120,6 +117,7 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	newOrg.CreatorID = ccreatorid
 	newOrg.CreatorEmail = userEmail
 	newOrg.CreatedAt = time.Now()
+
 	// initialize organization with 100 free tokens
 	newOrg.Tokens = 100
 	newOrg.Version = FreeVersion
@@ -146,7 +144,7 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	setting := new(Settings)
 
-	newMember := newMember(user.Email, userName, iiid, OwnerRole, setting)
+	newMember := NewMember(user.Email, userName, iiid, OwnerRole, setting)
 
 	// add new member to member collection
 	coll := utils.GetCollection(MemberCollectionName)
@@ -164,6 +162,24 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	_, ee := utils.UpdateOneMongoDbDoc(UserCollectionName, ccreatorid, updateFields)
 	if ee != nil {
 		utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	bot := Member{
+		ID:       primitive.NewObjectID(),
+		OrgId:    iiid,
+		FirstName: "TwitterBot",
+		Role:     Bot,
+		Presence: "true", 
+		JoinedAt: time.Now(),
+		Deleted:  false,
+	}
+
+	// add bot as member of organization
+	coll = utils.GetCollection(MemberCollectionName)
+	_, err = coll.InsertOne(r.Context(), bot)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
 
@@ -512,4 +528,49 @@ func IsProVersion(OrgId string) (bool, error) {
 	}
 
 	return organization.Version == ProVersion, nil
+}
+
+func (oh *OrganizationHandler) SaveBillingSettings(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	orgId := mux.Vars(r)["id"]
+	
+	var billingSetting BillingSetting
+	err := utils.ParseJsonFromRequest(r, &billingSetting)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	validate := validator.New()
+
+	if err := validate.Struct(billingSetting); err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	billing := Billing {
+		billingSetting,
+	}
+
+	loggedInUser := r.Context().Value("user").(*auth.AuthUser)
+	if  _, err := FetchMember(bson.M{"org_id": orgId, "email": loggedInUser.Email}); err != nil {
+		utils.GetError(errors.New("access denied"), http.StatusNotFound, w)
+		return
+	}
+
+	org_filter := make(map[string]interface{})
+	org_filter["billing"] = billing
+
+	update, err := utils.UpdateOneMongoDbDoc(OrganizationCollectionName, orgId, org_filter)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+	
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	utils.GetSuccess("organization billing settings updated successfully", nil, w)
 }

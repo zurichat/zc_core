@@ -116,12 +116,14 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/reports", report.GetReports).Methods("GET")
 	r.HandleFunc("/organizations/{id}/reports/{report_id}", report.GetReport).Methods("GET")
 	r.HandleFunc("/organizations/{id}/change-owner", auth.IsAuthenticated(organizations.TransferOwnership)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/billing", auth.IsAuthenticated(organizations.SaveBillingSettings)).Methods("PATCH")
 
 	//organization: payment
 	r.HandleFunc("/organizations/{id}/addtoken", auth.IsAuthenticated(organizations.AddToken)).Methods("POST")
-	r.HandleFunc("/organizations/{id}/tokentranx", auth.IsAuthenticated(organizations.GetTokenTransaction)).Methods("GET")
+	r.HandleFunc("/organizations/{id}/token-transaction", auth.IsAuthenticated(organizations.GetTokenTransaction)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/upgrade-to-pro", auth.IsAuthenticated(organizations.UpgradeToPro)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/charge-tokens", auth.IsAuthenticated(organizations.ChargeTokens)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/checkout-session", organizations.CreateCheckoutSession).Methods("POST")
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
