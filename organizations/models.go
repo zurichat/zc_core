@@ -71,7 +71,7 @@ type Organization struct {
 	CreatorID    string                   `json:"creator_id" bson:"creator_id"`
 	Plugins      []map[string]interface{} `json:"plugins" bson:"plugins"`
 	Admins       []string                 `json:"admins" bson:"admins"`
-	Settings     map[string]interface{}   `json:"settings" bson:"settings"`
+	Settings     *OrganizationPreference   `json:"settings" bson:"settings"`
 	LogoURL      string                   `json:"logo_url" bson:"logo_url"`
 	WorkspaceURL string                   `json:"workspace_url" bson:"workspace_url"`
 	CreatedAt    time.Time                `json:"created_at" bson:"created_at"`
@@ -218,6 +218,26 @@ type Settings struct {
 	Themes           Themes           `json:"themes" bson:"themes"`
 	MessagesAndMedia MessagesAndMedia `json:"messages_and_media" bson:"messages_and_media"`
 	ChatSettings     ChatSettings     `json:"chat_settings" bson:"chat_settings"`
+}
+
+type OrganizationPreference struct {
+	Settings    OrgSettings    `json:"settings" bson:"settings"`
+	Permissions OrgPermissions `json:"permissions" bson:"permissions"`
+}
+
+type OrgSettings struct {
+	OrganizationIcon   string                 `json:"workspaceicon" bson:"workspaceicon"`
+	DeleteOrganization map[string]interface{} `json:"deleteorganization" bson:"deleteorganization"`
+}
+type OrgPermissions struct {
+	Messaging   map[string]interface{} `json:"messaging" bson:"messaging"`
+	Invitations bool                   `json:"invitations" bson:"invitations"`
+	MessageSettings *MessageSettings  `json:"messagesettings" bson:"messagesettings"`
+}
+
+type MessageSettings struct{
+	MessageEditing bool `json:"messageediting" bson:"messageediting"`
+	MessageDeleting bool `json:"messagedeleting" bson:"messagedeleting"`
 }
 
 type Notifications struct {
