@@ -5,11 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
-	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
@@ -138,24 +136,19 @@ func (eh *ExternalHandler) SendMail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mailType := service.MailType(mail.MailType)
-
-	if _, ok := service.MailTypes[mailType]; !ok {
-		utils.GetError(errors.New("mail type is not valid"), http.StatusBadRequest, w)
+	if _, ok := service.MailTypes[service.MailType(mail.MailType)]; !ok {
+		utils.GetError(errors.New("Invalid email type, email template does not exists!"), http.StatusBadRequest, w)
 		return
-    }
+    }	
 
-	user, err := auth.FetchUserByEmail(bson.M{"email": strings.ToLower(mail.Email)})
-	if err != nil {
-		utils.GetError(auth.UserNotFound, http.StatusBadRequest, w)
-		return
-	}
+	msgr := eh.mailService.NewMail(
+		[]string{mail.Email},
+		mail.Subject, 
+		service.MailType(mail.MailType), 
+		mail.Data,
+	)
 
-	msger := eh.mailService.NewMail(
-		[]string{user.Email}, 
-		mail.Subject, mailType, mail.Data)
-
-	if err := eh.mailService.SendMail(msger); err != nil {
+	if err := eh.mailService.SendMail(msgr); err != nil {
 		fmt.Printf("Error occured while sending mail: %s", err.Error())
 	}
 
