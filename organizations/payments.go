@@ -8,8 +8,11 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/stripe/stripe-go/v72"
+	"github.com/stripe/stripe-go/v72/checkout/session"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
 
@@ -96,11 +99,39 @@ func SubscriptionBilling(OrgId string, ProVersionRate float64) error {
 	if err := DeductToken(OrgId, amount); err != nil {
 		return err
 	}
+	if err := SendTokenBillingEmail(OrgId, "Billing for Pro version subscription", amount); err != nil {
+		return err
+	}
 	return nil
 }
 
-func SendTokenBillingEmail() {
+func SendTokenBillingEmail(orgId, description string, amount float64) error {
 
+	OrgIdFromHex, err := primitive.ObjectIDFromHex(orgId)
+	if err != nil {
+		return err
+	}
+
+	org, _ := FetchOrganization(bson.M{"_id": OrgIdFromHex})
+	org_mail := org.CreatorEmail
+	fmt.Println("about to send mail to: " + org_mail)
+	balance := org.Tokens
+
+	ms := service.NewZcMailService(utils.NewConfigurations())
+	billing_mail := ms.NewMail(
+		[]string{org_mail},
+		"Token Billing Notice",
+		service.TokenBillingNotice,
+		map[string]interface{}{
+			"Description": description,
+			"Cost":        amount,
+			"Balance":     balance,
+		},
+	)
+	if err := ms.SendMail(billing_mail); err != nil {
+		return err
+	}
+	return nil
 }
 
 // allows user to be able to load tokens into organization wallet
@@ -212,4 +243,65 @@ func (oh *OrganizationHandler) ChargeTokens(w http.ResponseWriter, r *http.Reque
 	}
 
 	utils.GetSuccess("Billing successful for: "+description, nil, w)
+}
+
+func (oh *OrganizationHandler) CreateCheckoutSession(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	orgId := mux.Vars(r)["id"]
+	objId, err := primitive.ObjectIDFromHex(orgId)
+
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	org, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": objId})
+
+	if org == nil {
+		utils.GetError(fmt.Errorf("organization %s not found", orgId), http.StatusNotFound, w)
+		return
+	}
+
+	requestData := make(map[string]int64)
+	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	amount, ok := requestData["amount"]
+	if !ok {
+		utils.GetError(errors.New("amount not supplied"), http.StatusUnprocessableEntity, w)
+		return
+	}
+	stripeAmount := amount * 100
+	params := &stripe.CheckoutSessionParams{
+		PaymentMethodTypes: stripe.StringSlice([]string{
+			"card",
+		}),
+		Mode: stripe.String(string(stripe.CheckoutSessionModePayment)),
+		LineItems: []*stripe.CheckoutSessionLineItemParams{
+			&stripe.CheckoutSessionLineItemParams{
+				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
+					Currency: stripe.String("usd"),
+					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
+						Name: stripe.String("Purchase Token"),
+					},
+					UnitAmount: stripe.Int64(stripeAmount),
+				},
+				Quantity: stripe.Int64(1),
+			},
+		},
+		SuccessURL: stripe.String("http://localhost:3000/success.html"),
+		CancelURL:  stripe.String("http://localhost:3000/cancel.html"),
+	}
+
+	s, err := session.New(params)
+
+	if err != nil {
+		utils.GetError(errors.New("Error trying to initiate payment"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("successfully initiated payment", s.URL, w)
+	return
 }
