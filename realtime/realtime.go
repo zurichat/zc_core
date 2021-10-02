@@ -2,13 +2,11 @@ package realtime
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/mitchellh/mapstructure"
+	"github.com/gofrs/uuid"
 
-	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/utils"
 )
 
@@ -48,30 +46,27 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(r.Header.Get("Authorization"))
 	// 2. Authenticate user
 	headerToken := ExtractHeaderToken(r)
-	fmt.Println(creq, headerToken)
-
 	if headerToken == "" {
 		CentrifugoNotAuthenticatedResponse(w)
+	} else {
+		// 3. Generate a response object. In final version you have to
+		// check that this person is authenticated
+		u, _ := uuid.NewV4()
+		userID, err := CentifugoConnectAuth(r)
+		if err != nil {
+			CentrifugoNotAuthenticatedResponse(w)
+		} else {
+			data := CentrifugoConnectResponse{}
+			data.Result.User = u.String()
+			data.Result.User = userID
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(data)
+		}
 	}
-
-	// 3. Generate a response object. In final version you have to
-	// check that this person is authenticated
-	// u, _ := uuid.NewV4()
-	userID, err := CentifugoConnectAuth(r)
-	if err != nil {
-		CentrifugoNotAuthenticatedResponse(w)
-	}
-
-	data := CentrifugoConnectResponse{}
-	// data.Result.User = u.String()
-	data.Result.User = userID
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(data)
 
 }
 
@@ -104,51 +99,4 @@ func PublishEvent(w http.ResponseWriter, r *http.Request) {
 	res := utils.Emitter(event)
 	utils.GetSuccess("publish event status", res, w)
 
-}
-
-// Creates a 'not authenticated' response for given user connection request
-func CentrifugoNotAuthenticatedResponse(w http.ResponseWriter) {
-	data := CentrifugoConnectResponse{}
-	data.Result.User = ""
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(data)
-}
-
-// CentifugoConnectAuth returns the user ID of an authenticated user from the
-// bearer token in the original connect request or returns an error if the user
-// is not found
-func CentifugoConnectAuth(r *http.Request) (userID string, err error) {
-	// 1. Validate the token
-	configuration := utils.NewConfigurations()
-	signingKey := configuration.HmacSampleSecret
-	status, err, sessionData := auth.GetSessionDataFromToken(r, []byte(signingKey))
-
-	// 2. Check for a user record that's assigned this token
-	if status {
-		userID, err = UserIDFromSession(sessionData, *configuration)
-		if err != nil {
-			return "", nil
-		}
-		// 3. Return user ID and nil error if user is found
-		return userID, nil
-	}
-	return "", err
-}
-
-// Extract the token from the request header
-func ExtractHeaderToken(r *http.Request) string {
-	headerToken := r.Header.Get("Authorization")
-	return headerToken
-}
-
-// Extract user id from token
-func UserIDFromSession(sessionData auth.ResToken, conf utils.Configurations) (string, error) {
-	var data map[string]interface{}
-	mapstructure.Decode(sessionData, data)
-	session, err := utils.GetMongoDbDoc(conf.SessionDbCollection, data)
-	if err != nil {
-		return "", err
-	}
-	return session["user_id"].(string), nil
 }

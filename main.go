@@ -159,6 +159,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	// Realtime communications
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
 	r.HandleFunc("/realtime/auth", realtime.Auth).Methods("POST")
+	r.HandleFunc("/realtime/refresh", realtime.Refresh).Methods("POST")
 	r.HandleFunc("/realtime/publish-event", realtime.PublishEvent).Methods("POST")
 	r.Handle("/socket.io/", Server)
 
