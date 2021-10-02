@@ -38,11 +38,11 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !recordExists(_OrganizationCollectionName, reqData.OrganizationID) {
-		msg := "organization with this id does not exist"
-		utils.GetError(errors.New(msg), http.StatusNotFound, w)
-		return
-	}
+	//if !recordExists(_OrganizationCollectionName, reqData.OrganizationID) {
+	//msg := "organization with this id does not exist"
+	//utils.GetError(errors.New(msg), http.StatusNotFound, w)
+	//return
+	//}
 
 	// if plugin is writing to this collection the first time, we create a record linking this collection to the plugin.
 	if !pluginHasCollection(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName) {
@@ -92,15 +92,14 @@ func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, r *http.Request) {
 	filter := make(map[string]interface{})
 	collName := wdr.prefixCollectionName()
 
-	if wdr.BulkWrite {
-		filter = wdr.Filter
-	} else if wdr.ObjectID != "" {
+	if wdr.ObjectID != "" {
 		filter["_id"] = wdr.ObjectID
 	} else {
-
+		filter = wdr.Filter
 	}
-	filter["deleted"] = bson.M{"$ne": true}
 
+	filter["deleted"] = bson.M{"$ne": true}
+	normalizeIdIfExists(filter)
 	if wdr.RawQuery != nil {
 		res, err = rawQueryupdateMany(collName, filter, wdr.RawQuery)
 	} else {
@@ -168,12 +167,15 @@ func MustObjectIDFromHex(hex string) primitive.ObjectID {
 }
 
 func rawQueryupdateMany(collName string, filter map[string]interface{}, rawQuery interface{}) (*mongo.UpdateResult, error) {
-	if id, exists := filter["id"]; exists {
-		filter["_id"] = MustObjectIDFromHex(id.(string))
-	}
-	if id, exists := filter["_id"]; exists {
-		filter["_id"] = MustObjectIDFromHex(id.(string))
-	}
 	coll := utils.GetCollection(collName)
 	return coll.UpdateMany(context.TODO(), filter, rawQuery)
+}
+
+func normalizeIdIfExists(filter map[string]interface{}) {
+	if id, exists := filter["_id"]; exists {
+		filter["_id"] = MustObjectIDFromHex(id.(string))
+	} else if id, exists := filter["id"]; exists {
+		delete(filter, "id")
+		filter["_id"] = MustObjectIDFromHex(id.(string))
+	}
 }

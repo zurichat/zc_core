@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/stripe/stripe-go/v72"
@@ -294,8 +295,8 @@ func (oh *OrganizationHandler) CreateCheckoutSession(w http.ResponseWriter, r *h
 				Quantity: stripe.Int64(1),
 			},
 		},
-		SuccessURL: stripe.String("http://localhost:3000/success.html"),
-		CancelURL:  stripe.String("http://localhost:3000/cancel.html"),
+		SuccessURL: stripe.String(os.Getenv("FRONT_END_URL") + "/admin/settings/billings?status=success&orgId="+orgId),
+		CancelURL:  stripe.String(os.Getenv("FRONT_END_URL")+ "/admin/settings/billings?status=failed&orgId="+orgId),
 	}
 
 	s, err := session.New(params)
