@@ -1,10 +1,12 @@
 package data
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"zuri.chat/zccore/plugin"
@@ -19,6 +21,7 @@ type writeDataRequest struct {
 	ObjectID       string                 `json:"object_id,omitempty"`
 	Filter         map[string]interface{} `json:"filter"`
 	Payload        interface{}            `json:"payload,omitempty"`
+	RawQuery       interface{}            `json:"raw_query,omitempty"`
 }
 
 func WriteData(w http.ResponseWriter, r *http.Request) {
@@ -36,9 +39,9 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !recordExists(_OrganizationCollectionName, reqData.OrganizationID) {
-	msg := "organization with this id does not exist"
-	utils.GetError(errors.New(msg), http.StatusNotFound, w)
-	return
+		msg := "organization with this id does not exist"
+		utils.GetError(errors.New(msg), http.StatusNotFound, w)
+		return
 	}
 
 	// if plugin is writing to this collection the first time, we create a record linking this collection to the plugin.
@@ -51,7 +54,7 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":
 		reqData.handlePost(w, r)
-	case "PUT":
+	case "PUT", "PATCH":
 		reqData.handlePut(w, r)
 	default:
 		fmt.Fprint(w, `{"data_write": "Data write request"}`)
@@ -86,18 +89,25 @@ func (wdr *writeDataRequest) handlePost(w http.ResponseWriter, r *http.Request) 
 func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, r *http.Request) {
 	var err error
 	res := &mongo.UpdateResult{}
+	filter := make(map[string]interface{})
+	collName := wdr.prefixCollectionName()
+
 	if wdr.BulkWrite {
-		res, err = updateMany(wdr.prefixCollectionName(), wdr.Filter, wdr.Payload)
-		if err != nil {
-			utils.GetError(fmt.Errorf("an error occured: %v", err), http.StatusInternalServerError, w)
-			return
-		}
+		filter = wdr.Filter
 	} else {
-		res, err = updateOne(wdr.prefixCollectionName(), wdr.ObjectID, wdr.Payload)
-		if err != nil {
-			utils.GetError(fmt.Errorf("an error occured: %v", err), http.StatusInternalServerError, w)
-			return
-		}
+		filter["_id"] = MustObjectIDFromHex(wdr.ObjectID)
+	}
+	filter["deleted"] = bson.M{"$ne": true}
+
+	if wdr.RawQuery != nil {
+		res, err = rawQueryupdateMany(collName, filter, wdr.RawQuery)
+	} else {
+		res, err = updateMany(collName, filter, wdr.Payload)
+	}
+
+	if err != nil {
+		utils.GetError(fmt.Errorf("an error occured: %v", err), http.StatusInternalServerError, w)
+		return
 	}
 	data := M{
 		"matched_documents":  res.MatchedCount,
@@ -127,17 +137,13 @@ func insertOne(collName string, data interface{}) (*mongo.InsertOneResult, error
 }
 
 func updateOne(collName, id string, upd interface{}) (*mongo.UpdateResult, error) {
-	update, ok := upd.(map[string]interface{})
-	if !ok {
-		return nil, errors.New("invalid object type")
-	}
-	return utils.UpdateOneMongoDbDoc(collName, id, update)
+	return updateMany(collName, bson.M{"_id": MustObjectIDFromHex(id)}, upd)
 }
 
 func updateMany(collName string, filter map[string]interface{}, upd interface{}) (*mongo.UpdateResult, error) {
 	update, ok := upd.(map[string]interface{})
 	if !ok {
-		return nil, errors.New("type assertion error")
+		return nil, errors.New("invalid object type")
 	}
 	return utils.UpdateManyMongoDbDocs(collName, filter, update)
 }
@@ -157,4 +163,15 @@ func MustObjectIDFromHex(hex string) primitive.ObjectID {
 		panic(err)
 	}
 	return objID
+}
+
+func rawQueryupdateMany(collName string, filter map[string]interface{}, rawQuery interface{}) (*mongo.UpdateResult, error) {
+	if id, exists := filter["id"]; exists {
+		filter["_id"] = MustObjectIDFromHex(id.(string))
+	}
+	if id, exists := filter["_id"]; exists {
+		filter["_id"] = MustObjectIDFromHex(id.(string))
+	}
+	coll := utils.GetCollection(collName)
+	return coll.UpdateMany(context.TODO(), filter, rawQuery)
 }
