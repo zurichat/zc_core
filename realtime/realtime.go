@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/gofrs/uuid"
 
-	uuid "github.com/gofrs/uuid"
 	"zuri.chat/zccore/utils"
 )
 
@@ -18,8 +19,14 @@ var (
 	expiry             = 60 * 30
 )
 
+type Channels struct {
+	ChannelList []string `json:"channel" bson:"channel"`
+}
+
 type CentrifugoConnectResult struct {
-	User string `json:"user" bson:"user"`
+	User     string   `json:"user" bson:"user"`
+	ExpireAt int      `json:"expire_at" bson:"expire_at"`
+	Channels Channels `json:"channels" bson:"channels"`
 }
 
 type CentrifugoConnectResponse struct {
@@ -41,12 +48,13 @@ type CentrifugoConnectRequest struct {
 }
 
 func Auth(w http.ResponseWriter, r *http.Request) {
+	// 1. Decode the request from centrifugo
 	erro := AuthorizeOrigin(r)
 	if erro != nil {
 		CustomAthResponse(w, 4001, false, fmt.Sprintf("%v", erro))
 		return
 	}
-	// Decode the request from centrifugo
+
 	var creq CentrifugoConnectRequest
 	err := json.NewDecoder(r.Body).Decode(&creq)
 	if err != nil {
@@ -54,17 +62,28 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate a response object. In final version you have to
-	// check that this person is authenticated
-	u, _ := uuid.NewV4()
+	// 2. Authenticate user
+	headerToken := ExtractHeaderToken(r)
+	if headerToken == "" {
+		CentrifugoNotAuthenticatedResponse(w)
+	} else {
+		// 3. Generate a response object. In final version you have to
+		// check that this person is authenticated
+		u, _ := uuid.NewV4()
+		userID, err := CentifugoConnectAuth(r)
+		if err != nil {
+			CentrifugoNotAuthenticatedResponse(w)
+		} else {
+			data := CentrifugoConnectResponse{}
+			data.Result.User = u.String()
+			data.Result.User = userID
+			data.Result.ExpireAt = time.Now().Second() + expiry
 
-	data := CentrifugoConnectResponse{}
-	data.Result.User = u.String()
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(data)
-
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(data)
+		}
+	}
 }
 
 func Refresh(w http.ResponseWriter, r *http.Request) {
