@@ -3,6 +3,7 @@ package realtime
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofrs/uuid"
@@ -14,8 +15,14 @@ var (
 	validate = validator.New()
 )
 
+type Channels struct {
+	ChannelList []string `json:"channel" bson:"channel"`
+}
+
 type CentrifugoConnectResult struct {
-	User string `json:"user" bson:"user"`
+	User     string   `json:"user" bson:"user"`
+	ExpireAt int      `json:"expire_at" bson:"expire_at"`
+	Channels Channels `json:"channels" bson:"channels"`
 }
 
 type CentrifugoConnectResponse struct {
@@ -61,6 +68,7 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 			data := CentrifugoConnectResponse{}
 			data.Result.User = u.String()
 			data.Result.User = userID
+			data.Result.ExpireAt = time.Now().Second() + 30*60
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)

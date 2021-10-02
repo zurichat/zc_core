@@ -51,7 +51,7 @@ func ExtractHeaderToken(r *http.Request) string {
 // Extract user id from token
 func UserIDFromSession(sessionData auth.ResToken, conf utils.Configurations) (string, error) {
 	var data map[string]interface{}
-	mapstructure.Decode(sessionData, data)
+	mapstructure.Decode(sessionData, &data)
 	session, err := utils.GetMongoDbDoc(conf.SessionDbCollection, data)
 	if err != nil {
 		return "", err
