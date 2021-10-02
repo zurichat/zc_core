@@ -82,6 +82,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.GetOrganizations)).Methods("GET")
 	r.HandleFunc("/organizations/{id}", auth.IsAuthenticated(organizations.GetOrganization)).Methods("GET")
 	r.HandleFunc("/organizations/{id}", auth.IsAuthenticated(organizations.UpdateOrganizationSettings)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}", auth.IsAuthenticated(organizations.UpdateOrganizationPermission)).Methods("PATCH")
 
 	// Organization: Guest Invites
 	r.HandleFunc("/organizations/{id}/send-invite", auth.IsAuthenticated(auth.IsAuthorized(organizations.SendInvite, "admin"))).Methods("POST")
