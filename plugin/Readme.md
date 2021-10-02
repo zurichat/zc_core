@@ -18,11 +18,11 @@ To create a plugin, go to the following endpoint with the following data
 "version": "v1",
 "tags": ["some", "nice", "tags"],
 "category": "some category",
-"pictures": ["some.jpeng", "to.jpeng", "be.jpeng", "displayed.peng"]
+"images": ["some.jpeng", "pictures.peng", "to.jpeng", "be.jpeng", "displayed.peng"]
 }
 
 ```
-Every field here is required, else validation error will occur.
+The first 7 fields here is required, else validation error will occur.
 After a success message is received, the plugin is the approved to be listed on marketplace. It takes 10 seconds before the plugin can be listed in the marketplace.
 
 

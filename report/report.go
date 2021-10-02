@@ -91,7 +91,7 @@ func AddReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("report created", save, w)
+	utils.GetSuccess("report created", utils.M{"report_id": save.InsertedID}, w)
 }
 
 // Get a report

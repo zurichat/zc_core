@@ -106,7 +106,6 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	creator, _ := auth.FetchUserByEmail(bson.M{"email": userEmail})
 	var ccreatorid string = creator.ID
 
-
 	userDoc, _ := utils.GetMongoDbDoc(UserCollectionName, bson.M{"email": newOrg.CreatorEmail})
 	if userDoc == nil {
 		fmt.Printf("user with email %s does not exist!", newOrg.CreatorEmail)
@@ -166,13 +165,13 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	bot := Member{
-		ID:       primitive.NewObjectID(),
-		OrgId:    iiid,
+		ID:        primitive.NewObjectID(),
+		OrgId:     iiid,
 		FirstName: "TwitterBot",
-		Role:     Bot,
-		Presence: "true", 
-		JoinedAt: time.Now(),
-		Deleted:  false,
+		Role:      Bot,
+		Presence:  "true",
+		JoinedAt:  time.Now(),
+		Deleted:   false,
 	}
 
 	// add bot as member of organization
@@ -183,7 +182,7 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("organization created", save, w)
+	utils.GetSuccess("organization created", utils.M{"organization_id": save.InsertedID}, w)
 }
 
 // Get all organization records
@@ -533,7 +532,7 @@ func IsProVersion(OrgId string) (bool, error) {
 func (oh *OrganizationHandler) SaveBillingSettings(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	orgId := mux.Vars(r)["id"]
-	
+
 	var billingSetting BillingSetting
 	err := utils.ParseJsonFromRequest(r, &billingSetting)
 	if err != nil {
@@ -548,12 +547,12 @@ func (oh *OrganizationHandler) SaveBillingSettings(w http.ResponseWriter, r *htt
 		return
 	}
 
-	billing := Billing {
+	billing := Billing{
 		billingSetting,
 	}
 
 	loggedInUser := r.Context().Value("user").(*auth.AuthUser)
-	if  _, err := FetchMember(bson.M{"org_id": orgId, "email": loggedInUser.Email}); err != nil {
+	if _, err := FetchMember(bson.M{"org_id": orgId, "email": loggedInUser.Email}); err != nil {
 		utils.GetError(errors.New("access denied"), http.StatusNotFound, w)
 		return
 	}
@@ -566,11 +565,197 @@ func (oh *OrganizationHandler) SaveBillingSettings(w http.ResponseWriter, r *htt
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
-	
+
 	if update.ModifiedCount == 0 {
 		utils.GetError(errors.New("operation failed"), http.StatusUnprocessableEntity, w)
 		return
 	}
 
 	utils.GetSuccess("organization billing settings updated successfully", nil, w)
+}
+
+func (oh *OrganizationHandler) UpdateOrganizationSettings(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	orgId := mux.Vars(r)["id"]
+
+	var orgSettings OrgSettings
+	err := utils.ParseJsonFromRequest(r, &orgSettings)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	objId, err := primitive.ObjectIDFromHex(orgId)
+
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	validate := validator.New()
+
+	// get previous settings
+	save, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": objId})
+
+	if save == nil {
+		utils.GetError(fmt.Errorf("organization %s not found", orgId), http.StatusNotFound, w)
+		return
+	}
+
+	var org Organization
+	// convert bson to struct
+	bsonBytes, _ := bson.Marshal(save)
+	bson.Unmarshal(bsonBytes, &org)
+
+	//valdate struct
+	if err := validate.Struct(org); err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+	//adds new settings with existing settings
+	orgPref := OrganizationPreference{
+		orgSettings,
+		org.Settings.Permissions,
+		org.Settings.Authentication,
+	}
+
+	org_filter := make(map[string]interface{})
+	org_filter["settings"] = orgPref
+
+	update, err := utils.UpdateOneMongoDbDoc(OrganizationCollectionName, orgId, org_filter)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	utils.GetSuccess("organization settings updated successfully", nil, w)
+}
+
+func (oh *OrganizationHandler) UpdateOrganizationPermission(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	orgId := mux.Vars(r)["id"]
+
+	var orgPermissions OrgPermissions
+	err := utils.ParseJsonFromRequest(r, &orgPermissions)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	objId, err := primitive.ObjectIDFromHex(orgId)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	validate := validator.New()
+
+	// get previous settings
+	save, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": objId})
+
+	if save == nil {
+		utils.GetError(fmt.Errorf("organization %s not found", orgId), http.StatusNotFound, w)
+		return
+	}
+
+	var org Organization
+	// convert bson to struct
+	bsonBytes, _ := bson.Marshal(save)
+	bson.Unmarshal(bsonBytes, &org)
+
+	//valdate struct
+	if err := validate.Struct(org); err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	//adds new settings with existing settings
+	orgPref := OrganizationPreference{
+		org.Settings.Settings,
+		orgPermissions,
+		org.Settings.Authentication,
+	}
+
+	org_filter := make(map[string]interface{})
+	org_filter["settings"] = orgPref
+
+	update, err := utils.UpdateOneMongoDbDoc(OrganizationCollectionName, orgId, org_filter)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	utils.GetSuccess("organization settings updated successfully", nil, w)
+}
+
+func (oh *OrganizationHandler) UpdateOrganizationAuthentication(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	orgId := mux.Vars(r)["id"]
+
+	var orgAuthentication OrgAuthentication
+	err := utils.ParseJsonFromRequest(r, &orgAuthentication)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	objId, err := primitive.ObjectIDFromHex(orgId)
+
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	validate := validator.New()
+
+	// get previous settings
+	save, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": objId})
+
+	if save == nil {
+		utils.GetError(fmt.Errorf("organization %s not found", orgId), http.StatusNotFound, w)
+		return
+	}
+
+	var org Organization
+	// convert bson to struct
+	bsonBytes, _ := bson.Marshal(save)
+	bson.Unmarshal(bsonBytes, &org)
+
+	//valdate struct
+	if err := validate.Struct(org); err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+	//adds new settings with existing settings
+	orgPref := OrganizationPreference{
+		org.Settings.Settings,
+		org.Settings.Permissions,
+		orgAuthentication,
+	}
+
+	org_filter := make(map[string]interface{})
+	org_filter["settings"] = orgPref
+
+	update, err := utils.UpdateOneMongoDbDoc(OrganizationCollectionName, orgId, org_filter)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	utils.GetSuccess("organization settings updated successfully", nil, w)
 }
