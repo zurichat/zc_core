@@ -87,14 +87,14 @@ type Billing struct {
 }
 
 type BillingSetting struct {
-	Country         string `json:"country" bson:"country" validate:"required"`
-	CompanyName     string `json:"company_name" bson:"company_name" validate:"required"`
-	StreetAddress   string `json:"street_address" bson:"street_address" validate:"required"`
-	Suite           string `json:"suite" bson:"suite" validate:"required"`
-	City            string `json:"city" bson:"city" validate:"required"`
-	State           string `json:"state" bson:"state" validate:"required"`
-	PostalCode      string `json:"postal_code" bson:"postal_code" validate:"required"`
-	AdditionalNotes string `json:"additional_notes" bson:"additional_notes" validate:"required"`
+	Country         string `json:"country" bson:"country"`
+	CompanyName     string `json:"company_name" bson:"company_name"`
+	StreetAddress   string `json:"street_address" bson:"street_address" `
+	Suite           string `json:"suite" bson:"suite"`
+	City            string `json:"city" bson:"city"`
+	State           string `json:"state" bson:"state"`
+	PostalCode      string `json:"postal_code" bson:"postal_code"`
+	AdditionalNotes string `json:"additional_notes" bson:"additional_notes"`
 }
 
 type TokenTransaction struct {

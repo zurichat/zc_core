@@ -573,3 +573,66 @@ func (oh *OrganizationHandler) SaveBillingSettings(w http.ResponseWriter, r *htt
 
 	utils.GetSuccess("organization billing settings updated successfully", nil, w)
 }
+
+func (oh *OrganizationHandler) UpdateOrganizationSettings(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	orgId := mux.Vars(r)["id"]
+
+	var orgSettings OrgSettings
+	err := utils.ParseJsonFromRequest(r, &orgSettings)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	objId, err := primitive.ObjectIDFromHex(orgId)
+
+	validate := validator.New()
+
+	// get previous settings
+	save, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": objId})
+
+	if save == nil {
+		utils.GetError(fmt.Errorf("organization %s not found", orgId), http.StatusNotFound, w)
+		return
+	}
+
+	var org Organization
+	// convert bson to struct
+	bsonBytes, _ := bson.Marshal(save)
+	bson.Unmarshal(bsonBytes, &org)
+
+	//valdate struct
+	if err := validate.Struct(org); err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+	//adds new settings with existing settings
+	orgPref := OrganizationPreference{
+		orgSettings,
+		org.Settings.Permissions,
+	}
+
+	//validates the user
+	loggedInUser := r.Context().Value("user").(*auth.AuthUser)
+	if _, err := FetchMember(bson.M{"org_id": orgId, "email": loggedInUser.Email}); err != nil {
+		utils.GetError(errors.New("access denied"), http.StatusNotFound, w)
+		return
+	}
+
+	org_filter := make(map[string]interface{})
+	org_filter["settings"] = orgPref
+
+	update, err := utils.UpdateOneMongoDbDoc(OrganizationCollectionName, orgId, org_filter)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	utils.GetSuccess("organization settings updated successfully", nil, w)
+}
