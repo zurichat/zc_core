@@ -85,7 +85,7 @@ func ContactUs(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
-	utils.GetSuccess("contact information sent successfully", mongoRes, w)
+	utils.GetSuccess("contact information sent successfully", utils.M{"id": mongoRes.InsertedID}, w)
 
 }
 
