@@ -243,16 +243,16 @@ type Settings struct {
 }
 
 type OrganizationPreference struct {
-	Settings    OrgSettings    `json:"settings" bson:"settings"`
-	Permissions OrgPermissions `json:"permissions" bson:"permissions"`
+	Settings       OrgSettings       `json:"settings" bson:"settings"`
+	Permissions    OrgPermissions    `json:"permissions" bson:"permissions"`
 	Authentication OrgAuthentication `json:"authentication" bson:"authentication"`
 }
 type OrgAuthentication struct {
-	AuthenticationMethod map[string]interface{} `json:"authenticationmethod" bson:"authenticationmethod"`
+	AuthenticationMethod                 map[string]interface{} `json:"authenticationmethod" bson:"authenticationmethod"`
 	WorkspaceWideTwoFactorAuthentication map[string]interface{} `json:"workspacewidetwofactorauthentication" bson:"workspacewidetwofactorauthentication"`
-	SessionDuration time.Time `json:"sessionduration" bson:"sessionduration"`
-	ForcedPasswordReset map[string]interface{} `json:"forcedpasswordreset" bson:"forcedpasswordreset"`
-	AutomaticallyOpen map[string]interface{} `json:"automaticallyopen" bson:"automaticallyopen"`
+	SessionDuration                      time.Time              `json:"sessionduration" bson:"sessionduration"`
+	ForcedPasswordReset                  map[string]interface{} `json:"forcedpasswordreset" bson:"forcedpasswordreset"`
+	AutomaticallyOpen                    map[string]interface{} `json:"automaticallyopen" bson:"automaticallyopen"`
 }
 
 type OrgSettings struct {
