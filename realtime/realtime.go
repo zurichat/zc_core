@@ -2,6 +2,7 @@ package realtime
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -12,7 +13,10 @@ import (
 )
 
 var (
-	validate = validator.New()
+	ConectionCount     string
+	validate           = validator.New()
+	MaxConnectionCount = 40
+	expiry             = 60 * 30
 )
 
 type Channels struct {
@@ -44,8 +48,13 @@ type CentrifugoConnectRequest struct {
 }
 
 func Auth(w http.ResponseWriter, r *http.Request) {
-
 	// 1. Decode the request from centrifugo
+	erro := AuthorizeOrigin(r)
+	if erro != nil {
+		CustomAthResponse(w, 4001, false, fmt.Sprintf("%v", erro))
+		return
+	}
+
 	var creq CentrifugoConnectRequest
 	err := json.NewDecoder(r.Body).Decode(&creq)
 	if err != nil {
@@ -68,7 +77,7 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 			data := CentrifugoConnectResponse{}
 			data.Result.User = u.String()
 			data.Result.User = userID
-			data.Result.ExpireAt = time.Now().Second() + 30*60
+			data.Result.ExpireAt = time.Now().Second() + expiry
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
