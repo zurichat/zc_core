@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/golang-jwt/jwt"
 	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
 	"zuri.chat/zccore/auth"
@@ -148,4 +149,25 @@ func UserIDFromSession(sessionData auth.ResToken, conf utils.Configurations) (st
 		return "", err
 	}
 	return session["user_id"].(string), nil
+}
+
+// Get session data from token string
+func TokenStringClaims(bearerToken string, hmacSampleSecret []byte) (claimsInfo map[string]interface{}, err error) {
+
+	if bearerToken == "" {
+		return nil, errors.New("authorization access failed")
+	}
+
+	tokenKey, err := jwt.Parse(bearerToken, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return hmacSampleSecret, nil
+	})
+
+	if claims, ok := tokenKey.Claims.(jwt.MapClaims); ok && tokenKey.Valid {
+		return claims, nil
+	} else {
+		return nil, err
+	}
 }

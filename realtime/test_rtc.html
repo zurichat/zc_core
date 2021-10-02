@@ -22,6 +22,9 @@
                 document.title = ctx.data.value;
             });
 
+            let token = "token"
+            
+            centrifuge.setConnectData({"bearer": token});
             centrifuge.connect();
         </script>
 
