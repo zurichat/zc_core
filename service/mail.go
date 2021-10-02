@@ -19,6 +19,7 @@ import (
 type MailService interface {
 	LoadTemplate(mailReq *Mail) (string, error)
 	SendMail(mailReq *Mail) error
+	NewCustomMail(to []string, subject string, mailBody string) *Mail
 	NewMail(to []string, subject string, mailType MailType, data map[string]interface{}) *Mail
 }
 
@@ -47,11 +48,12 @@ var MailTypes = map[MailType]MailType{
 }
 
 type Mail struct {
-	to      []string
-	subject string
-	body    string
-	mtype   MailType
-	data    map[string]interface{}
+	to      		[]string
+	subject 		string
+	body    		string
+	customTmpl		bool
+	mtype  			MailType
+	data    		map[string]interface{}
 }
 
 type ZcMailService struct {
@@ -100,12 +102,15 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 	switch esp := strings.ToLower(ms.configs.ESPType); esp {
 
 	case "sendgrid":
+		// SENDGRID
+		var body string
+		var err error
 
-		body, err := ms.LoadTemplate(mailReq)
-		if err != nil {
-			return err
+		if body = mailReq.body; mailReq.customTmpl != true {
+			body, err = ms.LoadTemplate(mailReq)
+			if err != nil { return err }
 		}
-
+		
 		request := sendgrid.GetRequest(
 			ms.configs.SendGridApiKey,
 			"/v3/mail/send",
@@ -145,17 +150,21 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 		return nil
 
 	case "smtp":
+		// SMTP -> use gmail
+		var body string
+		var err error
+
+		if body = mailReq.body; mailReq.customTmpl != true {
+			body, err = ms.LoadTemplate(mailReq)
+			if err != nil { return err }
+		}
+
 		auth := smtp.PlainAuth(
 			"",
 			ms.configs.SmtpUsername,
 			ms.configs.SmtpPassword,
 			"smtp.gmail.com",
 		)
-
-		body, err := ms.LoadTemplate(mailReq)
-		if err != nil {
-			return err
-		}
 
 		subject := fmt.Sprintf("Subject: %s\n", mailReq.subject)
 		mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
@@ -169,9 +178,12 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 
 	case "mailgun":
 		// switch to mailgun temp
-		body, err := ms.LoadTemplate(mailReq)
-		if err != nil {
-			return err
+		var body string
+		var err error
+
+		if body = mailReq.body; mailReq.customTmpl != true {
+			body, err = ms.LoadTemplate(mailReq)
+			if err != nil { return err }
 		}
 
 		mg := mailgun.NewMailgun(ms.configs.MailGunDomain, ms.configs.MailGunKey)
@@ -193,11 +205,21 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 
 }
 
+func (ms *ZcMailService) NewCustomMail(to []string, subject string, mailBody string) *Mail {
+	return &Mail{
+		to:      to,
+		subject: subject,
+		body:    mailBody,
+		customTmpl:  true,
+	}
+}
+
 func (ms *ZcMailService) NewMail(to []string, subject string, mailType MailType, data map[string]interface{}) *Mail {
 	return &Mail{
 		to:      to,
 		subject: subject,
 		mtype:   mailType,
 		data:    data,
+		customTmpl: false,
 	}
 }
