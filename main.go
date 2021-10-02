@@ -203,7 +203,6 @@ func main() {
 
 	// Set Stripe api key
 	stripe.Key = os.Getenv("STRIPE_KEY")
-	fmt.Println(stripe.Key)
 
 	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
 		fmt.Println("Could not connect to MongoDB")
