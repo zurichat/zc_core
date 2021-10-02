@@ -43,7 +43,6 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 	erro := AuthorizeOrigin(r)
 	if erro != nil {
 		CustomAthResponse(w, 4001, false, fmt.Sprintf("%v", erro))
-		// CustomAthResponse(w, 4001, false, "Connection limit exceeded")
 		return
 	}
 	// Decode the request from centrifugo
