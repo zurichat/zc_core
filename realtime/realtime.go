@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/mitchellh/mapstructure"
 
-	uuid "github.com/gofrs/uuid"
 	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/utils"
 )
@@ -48,25 +48,26 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println(r.Header.Get("Authorization"))
 	// 2. Authenticate user
 	headerToken := ExtractHeaderToken(r)
 	fmt.Println(creq, headerToken)
 
+	if headerToken == "" {
+		CentrifugoNotAuthenticatedResponse(w)
+	}
+
+	// 3. Generate a response object. In final version you have to
+	// check that this person is authenticated
+	// u, _ := uuid.NewV4()
+	userID, err := CentifugoConnectAuth(r)
 	if err != nil {
 		CentrifugoNotAuthenticatedResponse(w)
 	}
 
-	// userID, err := CentifugoConnectAuth(headerToken)
-	// if err != nil {
-	// 	CentrifugoNotAuthenticatedResponse(w)
-	// }
-
-	// 3. Generate a response object. In final version you have to
-	// check that this person is authenticated
-	u, _ := uuid.NewV4()
-
 	data := CentrifugoConnectResponse{}
-	data.Result.User = u.String()
+	// data.Result.User = u.String()
+	data.Result.User = userID
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -124,15 +125,30 @@ func CentifugoConnectAuth(r *http.Request) (userID string, err error) {
 	status, err, sessionData := auth.GetSessionDataFromToken(r, []byte(signingKey))
 
 	// 2. Check for a user record that's assigned this token
-	if status && err != nil {
-		fmt.Println(sessionData)
+	if status {
+		userID, err = UserIDFromSession(sessionData, *configuration)
+		if err != nil {
+			return "", nil
+		}
+		// 3. Return user ID and nil error if user is found
+		return userID, nil
 	}
-	// 3. Return user ID and nil error if user is found
-	return
+	return "", err
 }
 
 // Extract the token from the request header
 func ExtractHeaderToken(r *http.Request) string {
-	headerToken := r.Header.Get("Content-Type")
+	headerToken := r.Header.Get("Authorization")
 	return headerToken
+}
+
+// Extract user id from token
+func UserIDFromSession(sessionData auth.ResToken, conf utils.Configurations) (string, error) {
+	var data map[string]interface{}
+	mapstructure.Decode(sessionData, data)
+	session, err := utils.GetMongoDbDoc(conf.SessionDbCollection, data)
+	if err != nil {
+		return "", err
+	}
+	return session["user_id"].(string), nil
 }
