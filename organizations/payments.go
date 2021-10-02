@@ -13,6 +13,7 @@ import (
 	"github.com/stripe/stripe-go/v72/checkout/session"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
 
@@ -99,11 +100,39 @@ func SubscriptionBilling(OrgId string, ProVersionRate float64) error {
 	if err := DeductToken(OrgId, amount); err != nil {
 		return err
 	}
+	if err := SendTokenBillingEmail(OrgId, "Billing for Pro version subscription", amount); err != nil {
+		return err
+	}
 	return nil
 }
 
-func SendTokenBillingEmail() {
+func SendTokenBillingEmail(orgId, description string, amount float64) error {
 
+	OrgIdFromHex, err := primitive.ObjectIDFromHex(orgId)
+	if err != nil {
+		return err
+	}
+
+	org, _ := FetchOrganization(bson.M{"_id": OrgIdFromHex})
+	org_mail := org.CreatorEmail
+	fmt.Println("about to send mail to: " + org_mail)
+	balance := org.Tokens
+
+	ms := service.NewZcMailService(utils.NewConfigurations())
+	billing_mail := ms.NewMail(
+		[]string{org_mail},
+		"Token Billing Notice",
+		service.TokenBillingNotice,
+		map[string]interface{}{
+			"Description": description,
+			"Cost":        amount,
+			"Balance":     balance,
+		},
+	)
+	if err := ms.SendMail(billing_mail); err != nil {
+		return err
+	}
+	return nil
 }
 
 // allows user to be able to load tokens into organization wallet
