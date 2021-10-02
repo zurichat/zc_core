@@ -480,8 +480,6 @@ func (oh *OrganizationHandler) UpgradeToPro(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Content-Type", "application/json")
 	orgId := mux.Vars(r)["id"]
 
-	ProVersionRate := float64(1) // 1 token per user per month
-
 	// check whether organization is already pro member
 	is_pro, err := IsProVersion(orgId)
 
@@ -494,7 +492,7 @@ func (oh *OrganizationHandler) UpgradeToPro(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := SubscriptionBilling(orgId, ProVersionRate); err != nil {
+	if err := SubscriptionBilling(orgId, float64(ProSubscriptionRate)); err != nil {
 		utils.GetError(err, http.StatusExpectationFailed, w)
 	}
 
@@ -758,4 +756,18 @@ func (oh *OrganizationHandler) UpdateOrganizationAuthentication(w http.ResponseW
 	}
 
 	utils.GetSuccess("organization settings updated successfully", nil, w)
+}
+
+func (oh *OrganizationHandler) ResetTokensAndVersion(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	data := map[string]interface{}{
+		"version": "free",
+		"tokens":  100,
+	}
+	_, err := utils.UpdateManyMongoDbDocs(OrganizationCollectionName, make(map[string]interface{}), data)
+	if err != nil {
+		utils.GetError(errors.New("could not update many docs"), http.StatusExpectationFailed, w)
+	}
+	utils.GetSuccess("organizations tokens and versions reset successfully", nil, w)
 }

@@ -58,6 +58,8 @@ const (
 	ProVersion  = "pro"
 )
 
+const ProSubscriptionRate = 10
+
 var RequestData = make(map[string]string)
 
 type MemberPassword struct {
