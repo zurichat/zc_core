@@ -94,8 +94,10 @@ func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, r *http.Request) {
 
 	if wdr.BulkWrite {
 		filter = wdr.Filter
+	} else if wdr.ObjectID != "" {
+		filter["_id"] = wdr.ObjectID
 	} else {
-		filter["_id"] = MustObjectIDFromHex(wdr.ObjectID)
+
 	}
 	filter["deleted"] = bson.M{"$ne": true}
 
