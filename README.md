@@ -29,24 +29,6 @@ Zc_core was written in Go because it is a fast, compiled language and it is easi
 A list of the endpoints and the functions they implement can be found in the API folder that contains YAML files for each of the functionalities
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ## Contributing
 
 Pull requests are welcome from the zc_core_main team. Please review the issues created before making a pull request or create an issue if the issue you solve is not already listed.
