@@ -103,14 +103,18 @@ func NewRead(w http.ResponseWriter, r *http.Request) {
 		}
 		utils.GetSuccess("success", doc, w)
 	} else {
+		filter := reqData.Filter
+		if filter == nil {
+			filter = M{}
+		}
 		var opts *options.FindOptions
 
 		if r := reqData.ReadOptions; r != nil {
 			opts = SetOptions(*r)
 		}
 
-		reqData.Filter["deleted"] = bson.M{"$ne": true}
-		docs, err := utils.GetMongoDbDocs(prefixedCollName, reqData.Filter, opts)
+		filter["deleted"] = bson.M{"$ne": true}
+		docs, err := utils.GetMongoDbDocs(prefixedCollName, filter, opts)
 		if err != nil {
 			utils.GetError(err, http.StatusInternalServerError, w)
 			return
