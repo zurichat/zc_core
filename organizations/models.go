@@ -251,7 +251,7 @@ type OrganizationPreference struct {
 type OrgAuthentication struct {
 	AuthenticationMethod                 map[string]interface{} `json:"authenticationmethod" bson:"authenticationmethod"`
 	WorkspaceWideTwoFactorAuthentication map[string]interface{} `json:"workspacewidetwofactorauthentication" bson:"workspacewidetwofactorauthentication"`
-	SessionDuration                      time.Time              `json:"sessionduration" bson:"sessionduration"`
+	SessionDuration                      int                    `json:"sessionduration" bson:"sessionduration"`
 	ForcedPasswordReset                  map[string]interface{} `json:"forcedpasswordreset" bson:"forcedpasswordreset"`
 	AutomaticallyOpen                    map[string]interface{} `json:"automaticallyopen" bson:"automaticallyopen"`
 }
@@ -259,12 +259,21 @@ type OrgAuthentication struct {
 type OrgSettings struct {
 	OrganizationIcon   string                 `json:"workspaceicon" bson:"workspaceicon"`
 	DeleteOrganization map[string]interface{} `json:"deleteorganization" bson:"deleteorganization"`
+	WorkspaceLanguage  string                 `json:"workspacelanguage" bson:"workspacelanguage"`
+	DefaultChannels    []string               `json:"defaultchannels" bson:"defaultchannels"`
+	ShowDisplayName    bool                   `json:"showdisplayname" bson:"showdisplayname"`
+	DisplayEmail       bool                   `json:"displayemail" bson:"displayemail"`
+	DisplayPronouns    bool                   `json:"displaypronouns" bson:"displaypronouns"`
+	NotifyOfNewUsers   bool                   `json:"notifyofnewusers" bson:"notifyofnewusers"`
+	WorkspaceUrl       string                 `json:"workspacename" bson:"workspacename"`
 }
 
 type OrgPermissions struct {
-	Messaging       map[string]interface{} `json:"messaging" bson:"messaging"`
-	Invitations     bool                   `json:"invitations" bson:"invitations"`
-	MessageSettings MessageSettings        `json:"messagesettings" bson:"messagesettings"`
+	Messaging         map[string]interface{} `json:"messaging" bson:"messaging"`
+	Invitations       bool                   `json:"invitations" bson:"invitations"`
+	MessageSettings   MessageSettings        `json:"messagesettings" bson:"messagesettings"`
+	CustomEmoji       map[string]interface{} `json:"customemoji" bson:"customemoji"`
+	PublicFileSharing bool                   `json:"publicfilesharing" bson:"publicfilesharing"`
 }
 
 type MessageSettings struct {

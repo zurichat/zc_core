@@ -38,11 +38,11 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !recordExists(_OrganizationCollectionName, reqData.OrganizationID) {
-		msg := "organization with this id does not exist"
-		utils.GetError(errors.New(msg), http.StatusNotFound, w)
-		return
-	}
+	//if !recordExists(_OrganizationCollectionName, reqData.OrganizationID) {
+	//msg := "organization with this id does not exist"
+	//utils.GetError(errors.New(msg), http.StatusNotFound, w)
+	//return
+	//}
 
 	// if plugin is writing to this collection the first time, we create a record linking this collection to the plugin.
 	if !pluginHasCollection(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName) {
@@ -92,12 +92,10 @@ func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, r *http.Request) {
 	filter := make(map[string]interface{})
 	collName := wdr.prefixCollectionName()
 
-	if wdr.BulkWrite {
-		filter = wdr.Filter
-	} else if wdr.ObjectID != "" {
+	if !wdr.BulkWrite {
 		filter["_id"] = wdr.ObjectID
 	} else {
-
+		filter = wdr.Filter
 	}
 	filter["deleted"] = bson.M{"$ne": true}
 
