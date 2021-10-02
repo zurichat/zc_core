@@ -39,11 +39,14 @@ type CentrifugoRefreshResult struct {
 	ExpireAt string `json:"expire_at" bson:"expire_at"`
 }
 
+type CentrifugoClientData map[string]string
+
 type CentrifugoConnectRequest struct {
-	Client    string `json:"client" bson:"client"`
-	Transport string `json:"transport" bson:"transport"`
-	Protocol  string `json:"protocol" bson:"protocol"`
-	Encoding  string `json:"encoding" bson:"encoding"`
+	Client    string               `json:"client" bson:"client"`
+	Transport string               `json:"transport" bson:"transport"`
+	Protocol  string               `json:"protocol" bson:"protocol"`
+	Encoding  string               `json:"encoding" bson:"encoding"`
+	Data      CentrifugoClientData `json:"data" bson:"data"`
 }
 
 func Auth(w http.ResponseWriter, r *http.Request) {
@@ -60,6 +63,10 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	// 2. Authenticate client connect request
+	token := creq.Data["bearer"]
+	fmt.Println(token)
 
 	u, _ := uuid.NewV4()
 	data := CentrifugoConnectResponse{}
