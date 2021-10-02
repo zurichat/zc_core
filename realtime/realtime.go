@@ -15,7 +15,7 @@ var (
 	ConectionCount     string
 	validate           = validator.New()
 	MaxConnectionCount = 20
-	expiry             = 60 * 30
+	expiry             = 10
 )
 
 type CentrifugoConnectResult struct {

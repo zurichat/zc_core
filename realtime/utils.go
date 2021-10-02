@@ -1,7 +1,6 @@
 package realtime
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,8 +9,6 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"zuri.chat/zccore/utils"
 )
 
@@ -56,17 +53,10 @@ func CheckOrigin(r *http.Request) (string, bool) {
 }
 
 func GetandSetDb(collection string, expiry int) {
-	c := utils.GetCollection(collection)
 	grt, cc_filter := make(map[string]interface{}), make(map[string]interface{})
 	grt["$lt"] = int(time.Now().Unix())
 	cc_filter["expiry"] = grt
-	utils.DeleteManyMongoDoc(CDcollection, cc_filter)
-	indexModel := mongo.IndexModel{
-		Keys: bson.M{"modified": 1},
-		// Options: options.Index().SetExpireAfterSeconds(int32(x.Seconds())),
-		Options: options.Index().SetExpireAfterSeconds(int32(expiry)),
-	}
-	c.Indexes().CreateOne(context.Background(), indexModel)
+	utils.DeleteManyMongoDoc(collection, cc_filter)
 }
 
 func CheckOriginConnections(origin string) (int, bool) {
