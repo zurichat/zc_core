@@ -2,6 +2,7 @@ package realtime
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -11,7 +12,9 @@ import (
 )
 
 var (
-	validate = validator.New()
+	ConectionCount     string
+	validate           = validator.New()
+	MaxConnectionCount = 3
 )
 
 type CentrifugoConnectResult struct {
@@ -37,7 +40,12 @@ type CentrifugoConnectRequest struct {
 }
 
 func Auth(w http.ResponseWriter, r *http.Request) {
-
+	erro := AuthorizeOrigin(r)
+	if erro != nil {
+		CustomAthResponse(w, 4001, false, fmt.Sprintf("%v", erro))
+		// CustomAthResponse(w, 4001, false, "Connection limit exceeded")
+		return
+	}
 	// Decode the request from centrifugo
 	var creq CentrifugoConnectRequest
 	err := json.NewDecoder(r.Body).Decode(&creq)
