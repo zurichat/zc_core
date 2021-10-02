@@ -14,7 +14,7 @@ import (
 var (
 	ConectionCount     string
 	validate           = validator.New()
-	MaxConnectionCount = 20
+	MaxConnectionCount = 40
 	expiry             = 60 * 30
 )
 
