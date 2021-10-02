@@ -269,9 +269,11 @@ type OrgSettings struct {
 }
 
 type OrgPermissions struct {
-	Messaging       map[string]interface{} `json:"messaging" bson:"messaging"`
-	Invitations     bool                   `json:"invitations" bson:"invitations"`
-	MessageSettings MessageSettings        `json:"messagesettings" bson:"messagesettings"`
+	Messaging         map[string]interface{} `json:"messaging" bson:"messaging"`
+	Invitations       bool                   `json:"invitations" bson:"invitations"`
+	MessageSettings   MessageSettings        `json:"messagesettings" bson:"messagesettings"`
+	CustomEmoji       map[string]interface{} `json:"customemoji" bson:"customemoji"`
+	PublicFileSharing bool                   `json:"publicfilesharing" bson:"publicfilesharing"`
 }
 
 type MessageSettings struct {
