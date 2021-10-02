@@ -93,11 +93,14 @@ func SubscriptionBilling(OrgId string, ProVersionRate float64) error {
 	}
 
 	amount := float64(len(orgMembers)) * ProVersionRate
+	var description string
 
 	if err := DeductToken(OrgId, amount); err != nil {
 		return err
 	}
-	if err := SendTokenBillingEmail(OrgId, "Billing for Pro version subscription", amount); err != nil {
+	num_members := len(orgMembers)
+	description = "Billing for Pro version subscription for " + strconv.Itoa(num_members) + " members at " + strconv.Itoa(int(ProVersionRate)) + "tokens per member per month"
+	if err := SendTokenBillingEmail(OrgId, description, amount); err != nil {
 		return err
 	}
 	return nil
@@ -112,7 +115,7 @@ func SendTokenBillingEmail(orgId, description string, amount float64) error {
 
 	org, _ := FetchOrganization(bson.M{"_id": OrgIdFromHex})
 	org_mail := org.CreatorEmail
-	fmt.Println("about to send mail to: " + org_mail)
+	// fmt.Println("about to send mail to: " + org_mail)
 	balance := org.Tokens
 
 	ms := service.NewZcMailService(utils.NewConfigurations())
