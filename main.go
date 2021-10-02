@@ -67,7 +67,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	// Authentication
 	r.HandleFunc("/auth/login", auth.LoginIn).Methods(http.MethodPost)
 	r.HandleFunc("/auth/logout", auth.LogOutUser).Methods(http.MethodPost)
-	r.HandleFunc("/auth/logout/othersessions", auth.LogOutOtherSessions).Methods(http.MethodPost)
+	r.HandleFunc("/auth/logout/other-sessions", auth.LogOutOtherSessions).Methods(http.MethodPost)
 	r.HandleFunc("/auth/verify-token", auth.IsAuthenticated(auth.VerifyTokenHandler)).Methods(http.MethodGet, http.MethodPost)
 	r.HandleFunc("/auth/confirm-password", auth.IsAuthenticated(auth.ConfirmUserPassword)).Methods(http.MethodPost)
 	r.HandleFunc("/auth/social-login/{provider}/{access_token}", auth.SocialAuth).Methods(http.MethodGet)
@@ -119,8 +119,8 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/billing", auth.IsAuthenticated(organizations.SaveBillingSettings)).Methods("PATCH")
 
 	//organization: payment
-	r.HandleFunc("/organizations/{id}/addtoken", auth.IsAuthenticated(organizations.AddToken)).Methods("POST")
-	r.HandleFunc("/organizations/{id}/token-transaction", auth.IsAuthenticated(organizations.GetTokenTransaction)).Methods("GET")
+	r.HandleFunc("/organizations/{id}/add-token", auth.IsAuthenticated(organizations.AddToken)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/token-transactions", auth.IsAuthenticated(organizations.GetTokenTransaction)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/upgrade-to-pro", auth.IsAuthenticated(organizations.UpgradeToPro)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/charge-tokens", auth.IsAuthenticated(organizations.ChargeTokens)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/checkout-session", organizations.CreateCheckoutSession).Methods("POST")
