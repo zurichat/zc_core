@@ -247,6 +247,7 @@ type OrganizationPreference struct {
 	Permissions    OrgPermissions    `json:"permissions" bson:"permissions"`
 	Authentication OrgAuthentication `json:"authentication" bson:"authentication"`
 }
+
 type OrgAuthentication struct {
 	AuthenticationMethod                 map[string]interface{} `json:"authenticationmethod" bson:"authenticationmethod"`
 	WorkspaceWideTwoFactorAuthentication map[string]interface{} `json:"workspacewidetwofactorauthentication" bson:"workspacewidetwofactorauthentication"`
@@ -259,6 +260,7 @@ type OrgSettings struct {
 	OrganizationIcon   string                 `json:"workspaceicon" bson:"workspaceicon"`
 	DeleteOrganization map[string]interface{} `json:"deleteorganization" bson:"deleteorganization"`
 }
+
 type OrgPermissions struct {
 	Messaging       map[string]interface{} `json:"messaging" bson:"messaging"`
 	Invitations     bool                   `json:"invitations" bson:"invitations"`

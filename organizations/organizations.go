@@ -587,6 +587,11 @@ func (oh *OrganizationHandler) UpdateOrganizationSettings(w http.ResponseWriter,
 
 	objId, err := primitive.ObjectIDFromHex(orgId)
 
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
 	validate := validator.New()
 
 	// get previous settings
@@ -614,13 +619,6 @@ func (oh *OrganizationHandler) UpdateOrganizationSettings(w http.ResponseWriter,
 		org.Settings.Authentication,
 	}
 
-	//validates the user
-	loggedInUser := r.Context().Value("user").(*auth.AuthUser)
-	if _, err := FetchMember(bson.M{"org_id": orgId, "email": loggedInUser.Email}); err != nil {
-		utils.GetError(errors.New("access denied"), http.StatusNotFound, w)
-		return
-	}
-
 	org_filter := make(map[string]interface{})
 	org_filter["settings"] = orgPref
 
@@ -637,6 +635,7 @@ func (oh *OrganizationHandler) UpdateOrganizationSettings(w http.ResponseWriter,
 
 	utils.GetSuccess("organization settings updated successfully", nil, w)
 }
+
 func (oh *OrganizationHandler) UpdateOrganizationPermission(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	orgId := mux.Vars(r)["id"]
@@ -649,6 +648,10 @@ func (oh *OrganizationHandler) UpdateOrganizationPermission(w http.ResponseWrite
 	}
 
 	objId, err := primitive.ObjectIDFromHex(orgId)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
 
 	validate := validator.New()
 
@@ -670,18 +673,12 @@ func (oh *OrganizationHandler) UpdateOrganizationPermission(w http.ResponseWrite
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
+
 	//adds new settings with existing settings
 	orgPref := OrganizationPreference{
 		org.Settings.Settings,
 		orgPermissions,
 		org.Settings.Authentication,
-	}
-
-	//validates the user
-	loggedInUser := r.Context().Value("user").(*auth.AuthUser)
-	if _, err := FetchMember(bson.M{"org_id": orgId, "email": loggedInUser.Email}); err != nil {
-		utils.GetError(errors.New("access denied"), http.StatusNotFound, w)
-		return
 	}
 
 	org_filter := make(map[string]interface{})
@@ -700,6 +697,7 @@ func (oh *OrganizationHandler) UpdateOrganizationPermission(w http.ResponseWrite
 
 	utils.GetSuccess("organization settings updated successfully", nil, w)
 }
+
 func (oh *OrganizationHandler) UpdateOrganizationAuthentication(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	orgId := mux.Vars(r)["id"]
@@ -712,6 +710,11 @@ func (oh *OrganizationHandler) UpdateOrganizationAuthentication(w http.ResponseW
 	}
 
 	objId, err := primitive.ObjectIDFromHex(orgId)
+
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
 
 	validate := validator.New()
 
@@ -738,13 +741,6 @@ func (oh *OrganizationHandler) UpdateOrganizationAuthentication(w http.ResponseW
 		org.Settings.Settings,
 		org.Settings.Permissions,
 		orgAuthentication,
-	}
-
-	//validates the user
-	loggedInUser := r.Context().Value("user").(*auth.AuthUser)
-	if _, err := FetchMember(bson.M{"org_id": orgId, "email": loggedInUser.Email}); err != nil {
-		utils.GetError(errors.New("access denied"), http.StatusNotFound, w)
-		return
 	}
 
 	org_filter := make(map[string]interface{})
