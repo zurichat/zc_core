@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -82,4 +83,38 @@ func newMember(email string, userName string, orgId string, role string, setting
 		Deleted:  false,
 		Settings: setting,
 	}
+}
+
+// clear a member's status after a duration
+func ClearStatus(orgId, member_id string, period int) {
+	time.Sleep(time.Duration(period) * time.Minute)
+	update, _ := utils.StructToMap(Status{})
+
+	memberStatus := make(map[string]interface{})
+	memberStatus["status"] = update
+
+	_, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, member_id, memberStatus)
+	if err != nil {
+		log.Println("could not clear status")
+		return
+	}
+
+	log.Printf("%s status cleared successfully", member_id)
+
+	// publish update to subscriber
+	eventChannel := fmt.Sprintf("organizations_%s", orgId)
+	event := utils.Event{Identifier: member_id, Type: "User", Event: UpdateOrganizationMemberStatusCleared, Channel: eventChannel, Payload: make(map[string]interface{})}
+	go utils.Emitter(event)
+}
+
+func FetchOrganization(filter map[string]interface{}) (*Organization, error) {
+	org_collection := OrganizationCollectionName
+	organization := &Organization{}
+	orgCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), org_collection)
+	if err != nil {
+		return organization, err
+	}
+	result := orgCollection.FindOne(context.TODO(), filter)
+	err = result.Decode(&organization)
+	return organization, err
 }
