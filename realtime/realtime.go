@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofrs/uuid"
@@ -24,9 +23,9 @@ type Channels struct {
 }
 
 type CentrifugoConnectResult struct {
-	User     string   `json:"user" bson:"user"`
-	ExpireAt int      `json:"expire_at" bson:"expire_at"`
-	Channels Channels `json:"channels" bson:"channels"`
+	User string `json:"user" bson:"user"`
+	// ExpireAt int      `json:"expire_at" bson:"expire_at"`
+	// Channels Channels `json:"channels" bson:"channels"`
 }
 
 type CentrifugoConnectResponse struct {
@@ -62,28 +61,13 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 2. Authenticate user
-	headerToken := ExtractHeaderToken(r)
-	if headerToken == "" {
-		CentrifugoNotAuthenticatedResponse(w)
-	} else {
-		// 3. Generate a response object. In final version you have to
-		// check that this person is authenticated
-		u, _ := uuid.NewV4()
-		userID, err := CentifugoConnectAuth(r)
-		if err != nil {
-			CentrifugoNotAuthenticatedResponse(w)
-		} else {
-			data := CentrifugoConnectResponse{}
-			data.Result.User = u.String()
-			data.Result.User = userID
-			data.Result.ExpireAt = time.Now().Second() + expiry
+	u, _ := uuid.NewV4()
+	data := CentrifugoConnectResponse{}
+	data.Result.User = u.String()
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(data)
 
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(data)
-		}
-	}
 }
 
 func Refresh(w http.ResponseWriter, r *http.Request) {
