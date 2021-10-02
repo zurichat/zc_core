@@ -18,7 +18,6 @@ import (
 var (
 	ExceptOrigins = []string{"https://zuri.chat/", "https://zuri.chat", "http://zuri.chat", "https://www.zuri.chat"}
 	CDcollection  = "rtcconnections"
-	expiry        = 10
 )
 
 type ConnectionDocument struct {
