@@ -75,7 +75,6 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 			json.NewEncoder(w).Encode(data)
 		}
 	}
-
 }
 
 func Refresh(w http.ResponseWriter, r *http.Request) {
