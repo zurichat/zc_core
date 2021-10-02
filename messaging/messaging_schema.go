@@ -6,6 +6,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+const (
+	DEFAULT_HISTORY_LATEST    = ""
+	DEFAULT_HISTORY_OLDEST    = "0"
+	DEFAULT_HISTORY_COUNT     = 100
+	DEFAULT_HISTORY_INCLUSIVE = false
+	DEFAULT_HISTORY_UNREADS   = false
+)
+
 type Room struct {
 	OwnerId    primitive.ObjectID   `json:"ownerid,omitempty" bson:"ownerid,omitempty"`
 	RoomName   string               `json:"roomname,omitempty" bson:"roomname,omitempty"`
@@ -47,6 +55,25 @@ type Message struct {
 	MessageType string               `json:"messagetype,omitempty" bson:"messagetype,omitempty"` //message/comment
 	MessageId   primitive.ObjectID   `json:"messageid,omitempty" bson:"messageid,omitempty"`
 }
+
+
+// HistoryParameters contains all the necessary information to help in the retrieval of history for Channels/Groups/DMs
+type HistoryParameters struct {
+	Latest    string
+	Oldest    string
+	Count     int
+	Inclusive bool
+	Unreads   bool
+}
+
+// History contains message history information needed to navigate a Channel / Group / DM history
+type History struct {
+	Latest   string    `json:"latest"`
+	Messages []Message `json:"messages"`
+	HasMore  bool      `json:"has_more"`
+	Unread   int       `json:"unread_count_display"`
+}
+
 
 // type MessageResponse struct {
 // 	Status  bool
@@ -95,4 +122,15 @@ func GetMessageSuccess(msg string, data interface{}) interface{} {
 		Data:       data,
 	}
 	return response
+}
+
+// NewHistoryParameters provides an instance of HistoryParameters with all the sane default values set
+func NewHistoryParameters() HistoryParameters {
+	return HistoryParameters{
+		Latest:    DEFAULT_HISTORY_LATEST,
+		Oldest:    DEFAULT_HISTORY_OLDEST,
+		Count:     DEFAULT_HISTORY_COUNT,
+		Inclusive: DEFAULT_HISTORY_INCLUSIVE,
+		Unreads:   DEFAULT_HISTORY_UNREADS,
+	}
 }
