@@ -165,7 +165,7 @@ func Router(Server *socketio.Server) *mux.Router {
 	// Email subscription
 	r.HandleFunc("/external/subscribe", external.EmailSubscription).Methods("POST")
 	r.HandleFunc("/external/download-client", external.DownloadClient).Methods("GET")
-	r.HandleFunc("/external/send-mail", external.SendMail).Methods("POST")
+	r.HandleFunc("/external/send-mail", external.SendMail).Queries("custom_mail", "{custom_mail:[0-9]+}").Methods("POST")
 
 	//ping endpoint
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

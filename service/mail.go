@@ -110,7 +110,7 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 			body, err = ms.LoadTemplate(mailReq)
 			if err != nil { return err }
 		}
-		
+
 		request := sendgrid.GetRequest(
 			ms.configs.SendGridApiKey,
 			"/v3/mail/send",
