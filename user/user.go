@@ -197,12 +197,12 @@ func (uh *UserHandler) UpdateUser(response http.ResponseWriter, request *http.Re
 		utils.GetError(errors.New("empty/invalid user input data"), http.StatusBadRequest, response)
 		return
 	}
-	updateRes, err := utils.UpdateOneMongoDbDoc(collectionName, userID, updateFields)
+	_, err = utils.UpdateOneMongoDbDoc(collectionName, userID, updateFields)
 	if err != nil {
 			utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, response)
 			return
 		}
-	utils.GetSuccess("user successfully updated", updateRes, response)
+	utils.GetSuccess("user successfully updated", nil, response)
 }
 
 // get all users

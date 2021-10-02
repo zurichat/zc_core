@@ -182,7 +182,7 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("organization created", save, w)
+	utils.GetSuccess("organization created", utils.M{"organization_id": save.InsertedID}, w)
 }
 
 // Get all organization records
