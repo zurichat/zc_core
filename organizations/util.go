@@ -4,19 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"zuri.chat/zccore/utils"
 	"zuri.chat/zccore/service"
+	"zuri.chat/zccore/utils"
 )
-
-
-type OrganizationHandler struct {
-	configs     *utils.Configurations
-	mailService service.MailService
-}
 
 func NewOrganizationHandler(c *utils.Configurations, mail service.MailService) *OrganizationHandler {
 	return &OrganizationHandler{configs: c, mailService: mail}
@@ -72,4 +69,52 @@ func ValidateMember(orgId, member_Id string) error{
 	}
 
 	return nil
+}
+
+func newMember(email string, userName string, orgId string, role string, setting *Settings) Member {
+	return Member{
+		ID:       primitive.NewObjectID(),
+		Email:    email,
+		UserName: userName,
+		OrgId:    orgId,
+		Role:     role,
+		Presence: "true", 
+		JoinedAt: time.Now(),
+		Deleted:  false,
+		Settings: setting,
+	}
+}
+
+// clear a member's status after a duration
+func ClearStatus(orgId, member_id string, period int) {
+	time.Sleep(time.Duration(period) * time.Minute)
+	update, _ := utils.StructToMap(Status{})
+
+	memberStatus := make(map[string]interface{})
+	memberStatus["status"] = update
+
+	_, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, member_id, memberStatus)
+	if err != nil {
+		log.Println("could not clear status")
+		return
+	}
+
+	log.Printf("%s status cleared successfully", member_id)
+
+	// publish update to subscriber
+	eventChannel := fmt.Sprintf("organizations_%s", orgId)
+	event := utils.Event{Identifier: member_id, Type: "User", Event: UpdateOrganizationMemberStatusCleared, Channel: eventChannel, Payload: make(map[string]interface{})}
+	go utils.Emitter(event)
+}
+
+func FetchOrganization(filter map[string]interface{}) (*Organization, error) {
+	org_collection := OrganizationCollectionName
+	organization := &Organization{}
+	orgCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), org_collection)
+	if err != nil {
+		return organization, err
+	}
+	result := orgCollection.FindOne(context.TODO(), filter)
+	err = result.Decode(&organization)
+	return organization, err
 }

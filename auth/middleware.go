@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -140,6 +141,7 @@ func (au *AuthHandler) IsAuthorized(nextHandler http.HandlerFunc, role string) h
 			// Getting member's document from db
 			orgMember, _ := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "email": authuser.Email})
 			if orgMember == nil {
+				fmt.Println("no org")
 				utils.GetError(errors.New("Access Denied"), http.StatusUnauthorized, w)
 				return
 			}

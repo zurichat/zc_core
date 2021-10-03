@@ -8,32 +8,11 @@ import (
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"zuri.chat/zccore/utils"
 )
 
 type M map[string]interface{}
-
-// The idea is to use certain characters to signify queries
-// we treat the `$` character as a query identifier then the characters that follow before a double underscore
-// or colon is a query modifier e.g gte means greater/equal to. The next character is the field name and that the one after the = sign is the value.
-// e.g ?$gte:first_name="meh" or ($gte__first_name="meh")
-// We will split the field
-type MongoQuery struct {
-	Lt        string
-	Gt        string
-	Gte       string
-	Lte       string
-	In        string
-	Nin       string
-	Eq        string
-	Ne        string
-	And       string
-	Or        string
-	Not       string
-	Nor       string
-	All       string
-	ElemMatch string
-}
 
 func ReadData(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -83,8 +62,15 @@ type readDataRequest struct {
 	PluginID       string                 `json:"plugin_id"`
 	CollectionName string                 `json:"collection_name"`
 	OrganizationID string                 `json:"organization_id"`
-	ObjectID       *string                `json:"object_id,omitempty"`
+	ObjectID       string                 `json:"object_id,omitempty"`
 	Filter         map[string]interface{} `json:"filter"`
+	*ReadOptions   `json:"options,omitempty"`
+}
+
+type ReadOptions struct {
+	Limit *int64                 `json:"limit,omitempty"`
+	Skip  *int64                 `json:"skip,omitempty"`
+	Sort  map[string]interface{} `json:"sort,omitempty"`
 }
 
 func NewRead(w http.ResponseWriter, r *http.Request) {
@@ -104,26 +90,45 @@ func NewRead(w http.ResponseWriter, r *http.Request) {
 
 	prefixedCollName := getPrefixedCollectionName(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName)
 
-	// If Object ID exists then filter by only that
-	if reqData.ObjectID != nil {
-		id, err := primitive.ObjectIDFromHex(*reqData.ObjectID)
+	if reqData.ObjectID != "" {
+		id, err := primitive.ObjectIDFromHex(reqData.ObjectID)
 		if err != nil {
 			utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
 			return
 		}
-		doc, err := utils.GetMongoDbDoc(prefixedCollName, bson.M{"_id": id})
+		doc, err := utils.GetMongoDbDoc(prefixedCollName, bson.M{"_id": id, "deleted": M{"$ne": true}})
 		if err != nil {
 			utils.GetError(err, http.StatusInternalServerError, w)
 			return
 		}
 		utils.GetSuccess("success", doc, w)
-		// Else use the filter object to filter
 	} else {
-		docs, err := utils.GetMongoDbDocs(prefixedCollName, reqData.Filter)
+		var opts *options.FindOptions
+
+		if r := reqData.ReadOptions; r != nil {
+			opts = SetOptions(*r)
+		}
+
+		reqData.Filter["deleted"] = bson.M{"$ne": true}
+		docs, err := utils.GetMongoDbDocs(prefixedCollName, reqData.Filter, opts)
 		if err != nil {
 			utils.GetError(err, http.StatusInternalServerError, w)
 			return
 		}
 		utils.GetSuccess("success", docs, w)
 	}
+}
+
+func SetOptions(r ReadOptions) *options.FindOptions {
+	findOptions := options.Find()
+	if r.Limit != nil {
+		findOptions.SetLimit(*r.Limit)
+	}
+	if r.Skip != nil {
+		findOptions.SetSkip(*r.Skip)
+	}
+	if len(r.Sort) > 0 {
+		findOptions.SetSort(r.Sort)
+	}
+	return findOptions
 }

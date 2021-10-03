@@ -32,6 +32,14 @@ const (
 	WorkspaceInvite
 )
 
+var MailTypes = map[MailType]MailType {
+	MailConfirmation: MailConfirmation,
+	PasswordReset: PasswordReset,
+	EmailSubscription: EmailSubscription,
+	DownloadClient: DownloadClient,
+	WorkspaceInvite: WorkspaceInvite,
+}
+
 type Mail struct {
 	to      []string
 	subject string
