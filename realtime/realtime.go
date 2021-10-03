@@ -14,10 +14,9 @@ import (
 )
 
 var (
-	ConectionCount     string
-	validate           = validator.New()
-	MaxConnectionCount = 40
-	expiry             = 60 * 30
+	ConectionCount string
+	validate       = validator.New()
+	expiry         = 60 * 30
 )
 
 type Channels struct {
