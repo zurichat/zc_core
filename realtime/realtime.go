@@ -25,7 +25,7 @@ type Channels struct {
 
 type CentrifugoConnectResult struct {
 	User     string `json:"user" bson:"user"`
-	//ExpireAt int    `json:"expire_at" bson:"expire_at"`
+	ExpireAt int    `json:"expire_at" bson:"expire_at"`
 	// Channels Channels `json:"channels" bson:"channels"`
 }
 
@@ -47,7 +47,7 @@ type CentrifugoConnectRequest struct {
 	Transport string               `json:"transport" bson:"transport"`
 	Protocol  string               `json:"protocol" bson:"protocol"`
 	Encoding  string               `json:"encoding" bson:"encoding"`
-	//Data      CentrifugoClientData `json:"data" bson:"data"`
+	Data      CentrifugoClientData `json:"data" bson:"data"`
 }
 
 func Auth(w http.ResponseWriter, r *http.Request) {
@@ -60,42 +60,38 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. Authenticate client connect request
-	//token := creq.Data["bearer"]
+	token := creq.Data["bearer"]
 	// 2.1: Validate token
-	//conf := utils.NewConfigurations()
-	//claims, err := TokenStringClaims(token, []byte(conf.HmacSampleSecret))
-	//if err != nil {
-	//	http.Error(w, err.Error(), http.StatusBadRequest)
-	//	return
-	//}
+	conf := utils.NewConfigurations()
+	claims, err := TokenStringClaims(token, []byte(conf.HmacSampleSecret))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	// 2.2: Get user ID from validated token
-	//userEmail := claims["email"]
-	//if err != nil {
-	//	http.Error(w, err.Error(), http.StatusBadRequest)
-	//	return
-	//}
-	//user, err := utils.GetMongoDbDoc(conf.UserDbCollection, bson.M{"email": userEmail})
-	//if err != nil {
-	//	http.Error(w, err.Error(), http.StatusBadRequest)
-	//	return
-	//}
+	userEmail := claims["email"]
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	user, err := utils.GetMongoDbDoc(conf.UserDbCollection, bson.M{"email": userEmail})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-	//primitiveID := user["_id"]
-	//userID := primitiveID.(primitive.ObjectID).Hex()
-	//fmt.Println(token, userID)
+	primitiveID := user["_id"]
+	userID := primitiveID.(primitive.ObjectID).Hex()
+	fmt.Println(token, userID)
 
-	//result := &CentrifugoConnectResult{
-	//	User:     userID,
-		//ExpireAt: int(time.Now().Unix()) + expiry,
-	//}
+	result := &CentrifugoConnectResult{
+		User:     userID,
+		ExpireAt: int(time.Now().Unix()) + expiry,
+	}
 
-	//data := &CentrifugoConnectResponse{
-	//	Result: *result,
-	//}
-
-        u, _ := uuid.NewV4()
-        data := CentrifugoConnectResponse{}
-        data.Result.User = u.String()
+	data := &CentrifugoConnectResponse{
+		Result: *result,
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
