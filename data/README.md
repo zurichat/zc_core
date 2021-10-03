@@ -13,6 +13,7 @@ Based on this methods a CREATE, UPDATE action will be performed on the database.
  "object_id": "xxxx",
  "filter": {},
  "payload": {}
+ "raw_query": {}
 }
 ```
 The plugin_id, organization_id, collection_name fields are important, so it can enable the core api locate the right collection to write data, as the data collections created by plugins are stored seperately for different organizations. 
@@ -22,6 +23,8 @@ The `bulk_write` field is a boolean indicating if multiple records are to be ins
 The object_id and filter fields are used for updating and deleting data.
 If `bulk_write` is to be performed, the `filter` field should be set and should contain the query to be matched for an update, else if performing a single document operation, the `object_id` field should be set instead with the id of the object.
 The `payload` contains the actual data the plugin wants to store. The schema is decided by the plugin app. It could be an array of objects or a single object based on if its a bulk_write operation or not.
+
+The `raw_query` field allows the user to perform raw mongodb queries when updating like using aggregation operations, $addToSet etc etc and should only be used if you know what you are doing.
 
 Once this data is passed, the api performs the operation and sends a response containing the success status and how many documents were successfully written.
 
