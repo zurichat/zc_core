@@ -379,7 +379,7 @@ func (au *AuthHandler) SocialAuth(w http.ResponseWriter, r *http.Request){
 		utils.GetSuccess("login successful", resp, w)	
 		return 	
 	case "facebook":
-		utils.GetError(errors.New("Facebook: Pending implementation"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("Facebook: Pending implementation, contact admin!"), http.StatusBadRequest, w)
 		return
 	default:
 		msg := fmt.Sprintf("Implementation error: %s does not exists!", p)
