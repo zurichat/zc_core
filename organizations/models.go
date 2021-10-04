@@ -58,6 +58,8 @@ const (
 	ProVersion  = "pro"
 )
 
+const ProSubscriptionRate = 10
+
 var RequestData = make(map[string]string)
 
 type MemberPassword struct {
@@ -251,7 +253,7 @@ type OrganizationPreference struct {
 type OrgAuthentication struct {
 	AuthenticationMethod                 map[string]interface{} `json:"authenticationmethod" bson:"authenticationmethod"`
 	WorkspaceWideTwoFactorAuthentication map[string]interface{} `json:"workspacewidetwofactorauthentication" bson:"workspacewidetwofactorauthentication"`
-	SessionDuration                      int                    `json:"sessionduration" bson:"sessionduration"`
+	SessionDuration                      string                 `json:"sessionduration" bson:"sessionduration"`
 	ForcedPasswordReset                  map[string]interface{} `json:"forcedpasswordreset" bson:"forcedpasswordreset"`
 	AutomaticallyOpen                    map[string]interface{} `json:"automaticallyopen" bson:"automaticallyopen"`
 }
