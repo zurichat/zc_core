@@ -2,7 +2,6 @@ package realtime
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -82,7 +81,6 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 
 	primitiveID := user["_id"]
 	userID := primitiveID.(primitive.ObjectID).Hex()
-	fmt.Println(token, userID)
 
 	result := &CentrifugoConnectResult{
 		User:     userID,
