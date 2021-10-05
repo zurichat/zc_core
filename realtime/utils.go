@@ -16,8 +16,9 @@ import (
 )
 
 var (
-	ExceptOrigins = []string{"https://zuri.chat/", "https://zuri.chat", "http://zuri.chat", "https://www.zuri.chat"}
-	CDcollection  = "rtcconnections"
+	ExceptOrigins      = []string{"https://zuri.chat/", "https://zuri.chat", "http://zuri.chat", "https://www.zuri.chat"}
+	CDcollection       = "rtcconnections"
+	MaxConnectionCount = 40
 )
 
 type ConnectionDocument struct {
