@@ -63,7 +63,8 @@ type readDataRequest struct {
 	CollectionName string                 `json:"collection_name"`
 	OrganizationID string                 `json:"organization_id"`
 	ObjectID       string                 `json:"object_id,omitempty"`
-	Filter         map[string]interface{} `json:"filter"`
+	ObjectIDs      []string               `json:"object_ids,omitempty"`
+	Filter         map[string]interface{} `json:"filter,omitempty"`
 	*ReadOptions   `json:"options,omitempty"`
 }
 
@@ -102,25 +103,28 @@ func NewRead(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		utils.GetSuccess("success", doc, w)
-	} else {
-		filter := reqData.Filter
-		if filter == nil {
-			filter = M{}
-		}
-		var opts *options.FindOptions
-
-		if r := reqData.ReadOptions; r != nil {
-			opts = SetOptions(*r)
-		}
-
-		filter["deleted"] = bson.M{"$ne": true}
-		docs, err := utils.GetMongoDbDocs(prefixedCollName, filter, opts)
-		if err != nil {
-			utils.GetError(err, http.StatusInternalServerError, w)
-			return
-		}
-		utils.GetSuccess("success", docs, w)
+		return
 	}
+	filter := reqData.Filter
+	if filter == nil {
+		filter = M{}
+	}
+	if reqData.ObjectIDs != nil {
+		filter["_id"] = bson.M{"$in": hexToObjectIDs(reqData.ObjectIDs)}
+	}
+	var opts *options.FindOptions
+
+	if r := reqData.ReadOptions; r != nil {
+		opts = SetOptions(*r)
+	}
+
+	filter["deleted"] = bson.M{"$ne": true}
+	docs, err := utils.GetMongoDbDocs(prefixedCollName, filter, opts)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+	utils.GetSuccess("success", docs, w)
 }
 
 func SetOptions(r ReadOptions) *options.FindOptions {
@@ -135,4 +139,12 @@ func SetOptions(r ReadOptions) *options.FindOptions {
 		findOptions.SetSort(r.Sort)
 	}
 	return findOptions
+}
+
+func hexToObjectIDs(ids []string) []primitive.ObjectID {
+	objIDs := make([]primitive.ObjectID, len(ids))
+	for i, id := range ids {
+		objIDs[i] = MustObjectIDFromHex(id)
+	}
+	return objIDs
 }
