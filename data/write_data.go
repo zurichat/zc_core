@@ -174,8 +174,12 @@ func rawQueryupdateMany(collName string, filter map[string]interface{}, rawQuery
 func normalizeIdIfExists(filter map[string]interface{}) {
 	if id, exists := filter["_id"]; exists {
 		filter["_id"] = MustObjectIDFromHex(id.(string))
-	} else if id, exists := filter["id"]; exists {
+		return
+	}
+	if id, exists := filter["id"]; exists {
 		delete(filter, "id")
 		filter["_id"] = MustObjectIDFromHex(id.(string))
+		return
 	}
+
 }
