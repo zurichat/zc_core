@@ -6,12 +6,14 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/stripe/stripe-go/v72"
 	"github.com/stripe/stripe-go/v72/checkout/session"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
 
@@ -26,7 +28,7 @@ const (
 	AUD = "aud" // Australian Dollar (A$)
 )
 
-// converts amount in naira to equivalent token value
+// converts amount in real currency to equivalent token value
 func GetTokenAmount(Amount float64, Currency string) (float64, error) {
 	var ExchangeMap = map[string]float64{
 		USD: 1,
@@ -40,7 +42,7 @@ func GetTokenAmount(Amount float64, Currency string) (float64, error) {
 }
 
 // takes as input org id and token amount and increments token by that amount
-func IncrementToken(OrgId string, TokenAmount float64) error {
+func IncrementToken(OrgId, Description string, TokenAmount float64) error {
 	OrgIdFromHex, err := primitive.ObjectIDFromHex(OrgId)
 	if err != nil {
 		return err
@@ -57,11 +59,12 @@ func IncrementToken(OrgId string, TokenAmount float64) error {
 	if _, err := utils.UpdateOneMongoDbDoc(OrganizationCollectionName, OrgId, update_data); err != nil {
 		return err
 	}
+
 	return nil
 }
 
 // takes as input org id and token amount and decreases token by that amount if available, else returns error
-func DeductToken(OrgId string, TokenAmount float64) error {
+func DeductToken(OrgId, Description string, TokenAmount float64) error {
 
 	OrgIdFromHex, err := primitive.ObjectIDFromHex(OrgId)
 	if err != nil {
@@ -83,6 +86,7 @@ func DeductToken(OrgId string, TokenAmount float64) error {
 	if _, err := utils.UpdateOneMongoDbDoc(OrganizationCollectionName, OrgId, update_data); err != nil {
 		return err
 	}
+	SendTokenBillingEmail(OrgId, Description, TokenAmount)
 	return nil
 }
 
@@ -94,15 +98,44 @@ func SubscriptionBilling(OrgId string, ProVersionRate float64) error {
 	}
 
 	amount := float64(len(orgMembers)) * ProVersionRate
-
-	if err := DeductToken(OrgId, amount); err != nil {
+	var description string
+	num_members := len(orgMembers)
+	description = "Billing for Pro version subscription for " + strconv.Itoa(num_members) + " member(s) at " + strconv.Itoa(int(ProVersionRate)) + " token(s) per member per month"
+	if err := DeductToken(OrgId, description, amount); err != nil {
 		return err
 	}
 	return nil
 }
 
-func SendTokenBillingEmail() {
+func SendTokenBillingEmail(orgId, description string, amount float64) error {
 
+	OrgIdFromHex, err := primitive.ObjectIDFromHex(orgId)
+	if err != nil {
+		return err
+	}
+
+	org, _ := FetchOrganization(bson.M{"_id": OrgIdFromHex})
+	org_mail := org.CreatorEmail
+	// fmt.Println("about to send mail to: " + org_mail)
+	balance := org.Tokens
+	name := org.Name
+
+	ms := service.NewZcMailService(utils.NewConfigurations())
+	billing_mail := ms.NewMail(
+		[]string{org_mail},
+		"Token Billing Notice",
+		service.TokenBillingNotice,
+		map[string]interface{}{
+			"Description": description,
+			"Cost":        amount,
+			"Balance":     balance,
+			"Name":        name,
+		},
+	)
+	if err := ms.SendMail(billing_mail); err != nil {
+		return err
+	}
+	return nil
 }
 
 // allows user to be able to load tokens into organization wallet
@@ -208,7 +241,7 @@ func (oh *OrganizationHandler) ChargeTokens(w http.ResponseWriter, r *http.Reque
 
 	description := string(requestData["description"])
 
-	if err := DeductToken(orgId, amount); err != nil {
+	if err := DeductToken(orgId, description, amount); err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
@@ -262,8 +295,8 @@ func (oh *OrganizationHandler) CreateCheckoutSession(w http.ResponseWriter, r *h
 				Quantity: stripe.Int64(1),
 			},
 		},
-		SuccessURL: stripe.String("http://localhost:3000/success.html"),
-		CancelURL:  stripe.String("http://localhost:3000/cancel.html"),
+		SuccessURL: stripe.String(os.Getenv("FRONT_END_URL") + "/admin/settings/billings?status=success&orgId="+orgId),
+		CancelURL:  stripe.String(os.Getenv("FRONT_END_URL")+ "/admin/settings/billings?status=failed&orgId="+orgId),
 	}
 
 	s, err := session.New(params)

@@ -37,8 +37,6 @@ type RoleMember struct {
 	JoinedAt    time.Time          `json:"joined_at" bson:"joined_at"`
 }
 
-var SESSION_MAX_AGE int = int(time.Now().Unix() + (31536000 * 200))
-
 var (
 	NoAuthToken          = errors.New("No Authorization or session expired.")
 	TokenExp             = errors.New("Session expired.")
