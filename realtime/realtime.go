@@ -52,8 +52,7 @@ type CentrifugoConnectRequest struct {
 func Auth(w http.ResponseWriter, r *http.Request) {
 	// 1. Decode the request from centrifugo
 	var creq CentrifugoConnectRequest
-	err := json.NewDecoder(r.Body).Decode(&creq)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&creq); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -62,6 +61,7 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 	token := creq.Data["bearer"]
 	// 2.1: Validate token
 	conf := utils.NewConfigurations()
+
 	claims, err := TokenStringClaims(token, []byte(conf.HmacSampleSecret))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -69,11 +69,14 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 	}
 	// 2.2: Get user ID from validated token
 	userEmail := claims["email"]
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
 	user, err := utils.GetMongoDbDoc(conf.UserDbCollection, bson.M{"email": userEmail})
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -93,16 +96,25 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(data)
+
+	ee := json.NewEncoder(w).Encode(data)
+	if ee != nil {
+		http.Error(w, utils.Get_string(ee), http.StatusBadRequest)
+		return
+	}
 }
 
 func Refresh(w http.ResponseWriter, r *http.Request) {
-
-	data := CentrifugoRefreshResponse{}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(data)
 
+	data := CentrifugoRefreshResponse{}
+
+	ee := json.NewEncoder(w).Encode(data)
+	if ee != nil {
+		http.Error(w, utils.Get_string(ee), http.StatusBadRequest)
+		return
+	}
 }
 
 func Test(w http.ResponseWriter, r *http.Request) {
@@ -113,16 +125,18 @@ func PublishEvent(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var event utils.Event
+
 	err := utils.ParseJsonFromRequest(r, &event)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
+
 	if err = validate.Struct(event); err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
+
 	res := utils.Emitter(event)
 	utils.GetSuccess("publish event status", res, w)
-
 }
