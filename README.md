@@ -31,6 +31,9 @@ To get a local copy up and running follow these simple example steps.
 
 You should have **go 1.16** or  **lastest version** already installed on your local machine.
 
+### Testing
+golangci-lint run
+
 ## Contributing
 
 Pull requests are welcome from the zc_core_main team. Please review the issues created before making a pull request or create an issue if the issue you solve is not already listed.
