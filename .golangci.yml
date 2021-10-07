@@ -86,3 +86,21 @@ issues:
 
 run:
   issues-exit-code: 1
+  skip-dirs:
+  - blog
+  - api
+  - contact
+  - docs
+  - marketplace
+  - organizations
+  - plugin
+  - data
+  - external
+  - messaging
+  - report
+  - realtime
+  - service
+  - user
+  - utils
+  skip-files:
+  - main.go
