@@ -118,7 +118,7 @@ func CentifugoConnectAuth(r *http.Request) (userID string, err error) {
 	// 1. Validate the token
 	configuration := utils.NewConfigurations()
 	signingKey := configuration.HmacSampleSecret
-	status, err, sessionData := auth.GetSessionDataFromToken(r, []byte(signingKey))
+	status, sessionData, err := auth.GetSessionDataFromToken(r, []byte(signingKey))
 	if err != nil {
 		return "", err
 	}
