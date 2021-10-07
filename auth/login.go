@@ -21,9 +21,9 @@ import (
 )
 
 const (
-	sessionCollection        = "session_store"
-	userCollection           = "users"
-	UserContext       string = "user"
+	sessionCollection = "session_store"
+	userCollection    = "users"
+	UserContext       = "user"
 )
 
 var (

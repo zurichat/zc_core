@@ -26,6 +26,10 @@ var allowedMimeTypes = []string{"application/pdf",
 	"application/x-rar-compressed", " application/octet-stream", " application/zip", "application/octet-stream", "application/x-zip-compressed", "multipart/x-zip",
 }
 
+const (
+	localDH = "127.0.0.1:8080"
+)
+
 type OneTempResponse struct {
 	FileUrl string `json:"file_url"`
 	Status  bool   `json:"status"`
@@ -85,7 +89,6 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 	files := r.MultipartForm.File["file"]
 	var res []MultipleTempResponse
 	for _, fileHeader := range files {
-
 		file, err := fileHeader.Open()
 		if err != nil {
 			return nil, err
@@ -144,7 +147,7 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 		filename_e := strings.Join(strings.Split(filename, "\\"), "/")
 
 		var urlPrefix string = "https://api.zuri.chat/"
-		if r.Host == "127.0.0.1:8080" {
+		if r.Host == localDH {
 			urlPrefix = "127.0.0.1:8080/"
 		}
 		fileUrl := urlPrefix + filename_e
@@ -172,7 +175,7 @@ func DeleteFileFromServer(filePath string) error {
 
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
-// profile image upload
+// profile image upload.
 func ProfileImageUpload(folderName string, r *http.Request) (string, error) {
 	var allowedMimeImageTypes = []string{
 		"image/bmp", "image/cis-cod", "image/gif", "image/ief", "image/jpeg", "image/jpeg", "image/jpeg", "image/pipeg	jfif", "image/svg+xml",
@@ -227,7 +230,6 @@ func UploadOneFile(w http.ResponseWriter, r *http.Request) {
 		Status:  true,
 	}
 	utils.GetSuccess("File Upload Successful", res, w)
-
 }
 
 func UploadMultipleFiles(w http.ResponseWriter, r *http.Request) {
@@ -247,7 +249,6 @@ func UploadMultipleFiles(w http.ResponseWriter, r *http.Request) {
 		Status:    true,
 	}
 	utils.GetSuccess("Files Uploaded Successfully", res, w)
-
 }
 
 func DeleteFile(w http.ResponseWriter, r *http.Request) {
@@ -268,8 +269,8 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var urldom string = "api.zuri.chat"
-	if r.Host == "127.0.0.1:8080" {
-		urldom = "127.0.0.1:8080"
+	if r.Host == localDH {
+		urldom = localDH
 	}
 	filePath := "." + strings.Split(delFile.FileUrl, urldom)[1]
 	cwd, _ := os.Getwd()
@@ -288,7 +289,6 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 // Functions below here are some inpackage functions used in the functions above
 
 func saveFile(folderName string, file multipart.File, handle *multipart.FileHeader, r *http.Request) (string, error) {
-
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
 		return "", err
@@ -328,7 +328,7 @@ func saveFile(folderName string, file multipart.File, handle *multipart.FileHead
 
 	filename_e := strings.Join(strings.Split(filename, "\\"), "/")
 	var urlPrefix string = "https://api.zuri.chat/"
-	if r.Host == "127.0.0.1:8080" {
+	if r.Host == localDH {
 		urlPrefix = "127.0.0.1:8080/"
 	}
 	fileUrl := urlPrefix + filename_e
@@ -354,7 +354,6 @@ func pickFileName(prefix string, suffix string) (string, error) {
 		if _, err := os.Stat(fname); os.IsNotExist(err) {
 			return fname, nil
 		}
-
 	}
 	return "", fmt.Errorf("Unable to create a unique file with the prefix %v in 100 tries", prefix)
 }

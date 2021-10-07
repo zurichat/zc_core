@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -62,7 +61,6 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 			ID:    objID,
 			Email: SessionEmail,
 		}
-		fmt.Println(u)
 		ctx := context.WithValue(r.Context(), UserContext, u)
 		nextHandler.ServeHTTP(w, r.WithContext(ctx))
 	}

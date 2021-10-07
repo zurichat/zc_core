@@ -102,7 +102,7 @@ run:
   - messaging
   - report
   - realtime
-  - service
+  # - service
   - user
   - utils
   skip-files:
