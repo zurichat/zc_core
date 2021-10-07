@@ -148,9 +148,9 @@ func Router(Server *socketio.Server) *mux.Router {
 
 	// Users
 	r.HandleFunc("/users", user.Create).Methods("POST")
-	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.UpdateUser)).Methods("PATCH")
-	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.GetUser)).Methods("GET")
-	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.DeleteUser)).Methods("DELETE")
+	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(auth.IsAuthorized(user.UpdateUser, "zuri_admin"))).Methods("PATCH")
+	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(auth.IsAuthorized(user.GetUser, "zuri_admin"))).Methods("GET")
+	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(auth.IsAuthorized(user.DeleteUser, "zuri_admin"))).Methods("DELETE")
 	r.HandleFunc("/users", auth.IsAuthenticated(auth.IsAuthorized(user.GetUsers, "zuri_admin"))).Methods("GET")
 	r.HandleFunc("/users/{email}/organizations", auth.IsAuthenticated(user.GetUserOrganizations)).Methods("GET")
 
