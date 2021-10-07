@@ -757,17 +757,3 @@ func (oh *OrganizationHandler) UpdateOrganizationAuthentication(w http.ResponseW
 
 	utils.GetSuccess("organization settings updated successfully", nil, w)
 }
-
-func (oh *OrganizationHandler) ResetTokensAndVersion(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	data := map[string]interface{}{
-		"version": "free",
-		"tokens":  100,
-	}
-	_, err := utils.UpdateManyMongoDbDocs(OrganizationCollectionName, make(map[string]interface{}), data)
-	if err != nil {
-		utils.GetError(errors.New("could not update many docs"), http.StatusExpectationFailed, w)
-	}
-	utils.GetSuccess("organizations tokens and versions reset successfully", nil, w)
-}

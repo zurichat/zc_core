@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -16,30 +15,26 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
-// middleware to check if user is authorized
+// middleware to check if user is authorized.
 func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("content-type", "application/json")
 
-		store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(au.configs.SecretKey))
-		var session *sessions.Session
-		var SessionEmail string
-		var err error
+		var (
+			session      *sessions.Session
+			SessionEmail string
+			err          error
+			erro         error
+		)
 
+		store := NewMongoStore(utils.GetCollection(sessionCollection), au.configs.SessionMaxAge, true, []byte(au.configs.SecretKey))
 		session, _ = store.Get(r, au.configs.SessionKey)
-		status, _, sessData := GetSessionDataFromToken(r, []byte(au.configs.HmacSampleSecret))
-
-		// if err == nil && !status {
-		// 	utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
-		// 	return
-		// }
-
-		var erro error
+		status, sessData, _ := GetSessionDataFromToken(r, []byte(au.configs.HmacSampleSecret))
 
 		if status {
-			session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName, sessData.Gothic)
+			session, erro = NewS(store, sessData.Cookie, sessData.ID, sessData.Email, r, sessData.SessionName, sessData.Gothic)
 			if err != nil && erro != nil {
-				utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
+				utils.GetError(ErrNotAuthorized, http.StatusUnauthorized, w)
 				return
 			}
 		}
@@ -47,12 +42,12 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 		if sessData.Gothic != nil {
 			SessionEmail = sessData.GothicEmail
 		} else if session.Values["email"] != nil {
-			SessionEmail = session.Values["email"].(string)
+			SessionEmail, _ = session.Values["email"].(string)
 		}
 
 		// use is coming in newly, no cookies
 		if session.IsNew {
-			utils.GetError(NoAuthToken, http.StatusUnauthorized, w)
+			utils.GetError(ErrNoAuthToken, http.StatusUnauthorized, w)
 			return
 		}
 
@@ -62,73 +57,75 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 			return
 		}
 
-		user := &AuthUser{
+		u := &AuthUser{
 			ID:    objID,
 			Email: SessionEmail,
 		}
 
-		ctx := context.WithValue(r.Context(), "user", user)
+		ctx := context.WithValue(r.Context(), UserContext, u)
 		nextHandler.ServeHTTP(w, r.WithContext(ctx))
 	}
 }
 
 // OptionalAuthenticated calls the next's handler's ServeHTTP() with the request context unchanged
 // if a user is not authenticated, else it modifies the request context with a copy of the user's
-// details and passes the changed copy of the request to the next handler's ServeHTTP()
+// details and passes the changed copy of the request to the next handler's ServeHTTP().
 func (au *AuthHandler) OptionalAuthentication(nextHandler http.HandlerFunc, auth *AuthHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("content-type", "application/json")
 
-		store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(au.configs.SecretKey))
-		_, err := store.Get(r, au.configs.SessionKey)
-		status, err, sessData := GetSessionDataFromToken(r, []byte(au.configs.HmacSampleSecret))
+		store := NewMongoStore(utils.GetCollection(sessionCollection), au.configs.SessionMaxAge, true, []byte(au.configs.SecretKey))
+		_, er := store.Get(r, au.configs.SessionKey)
+		status, sessData, err := GetSessionDataFromToken(r, []byte(au.configs.HmacSampleSecret))
 
-		if err != nil {
-			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
+		if er != nil || err != nil {
+			utils.GetError(ErrNotAuthorized, http.StatusUnauthorized, w)
 			return
 		}
 
 		if !status && sessData.Email == "" {
 			nextHandler.ServeHTTP(w, r)
 			return
-		} else {
-			ctx := context.WithValue(r.Context(), UserDetails, &sessData)
-			r = r.WithContext(ctx)
-			nextHandler.ServeHTTP(w, r)
 		}
 
+		ctx := context.WithValue(r.Context(), UserDetails, &sessData)
+		r = r.WithContext(ctx)
+		nextHandler.ServeHTTP(w, r)
 	}
 }
 
 func (au *AuthHandler) IsAuthorized(nextHandler http.HandlerFunc, role string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		var orgId string
+
+		var (
+			orgID    string
+			authuser user.User
+			memb     RoleMember
+		)
 
 		if mux.Vars(r)["id"] != "" {
-			orgId = mux.Vars(r)["id"]
+			orgID = mux.Vars(r)["id"]
 		}
-		loggedInUser := r.Context().Value("user").(*AuthUser)
+
+		loggedInUser, _ := r.Context().Value("user").(*AuthUser)
 		lguser, ee := FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
+
 		if ee != nil {
 			utils.GetError(errors.New("Error Fetching Logged in User"), http.StatusBadRequest, w)
 		}
-		user_id := lguser.ID
 
-		// collections
-		_, user_collection, member_collection := "organizations", "users", "members"
-		// org_collection
+		userID := lguser.ID
+		luHexid, _ := primitive.ObjectIDFromHex(userID)
+		_, userCollection, memberCollection := "organizations", "users", "members"
+		userDoc, _ := utils.GetMongoDbDoc(userCollection, bson.M{"_id": luHexid})
 
-		// fmt.Println(user_id)
-
-		// Getting user's document from db
-		var luHexid, _ = primitive.ObjectIDFromHex(user_id)
-		userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"_id": luHexid})
 		if userDoc == nil {
 			utils.GetError(errors.New("User not found"), http.StatusBadRequest, w)
+			return
 		}
 
-		var authuser user.User
+		//nolint:errcheck //CODEI8:
 		mapstructure.Decode(userDoc, &authuser)
 
 		if role == "zuri_admin" {
@@ -136,17 +133,15 @@ func (au *AuthHandler) IsAuthorized(nextHandler http.HandlerFunc, role string) h
 				utils.GetError(errors.New("Access Denied"), http.StatusUnauthorized, w)
 				return
 			}
-
 		} else {
 			// Getting member's document from db
-			orgMember, _ := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "email": authuser.Email})
+			orgMember, _ := utils.GetMongoDbDoc(memberCollection, bson.M{"org_id": orgID, "email": authuser.Email})
 			if orgMember == nil {
-				fmt.Println("no org")
 				utils.GetError(errors.New("Access Denied"), http.StatusUnauthorized, w)
 				return
 			}
 
-			var memb RoleMember
+			//nolint:errcheck //CODEI8:
 			mapstructure.Decode(orgMember, &memb)
 
 			// check role's access
@@ -158,11 +153,11 @@ func (au *AuthHandler) IsAuthorized(nextHandler http.HandlerFunc, role string) h
 			}
 		}
 
-		user := &AuthUser{
+		u := &AuthUser{
 			ID:    luHexid,
 			Email: loggedInUser.Email,
 		}
-		ctx := context.WithValue(r.Context(), "user", user)
+		ctx := context.WithValue(r.Context(), UserContext, u)
 		nextHandler.ServeHTTP(w, r.WithContext(ctx))
 	}
 }

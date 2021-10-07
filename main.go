@@ -128,9 +128,6 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/charge-tokens", auth.IsAuthenticated(organizations.ChargeTokens)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/checkout-session", organizations.CreateCheckoutSession).Methods("POST")
 
-	//temp
-	r.HandleFunc("/organizations/reset-tokens-and-version", auth.IsAuthenticated(organizations.ResetTokensAndVersion)).Methods("POST")
-
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
 	r.HandleFunc("/data/read", data.NewRead).Methods("POST")

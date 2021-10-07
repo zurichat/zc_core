@@ -22,19 +22,19 @@ import (
 )
 
 var (
-	ErrorInvalid = errors.New("Zuri Core session: invalid session id")
+	ErrorInvalid = errors.New("zuri core session: invalid session id")
 	Resptoken    ResToken
 )
 
 type Session struct {
-	Id       primitive.ObjectID `bson:"_id,omitempty"`
-	UserId   primitive.ObjectID `bson:"user_id,omitempty" json:"user_id,omitempty"`
+	ID       primitive.ObjectID `bson:"_id,omitempty"`
+	UserID   primitive.ObjectID `bson:"user_id,omitempty" json:"user_id,omitempty"`
 	Data     string
 	Modified time.Time
 }
 
 type ResToken struct {
-	Id            string            `json:"id,omitempty"`
+	ID            string            `json:"id,omitempty"`
 	Email         string            `json:"email,omitempty"`
 	SessionName   string            `json:"session_name"`
 	Cookie        string            `json:"cookie,omitempty"`
@@ -109,7 +109,8 @@ func (m *MongoStore) New(r *http.Request, name string) (*sessions.Session, error
 
 	return session, err
 }
-func NewS(m *MongoStore, cookie string, id string, email string, r *http.Request, name string, Gothic interface{}) (*sessions.Session, error) {
+
+func NewS(m *MongoStore, cookie, id, email string, r *http.Request, name string, gothic interface{}) (*sessions.Session, error) {
 	session := sessions.NewSession(m, name)
 	session.Options = &sessions.Options{
 		Path:     m.Options.Path,
@@ -120,24 +121,20 @@ func NewS(m *MongoStore, cookie string, id string, email string, r *http.Request
 	}
 
 	session.IsNew = true
-	// session.ID = id
-	var err error
-	err = securecookie.DecodeMulti(name, cookie, &session.ID, m.Codecs...)
+	err := securecookie.DecodeMulti(name, cookie, &session.ID, m.Codecs...)
+
 	if err == nil {
-		var errb error
-		if Gothic != nil {
-			session.Values["gothic"] = Gothic
+		if gothic != nil {
+			session.Values["gothic"] = gothic
 		} else {
 			session.Values["id"] = id
 			session.Values["email"] = email
 		}
-		errb = m.load(session)
+
+		errb := m.load(session)
 		if errb == nil {
 			session.IsNew = false
-		} else {
-			err = nil
 		}
-
 	}
 
 	return session, err
@@ -147,31 +144,19 @@ func ClearSession(m *MongoStore, w http.ResponseWriter, session *sessions.Sessio
 	if err := m.delete(session); err != nil {
 		return err
 	}
+
 	m.Token.SetToken(w, session.Name(), "", session.Options)
+
 	Resptoken = ResToken{
 		SessionName: session.Name(),
 		Cookie:      "",
 		Options:     session.Options,
 	}
-	return nil
 
+	return nil
 }
 
 func (m *MongoStore) Save(r *http.Request, w http.ResponseWriter, session *sessions.Session) error {
-
-	// if session.Options.MaxAge < 0 {
-	// 	if err := m.delete(session); err != nil {
-	// 		return err
-	// 	}
-	// 	m.Token.SetToken(w, session.Name(), "", session.Options)
-	// 	Resptoken = ResToken{
-	// 		SessionName: session.Name(),
-	// 		Cookie:      "",
-	// 		Options:     session.Options,
-	// 	}
-	// 	return nil
-	// }
-
 	if session.ID == "" {
 		session.ID = primitive.NewObjectID().Hex()
 	}
@@ -184,18 +169,20 @@ func (m *MongoStore) Save(r *http.Request, w http.ResponseWriter, session *sessi
 	if err != nil {
 		return err
 	}
+
 	Resptoken = ResToken{
-		Id:          session.ID,
+		ID:          session.ID,
 		SessionName: session.Name(),
 		Cookie:      encoded,
 		Options:     session.Options,
 	}
+
 	m.Token.SetToken(w, session.Name(), encoded, session.Options)
+
 	return nil
 }
 
 func SaveSocialSession(r *http.Request, w http.ResponseWriter, session *sessions.Session, m *MongoStore) error {
-
 	if session.ID == "" {
 		session.ID = primitive.NewObjectID().Hex()
 	}
@@ -208,13 +195,16 @@ func SaveSocialSession(r *http.Request, w http.ResponseWriter, session *sessions
 	if err != nil {
 		return err
 	}
+
 	Resptoken = ResToken{
-		Id:          session.ID,
+		ID:          session.ID,
 		SessionName: session.Name(),
 		Cookie:      encoded,
 		Options:     session.Options,
 	}
+
 	m.Token.SetToken(w, session.Name(), encoded, session.Options)
+
 	return nil
 }
 
@@ -244,6 +234,7 @@ func (m *MongoStore) load(session *sessions.Session) error {
 	if err := securecookie.DecodeMulti(session.Name(), s.Data, &session.Values, m.Codecs...); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -251,20 +242,22 @@ func (m *MongoStore) upsert(session *sessions.Session) error {
 	ctx := context.Background()
 
 	objID, err := primitive.ObjectIDFromHex(session.ID)
-	var userID primitive.ObjectID
-	var eeer error
+
+	var (
+		userID primitive.ObjectID
+		eeer   error
+	)
+
 	if session.Values["id"] != nil && session.Values["id"] != "" {
 		userID, eeer = primitive.ObjectIDFromHex(session.Values["id"].(string))
 	}
 
 	if eeer != nil {
-		// tmpid := primitive.NewObjectID().Hex()
-		// userID, _ = primitive.ObjectIDFromHex(tmpid)
 		userID, _ = primitive.ObjectIDFromHex("")
 	}
 
 	if err != nil {
-		return errors.New("zuri Core session: invalid session id")
+		return errors.New("zuri core session: invalid session id")
 	}
 
 	var modified time.Time
@@ -273,23 +266,22 @@ func (m *MongoStore) upsert(session *sessions.Session) error {
 		if !ok {
 			return ErrorInvalid
 		}
-
 	} else {
 		modified = time.Now()
 	}
+
 	encoded, _ := securecookie.EncodeMulti(session.Name(), session.Values, m.Codecs...)
 	s := Session{
-		Id:       objID,
-		UserId:   userID,
+		ID:       objID,
+		UserID:   userID,
 		Data:     encoded,
 		Modified: modified,
 	}
-
 	opts := options.Update().SetUpsert(true)
-	filter := bson.M{"_id": s.Id}
-	update_data := bson.M{"$set": s}
+	filter := bson.M{"_id": s.ID}
+	updateData := bson.M{"$set": s}
 
-	if _, err = m.coll.UpdateOne(ctx, filter, update_data, opts); err != nil {
+	if _, err = m.coll.UpdateOne(ctx, filter, updateData, opts); err != nil {
 		return err
 	}
 
@@ -323,6 +315,7 @@ func decodeBase64(s string) []byte {
 	if err != nil {
 		panic(err)
 	}
+
 	return data
 }
 
@@ -331,10 +324,12 @@ func Encrypt(key, text string) string {
 	if err != nil {
 		panic(err)
 	}
+
 	plaintext := []byte(text)
 	cfb := cipher.NewCFBEncrypter(block, iv)
 	ciphertext := make([]byte, len(plaintext))
 	cfb.XORKeyStream(ciphertext, plaintext)
+
 	return encodeBase64(ciphertext)
 }
 
@@ -343,35 +338,39 @@ func Decrypt(key, text string) string {
 	if err != nil {
 		panic(err)
 	}
+
 	ciphertext := decodeBase64(text)
 	cfb := cipher.NewCFBEncrypter(block, iv)
 	plaintext := make([]byte, len(ciphertext))
 	cfb.XORKeyStream(plaintext, ciphertext)
+
 	return string(plaintext)
 }
 
-// Deletes other sessions apart from current one
-func DeleteOtherSessions(userID string, sessionID string) {
+// Deletes other sessions apart from current one.
+func DeleteOtherSessions(userID, sessionID string) {
 	uid, _ := primitive.ObjectIDFromHex(userID)
 	sid, _ := primitive.ObjectIDFromHex(sessionID)
 	filter := bson.M{
 		"user_id": bson.M{"$eq": uid},
 		"_id":     bson.M{"$ne": sid},
 	}
-	_, err := utils.DeleteManyMongoDoc(session_collection, filter)
+	_, err := utils.DeleteManyMongoDoc(sessionCollection, filter)
+
 	if err != nil {
 		fmt.Printf("%v", err)
 	}
 }
 
-// Finds User by ID
+// Finds User by ID.
 func FetchUserByID(id string) (*user.User, error) {
 	uid, _ := primitive.ObjectIDFromHex(id)
 	filter := bson.M{"_id": uid}
-	user := &user.User{}
+	u := &user.User{}
 
-	userCollection := utils.GetCollection(user_collection)
+	userCollection := utils.GetCollection(userCollection)
 	result := userCollection.FindOne(context.TODO(), filter)
-	err := result.Decode(&user)
-	return user, err
+	err := result.Decode(&u)
+
+	return u, err
 }

@@ -222,7 +222,6 @@ func (uh *UserHandler) GetUsers(response http.ResponseWriter, request *http.Requ
 // get a user organizations
 func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("content-type", "application/json")
-	member_collection, organization_collection := "members", "organizations"
 
 	params := mux.Vars(request)
 
@@ -233,9 +232,10 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 	}
 
 	// find user email in members collection.
-	result, _ := utils.GetMongoDbDocs(member_collection, bson.M{"email": userEmail, "deleted": false})
+	result, _ := utils.GetMongoDbDocs(MemberCollectionName, bson.M{"email": userEmail, "deleted": false})
 
-	var orgs []map[string]interface{}
+	orgs := make([]map[string]interface{}, 0)
+	
 	for _, value := range result {
 		basic := make(map[string]interface{})
 
@@ -247,9 +247,9 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 		objId, _ := primitive.ObjectIDFromHex(orgid)
 
 		// find all members of an org
-		orgMembers, _ := utils.GetMongoDbDocs(member_collection, bson.M{"org_id": orgid})
+		orgMembers, _ := utils.GetMongoDbDocs(MemberCollectionName, bson.M{"org_id": orgid})
 
-		orgDetails, err := utils.GetMongoDbDoc(organization_collection, bson.M{"_id": objId})
+		orgDetails, err := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": objId})
 		if err != nil {
 			utils.GetError(err, http.StatusUnprocessableEntity, response)
 			return
