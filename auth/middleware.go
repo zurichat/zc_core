@@ -61,7 +61,7 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 			ID:    objID,
 			Email: SessionEmail,
 		}
-
+		//nolint:staticcheck //CODEI8: lint ignore
 		ctx := context.WithValue(r.Context(), UserContext, u)
 		nextHandler.ServeHTTP(w, r.WithContext(ctx))
 	}
@@ -112,7 +112,7 @@ func (au *AuthHandler) IsAuthorized(nextHandler http.HandlerFunc, role string) h
 		lguser, ee := FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
 
 		if ee != nil {
-			utils.GetError(errors.New("Error Fetching Logged in User"), http.StatusBadRequest, w)
+			utils.GetError(errors.New("error Fetching Logged in User"), http.StatusBadRequest, w)
 		}
 
 		userID := lguser.ID
@@ -121,7 +121,7 @@ func (au *AuthHandler) IsAuthorized(nextHandler http.HandlerFunc, role string) h
 		userDoc, _ := utils.GetMongoDbDoc(userCollection, bson.M{"_id": luHexid})
 
 		if userDoc == nil {
-			utils.GetError(errors.New("User not found"), http.StatusBadRequest, w)
+			utils.GetError(errors.New("user not found"), http.StatusBadRequest, w)
 			return
 		}
 
@@ -130,14 +130,14 @@ func (au *AuthHandler) IsAuthorized(nextHandler http.HandlerFunc, role string) h
 
 		if role == "zuri_admin" {
 			if authuser.Role != "admin" {
-				utils.GetError(errors.New("Access Denied"), http.StatusUnauthorized, w)
+				utils.GetError(errors.New("access Denied"), http.StatusUnauthorized, w)
 				return
 			}
 		} else {
 			// Getting member's document from db
 			orgMember, _ := utils.GetMongoDbDoc(memberCollection, bson.M{"org_id": orgID, "email": authuser.Email})
 			if orgMember == nil {
-				utils.GetError(errors.New("Access Denied"), http.StatusUnauthorized, w)
+				utils.GetError(errors.New("access Denied"), http.StatusUnauthorized, w)
 				return
 			}
 
@@ -148,7 +148,7 @@ func (au *AuthHandler) IsAuthorized(nextHandler http.HandlerFunc, role string) h
 			nA := map[string]int{"owner": 4, "admin": 3, "member": 2, "guest": 1}
 
 			if nA[role] > nA[memb.Role] {
-				utils.GetError(errors.New("Access Denied"), http.StatusUnauthorized, w)
+				utils.GetError(errors.New("access Denied"), http.StatusUnauthorized, w)
 				return
 			}
 		}
@@ -157,6 +157,7 @@ func (au *AuthHandler) IsAuthorized(nextHandler http.HandlerFunc, role string) h
 			ID:    luHexid,
 			Email: loggedInUser.Email,
 		}
+		//nolint:staticcheck //CODEI8: lint ignore
 		ctx := context.WithValue(r.Context(), UserContext, u)
 		nextHandler.ServeHTTP(w, r.WithContext(ctx))
 	}

@@ -340,3 +340,7 @@ func Emitter(event Event) int {
 	status := CentrifugoConn(body)
 	return status
 }
+
+func Get_string(any_value interface{}) string {
+	return fmt.Sprintf("%v", any_value)
+}
