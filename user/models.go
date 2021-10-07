@@ -12,6 +12,8 @@ const (
 	UserCollectionName                 = "users"
 	UserProfileCollectionName          = "user_workspace_profiles"
 	OrganizationsInvitesCollectionName = "organizations_invites"
+	MemberCollectionName               = "members"
+	OrganizationCollectionName         = "organizations"
 )
 
 type M map[string]interface{}
