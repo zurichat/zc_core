@@ -20,12 +20,10 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
-type key int
-
 const (
-	sessionCollection     = "session_store"
-	userCollection        = "users"
-	UserContext       key = iota
+	sessionCollection = "session_store"
+	userCollection    = "users"
+	UserContext       = "user"
 )
 
 var (
@@ -88,7 +86,7 @@ func (au *AuthHandler) LoginIn(response http.ResponseWriter, request *http.Reque
 		return
 	}
 	// check if user is verified
-	if vser.IsVerified {
+	if !vser.IsVerified {
 		utils.GetError(ErrAccountConfirmError, http.StatusBadRequest, response)
 		return
 	}
