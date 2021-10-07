@@ -61,6 +61,7 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 			ID:    objID,
 			Email: SessionEmail,
 		}
+		//nolint:staticcheck //CODEI8: lint ignore
 		ctx := context.WithValue(r.Context(), UserContext, u)
 		nextHandler.ServeHTTP(w, r.WithContext(ctx))
 	}
@@ -156,6 +157,7 @@ func (au *AuthHandler) IsAuthorized(nextHandler http.HandlerFunc, role string) h
 			ID:    luHexid,
 			Email: loggedInUser.Email,
 		}
+		//nolint:staticcheck //CODEI8: lint ignore
 		ctx := context.WithValue(r.Context(), UserContext, u)
 		nextHandler.ServeHTTP(w, r.WithContext(ctx))
 	}
