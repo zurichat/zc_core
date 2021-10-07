@@ -164,6 +164,11 @@ func GetOrgPluginCollectionName(orgName string) string {
 	return strings.ToLower(orgName) + "_" + InstalledPluginsCollectionName
 }
 
+type Social struct {
+	Url   string `json:"url" bson:"url"`
+	Title string `json:"title" bson:"title"`
+}
+
 const (
 	DontClear  = "dont_clear"
 	ThirtyMins = "thirty_mins"
@@ -209,7 +214,7 @@ type Member struct {
 	Settings    *Settings          `json:"settings" bson:"settings"`
 	Deleted     bool               `json:"deleted" bson:"deleted"`
 	DeletedAt   time.Time          `json:"deleted_at" bson:"deleted_at"`
-	Socials     []string           `json:"socials" bson:"socials"`
+	Socials     []Social           `json:"socials" bson:"socials"`
 	Language    string             `json:"language" bson:"language"`
 	Twitter		string	 		   `json:"twitter" bson:"twitter"`
 	Facebook	string	 		   `json:"facebook" bson:"facebook"`
@@ -224,9 +229,7 @@ type Profile struct {
 	Pronouns    string   `json:"pronouns" bson:"pronouns"`
 	Phone       string   `json:"phone" bson:"phone"`
 	TimeZone    string   `json:"time_zone" bson:"time_zone"`
-	Twitter		string	 `json:"twitter" bson:"twitter"`
-	Facebook	string	 `json:"facebook" bson:"facebook"`
-	Socials     []string `json:"socials" bson:"socials"`
+	Socials     []Social `json:"socials" bson:"socials"`
 	Language    string   `json:"language" bson:"language"`
 }
 

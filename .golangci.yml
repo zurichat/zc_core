@@ -39,8 +39,8 @@ linters:
     - goconst
     - godot
     - gocritic
-    - gofmt
-    - goimports
+    # - gofmt
+    # - goimports
     - gomnd
     - gocyclo
     - goprintffuncname
@@ -75,14 +75,14 @@ issues:
         - gosec
         - dupl
     - linters:
-      - gosec
-      text: "weak cryptographic primitive"
+        - gosec
+      text: 'weak cryptographic primitive'
     - linters:
-      - stylecheck
-      text: "error strings should not be capitalized"
+        - stylecheck
+      text: 'error strings should not be capitalized'
     - linters:
-      - errcheck
-      text: "CODEI8:"
+        - errcheck
+      text: 'CODEI8:'
 
   max-issues-per-linter: 0
   max-same-issues: 0
@@ -90,20 +90,20 @@ issues:
 run:
   issues-exit-code: 1
   skip-dirs:
-  - blog
-  - api
-  - contact
-  - docs
-  - marketplace
-  - organizations
-  - plugin
-  - data
-  - external
-  - messaging
-  - report
-  - realtime
-  - service
-  - user
-  - utils
+    - blog
+    - api
+    - contact
+    - docs
+    - marketplace
+    - organizations
+    - plugin
+    - data
+    - external
+    - messaging
+    - report
+    - realtime
+    - service
+    # - user
+    - utils
   skip-files:
-  - main.go
+    - main.go
