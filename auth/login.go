@@ -20,12 +20,10 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
-type key int
-
 const (
-	sessionCollection     = "session_store"
-	userCollection        = "users"
-	UserContext       key = iota
+	sessionCollection        = "session_store"
+	userCollection           = "users"
+	UserContext       string = "user"
 )
 
 var (
