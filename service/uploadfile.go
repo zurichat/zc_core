@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 
-	// uuser "os/user"
 	"path/filepath"
 	"strings"
 	"time"
@@ -24,8 +23,8 @@ var allowedMimeTypes = []string{"application/pdf",
 	"video/mp4", "video/mpeg", "video/ogg", "video/quicktime",
 	"application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 	"application/vnd.android.package-archive", "application/octet-stream",
-	"application/x-rar-compressed"," application/octet-stream"," application/zip", "application/octet-stream", "application/x-zip-compressed", "multipart/x-zip",
-	}
+	"application/x-rar-compressed", " application/octet-stream", " application/zip", "application/octet-stream", "application/x-zip-compressed", "multipart/x-zip",
+}
 
 type OneTempResponse struct {
 	FileUrl string `json:"file_url"`
@@ -114,15 +113,11 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 			folderName = folderName + "/"
 		} else {
 			folderName = "mesc/"
-			// folderName = ""
 		}
 		fileExtension := filepath.Ext(fileHeader.Filename)
-		// cwd, _ := os.Getwd()
 		exeDir, newF := "files/"+folderName, ""
-		// mexeDir := filepath.Join(cwd,exeDir)
 		filenamePrefix := filepath.Join(exeDir, newF, buildFileName())
 		filename, errr := pickFileName(filenamePrefix, fileExtension)
-		// wfilename := filepath.Join(cwd,filename)
 
 		if errr != nil {
 			return nil, errr
@@ -130,10 +125,6 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 
 		_, err2 := os.Stat(exeDir)
 		if err2 != nil {
-			// err1 := os.Mkdir(exeDir, 0777)
-			// if err1 != nil {
-			// 	return nil, err1
-			// }
 			err0 := os.MkdirAll(exeDir, 0777)
 			if err0 != nil {
 				return nil, err0
@@ -297,8 +288,7 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 // Functions below here are some inpackage functions used in the functions above
 
 func saveFile(folderName string, file multipart.File, handle *multipart.FileHeader, r *http.Request) (string, error) {
-	// cwd, _ := os.Getwd()
-	// usdr,_ := uuser.Current()
+
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
 		return "", err
@@ -307,25 +297,18 @@ func saveFile(folderName string, file multipart.File, handle *multipart.FileHead
 		folderName = folderName + "/"
 	} else {
 		folderName = "mesc/"
-		// folderName = ""
 	}
 	fileExtension := filepath.Ext(handle.Filename)
 
 	exeDir, newF := "files/"+folderName, ""
-	// mexeDir := filepath.Join(cwd,exeDir)
 	filenamePrefix := filepath.Join(exeDir, newF, buildFileName())
 	filename, errr := pickFileName(filenamePrefix, fileExtension)
-	// wfilename := filepath.Join(cwd,filename)
 	if errr != nil {
 		return "", errr
 	}
 
 	_, err2 := os.Stat(exeDir)
 	if err2 != nil {
-		// err1 := os.Mkdir(exeDir, os.ModePerm)
-		// if err1 != nil {
-		// 	return "", err1
-		// }
 		err0 := os.MkdirAll(exeDir, os.ModePerm)
 		if err0 != nil {
 			return "", err0
@@ -378,7 +361,7 @@ func pickFileName(prefix string, suffix string) (string, error) {
 
 func MescFiles(w http.ResponseWriter, r *http.Request) {
 	masc, mesc, apk_sec, exe_sec := utils.Env("APK_SEC"), utils.Env("EXE_SEC"), mux.Vars(r)["apk_sec"], mux.Vars(r)["exe_sec"]
-	if !(masc == apk_sec && mesc == exe_sec){
+	if !(masc == apk_sec && mesc == exe_sec) {
 		utils.GetError(fmt.Errorf("Acess Denied"), http.StatusForbidden, w)
 		return
 	}

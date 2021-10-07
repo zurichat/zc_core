@@ -25,7 +25,6 @@ type Channels struct {
 type CentrifugoConnectResult struct {
 	User     string `json:"user" bson:"user"`
 	ExpireAt int    `json:"expire_at" bson:"expire_at"`
-	// Channels Channels `json:"channels" bson:"channels"`
 }
 
 type CentrifugoConnectResponse struct {
