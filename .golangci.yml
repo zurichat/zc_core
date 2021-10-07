@@ -80,6 +80,9 @@ issues:
     - linters:
       - stylecheck
       text: "error strings should not be capitalized"
+    - linters:
+      - errcheck
+      text: "CODEI8:"
 
   max-issues-per-linter: 0
   max-same-issues: 0
