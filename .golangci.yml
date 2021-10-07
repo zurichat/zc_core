@@ -105,5 +105,5 @@ run:
   # - service
   - user
   - utils
-  skip-files:
-  - main.go
+  # skip-files:
+  # - main.go
