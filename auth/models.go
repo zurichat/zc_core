@@ -23,7 +23,7 @@ import (
 
 type RoleMember struct {
 	ID          string             `json:"id" bson:"_id"`
-	OrgId       primitive.ObjectID `json:"org_id" bson:"org_id"`
+	OrgID       primitive.ObjectID `json:"org_id" bson:"org_id"`
 	Files       []string           `json:"files" bson:"files"`
 	ImageURL    string             `json:"image_url" bson:"image_url"`
 	Name        string             `json:"name" bson:"name"`
@@ -37,15 +37,14 @@ type RoleMember struct {
 	JoinedAt    time.Time          `json:"joined_at" bson:"joined_at"`
 }
 
-var SESSION_MAX_AGE int = int(time.Now().Unix() + (31536000 * 200))
-
 var (
-	NoAuthToken          = errors.New("No Authorization or session expired.")
-	TokenExp             = errors.New("Session expired.")
-	NotAuthorized        = errors.New("Not Authorized.")
-	ConfirmPasswordError = errors.New("The password confirmation does not match")
-	UserDetails          = UserKey("userDetails")
-	AccessDenied         = errors.New("Access Denied")
+	NumberTwo          = 2
+	ErrNoAuthToken     = errors.New("no authorization or session expired")
+	ErrTokenExp        = errors.New("session expired")
+	ErrNotAuthorized   = errors.New("not authorized")
+	ErrConfirmPassword = errors.New("the password confirmation does not match")
+	ErrAccessDenied    = errors.New("access Denied")
+	UserDetails        = UserKey("userDetails")
 )
 
 type Credentials struct {
@@ -58,6 +57,7 @@ type Token struct {
 	User      UserResponse `json:"user"`
 }
 
+//nolint:revive //CODEI8:
 type AuthUser struct {
 	ID    primitive.ObjectID `json:"id"`
 	Email string             `json:"email"`
@@ -88,6 +88,7 @@ type VerifiedTokenResponse struct {
 	User     UserResponse `json:"user"`
 }
 
+//nolint:revive //CODEI8:
 type AuthHandler struct {
 	configs     *utils.Configurations
 	mailService service.MailService
@@ -95,71 +96,76 @@ type AuthHandler struct {
 
 type UserKey string
 
-// Method to compare password
+// Method to compare password.
 func CheckPassword(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }
 
 func FetchUserByEmail(filter map[string]interface{}) (*user.User, error) {
-	user := &user.User{}
-	userCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), user_collection)
+	u := &user.User{}
+	userCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), userCollection)
+
 	if err != nil {
-		return user, err
+		return u, err
 	}
+
 	result := userCollection.FindOne(context.TODO(), filter)
-	err = result.Decode(&user)
-	return user, err
+	err = result.Decode(&u)
+
+	return u, err
 }
 
 // Checks if a user is authorized to access a particular function, and either returns a 403 error or continues the process
 // First is the Organisation's Id
 // Second Option is the role necessary for accessing your endpoint, options are "owner" or "admin" or "member" or "guest"
 // Third is response writer
-// Fourth request reader
-func IsAuthorized(orgId string, role string, w http.ResponseWriter, r *http.Request) bool {
-	loggedInUser := r.Context().Value("user").(*AuthUser)
+// Fourth request reader.
+func IsAuthorized(orgID, role string, w http.ResponseWriter, r *http.Request) bool {
+	loggedInUser, _ := r.Context().Value("user").(*AuthUser)
 	lguser, ee := FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
+
 	if ee != nil {
 		utils.GetError(errors.New("error fetching logged in User"), http.StatusBadRequest, w)
 		return false
 	}
-	user_id := lguser.ID
-	// collections
-	_, user_collection, member_collection := "organizations", "users", "members"
-	// org_collection
 
-	// fmt.Println(user_id)
+	userID := lguser.ID
+	luHexid, _ := primitive.ObjectIDFromHex(userID)
+	_, userCollection, memberCollection := "organizations", "users", "members"
+	userDoc, _ := utils.GetMongoDbDoc(userCollection, bson.M{"_id": luHexid})
 
-	// Getting user's document from db
-	var luHexid, _ = primitive.ObjectIDFromHex(user_id)
-	userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"_id": luHexid})
 	if userDoc == nil {
 		utils.GetError(errors.New("user not found"), http.StatusBadRequest, w)
 		return false
 	}
 
-	var user user.User
-	mapstructure.Decode(userDoc, &user)
+	var (
+		u    user.User
+		memb RoleMember
+	)
+
+	//nolint:errcheck //CODEI8: please ignore
+	mapstructure.Decode(userDoc, &u)
 
 	if role == "zuri_admin" {
-		if user.Role == role {
+		if u.Role == role {
 			return true
-		} else {
-			utils.GetError(errors.New("access Denied"), http.StatusUnauthorized, w)
-			return false
 		}
 
+		utils.GetError(errors.New("access Denied"), http.StatusUnauthorized, w)
+
+		return false
 	}
 
 	// Getting member's document from db
-	orgMember, _ := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "email": user.Email})
+	orgMember, _ := utils.GetMongoDbDoc(memberCollection, bson.M{"org_id": orgID, "email": u.Email})
 	if orgMember == nil {
 		utils.GetError(errors.New("access Denied"), http.StatusUnauthorized, w)
 		return false
 	}
 
-	var memb RoleMember
+	//nolint:errcheck //CODEI8:
 	mapstructure.Decode(orgMember, &memb)
 
 	// check role's access
@@ -169,6 +175,7 @@ func IsAuthorized(orgId string, role string, w http.ResponseWriter, r *http.Requ
 		utils.GetError(errors.New("user Not Authorized"), http.StatusUnauthorized, w)
 		return false
 	}
+
 	return true
 }
 
@@ -183,49 +190,54 @@ func IsAuthorized(orgId string, role string, w http.ResponseWriter, r *http.Requ
 
 func (au *AuthHandler) AuthTest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	store := NewMongoStore(utils.GetCollection(session_collection), au.configs.SessionMaxAge, true, []byte(au.configs.SecretKey))
-	var session *sessions.Session
-	var err error
+
+	store := NewMongoStore(utils.GetCollection(sessionCollection), au.configs.SessionMaxAge, true, []byte(au.configs.SecretKey))
+
+	var (
+		session *sessions.Session
+		err     error
+		erro    error
+	)
+
 	session, err = store.Get(r, au.configs.SessionKey)
-	status, _, sessData := GetSessionDataFromToken(r, []byte(au.configs.HmacSampleSecret))
+	status, sessData, _ := GetSessionDataFromToken(r, []byte(au.configs.HmacSampleSecret))
 
 	if err != nil && !status {
-		utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
+		utils.GetError(ErrNotAuthorized, http.StatusUnauthorized, w)
 		return
 	}
-	var erro error
+
 	if status {
-		session, erro = NewS(store, sessData.Cookie, sessData.Id, sessData.Email, r, sessData.SessionName, sessData.Gothic)
-		fmt.Println(session)
+		session, erro = NewS(store, sessData.Cookie, sessData.ID, sessData.Email, r, sessData.SessionName, sessData.Gothic)
 		if err != nil && erro != nil {
-			utils.GetError(NotAuthorized, http.StatusUnauthorized, w)
+			utils.GetError(ErrNotAuthorized, http.StatusUnauthorized, w)
 			return
 		}
 	}
 
 	// use is coming in newly, no cookies
 	if session.IsNew {
-		utils.GetError(NoAuthToken, http.StatusUnauthorized, w)
+		utils.GetError(ErrNoAuthToken, http.StatusUnauthorized, w)
 		return
 	}
 
 	objID, err := primitive.ObjectIDFromHex(session.ID)
+
 	if err != nil {
 		utils.GetError(ErrorInvalid, http.StatusUnauthorized, w)
 		return
 	}
 
-	user := &AuthUser{
+	u := &AuthUser{
 		ID:    objID,
 		Email: session.Values["email"].(string),
 	}
-	utils.GetSuccess("Retrived", user, w)
-
+	utils.GetSuccess("Retrieved", u, w)
 }
 
-// This confirm user password before deactivation
+// This confirm user password before deactivation.
 func (au *AuthHandler) ConfirmUserPassword(w http.ResponseWriter, r *http.Request) {
-	loggedInUser := r.Context().Value("user").(*AuthUser)
+	loggedInUser, _ := r.Context().Value("user").(*AuthUser)
 
 	creds := struct {
 		Password        string `json:"password"`
@@ -238,17 +250,18 @@ func (au *AuthHandler) ConfirmUserPassword(w http.ResponseWriter, r *http.Reques
 	}
 
 	if creds.Password != creds.ConfirmPassword {
-		utils.GetError(ConfirmPasswordError, http.StatusBadRequest, w)
+		utils.GetError(ErrConfirmPassword, http.StatusBadRequest, w)
 		return
 	}
 
-	user, err := FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
+	u, err := FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
+
 	if err != nil {
-		utils.GetError(UserNotFound, http.StatusBadRequest, w)
+		utils.GetError(ErrUserNotFound, http.StatusBadRequest, w)
 		return
 	}
 	// check password
-	check := CheckPassword(creds.Password, user.Password)
+	check := CheckPassword(creds.Password, u.Password)
 	if !check {
 		utils.GetError(errors.New("invalid credentials, confirm and try again"), http.StatusBadRequest, w)
 		return
@@ -257,15 +270,15 @@ func (au *AuthHandler) ConfirmUserPassword(w http.ResponseWriter, r *http.Reques
 	utils.GetSuccess("Password confirm successful", nil, w)
 }
 
-func GetSessionDataFromToken(r *http.Request, hmacSampleSecret []byte) (status bool, err error, data ResToken) {
+func GetSessionDataFromToken(r *http.Request, hmacSampleSecret []byte) (status bool, data ResToken, err error) {
 	reqTokenh := r.Header.Get("Authorization")
 	if reqTokenh == "" {
-		return false, fmt.Errorf("authorization access failed"), ResToken{}
+		return false, ResToken{}, fmt.Errorf("authorization access failed")
 	}
 
 	splitToken := strings.Split(reqTokenh, "Bearer ")
-	if len(splitToken) < 2 {
-		return false, fmt.Errorf("authorization access failed"), ResToken{}
+	if len(splitToken) < NumberTwo {
+		return false, ResToken{}, fmt.Errorf("authorization access failed")
 	}
 
 	reqToken := splitToken[1]
@@ -278,24 +291,22 @@ func GetSessionDataFromToken(r *http.Request, hmacSampleSecret []byte) (status b
 	})
 
 	if err != nil {
-		return false, fmt.Errorf("failed"), ResToken{}
+		return false, ResToken{}, fmt.Errorf("failed")
 	}
 
 	var retTokenD ResToken
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-
+		//nolint:errcheck //CODEI8:
 		mapstructure.Decode(claims, &retTokenD)
 		retTokenD.SessionName = fmt.Sprintf("%v", claims["session_name"])
-		// fmt.Println(retTokenD)
-		return true, nil, retTokenD
 
-	} else {
-		return false, fmt.Errorf("failed"), ResToken{}
+		return true, retTokenD, nil
 	}
+
+	return false, ResToken{}, fmt.Errorf("failed")
 }
 
-// Initiate
 func NewAuthHandler(c *utils.Configurations, mail service.MailService) *AuthHandler {
 	return &AuthHandler{configs: c, mailService: mail}
 }

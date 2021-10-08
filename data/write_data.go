@@ -24,6 +24,7 @@ type writeDataRequest struct {
 	RawQuery       interface{}            `json:"raw_query,omitempty"`
 }
 
+// WriteData handles data mutation operations(write, update, delete) for plugins.
 func WriteData(w http.ResponseWriter, r *http.Request) {
 	reqData := new(writeDataRequest)
 
@@ -35,18 +36,16 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 	if _, err := plugin.FindPluginByID(r.Context(), reqData.PluginID); err != nil {
 		msg := "plugin with this id does not exist"
 		utils.GetError(errors.New(msg), http.StatusNotFound, w)
+
 		return
 	}
 
-	//if !recordExists(_OrganizationCollectionName, reqData.OrganizationID) {
-	//msg := "organization with this id does not exist"
-	//utils.GetError(errors.New(msg), http.StatusNotFound, w)
-	//return
-	//}
-
 	// if plugin is writing to this collection the first time, we create a record linking this collection to the plugin.
 	if !pluginHasCollection(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName) {
-		createPluginCollectionRecord(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName)
+		if err := createPluginCollectionRecord(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName); err != nil {
+			utils.GetError(err, http.StatusInternalServerError, w)
+			return
+		}
 	}
 
 	w.Header().Set("content-type", "application/json")
@@ -61,34 +60,40 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (wdr *writeDataRequest) handlePost(w http.ResponseWriter, r *http.Request) {
-	var writeCount int64
-	data := M{}
+func (wdr *writeDataRequest) handlePost(w http.ResponseWriter, _ *http.Request) {
+	var payload interface{}
+
 	if wdr.BulkWrite {
-		res, err := insertMany(wdr.prefixCollectionName(), wdr.Payload)
-		if err != nil {
-			utils.GetError(fmt.Errorf("an error occured: %v", err), http.StatusInternalServerError, w)
-			return
-		}
-		writeCount = int64(len(res.InsertedIDs))
+		payload = wdr.Payload
+	} else {
+		payload = []interface{}{wdr.Payload}
+	}
+
+	res, err := insertMany(wdr.prefixCollectionName(), payload)
+	if err != nil {
+		utils.GetError(fmt.Errorf("an error occurred: %v", err), http.StatusInternalServerError, w)
+		return
+	}
+
+	data := utils.M{
+		"insert_count": len(res.InsertedIDs),
+	}
+
+	if wdr.BulkWrite {
 		data["object_ids"] = res.InsertedIDs
 	} else {
-		res, err := insertOne(wdr.prefixCollectionName(), wdr.Payload)
-		if err != nil {
-			utils.GetError(fmt.Errorf("an error occured: %v", err), http.StatusInternalServerError, w)
-			return
-		}
-		writeCount = 1
-		data["object_id"] = res.InsertedID
+		data["object_id"] = res.InsertedIDs[0]
 	}
-	data["insert_count"] = writeCount
+
 	w.WriteHeader(http.StatusCreated)
 	utils.GetSuccess("success", data, w)
 }
 
-func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, r *http.Request) {
+func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, _ *http.Request) {
 	var err error
-	res := &mongo.UpdateResult{}
+
+	var res *mongo.UpdateResult
+
 	filter := make(map[string]interface{})
 	collName := wdr.prefixCollectionName()
 
@@ -99,7 +104,8 @@ func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filter["deleted"] = bson.M{"$ne": true}
-	normalizeIdIfExists(filter)
+	normalizeIDIfExists(filter)
+
 	if wdr.RawQuery != nil {
 		res, err = rawQueryupdateMany(collName, filter, wdr.RawQuery)
 	} else {
@@ -107,13 +113,15 @@ func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		utils.GetError(fmt.Errorf("an error occured: %v", err), http.StatusInternalServerError, w)
+		utils.GetError(fmt.Errorf("an error occurred: %v", err), http.StatusInternalServerError, w)
 		return
 	}
-	data := M{
+
+	data := utils.M{
 		"matched_documents":  res.MatchedCount,
 		"modified_documents": res.ModifiedCount,
 	}
+
 	utils.GetSuccess("success", data, w)
 }
 
@@ -123,46 +131,31 @@ func (wdr *writeDataRequest) prefixCollectionName() string {
 
 func insertMany(collName string, data interface{}) (*mongo.InsertManyResult, error) {
 	docs, ok := data.([]interface{})
+
 	if !ok {
 		return nil, errors.New("invalid object type, payload must be an array of objects")
 	}
+
 	return utils.CreateManyMongoDbDocs(collName, docs)
-}
-
-func insertOne(collName string, data interface{}) (*mongo.InsertOneResult, error) {
-	doc, ok := data.(map[string]interface{})
-	if !ok {
-		return nil, errors.New("invalid object type, payload must be a valid JSON object")
-	}
-	return utils.CreateMongoDbDoc(collName, doc)
-}
-
-func updateOne(collName, id string, upd interface{}) (*mongo.UpdateResult, error) {
-	return updateMany(collName, bson.M{"_id": MustObjectIDFromHex(id)}, upd)
 }
 
 func updateMany(collName string, filter map[string]interface{}, upd interface{}) (*mongo.UpdateResult, error) {
 	update, ok := upd.(map[string]interface{})
+
 	if !ok {
 		return nil, errors.New("invalid object type")
 	}
+
 	return utils.UpdateManyMongoDbDocs(collName, filter, update)
 }
 
-func recordExists(collName, id string) bool {
-	objId, _ := primitive.ObjectIDFromHex(id)
-	_, err := utils.GetMongoDbDoc(collName, M{"_id": objId})
-	if err == nil {
-		return true
-	}
-	return false
-}
-
-func MustObjectIDFromHex(hex string) primitive.ObjectID {
+func mustObjectIDFromHex(hex string) primitive.ObjectID {
 	objID, err := primitive.ObjectIDFromHex(hex)
+
 	if err != nil {
 		panic(err)
 	}
+
 	return objID
 }
 
@@ -171,11 +164,16 @@ func rawQueryupdateMany(collName string, filter map[string]interface{}, rawQuery
 	return coll.UpdateMany(context.TODO(), filter, rawQuery)
 }
 
-func normalizeIdIfExists(filter map[string]interface{}) {
+func normalizeIDIfExists(filter map[string]interface{}) {
 	if id, exists := filter["_id"]; exists {
-		filter["_id"] = MustObjectIDFromHex(id.(string))
-	} else if id, exists := filter["id"]; exists {
+		filter["_id"] = mustObjectIDFromHex(id.(string))
+		return
+	}
+
+	if id, exists := filter["id"]; exists {
 		delete(filter, "id")
-		filter["_id"] = MustObjectIDFromHex(id.(string))
+		filter["_id"] = mustObjectIDFromHex(id.(string))
+
+		return
 	}
 }

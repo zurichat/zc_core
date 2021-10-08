@@ -12,6 +12,8 @@ const (
 	UserCollectionName                 = "users"
 	UserProfileCollectionName          = "user_workspace_profiles"
 	OrganizationsInvitesCollectionName = "organizations_invites"
+	MemberCollectionName               = "members"
+	OrganizationCollectionName         = "organizations"
 )
 
 type M map[string]interface{}
@@ -39,7 +41,7 @@ type UserRole struct {
 
 type UserSettings struct {
 	Role []UserRole `bson:"role"`
-	//	Role Role
+	// Role Role
 }
 
 type UserEmailVerification struct {
@@ -82,7 +84,7 @@ type User struct {
 	PasswordResets    *UserPasswordReset     `bson:"password_resets" json:"password_resets"` // remove the array
 }
 
-// Struct that user can update directly
+// Struct that user can update directly.
 type UserUpdate struct {
 	FirstName string `bson:"first_name" validate:"required,min=2,max=100" json:"first_name"`
 	LastName  string `bson:"last_name" validate:"required,min=2,max=100" json:"last_name"`
@@ -95,7 +97,7 @@ type UserHandler struct {
 }
 
 type UUIDUserData struct {
-	Uuid      string `bson:"uuid" json:"uuid"`
+	UUID      string `bson:"uuid" json:"uuid"`
 	Password  string `bson:"password" json:"password"`
 	FirstName string `bson:"first_name" json:"first_name"`
 	LastName  string `bson:"last_name" json:"last_name"`
