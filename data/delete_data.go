@@ -20,6 +20,7 @@ type deleteDataRequest struct {
 	Filter         map[string]interface{} `json:"filter"`
 }
 
+// DeleteData handles request for plugins to delete their data.
 func DeleteData(w http.ResponseWriter, r *http.Request) {
 	reqData := new(deleteDataRequest)
 
@@ -29,20 +30,13 @@ func DeleteData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := plugin.FindPluginByID(r.Context(), reqData.PluginID); err != nil {
-		msg := "plugin with this id does not exist"
-		utils.GetError(errors.New(msg), http.StatusNotFound, w)
+		utils.GetError(fmt.Errorf("error retrieving plugin with id %v", reqData.PluginID), http.StatusNotFound, w)
 		return
 	}
 
-	//if !recordExists(_OrganizationCollectionName, reqData.OrganizationID) {
-	//msg := "organization with this id does not exist"
-	//utils.GetError(errors.New(msg), http.StatusNotFound, w)
-	//return
-	//}
-
-	// if plugin is writing to this collection the first time, we create a record linking this collection to the plugin.
 	if !pluginHasCollection(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName) {
-		createPluginCollectionRecord(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName)
+		utils.GetError(errors.New("collection does not exist"), http.StatusNotFound, w)
+		return
 	}
 
 	reqData.handleDelete(w, r)
@@ -52,35 +46,25 @@ func (ddr *deleteDataRequest) prefixCollectionName() string {
 	return getPrefixedCollectionName(ddr.PluginID, ddr.OrganizationID, ddr.CollectionName)
 }
 
-func (ddr *deleteDataRequest) handleDelete(w http.ResponseWriter, r *http.Request) {
+func (ddr *deleteDataRequest) handleDelete(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("content-type", "application/json")
-	var err error
-	var deletedCount int64
+
+	filter := make(map[string]interface{})
+
 	if ddr.BulkDelete {
-		deletedCount, err = deleteMany(ddr.prefixCollectionName(), ddr.Filter)
-		if err != nil {
-			utils.GetError(fmt.Errorf("an error occured: %v", err), http.StatusInternalServerError, w)
-			return
-		}
+		filter = ddr.Filter
 	} else {
-		if deletedCount, err = deleteOne(ddr.prefixCollectionName(), ddr.ObjectID); err != nil {
-			utils.GetError(fmt.Errorf("an error occured: %v", err), http.StatusInternalServerError, w)
-			return
-		}
+		filter["_id"] = mustObjectIDFromHex(ddr.ObjectID)
 	}
 
-	utils.GetSuccess("success", M{"deleted_count": deletedCount}, w)
-}
+	deletedCount, err := deleteMany(ddr.prefixCollectionName(), filter)
 
-func deleteOne(collName, id string) (int64, error) {
-	update := make(map[string]interface{})
-	update["deleted"] = true
-	update["deleted_at"] = time.Now()
-	res, err := updateMany(collName, bson.M{"_id": MustObjectIDFromHex(id), "deleted": bson.M{"$ne": true}}, update)
 	if err != nil {
-		return 0, err
+		utils.GetError(fmt.Errorf("an error occurred: %v", err), http.StatusInternalServerError, w)
+		return
 	}
-	return res.ModifiedCount, nil
+
+	utils.GetSuccess("success", utils.M{"deleted_count": deletedCount}, w)
 }
 
 func deleteMany(collName string, filter map[string]interface{}) (int64, error) {
@@ -88,9 +72,12 @@ func deleteMany(collName string, filter map[string]interface{}) (int64, error) {
 	update["deleted"] = true
 	update["deleted_at"] = time.Now()
 	filter["deleted"] = bson.M{"$ne": true}
+
 	res, err := updateMany(collName, filter, update)
+
 	if err != nil {
 		return 0, err
 	}
+
 	return res.ModifiedCount, nil
 }
