@@ -96,6 +96,8 @@ run:
   - docs
   - marketplace
   - organizations
+  # - plugin
+  - data
   - plugin
   # data
   - external
