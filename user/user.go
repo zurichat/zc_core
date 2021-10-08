@@ -32,8 +32,6 @@ func GenerateHashPassword(password string) (string, error) {
 func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 
-	userCollection := UserCollectionName
-
 	var user User
 	err := utils.ParseJsonFromRequest(request, &user)
 
@@ -49,7 +47,7 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 	}
 
 	// confirm if user_email exists
-	result, _ := utils.GetMongoDbDoc(userCollection, bson.M{"email": userEmail})
+	result, _ := utils.GetMongoDbDoc(UserCollectionName, bson.M{"email": userEmail})
 	if result != nil {
 		utils.GetError(
 			fmt.Errorf("user with email %s exists", userEmail),
@@ -81,7 +79,7 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 	user.Timezone = "Africa/Lagos" // set default timezone
 	detail, _ := utils.StructToMap(user)
 
-	res, err := utils.CreateMongoDbDoc(userCollection, detail)
+	res, err := utils.CreateMongoDbDoc(UserCollectionName, detail)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, response)
@@ -136,8 +134,6 @@ func (uh *UserHandler) GetUser(response http.ResponseWriter, request *http.Reque
 	// Find a user by user ID
 	response.Header().Set("content-type", "application/json")
 
-	collectionName := UserCollectionName
-
 	params := mux.Vars(request)
 	userID := params["user_id"]
 	objID, err := primitive.ObjectIDFromHex(userID)
@@ -147,7 +143,7 @@ func (uh *UserHandler) GetUser(response http.ResponseWriter, request *http.Reque
 		return
 	}
 
-	res, err := utils.GetMongoDbDoc(collectionName, bson.M{"_id": objID, "deactivated": false})
+	res, err := utils.GetMongoDbDoc(UserCollectionName, bson.M{"_id": objID, "deactivated": false})
 
 	if err != nil {
 		utils.GetError(errors.New("user not found"), http.StatusNotFound, response)
@@ -171,8 +167,7 @@ func (uh *UserHandler) UpdateUser(response http.ResponseWriter, request *http.Re
 		return
 	}
 
-	collectionName := UserCollectionName
-	userExist, err := utils.GetMongoDbDoc(collectionName, bson.M{"_id": objID})
+	userExist, err := utils.GetMongoDbDoc(UserCollectionName, bson.M{"_id": objID})
 
 	if err != nil {
 		utils.GetError(errors.New("user does not exist"), http.StatusNotFound, response)
@@ -209,7 +204,7 @@ func (uh *UserHandler) UpdateUser(response http.ResponseWriter, request *http.Re
 		return
 	}
 
-	_, err = utils.UpdateOneMongoDbDoc(collectionName, userID, updateFields)
+	_, err = utils.UpdateOneMongoDbDoc(UserCollectionName, userID, updateFields)
 
 	if err != nil {
 		utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, response)
@@ -226,8 +221,7 @@ func (uh *UserHandler) GetUsers(response http.ResponseWriter, request *http.Requ
 	response.Header().Set("Access-Control-Allow-Headers", "Content-Type,access-control-allow-origin, access-control-allow-headers")
 	response.Header().Set("content-type", "application/json")
 
-	collectionName := UserCollectionName
-	res, _ := utils.GetMongoDbDocs(collectionName, bson.M{"deactivated": false})
+	res, _ := utils.GetMongoDbDocs(UserCollectionName, bson.M{"deactivated": false})
 
 	for _, doc := range res {
 		DeleteMapProps(doc, []string{"password"})
@@ -302,8 +296,6 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("content-type", "application/json")
 
-	userCollection, orgInvite := UserCollectionName, OrganizationsInvitesCollectionName
-
 	var uRequest UUIDUserData
 	err := utils.ParseJsonFromRequest(r, &uRequest)
 	
@@ -320,7 +312,7 @@ func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request
 	}
 
 	// Check that UUID exists
-	res, err := utils.GetMongoDbDoc(orgInvite, bson.M{"uuid": uRequest.UUID})
+	res, err := utils.GetMongoDbDoc(OrganizationsInvitesCollectionName, bson.M{"uuid": uRequest.UUID})
 	if err != nil {
 		utils.GetError(errors.New("uuid does not exist"), http.StatusBadRequest, w)
 		return
@@ -336,7 +328,7 @@ func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request
 	}
 
 	// Check if user_email exists
-	result, _ := utils.GetMongoDbDoc(userCollection, bson.M{"email": userEmail})
+	result, _ := utils.GetMongoDbDoc(UserCollectionName, bson.M{"email": userEmail})
 	if result != nil {
 		utils.GetError(
 			fmt.Errorf("user with email %s exists", userEmail),
@@ -373,7 +365,7 @@ func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request
 
 	// Save user to DB
 	data, _ := utils.StructToMap(user)
-	resp, err := utils.CreateMongoDbDoc(userCollection, data)
+	resp, err := utils.CreateMongoDbDoc(UserCollectionName, data)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
