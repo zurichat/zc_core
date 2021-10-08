@@ -216,8 +216,6 @@ type Member struct {
 	DeletedAt   time.Time          `json:"deleted_at" bson:"deleted_at"`
 	Socials     []Social           `json:"socials" bson:"socials"`
 	Language    string             `json:"language" bson:"language"`
-	Twitter		string	 		   `json:"twitter" bson:"twitter"`
-	Facebook	string	 		   `json:"facebook" bson:"facebook"`
 }
 
 type Profile struct {
