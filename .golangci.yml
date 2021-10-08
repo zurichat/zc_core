@@ -92,7 +92,7 @@ run:
   skip-dirs:
   - blog
   - api
-  - contact
+  #- contact
   - docs
   - marketplace
   - organizations
