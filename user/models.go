@@ -41,7 +41,7 @@ type UserRole struct {
 
 type UserSettings struct {
 	Role []UserRole `bson:"role"`
-		// Role Role
+	// Role Role
 }
 
 type UserEmailVerification struct {
