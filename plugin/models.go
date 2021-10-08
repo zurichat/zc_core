@@ -54,8 +54,16 @@ func CreatePlugin(ctx context.Context, p *Plugin) error {
 	collection := utils.GetCollection(PluginCollectionName)
 	res, err := collection.InsertOne(ctx, p)
 
-	//nolint:errcheck //Enike: ignore error check here
-	p.ID = res.InsertedID.(primitive.ObjectID)
+	if err != nil {
+		return err
+	}
+
+	value, ok := res.InsertedID.(primitive.ObjectID)
+	if !ok {
+		return err
+	}
+
+	p.ID = value
 
 	return err
 }
