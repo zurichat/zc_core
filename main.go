@@ -31,25 +31,20 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
-func Router(Server *socketio.Server) *mux.Router {
+func Router(server *socketio.Server) *mux.Router {
 	r := mux.NewRouter().StrictSlash(true)
-
-	//TO be removed
-	// body := make(map[string]interface{})
-	// realtime.CentrifugoConn(body)
 
 	// Load handlers(Doing this to reduce dependency circle issue, might reverse if not working)
 	configs := utils.NewConfigurations()
 	mailService := service.NewZcMailService(configs)
 
-	auth := auth.NewAuthHandler(configs, mailService)
-	user := user.NewUserHandler(configs, mailService)
-	external := external.NewExternalHandler(configs, mailService)
-	organizations := organizations.NewOrganizationHandler(configs, mailService)
+	au := auth.NewAuthHandler(configs, mailService)
+	us := user.NewUserHandler(configs, mailService)
+	exts := external.NewExternalHandler(configs, mailService)
+	orgs := organizations.NewOrganizationHandler(configs, mailService)
 
 	// Setup and init
 	r.HandleFunc("/", VersionHandler)
-	r.HandleFunc("/v1/welcome", auth.IsAuthenticated(Index)).Methods("GET")
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
 
 	// Blog
@@ -65,68 +60,67 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/posts/mail", blog.MailingList).Methods("POST")
 
 	// Authentication
-	r.HandleFunc("/auth/login", auth.LoginIn).Methods(http.MethodPost)
-	r.HandleFunc("/auth/logout", auth.LogOutUser).Methods(http.MethodPost)
-	r.HandleFunc("/auth/logout/other-sessions", auth.LogOutOtherSessions).Methods(http.MethodPost)
-	r.HandleFunc("/auth/verify-token", auth.IsAuthenticated(auth.VerifyTokenHandler)).Methods(http.MethodGet, http.MethodPost)
-	r.HandleFunc("/auth/confirm-password", auth.IsAuthenticated(auth.ConfirmUserPassword)).Methods(http.MethodPost)
-	r.HandleFunc("/auth/social-login/{provider}/{access_token}", auth.SocialAuth).Methods(http.MethodGet)
+	r.HandleFunc("/auth/login", au.LoginIn).Methods(http.MethodPost)
+	r.HandleFunc("/auth/logout", au.LogOutUser).Methods(http.MethodPost)
+	r.HandleFunc("/auth/logout/other-sessions", au.LogOutOtherSessions).Methods(http.MethodPost)
+	r.HandleFunc("/auth/verify-token", au.IsAuthenticated(au.VerifyTokenHandler)).Methods(http.MethodGet, http.MethodPost)
+	r.HandleFunc("/auth/confirm-password", au.IsAuthenticated(au.ConfirmUserPassword)).Methods(http.MethodPost)
+	r.HandleFunc("/auth/social-login/{provider}/{access_token}", au.SocialAuth).Methods(http.MethodGet)
 
-	r.HandleFunc("/account/verify-account", auth.VerifyAccount).Methods(http.MethodPost)
-	r.HandleFunc("/account/request-password-reset-code", auth.RequestResetPasswordCode).Methods(http.MethodPost)
-	r.HandleFunc("/account/verify-reset-password", auth.VerifyPasswordResetCode).Methods(http.MethodPost)
-	r.HandleFunc("/account/update-password/{verification_code:[0-9]+}", auth.UpdatePassword).Methods(http.MethodPost)
+	r.HandleFunc("/account/verify-account", au.VerifyAccount).Methods(http.MethodPost)
+	r.HandleFunc("/account/request-password-reset-code", au.RequestResetPasswordCode).Methods(http.MethodPost)
+	r.HandleFunc("/account/verify-reset-password", au.VerifyPasswordResetCode).Methods(http.MethodPost)
+	r.HandleFunc("/account/update-password/{verification_code:[0-9]+}", au.UpdatePassword).Methods(http.MethodPost)
 
 	// Organization
-	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.Create)).Methods("POST")
-	r.HandleFunc("/organizations", auth.IsAuthenticated(organizations.GetOrganizations)).Methods("GET")
-	r.HandleFunc("/organizations/{id}", auth.IsAuthenticated(organizations.GetOrganization)).Methods("GET")
-	r.HandleFunc("/organizations/{id}/settings", auth.IsAuthenticated(organizations.UpdateOrganizationSettings)).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/permission", auth.IsAuthenticated(organizations.UpdateOrganizationPermission)).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/auth", auth.IsAuthenticated(organizations.UpdateOrganizationAuthentication)).Methods("PATCH")
+	r.HandleFunc("/organizations", au.IsAuthenticated(orgs.Create)).Methods("POST")
+	r.HandleFunc("/organizations", au.IsAuthenticated(orgs.GetOrganizations)).Methods("GET")
+	r.HandleFunc("/organizations/{id}", au.IsAuthenticated(orgs.GetOrganization)).Methods("GET")
+	r.HandleFunc("/organizations/{id}/settings", au.IsAuthenticated(orgs.UpdateOrganizationSettings)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/permission", au.IsAuthenticated(orgs.UpdateOrganizationPermission)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/auth", au.IsAuthenticated(orgs.UpdateOrganizationAuthentication)).Methods("PATCH")
 
 	// Organization: Guest Invites
-	r.HandleFunc("/organizations/{id}/send-invite", auth.IsAuthenticated(auth.IsAuthorized(organizations.SendInvite, "admin"))).Methods("POST")
-	r.HandleFunc("/organizations/invites/{uuid}", organizations.CheckGuestStatus).Methods(http.MethodGet)
-	r.HandleFunc("/organizations/guests/{uuid}", organizations.GuestToOrganization).Methods(http.MethodPost)
+	r.HandleFunc("/organizations/{id}/send-invite", au.IsAuthenticated(au.IsAuthorized(orgs.SendInvite, "admin"))).Methods("POST")
+	r.HandleFunc("/organizations/invites/{uuid}", orgs.CheckGuestStatus).Methods(http.MethodGet)
+	r.HandleFunc("/organizations/guests/{uuid}", orgs.GuestToOrganization).Methods(http.MethodPost)
 
-	r.HandleFunc("/organizations/{id}", auth.IsAuthenticated(organizations.DeleteOrganization)).Methods("DELETE")
-	r.HandleFunc("/organizations/url/{url}", organizations.GetOrganizationByURL).Methods("GET")
+	r.HandleFunc("/organizations/{id}", au.IsAuthenticated(orgs.DeleteOrganization)).Methods("DELETE")
+	r.HandleFunc("/organizations/url/{url}", orgs.GetOrganizationByURL).Methods("GET")
 
-	r.HandleFunc("/organizations/{id}/plugins", auth.IsAuthenticated(organizations.AddOrganizationPlugin)).Methods("POST")
-	r.HandleFunc("/organizations/{id}/plugins", auth.IsAuthenticated(organizations.GetOrganizationPlugins)).Methods("GET")
-	r.HandleFunc("/organizations/{id}/plugins/{plugin_id}", auth.IsAuthenticated(organizations.GetOrganizationPlugin)).Methods("GET")
-	r.HandleFunc("/organizations/{id}/plugins/{plugin_id}", auth.IsAuthenticated(organizations.RemoveOrganizationPlugin)).Methods("DELETE")
+	r.HandleFunc("/organizations/{id}/plugins", au.IsAuthenticated(orgs.AddOrganizationPlugin)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/plugins", au.IsAuthenticated(orgs.GetOrganizationPlugins)).Methods("GET")
+	r.HandleFunc("/organizations/{id}/plugins/{plugin_id}", au.IsAuthenticated(orgs.GetOrganizationPlugin)).Methods("GET")
+	r.HandleFunc("/organizations/{id}/plugins/{plugin_id}", au.IsAuthenticated(orgs.RemoveOrganizationPlugin)).Methods("DELETE")
 
-	r.HandleFunc("/organizations/{id}/url", auth.IsAuthenticated(organizations.UpdateURL)).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/name", auth.IsAuthenticated(organizations.UpdateName)).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/logo", auth.IsAuthenticated(organizations.UpdateLogo)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/url", au.IsAuthenticated(orgs.UpdateURL)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/name", au.IsAuthenticated(orgs.UpdateName)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/logo", au.IsAuthenticated(orgs.UpdateLogo)).Methods("PATCH")
 
-	r.HandleFunc("/organizations/{id}/members", auth.IsAuthenticated(auth.IsAuthorized(organizations.CreateMember, "admin"))).Methods("POST")
-	r.HandleFunc("/organizations/{id}/members", organizations.GetMembers).Methods("GET")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.GetMember)).Methods("GET")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}", auth.IsAuthenticated(organizations.DeactivateMember)).Methods("DELETE")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}/reactivate", auth.IsAuthenticated(organizations.ReactivateMember)).Methods("POST")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}/status", auth.IsAuthenticated(organizations.UpdateMemberStatus)).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}/photo/{action}", auth.IsAuthenticated(organizations.UpdateProfilePicture)).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}/profile", auth.IsAuthenticated(organizations.UpdateProfile)).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}/presence", auth.IsAuthenticated(organizations.TogglePresence)).Methods("POST")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings", auth.IsAuthenticated(organizations.UpdateMemberSettings)).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}/role", auth.IsAuthenticated(auth.IsAuthorized(organizations.UpdateMemberRole, "admin"))).Methods("PATCH")
-	// r.HandleFunc("/organizations/{id}/invite-members", auth.IsAuthenticated(organizations.InviteMembers)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/members", au.IsAuthenticated(au.IsAuthorized(orgs.CreateMember, "admin"))).Methods("POST")
+	r.HandleFunc("/organizations/{id}/members", orgs.GetMembers).Methods("GET")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}", au.IsAuthenticated(orgs.GetMember)).Methods("GET")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}", au.IsAuthenticated(orgs.DeactivateMember)).Methods("DELETE")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/reactivate", au.IsAuthenticated(orgs.ReactivateMember)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/status", au.IsAuthenticated(orgs.UpdateMemberStatus)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/photo/{action}", au.IsAuthenticated(orgs.UpdateProfilePicture)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/profile", au.IsAuthenticated(orgs.UpdateProfile)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/presence", au.IsAuthenticated(orgs.TogglePresence)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings", au.IsAuthenticated(orgs.UpdateMemberSettings)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/role", au.IsAuthenticated(au.IsAuthorized(orgs.UpdateMemberRole, "admin"))).Methods("PATCH")
 
 	r.HandleFunc("/organizations/{id}/reports", report.AddReport).Methods("POST")
 	r.HandleFunc("/organizations/{id}/reports", report.GetReports).Methods("GET")
 	r.HandleFunc("/organizations/{id}/reports/{report_id}", report.GetReport).Methods("GET")
-	r.HandleFunc("/organizations/{id}/change-owner", auth.IsAuthenticated(organizations.TransferOwnership)).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/billing", auth.IsAuthenticated(organizations.SaveBillingSettings)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/change-owner", au.IsAuthenticated(orgs.TransferOwnership)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/billing", au.IsAuthenticated(orgs.SaveBillingSettings)).Methods("PATCH")
 
 	//organization: payment
-	r.HandleFunc("/organizations/{id}/add-token", auth.IsAuthenticated(organizations.AddToken)).Methods("POST")
-	r.HandleFunc("/organizations/{id}/token-transactions", auth.IsAuthenticated(organizations.GetTokenTransaction)).Methods("GET")
-	r.HandleFunc("/organizations/{id}/upgrade-to-pro", auth.IsAuthenticated(organizations.UpgradeToPro)).Methods("POST")
-	r.HandleFunc("/organizations/{id}/charge-tokens", auth.IsAuthenticated(organizations.ChargeTokens)).Methods("POST")
-	r.HandleFunc("/organizations/{id}/checkout-session", organizations.CreateCheckoutSession).Methods("POST")
+	r.HandleFunc("/organizations/{id}/add-token", au.IsAuthenticated(orgs.AddToken)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/token-transactions", au.IsAuthenticated(orgs.GetTokenTransaction)).Methods("GET")
+	r.HandleFunc("/organizations/{id}/upgrade-to-pro", au.IsAuthenticated(orgs.UpgradeToPro)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/charge-tokens", au.IsAuthenticated(orgs.ChargeTokens)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/checkout-session", orgs.CreateCheckoutSession).Methods("POST")
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
@@ -147,40 +141,40 @@ func Router(Server *socketio.Server) *mux.Router {
 	r.HandleFunc("/marketplace/plugins/{id}", marketplace.RemovePlugin).Methods("DELETE")
 
 	// Users
-	r.HandleFunc("/users", user.Create).Methods("POST")
-	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.UpdateUser)).Methods("PATCH")
-	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.GetUser)).Methods("GET")
-	r.HandleFunc("/users/{user_id}", auth.IsAuthenticated(user.DeleteUser)).Methods("DELETE")
-	r.HandleFunc("/users", auth.IsAuthenticated(auth.IsAuthorized(user.GetUsers, "zuri_admin"))).Methods("GET")
-	r.HandleFunc("/users/{email}/organizations", auth.IsAuthenticated(user.GetUserOrganizations)).Methods("GET")
+	r.HandleFunc("/users", us.Create).Methods("POST")
+	r.HandleFunc("/users/{user_id}", au.IsAuthenticated(au.IsAuthorized(us.UpdateUser, "zuri_admin"))).Methods("PATCH")
+	r.HandleFunc("/users/{user_id}", au.IsAuthenticated(au.IsAuthorized(us.GetUser, "zuri_admin"))).Methods("GET")
+	r.HandleFunc("/users/{user_id}", au.IsAuthenticated(au.IsAuthorized(us.DeleteUser, "zuri_admin"))).Methods("DELETE")
+	r.HandleFunc("/users", au.IsAuthenticated(au.IsAuthorized(us.GetUsers, "zuri_admin"))).Methods("GET")
+	r.HandleFunc("/users/{email}/organizations", au.IsAuthenticated(us.GetUserOrganizations)).Methods("GET")
 
-	r.HandleFunc("/guests/invite", user.CreateUserFromUUID).Methods("POST")
+	r.HandleFunc("/guests/invite", us.CreateUserFromUUID).Methods("POST")
 
 	// Contact Us
-	r.HandleFunc("/contact", auth.OptionalAuthentication(contact.ContactUs, auth)).Methods("POST")
+	r.HandleFunc("/contact", au.OptionalAuthentication(contact.ContactUs, au)).Methods("POST")
 
 	// Realtime communications
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
 	r.HandleFunc("/realtime/auth", realtime.Auth).Methods("POST")
 	r.HandleFunc("/realtime/refresh", realtime.Refresh).Methods("POST")
 	r.HandleFunc("/realtime/publish-event", realtime.PublishEvent).Methods("POST")
-	r.Handle("/socket.io/", Server)
+	r.Handle("/socket.io/", server)
 
 	// Email subscription
-	r.HandleFunc("/external/subscribe", external.EmailSubscription).Methods("POST")
-	r.HandleFunc("/external/download-client", external.DownloadClient).Methods("GET")
-	r.HandleFunc("/external/send-mail", external.SendMail).Queries("custom_mail", "{custom_mail:[0-9]+}").Methods("POST")
+	r.HandleFunc("/external/subscribe", exts.EmailSubscription).Methods("POST")
+	r.HandleFunc("/external/download-client", exts.DownloadClient).Methods("GET")
+	r.HandleFunc("/external/send-mail", exts.SendMail).Queries("custom_mail", "{custom_mail:[0-9]+}").Methods("POST")
 
-	//ping endpoint
+	// Ping endpoint
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		utils.GetSuccess("Server is live", nil, w)
 	})
 
 	// file upload
-	r.HandleFunc("/upload/file/{plugin_id}", auth.IsAuthenticated(service.UploadOneFile)).Methods("POST")
-	r.HandleFunc("/upload/files/{plugin_id}", auth.IsAuthenticated(service.UploadMultipleFiles)).Methods("POST")
-	r.HandleFunc("/upload/mesc/{apk_sec}/{exe_sec}", auth.IsAuthenticated(service.MescFiles)).Methods("POST")
-	r.HandleFunc("/delete/file/{plugin_id}", auth.IsAuthenticated(service.DeleteFile)).Methods("DELETE")
+	r.HandleFunc("/upload/file/{plugin_id}", au.IsAuthenticated(service.UploadOneFile)).Methods("POST")
+	r.HandleFunc("/upload/files/{plugin_id}", au.IsAuthenticated(service.UploadMultipleFiles)).Methods("POST")
+	r.HandleFunc("/upload/mesc/{apk_sec}/{exe_sec}", au.IsAuthenticated(service.MescFiles)).Methods("POST")
+	r.HandleFunc("/delete/file/{plugin_id}", au.IsAuthenticated(service.DeleteFile)).Methods("DELETE")
 	r.PathPrefix("/files/").Handler(http.StripPrefix("/files/", http.FileServer(http.Dir("./files/"))))
 
 	// Home
@@ -193,9 +187,9 @@ func Router(Server *socketio.Server) *mux.Router {
 }
 
 func main() {
-
-	//Socket  events
+	// Socket  events
 	var Server = socketio.NewServer(nil)
+	
 	messaging.SocketEvents(Server)
 
 	// load .env file if it exists
@@ -209,7 +203,7 @@ func main() {
 	// Set Stripe api key
 	stripe.Key = os.Getenv("STRIPE_KEY")
 
-	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
+	if err = utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
 		fmt.Println("Could not connect to MongoDB")
 	}
 
@@ -221,11 +215,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("sentry.Init: %s", err)
 	}
-
-	// Flush buffered events before the program terminates.
-	defer sentry.Flush(2 * time.Second)
-
-	sentry.CaptureMessage("It works!")
 
 	// get PORT from environment variables
 	port, _ := os.LookupEnv("PORT")
@@ -244,33 +233,28 @@ func main() {
 		ReadTimeout:  15 * time.Second,
 	}
 
-	go Server.Serve()
-	fmt.Println("Socket Served")
-	defer Server.Close()
+	//nolint:errcheck //CODEI8: ignore error check
+	go Server.Serve() 
 
+	fmt.Println("Socket Served")
+
+	defer Server.Close()
+	
 	fmt.Println("Zuri Chat API running on port ", port)
+	//nolint:gocritic //CODEI8: please provide soln -> lint throw exitAfterDefer: log.Fatal will exit, and `defer Server.Close()` will not run
 	log.Fatal(srv.ListenAndServe())
 }
 
 func LoadApp(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	appId := params["appid"]
+	appID := params["appid"]
 
-	fmt.Printf("URL called with Param: %s", appId)
+	fmt.Printf("URL called with Param: %s", appID)
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "<div><b>Hello</b> World <button style='color: green;'>Click me!</button></div>: App = %s\n", appId)
+	fmt.Fprintf(w, "<div><b>Hello</b> World <button style='color: green;'>Click me!</button></div>: App = %s\n", appID)
 }
 
 func VersionHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Zuri Chat API - Version 0.0255\n")
-
-}
-
-// should redirect permanently to the docs page
-func Index(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value("user").(*auth.AuthUser)
-
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Welcome %s to Zuri Core Developer.", user.Email)
 }
