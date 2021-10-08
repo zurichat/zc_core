@@ -151,7 +151,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/guests/invite", us.CreateUserFromUUID).Methods("POST")
 
 	// Contact Us
-	r.HandleFunc("/contact", au.OptionalAuthentication(contact.ContactUs, au)).Methods("POST")
+	r.HandleFunc("/contact", au.OptionalAuthentication(contact.MailUs, au)).Methods("POST")
 
 	// Realtime communications
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
@@ -189,7 +189,7 @@ func Router(server *socketio.Server) *mux.Router {
 func main() {
 	// Socket  events
 	var Server = socketio.NewServer(nil)
-	
+
 	messaging.SocketEvents(Server)
 
 	// load .env file if it exists
@@ -234,12 +234,12 @@ func main() {
 	}
 
 	//nolint:errcheck //CODEI8: ignore error check
-	go Server.Serve() 
+	go Server.Serve()
 
 	fmt.Println("Socket Served")
 
 	defer Server.Close()
-	
+
 	fmt.Println("Zuri Chat API running on port ", port)
 	//nolint:gocritic //CODEI8: please provide soln -> lint throw exitAfterDefer: log.Fatal will exit, and `defer Server.Close()` will not run
 	log.Fatal(srv.ListenAndServe())
