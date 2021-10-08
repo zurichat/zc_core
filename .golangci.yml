@@ -97,7 +97,7 @@ run:
   - marketplace
   - organizations
   - plugin
-  - data
+  # data
   - external
   - messaging
   - report
