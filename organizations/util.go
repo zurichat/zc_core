@@ -2,12 +2,16 @@ package organizations
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
@@ -20,102 +24,162 @@ func NewOrganizationHandler(c *utils.Configurations, mail service.MailService) *
 }
 
 // gets the details of a member in a workspace using parameters such as email, username etc
-// returns parameters based on the member struct
+// returns parameters based on the member struct.
 func FetchMember(filter map[string]interface{}) (*Member, error) {
-	member_collection := MemberCollectionName
 	member := &Member{}
-	memberCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), member_collection)
+	memberCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), MemberCollectionName)
+	
 	if err != nil {
 		return member, err
 	}
+	
 	result := memberCollection.FindOne(context.TODO(), filter)
+	
 	err = result.Decode(&member)
+	
 	return member, err
 }
 
-// check that an organization exist
-func ValidateOrg(orgId string) error{
-	
+// check that an organization exist.
+func ValidateOrg(orgID string) error{
 	// check that org_id is valid
-	pOrgId, err := primitive.ObjectIDFromHex(orgId)
+	pOrgID, err := primitive.ObjectIDFromHex(orgID)
 	if err != nil {
 		return errors.New("invalid organization id")
 	}
 
 	// check that org exists
-	orgDoc, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": pOrgId})
+	orgDoc, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": pOrgID})
 	if orgDoc == nil {
-		fmt.Printf("org with id %s doesn't exist!", orgId)
+		fmt.Printf("org with id %s doesn't exist!", orgID)
 		return errors.New("organization does not exist")
 	}
 
 	return nil
 }
 
-// check that a member belongs in the an organization
-func ValidateMember(orgId, member_Id string) error{
-	
+// check that a member belongs in the an organization.
+func ValidateMember(orgID, memberID string) error{
 	// check that org_id is valid
-	pMemId, err := primitive.ObjectIDFromHex(member_Id)
+	pMemID, err := primitive.ObjectIDFromHex(memberID)
 	if err != nil {
 		return errors.New("invalid Member id")	
 	}
 
 	// check that member exists
-	memberDoc, _ := utils.GetMongoDbDoc(MemberCollectionName, bson.M{"_id": pMemId, "org_id": orgId})
+	memberDoc, _ := utils.GetMongoDbDoc(MemberCollectionName, bson.M{"_id": pMemID, "org_id": orgID})
 	if memberDoc == nil {
-		fmt.Printf("member with id %s doesn't exist!", member_Id)
+		fmt.Printf("member with id %s doesn't exist!", memberID)
 		return errors.New("member does not exist")
 	}
 
 	return nil
 }
 
-// create member instance 
-func NewMember(email string, userName string, orgId string, role string, setting *Settings) Member {
+// create member instance. 
+func NewMember(email, userName, orgID, role string) Member {
 	return Member{
 		ID:       primitive.NewObjectID(),
 		Email:    email,
 		UserName: userName,
-		OrgId:    orgId,
+		OrgID:    orgID,
 		Role:     role,
 		Presence: "true", 
 		JoinedAt: time.Now(),
 		Deleted:  false,
-		Settings: setting,
+		Settings: new(Settings),
 	}
 }
 
-// clear a member's status after a duration
-func ClearStatus(orgId, member_id string, period int) {
+// clear a member's status after a duration.
+func ClearStatus(orgID, memberID string, period int) {
 	time.Sleep(time.Duration(period) * time.Minute)
+	
 	update, _ := utils.StructToMap(Status{})
 
 	memberStatus := make(map[string]interface{})
 	memberStatus["status"] = update
 
-	_, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, member_id, memberStatus)
+	_, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberID, memberStatus)
 	if err != nil {
 		log.Println("could not clear status")
 		return
 	}
 
-	log.Printf("%s status cleared successfully", member_id)
+	log.Printf("%s status cleared successfully", memberID)
 
 	// publish update to subscriber
-	eventChannel := fmt.Sprintf("organizations_%s", orgId)
-	event := utils.Event{Identifier: member_id, Type: "User", Event: UpdateOrganizationMemberStatusCleared, Channel: eventChannel, Payload: make(map[string]interface{})}
+	eventChannel := fmt.Sprintf("organizations_%s", orgID)
+	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberStatusCleared, Channel: eventChannel, Payload: make(map[string]interface{})}
+	
 	go utils.Emitter(event)
 }
 
 func FetchOrganization(filter map[string]interface{}) (*Organization, error) {
-	org_collection := OrganizationCollectionName
 	organization := &Organization{}
-	orgCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), org_collection)
+	orgCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), OrganizationCollectionName)
+	
 	if err != nil {
 		return organization, err
 	}
+	
 	result := orgCollection.FindOne(context.TODO(), filter)
 	err = result.Decode(&organization)
+	
 	return organization, err
+}
+
+func GetOrgPluginCollectionName(orgName string) string {
+	return strings.ToLower(orgName) + "_" + InstalledPluginsCollectionName
+}
+
+func (o *Organization) OrgPlugins() []map[string]interface{} {
+	orgCollectionName := GetOrgPluginCollectionName(o.ID)
+
+	orgPlugins, _ := utils.GetMongoDbDocs(orgCollectionName, nil)
+
+	var pluginsMap []map[string]interface{}
+	
+	pluginJSON, _ := json.Marshal(orgPlugins)
+	err := json.Unmarshal(pluginJSON, &pluginsMap)
+	
+	if err != nil {
+		return nil
+	}
+
+	return pluginsMap
+}
+
+// used to update any field in an organization.
+func OrganizationUpdate(w http.ResponseWriter, r *http.Request, updateParam updateParam) {
+	w.Header().Set("Content-Type", "application/json")
+	
+	orgID := mux.Vars(r)["id"]
+	requestData := make(map[string]string)
+	
+	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	orgFilter := make(map[string]interface{})
+	orgFilter[updateParam.orgFilterKey] = requestData[updateParam.requestDataKey]
+	update, err := utils.UpdateOneMongoDbDoc(OrganizationCollectionName, orgID, orgFilter)
+	
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+	
+	eventChannel := fmt.Sprintf("organizations_%s", orgID)
+	event := utils.Event{Identifier: orgID, Type: "Organization", Event: updateParam.eventKey, Channel: eventChannel, Payload: make(map[string]interface{})}
+	
+	go utils.Emitter(event)
+
+	utils.GetSuccess(fmt.Sprintf("%s updated successfully", updateParam.successMessage), nil, w)
 }
