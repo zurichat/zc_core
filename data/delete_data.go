@@ -20,6 +20,7 @@ type deleteDataRequest struct {
 	Filter         map[string]interface{} `json:"filter"`
 }
 
+// DeleteData handles request for plugins to delete their data
 func DeleteData(w http.ResponseWriter, r *http.Request) {
 	reqData := new(deleteDataRequest)
 
@@ -69,14 +70,14 @@ func (ddr *deleteDataRequest) handleDelete(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	utils.GetSuccess("success", M{"deleted_count": deletedCount}, w)
+	utils.GetSuccess("success", utils.M{"deleted_count": deletedCount}, w)
 }
 
 func deleteOne(collName, id string) (int64, error) {
 	update := make(map[string]interface{})
 	update["deleted"] = true
 	update["deleted_at"] = time.Now()
-	res, err := updateMany(collName, bson.M{"_id": MustObjectIDFromHex(id), "deleted": bson.M{"$ne": true}}, update)
+	res, err := updateMany(collName, bson.M{"_id": mustObjectIDFromHex(id), "deleted": bson.M{"$ne": true}}, update)
 	if err != nil {
 		return 0, err
 	}

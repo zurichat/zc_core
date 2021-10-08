@@ -9,14 +9,15 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
+// ListCollections returns a list of collections a plugin has created
 func ListCollections(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	pluginId, orgId := vars["plugin_id"], vars["org_id"]
+	pluginID, orgID := vars["plugin_id"], vars["org_id"]
 	docs, err := make([]bson.M, 0), error(nil)
-	if orgId != "" {
-		docs, err = getPluginCollectionsForOrganization(pluginId, orgId)
+	if orgID != "" {
+		docs, err = getPluginCollectionsForOrganization(pluginID, orgID)
 	} else {
-		docs, err = getPluginCollections(pluginId)
+		docs, err = getPluginCollections(pluginID)
 	}
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)

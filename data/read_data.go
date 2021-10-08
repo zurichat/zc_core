@@ -12,18 +12,17 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
-type M map[string]interface{}
-
+// ReadData handles the data retrieval operation for plugins using GET requests.
 func ReadData(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	pluginId, collName, orgId := vars["plugin_id"], vars["coll_name"], vars["org_id"]
+	pluginID, collName, orgID := vars["plugin_id"], vars["coll_name"], vars["org_id"]
 
-	if !pluginHasCollection(pluginId, orgId, collName) {
+	if !pluginHasCollection(pluginID, orgID, collName) {
 		utils.GetError(errors.New("collection not found"), http.StatusNotFound, w)
 		return
 	}
 
-	prefixedCollName := getPrefixedCollectionName(pluginId, orgId, collName)
+	prefixedCollName := getPrefixedCollectionName(pluginID, orgID, collName)
 	filter := parseURLQuery(r) // queries will have to be sanitized
 	filter["deleted"] = bson.M{"$ne": true}
 	docs, err := utils.GetMongoDbDocs(prefixedCollName, filter)
@@ -46,7 +45,7 @@ func getPrefixedCollectionName(pluginID, orgID, collName string) string {
 }
 
 func parseURLQuery(r *http.Request) map[string]interface{} {
-	m := M{}
+	m := utils.M{}
 	for k, v := range r.URL.Query() {
 		if k == "id" || k == "_id" {
 			m["_id"], _ = primitive.ObjectIDFromHex(v[0])
@@ -65,15 +64,17 @@ type readDataRequest struct {
 	ObjectID       string                 `json:"object_id,omitempty"`
 	ObjectIDs      []string               `json:"object_ids,omitempty"`
 	Filter         map[string]interface{} `json:"filter,omitempty"`
-	*ReadOptions   `json:"options,omitempty"`
+	ReadOptions    *readOptions           `json:"options,omitempty"`
 }
 
-type ReadOptions struct {
+//
+type readOptions struct {
 	Limit *int64                 `json:"limit,omitempty"`
 	Skip  *int64                 `json:"skip,omitempty"`
 	Sort  map[string]interface{} `json:"sort,omitempty"`
 }
 
+// NewRead handles data retrieval process using POST requests, providing flexibility for the query
 func NewRead(w http.ResponseWriter, r *http.Request) {
 	reqData := new(readDataRequest)
 
@@ -97,7 +98,7 @@ func NewRead(w http.ResponseWriter, r *http.Request) {
 			utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
 			return
 		}
-		doc, err := utils.GetMongoDbDoc(prefixedCollName, bson.M{"_id": id, "deleted": M{"$ne": true}})
+		doc, err := utils.GetMongoDbDoc(prefixedCollName, bson.M{"_id": id, "deleted": utils.M{"$ne": true}})
 		if err != nil {
 			utils.GetError(err, http.StatusInternalServerError, w)
 			return
@@ -107,7 +108,7 @@ func NewRead(w http.ResponseWriter, r *http.Request) {
 	}
 	filter := reqData.Filter
 	if filter == nil {
-		filter = M{}
+		filter = utils.M{}
 	}
 	if reqData.ObjectIDs != nil {
 		filter["_id"] = bson.M{"$in": hexToObjectIDs(reqData.ObjectIDs)}
@@ -115,7 +116,7 @@ func NewRead(w http.ResponseWriter, r *http.Request) {
 	var opts *options.FindOptions
 
 	if r := reqData.ReadOptions; r != nil {
-		opts = SetOptions(*r)
+		opts = setOptions(*r)
 	}
 
 	filter["deleted"] = bson.M{"$ne": true}
@@ -127,7 +128,7 @@ func NewRead(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("success", docs, w)
 }
 
-func SetOptions(r ReadOptions) *options.FindOptions {
+func setOptions(r readOptions) *options.FindOptions {
 	findOptions := options.Find()
 	if r.Limit != nil {
 		findOptions.SetLimit(*r.Limit)
@@ -144,7 +145,7 @@ func SetOptions(r ReadOptions) *options.FindOptions {
 func hexToObjectIDs(ids []string) []primitive.ObjectID {
 	objIDs := make([]primitive.ObjectID, len(ids))
 	for i, id := range ids {
-		objIDs[i] = MustObjectIDFromHex(id)
+		objIDs[i] = mustObjectIDFromHex(id)
 	}
 	return objIDs
 }

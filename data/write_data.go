@@ -24,6 +24,7 @@ type writeDataRequest struct {
 	RawQuery       interface{}            `json:"raw_query,omitempty"`
 }
 
+// WriteData handles data mutation operations(write, update, delete) for plugins.
 func WriteData(w http.ResponseWriter, r *http.Request) {
 	reqData := new(writeDataRequest)
 
@@ -63,7 +64,7 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 
 func (wdr *writeDataRequest) handlePost(w http.ResponseWriter, r *http.Request) {
 	var writeCount int64
-	data := M{}
+	data := utils.M{}
 	if wdr.BulkWrite {
 		res, err := insertMany(wdr.prefixCollectionName(), wdr.Payload)
 		if err != nil {
@@ -99,7 +100,7 @@ func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filter["deleted"] = bson.M{"$ne": true}
-	normalizeIdIfExists(filter)
+	normalizeIDIfExists(filter)
 	if wdr.RawQuery != nil {
 		res, err = rawQueryupdateMany(collName, filter, wdr.RawQuery)
 	} else {
@@ -110,7 +111,7 @@ func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(fmt.Errorf("an error occured: %v", err), http.StatusInternalServerError, w)
 		return
 	}
-	data := M{
+	data := utils.M{
 		"matched_documents":  res.MatchedCount,
 		"modified_documents": res.ModifiedCount,
 	}
@@ -138,7 +139,7 @@ func insertOne(collName string, data interface{}) (*mongo.InsertOneResult, error
 }
 
 func updateOne(collName, id string, upd interface{}) (*mongo.UpdateResult, error) {
-	return updateMany(collName, bson.M{"_id": MustObjectIDFromHex(id)}, upd)
+	return updateMany(collName, bson.M{"_id": mustObjectIDFromHex(id)}, upd)
 }
 
 func updateMany(collName string, filter map[string]interface{}, upd interface{}) (*mongo.UpdateResult, error) {
@@ -150,15 +151,15 @@ func updateMany(collName string, filter map[string]interface{}, upd interface{})
 }
 
 func recordExists(collName, id string) bool {
-	objId, _ := primitive.ObjectIDFromHex(id)
-	_, err := utils.GetMongoDbDoc(collName, M{"_id": objId})
+	objID, _ := primitive.ObjectIDFromHex(id)
+	_, err := utils.GetMongoDbDoc(collName, utils.M{"_id": objID})
 	if err == nil {
 		return true
 	}
 	return false
 }
 
-func MustObjectIDFromHex(hex string) primitive.ObjectID {
+func mustObjectIDFromHex(hex string) primitive.ObjectID {
 	objID, err := primitive.ObjectIDFromHex(hex)
 	if err != nil {
 		panic(err)
@@ -171,14 +172,14 @@ func rawQueryupdateMany(collName string, filter map[string]interface{}, rawQuery
 	return coll.UpdateMany(context.TODO(), filter, rawQuery)
 }
 
-func normalizeIdIfExists(filter map[string]interface{}) {
+func normalizeIDIfExists(filter map[string]interface{}) {
 	if id, exists := filter["_id"]; exists {
-		filter["_id"] = MustObjectIDFromHex(id.(string))
+		filter["_id"] = mustObjectIDFromHex(id.(string))
 		return
 	}
 	if id, exists := filter["id"]; exists {
 		delete(filter, "id")
-		filter["_id"] = MustObjectIDFromHex(id.(string))
+		filter["_id"] = mustObjectIDFromHex(id.(string))
 		return
 	}
 
