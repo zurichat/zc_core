@@ -53,6 +53,8 @@ func CreatePlugin(ctx context.Context, p *Plugin) error {
 	p.UpdatedAt = time.Now().String()
 	collection := utils.GetCollection(PluginCollectionName)
 	res, err := collection.InsertOne(ctx, p)
+
+	//nolint:errcheck //Enike: ignore error check here
 	p.ID = res.InsertedID.(primitive.ObjectID)
 
 	return err

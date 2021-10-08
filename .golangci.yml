@@ -12,7 +12,7 @@ linters-settings:
       - performance
       - style
   goimports:
-    local-prefixes: github.com/ayoisaiah/f2
+    local-prefixes: github.com/zurichat/zc_core
   gomnd:
     settings:
       mnd:
@@ -92,12 +92,14 @@ run:
   skip-dirs:
   - blog
   - api
-  - contact
+  #- contact
   - docs
   - marketplace
   - organizations
   # - plugin
   - data
+  - plugin
+  # data
   - external
   - messaging
   - report
@@ -105,5 +107,5 @@ run:
   # - service
   - user
   - utils
-  skip-files:
-  - main.go
+  # skip-files:
+  # - main.go

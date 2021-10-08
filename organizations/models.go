@@ -1,9 +1,6 @@
 package organizations
 
 import (
-	"encoding/json"
-
-	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -18,14 +15,15 @@ const (
 	OrganizationInviteCollection   = "organizations_invites"
 	MemberCollectionName           = "members"
 	UserCollectionName             = "users"
+	PluginCollection 			   = "plugins"
 )
 
 const (
 	CreateOrganizationMember              = "CreateOrganizationMember"
 	UpdateOrganizationName                = "UpdateOrganizationName"
 	UpdateOrganizationMemberPic           = "UpdateOrganizationMemberPic"
-	UpdateOrganizationUrl                 = "UpdateOrganizationUrl"
-	UpdateOrganizationLogo                = "UpdateOrganizationUrl"
+	UpdateOrganizationURL                 = "UpdateOrganizationUrl"
+	UpdateOrganizationLogo                = "UpdateOrganizationLogo"
 	DeactivateOrganizationMember          = "DeactivateOrganizationMember"
 	ReactivateOrganizationMember          = "ReactivateOrganizationMember"
 	UpdateOrganizationMemberStatus        = "UpdateOrganizationMemberStatus"
@@ -100,20 +98,20 @@ type BillingSetting struct {
 }
 
 type TokenTransaction struct {
-	OrgId         string    `json:"org_id" bson:"org_id"`
+	OrgID         string    `json:"org_id" bson:"org_id"`
 	Currency      string    `json:"currency" bson:"currency"`
 	Token         float64   `json:"token" bson:"token"`
 	Type          string    `json:"type" bson:"type"`
 	Description   string    `json:"description" bson:"description"`
 	Amount        float64   `json:"amount" bson:"amount"`
 	Time          time.Time `json:"time" bson:"time"`
-	TransactionId string    `json:"transaction_id" bson:"transaction_id"`
+	TransactionID string    `json:"transaction_id" bson:"transaction_id"`
 }
 
 type Invite struct {
 	ID    string `json:"_id,omitempty" bson:"_id,omitempty"`
 	OrgID string `json:"org_id" bson:"org_id"`
-	Uuid  string `json:"uuid" bson:"uuid"`
+	UUID  string `json:"uuid" bson:"uuid"`
 	Email string `json:"email" bson:"email"`
 }
 type SendInviteResponse struct {
@@ -121,25 +119,13 @@ type SendInviteResponse struct {
 	InviteIDs     []interface{}
 }
 
-func (o *Organization) OrgPlugins() []map[string]interface{} {
-	orgCollectionName := GetOrgPluginCollectionName(o.ID)
-
-	orgPlugins, _ := utils.GetMongoDbDocs(orgCollectionName, nil)
-
-	var pluginsMap []map[string]interface{}
-	pluginJson, _ := json.Marshal(orgPlugins)
-	json.Unmarshal(pluginJson, &pluginsMap)
-
-	return pluginsMap
-}
-
 type OrgPluginBody struct {
-	PluginId string `json:"plugin_id"`
-	UserId   string `json:"user_id"`
+	PluginID string `json:"plugin_id"`
+	UserID   string `json:"user_id"`
 }
 
 type InstalledPlugin struct {
-	_id         string                 `json:"id" bson:"_id"`
+	ID         string                 `json:"id" bson:"_id"`
 	PluginID    string                 `json:"plugin_id" bson:"plugin_id"`
 	Plugin      map[string]interface{} `json:"plugin" bson:"plugin"`
 	AddedBy     string                 `json:"added_by" bson:"added_by"`
@@ -160,12 +146,8 @@ type OrganizationAdmin struct {
 	UpdatedAt      time.Time          `bson:"updated_at"`
 }
 
-func GetOrgPluginCollectionName(orgName string) string {
-	return strings.ToLower(orgName) + "_" + InstalledPluginsCollectionName
-}
-
 type Social struct {
-	Url   string `json:"url" bson:"url"`
+	URL   string `json:"url" bson:"url"`
 	Title string `json:"title" bson:"title"`
 }
 
@@ -195,7 +177,7 @@ type Status struct {
 
 type Member struct {
 	ID          primitive.ObjectID `json:"_id" bson:"_id"`
-	OrgId       string             `json:"org_id" bson:"org_id"`
+	OrgID       string             `json:"org_id" bson:"org_id"`
 	Files       []string           `json:"files" bson:"files"`
 	ImageURL    string             `json:"image_url" bson:"image_url"`
 	FirstName   string             `json:"first_name" bson:"first_name"`
@@ -267,7 +249,7 @@ type OrgSettings struct {
 	DisplayEmail       bool                   `json:"displayemail" bson:"displayemail"`
 	DisplayPronouns    bool                   `json:"displaypronouns" bson:"displaypronouns"`
 	NotifyOfNewUsers   bool                   `json:"notifyofnewusers" bson:"notifyofnewusers"`
-	WorkspaceUrl       string                 `json:"workspacename" bson:"workspacename"`
+	WorkspaceURL       string                 `json:"workspacename" bson:"workspacename"`
 }
 
 type OrgPermissions struct {
@@ -306,7 +288,7 @@ type Sidebar struct {
 	ShowAllTheFollowing           string   `json:"show_all_the_following" bson:"show_all_the_following"`
 	SidebarSort                   string   `json:"sidebar_sort" bson:"sidebar_sort"`
 	ShowProfilePictureNextToDM    bool     `json:"show_profile_picture_next_to_dm" bson:"show_profile_picture_next_to_dm"`
-	ListPrivateChannelsSeperately bool     `json:"list_private_channels_seperately" bson:"list_private_channels_seperately"`
+	ListPrivateChannelsSeperately bool     `json:"list_private_channels_separately" bson:"list_private_channels_separately"`
 	OrganizeExternalConversations bool     `json:"organize_external_conversations" bson:"organize_external_conversations"`
 	ShowConversations             string   `json:"show_conversations" bson:"show_conversations"`
 }
@@ -375,4 +357,11 @@ type PluginSettings struct {
 type OrganizationHandler struct {
 	configs     *utils.Configurations
 	mailService service.MailService
+}
+
+type updateParam struct {
+	orgFilterKey string
+	requestDataKey string
+	eventKey string
+	successMessage string
 }

@@ -7,7 +7,7 @@ import (
 	"zuri.chat/zccore/service"
 )
 
-type ContactFormData struct {
+type FormData struct {
 	ID        primitive.ObjectID             `json:"id,omitempty"`
 	Subject   string                         `json:"subject"`
 	Content   string                         `json:"content"`
