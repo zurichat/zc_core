@@ -93,7 +93,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/plugins/{plugin_id}", au.IsAuthenticated(orgs.GetOrganizationPlugin)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/plugins/{plugin_id}", au.IsAuthenticated(orgs.RemoveOrganizationPlugin)).Methods("DELETE")
 
-	r.HandleFunc("/organizations/{id}/url", au.IsAuthenticated(orgs.UpdateUrl)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/url", au.IsAuthenticated(orgs.UpdateURL)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/name", au.IsAuthenticated(orgs.UpdateName)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/logo", au.IsAuthenticated(orgs.UpdateLogo)).Methods("PATCH")
 
@@ -151,7 +151,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/guests/invite", us.CreateUserFromUUID).Methods("POST")
 
 	// Contact Us
-	r.HandleFunc("/contact", au.OptionalAuthentication(contact.ContactUs, au)).Methods("POST")
+	r.HandleFunc("/contact", au.OptionalAuthentication(contact.MailUs, au)).Methods("POST")
 
 	// Realtime communications
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
@@ -189,7 +189,7 @@ func Router(server *socketio.Server) *mux.Router {
 func main() {
 	// Socket  events
 	var Server = socketio.NewServer(nil)
-	
+
 	messaging.SocketEvents(Server)
 
 	// load .env file if it exists
@@ -233,14 +233,15 @@ func main() {
 		ReadTimeout:  15 * time.Second,
 	}
 
-	//nolint:go-golangci-lint //jB
-	go Server.Serve() 
+	//nolint:errcheck //CODEI8: ignore error check
+	go Server.Serve()
 
 	fmt.Println("Socket Served")
 
 	defer Server.Close()
-	
+
 	fmt.Println("Zuri Chat API running on port ", port)
+	//nolint:gocritic //CODEI8: please provide soln -> lint throw exitAfterDefer: log.Fatal will exit, and `defer Server.Close()` will not run
 	log.Fatal(srv.ListenAndServe())
 }
 

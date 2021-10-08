@@ -10,9 +10,7 @@ import (
 )
 
 const (
-	_PluginCollectionName            = "plugins"
 	_PluginCollectionsCollectionName = "plugin_collections"
-	_OrganizationCollectionName      = "organizations"
 )
 
 // PluginCollections is used internally to keep track collections a plugin created.
@@ -25,20 +23,18 @@ type PluginCollections struct {
 }
 
 func pluginHasCollection(pluginID, orgID, collectionName string) bool {
-	filter := M{
+	filter := bson.M{
 		"plugin_id":       pluginID,
 		"collection_name": collectionName,
 		"organization_id": orgID,
 	}
 	_, err := utils.GetMongoDbDoc(_PluginCollectionsCollectionName, filter)
-	if err == nil {
-		return true
-	}
-	return false
+
+	return err == nil
 }
 
 func createPluginCollectionRecord(pluginID, orgID, collectionName string) error {
-	doc := M{
+	doc := bson.M{
 		"plugin_id":       pluginID,
 		"organization_id": orgID,
 		"collection_name": collectionName,
@@ -48,30 +44,37 @@ func createPluginCollectionRecord(pluginID, orgID, collectionName string) error 
 	if _, err := utils.CreateMongoDbDoc(_PluginCollectionsCollectionName, doc); err != nil {
 		return err
 	}
+
 	return nil
 }
 
-func getPluginCollections(pluginId string) ([]bson.M, error) {
-	docs, err := utils.GetMongoDbDocs(_PluginCollectionsCollectionName, bson.M{"plugin_id": pluginId})
+func getPluginCollections(pluginID string) ([]bson.M, error) {
+	docs, err := utils.GetMongoDbDocs(_PluginCollectionsCollectionName, bson.M{"plugin_id": pluginID})
+
 	if err != nil {
-		return nil, fmt.Errorf("Error finding collection records for this plugin: %v", err)
+		return nil, fmt.Errorf("error finding collection records for this plugin: %v", err)
 	}
+
 	for _, doc := range docs {
 		delete(doc, "_id")
 	}
+
 	return docs, nil
 }
 
-func getPluginCollectionsForOrganization(pluginId, orgId string) ([]bson.M, error) {
+func getPluginCollectionsForOrganization(pluginID, orgID string) ([]bson.M, error) {
 	docs, err := utils.GetMongoDbDocs(_PluginCollectionsCollectionName, bson.M{
-		"plugin_id":       pluginId,
-		"organization_id": orgId,
+		"plugin_id":       pluginID,
+		"organization_id": orgID,
 	})
+
 	if err != nil {
 		return nil, fmt.Errorf("Error finding collection records for this plugin: %v", err)
 	}
+
 	for _, doc := range docs {
 		delete(doc, "_id")
 	}
+
 	return docs, nil
 }
