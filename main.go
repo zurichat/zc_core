@@ -233,7 +233,7 @@ func main() {
 		ReadTimeout:  15 * time.Second,
 	}
 
-	//nolint:go-golangci-lint //jB
+	//nolint:errcheck //CODEI8: ignore error check
 	go Server.Serve() 
 
 	fmt.Println("Socket Served")
@@ -241,6 +241,7 @@ func main() {
 	defer Server.Close()
 	
 	fmt.Println("Zuri Chat API running on port ", port)
+	//nolint:gocritic //CODEI8: please provide soln -> lint throw exitAfterDefer: log.Fatal will exit, and `defer Server.Close()` will not run
 	log.Fatal(srv.ListenAndServe())
 }
 
