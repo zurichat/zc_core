@@ -22,12 +22,18 @@ var defaultMongoHandle = &MongoDBHandle{}
 var once sync.Once
 
 func ConnectToDB(clusterURL string) error {
-	var err error
+	var err1, err2 error
 	once.Do(func() {
-		err = defaultMongoHandle.Connect(clusterURL)
-		CreateUniqueIndex("users", "email", 1)
+		err1 = defaultMongoHandle.Connect(clusterURL)
+		err2 = CreateUniqueIndex("users", "email", 1)
 	})
-	return err
+	if err1 != nil {
+		return err1
+	}
+	if err2 != nil {
+		return err2
+	}
+	return nil
 }
 
 func (mh *MongoDBHandle) Connect(clusterURL string) error {
@@ -70,16 +76,16 @@ func (mh *MongoDBHandle) Client() *mongo.Client {
 
 //"mongodb+srv://zuri:<password>@cluster0.hepte.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
 
-//GetMongoDbCollection get collection inside your db, this function can be exorted
-func GetMongoDbCollection(DbName string, CollectionName string) (*mongo.Collection, error) {
+//GetMongoDbCollection get collection inside your db, this function can be exorted.
+func GetMongoDbCollection(dbname string, collectionName string) (*mongo.Collection, error) {
 	client := defaultMongoHandle.Client()
 
-	collection := client.Database(DbName).Collection(CollectionName)
+	collection := client.Database(dbname).Collection(collectionName)
 
 	return collection, nil
 }
 
-// get MongoDb documents for a collection
+// get MongoDb documents for a collection.
 func GetMongoDbDocs(collectionName string, filter map[string]interface{}, opts ...*options.FindOptions) ([]bson.M, error) {
 	ctx := context.Background()
 	collection := defaultMongoHandle.GetCollection(collectionName)
@@ -96,7 +102,7 @@ func GetMongoDbDocs(collectionName string, filter map[string]interface{}, opts .
 	return data, nil
 }
 
-// get single MongoDb document for a collection
+// get single MongoDb document for a collection.
 func GetMongoDbDoc(collectionName string, filter map[string]interface{}, opts ...*options.FindOneOptions) (bson.M, error) {
 	ctx := context.Background()
 	collection := defaultMongoHandle.GetCollection(collectionName)
@@ -133,7 +139,7 @@ func CreateManyMongoDbDocs(collectionName string, data []interface{}) (*mongo.In
 	return res, nil
 }
 
-// Update single MongoDb document for a collection
+// Update single MongoDb document for a collection.
 func UpdateOneMongoDbDoc(collectionName string, ID string, data map[string]interface{}) (*mongo.UpdateResult, error) {
 	ctx := context.Background()
 	collection := defaultMongoHandle.GetCollection(collectionName)
@@ -152,7 +158,7 @@ func UpdateOneMongoDbDoc(collectionName string, ID string, data map[string]inter
 	return res, nil
 }
 
-//This methods allows update of any kind e.g array increment, object embedding etc by passing the raw update data
+//This methods allows update of any kind e.g array increment, object embedding etc by passing the raw update data.
 func GenericUpdateOneMongoDbDoc(collectionName string, ID interface{}, updateData map[string]interface{}) (*mongo.UpdateResult, error) {
 	ctx := context.Background()
 	collection := defaultMongoHandle.GetCollection(collectionName)
@@ -168,7 +174,7 @@ func GenericUpdateOneMongoDbDoc(collectionName string, ID interface{}, updateDat
 	return res, nil
 }
 
-// Update many MongoDb documents for a collection
+// Update many MongoDb documents for a collection.
 func UpdateManyMongoDbDocs(collectionName string, filter map[string]interface{}, data map[string]interface{}) (*mongo.UpdateResult, error) {
 	ctx := context.Background()
 	collection := defaultMongoHandle.GetCollection(collectionName)
@@ -183,7 +189,7 @@ func UpdateManyMongoDbDocs(collectionName string, filter map[string]interface{},
 	return res, nil
 }
 
-// Replace a document with new data but preserve its id
+// Replace a document with new data but preserve its id.
 func ReplaceMongoDbDoc(collectionName string, filter map[string]interface{}, data map[string]interface{}) (*mongo.UpdateResult, error) {
 	ctx := context.Background()
 	collection := defaultMongoHandle.GetCollection(collectionName)
@@ -197,7 +203,7 @@ func ReplaceMongoDbDoc(collectionName string, filter map[string]interface{}, dat
 	return res, nil
 }
 
-// Delete single MongoDb document for a collection
+// Delete single MongoDb document for a collection.
 func DeleteOneMongoDoc(collectionName string, ID string) (*mongo.DeleteResult, error) {
 	ctx := context.Background()
 	collection := defaultMongoHandle.GetCollection(collectionName)
@@ -213,7 +219,7 @@ func DeleteOneMongoDoc(collectionName string, ID string) (*mongo.DeleteResult, e
 	return res, nil
 }
 
-// Delete many MongoDb documents for a collection
+// Delete many MongoDb documents for a collection.
 func DeleteManyMongoDoc(collectionName string, filter map[string]interface{}) (*mongo.DeleteResult, error) {
 	ctx := context.Background()
 	collection := defaultMongoHandle.GetCollection(collectionName)

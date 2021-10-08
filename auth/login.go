@@ -268,8 +268,8 @@ func (au *AuthHandler) SocialAuth(w http.ResponseWriter, r *http.Request) {
 
 	// default providers
 	providers := map[string]string{
-		"google":   au.configs.GoogleOAuthV3Url,
-		"facebook": au.configs.FacebookOAuthUrl,
+		"google":   au.configs.GoogleOAuthV3URL,
+		"facebook": au.configs.FacebookOAuthURL,
 	}
 
 	params := mux.Vars(r)

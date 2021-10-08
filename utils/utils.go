@@ -20,7 +20,7 @@ import (
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	// "zuri.chat/zccore/auth"/
+	// "zuri.chat/zccore/auth"/.
 )
 
 type M map[string]interface{}
@@ -83,7 +83,7 @@ func GetError(err error, StatusCode int, w http.ResponseWriter) {
 	}
 }
 
-// GetDetailedError: This function provides detailed error information
+// GetDetailedError: This function provides detailed error information.
 func GetDetailedError(msg string, StatusCode int, data interface{}, w http.ResponseWriter) {
 	var response = DetailedErrorResponse{
 		Message:    msg,
@@ -111,32 +111,34 @@ func GetSuccess(msg string, data interface{}, w http.ResponseWriter) {
 	}
 }
 
-// get env vars; return empty string if not found
+// get env vars; return empty string if not found.
 func Env(key string) string {
 	return os.Getenv(key)
 }
 
-// check if a file exists, useful in checking for .env
+// check if a file exists, useful in checking for .env.
 func FileExists(name string) bool {
 	_, err := os.Stat(name)
 	return !os.IsNotExist(err)
 }
 
-// convert map to bson.M for mongoDB docs
+// convert map to bson.M for mongoDB docs.
 func MapToBson(data map[string]interface{}) bson.M {
 	return bson.M(data)
 }
 
-// StructToMap converts a struct of any type to a map[string]inteface{}
+// StructToMap converts a struct of any type to a map[string]inteface{}.
 func StructToMap(inStruct interface{}) (map[string]interface{}, error) {
 	out := make(map[string]interface{})
 	inrec, _ := json.Marshal(inStruct)
-	json.Unmarshal(inrec, &out)
+	if err := json.Unmarshal(inrec, &out); err != nil {
+		return nil, err
+	}
 	return out, nil
 }
 
 // ConvertStructure does map to struct conversion and vice versa.
-// The input structure will be converted to the output
+// The input structure will be converted to the output.
 func ConvertStructure(input interface{}, output interface{}) error {
 	data, err := json.Marshal(input)
 	if err != nil {
@@ -155,7 +157,6 @@ func IsValidEmail(email string) bool {
 }
 
 func TokenIsValid(utoken string) (bool, string, error) {
-
 	SECRET_KEY, _ := os.LookupEnv("AUTH_SECRET_KEY")
 	var cclaims MyCustomClaims
 
@@ -170,7 +171,6 @@ func TokenIsValid(utoken string) (bool, string, error) {
 		fmt.Print(err)
 		return false, "Not Authorized", errors.New("Not Authorized.")
 	}
-
 }
 
 func TokenAgainstUserId(utoken string, user_id string) (bool, string, error) {
@@ -203,7 +203,6 @@ func RandomGen(n int, s_type string) (status bool, str string) {
 			final_string = final_string + s[randIdx]
 		}
 		return true, final_string
-
 	} else if s_type == "d" {
 		randgen_i := `0123456789`
 		i := strings.Split(randgen_i, "")
@@ -212,11 +211,9 @@ func RandomGen(n int, s_type string) (status bool, str string) {
 			final_string = final_string + i[randIdx]
 		}
 		return true, final_string
-
 	} else {
 		return false, "wrong type"
 	}
-
 }
 
 func GenWorkspaceUrl(orgName string) string {
@@ -262,7 +259,7 @@ func GenUUID() string {
 	return id.String()
 }
 
-// Check the validaity of a UUID. Returns a valid UUID from a string input. Returns an error otherwise
+// Check the validaity of a UUID. Returns a valid UUID from a string input. Returns an error otherwise.
 func ValidateUUID(s string) (uuid.UUID, error) {
 	if len(s) != 36 {
 		return uuid.Nil, errors.New("invalid uuid format")
@@ -319,7 +316,6 @@ func CentrifugoConn(body map[string]interface{}) int {
 	}
 	if resp.StatusCode == 403 || resp.StatusCode == 401 {
 		fmt.Println("Unauthorized: Invalid API key for Websocket Server")
-
 	}
 
 	return resp.StatusCode

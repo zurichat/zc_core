@@ -170,7 +170,7 @@ func UserIDFromSession(sessionData *auth.ResToken, conf *utils.Configurations) (
 		return "", ee
 	}
 
-	session, err := utils.GetMongoDbDoc(conf.SessionDbCollection, data)
+	session, err := utils.GetMongoDbDoc(conf.SessionDBCollection, data)
 	if err != nil {
 		return "", err
 	}
