@@ -93,7 +93,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/plugins/{plugin_id}", au.IsAuthenticated(orgs.GetOrganizationPlugin)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/plugins/{plugin_id}", au.IsAuthenticated(orgs.RemoveOrganizationPlugin)).Methods("DELETE")
 
-	r.HandleFunc("/organizations/{id}/url", au.IsAuthenticated(orgs.UpdateUrl)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/url", au.IsAuthenticated(orgs.UpdateURL)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/name", au.IsAuthenticated(orgs.UpdateName)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/logo", au.IsAuthenticated(orgs.UpdateLogo)).Methods("PATCH")
 

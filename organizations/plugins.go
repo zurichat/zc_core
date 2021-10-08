@@ -14,15 +14,14 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
-var NoAuthToken = errors.New("No Authorization header provided.")
+var ErrNoAuthToken = errors.New("no authorization header provided")
 
 func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
-	plugin_collection := "plugins"
+	
 	var orgPlugin OrgPluginBody
 
-	OrgId := mux.Vars(r)["id"]
+	OrgID := mux.Vars(r)["id"]
 
 	err := json.NewDecoder(r.Body).Decode(&orgPlugin)
 	if err != nil {
@@ -31,14 +30,14 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 	}
 
 	// confirm if plugin_id exists
-	pluginId, err := primitive.ObjectIDFromHex(orgPlugin.PluginId)
+	pluginID, err := primitive.ObjectIDFromHex(orgPlugin.PluginID)
 
 	if err != nil {
 		utils.GetError(errors.New("invalid plugin id"), http.StatusBadRequest, w)
 		return
 	}
 
-	plugin, _ := utils.GetMongoDbDoc(plugin_collection, bson.M{"_id": pluginId})
+	plugin, _ := utils.GetMongoDbDoc(PluginCollection, bson.M{"_id": pluginID})
 
 	if plugin == nil {
 		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
@@ -46,14 +45,14 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 	}
 
 	// confirm if user_id exists
-	creatorId, err := primitive.ObjectIDFromHex(orgPlugin.UserId)
+	creatorID, err := primitive.ObjectIDFromHex(orgPlugin.UserID)
 
 	if err != nil {
 		utils.GetError(errors.New("invalid user id"), http.StatusBadRequest, w)
 		return
 	}
 
-	user, _ := utils.GetMongoDbDoc(MemberCollectionName, bson.M{"_id": creatorId, "org_id": OrgId})
+	user, _ := utils.GetMongoDbDoc(MemberCollectionName, bson.M{"_id": creatorID, "org_id": OrgID})
 	if user == nil {
 		utils.GetError(errors.New("member doesn't exist in the organization"), http.StatusBadRequest, w)
 		return
@@ -70,9 +69,9 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 		return
 	}
 
-	orgCollectionName := GetOrgPluginCollectionName(OrgId)
+	orgCollectionName := GetOrgPluginCollectionName(OrgID)
 
-	p, _ := utils.GetMongoDbDoc(orgCollectionName, bson.M{"plugin_id": orgPlugin.PluginId})
+	p, _ := utils.GetMongoDbDoc(orgCollectionName, bson.M{"plugin_id": orgPlugin.PluginID})
 
 	if p != nil {
 		utils.GetError(errors.New("plugin has already been added"), http.StatusBadRequest, w)
@@ -82,7 +81,7 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 	userName := user["first_name"].(string) + " " + user["last_name"].(string)
 
 	installedPlugin := InstalledPlugin{
-		PluginID:    orgPlugin.PluginId,
+		PluginID:    orgPlugin.PluginID,
 		Plugin:      plugin,
 		AddedBy:     userName,
 		ApprovedBy:  userName,
@@ -90,8 +89,14 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 	}
 
 	var pluginMap map[string]interface{}
-	pluginJson, _ := json.Marshal(installedPlugin)
-	json.Unmarshal(pluginJson, &pluginMap)
+	
+	pluginJSON, _ := json.Marshal(installedPlugin)
+	
+	err = json.Unmarshal(pluginJSON, &pluginMap)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
 
 	// save organization
 	save, err := utils.CreateMongoDbDoc(orgCollectionName, pluginMap)
@@ -99,81 +104,70 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
+
 	utils.GetSuccess("plugin saved successfully", save, w)
 }
 
 func (oh *OrganizationHandler) GetOrganizationPlugins(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	// loggedInUser := r.Context().Value("user").(auth.AuthUser)
 
 	collection := "organizations"
 
-	orgId := mux.Vars(r)["id"]
-	objId, err := primitive.ObjectIDFromHex(orgId)
+	orgID := mux.Vars(r)["id"]
+	objID, err := primitive.ObjectIDFromHex(orgID)
 
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
 		return
 	}
 
-	save, _ := utils.GetMongoDbDoc(collection, bson.M{"_id": objId})
+	save, _ := utils.GetMongoDbDoc(collection, bson.M{"_id": objID})
 
 	if save == nil {
-		utils.GetError(fmt.Errorf("organization %s not found", orgId), http.StatusNotFound, w)
+		utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
 		return
 	}
 
 	var org Organization
+	
 	// convert bson to struct
 	bsonBytes, _ := bson.Marshal(save)
-	bson.Unmarshal(bsonBytes, &org)
+	err = bson.Unmarshal(bsonBytes, &org)
+	
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
 
-	// userDoc, _ := utils.GetMongoDbDoc(user_collection, bson.M{"_id": loggedInUser.ID.Hex()})
-	// if userDoc == nil {
-	// 	utils.GetError(errors.New("Invalid User"), http.StatusBadRequest, w)
-	// 	return
-	// }
-
-	// convert user to struct
-	// var user user.User
-	// mapstructure.Decode(userDoc, &user)
-
-	// memDoc, _ := utils.GetMongoDbDoc(member_collection, bson.M{"org_id": orgId, "email": user.Email})
-	// if memDoc == nil {
-	// 	utils.GetError(errors.New("You're not authorized to access this resources"), http.StatusUnauthorized, w)
-	// 	return
-	// }
-
-	utils.GetSuccess("Plugins Retrived successfully", org.OrgPlugins(), w)
+	utils.GetSuccess("Plugins Retrieved successfully", org.OrgPlugins(), w)
 }
 
 func (oh *OrganizationHandler) GetOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	// loggedInUser := r.Context().Value("user").(auth.AuthUser)
 
-	orgId := mux.Vars(r)["id"]
-	pluginId := mux.Vars(r)["plugin_id"]
+	orgID := mux.Vars(r)["id"]
+	pluginID := mux.Vars(r)["plugin_id"]
 
-	objId, err := primitive.ObjectIDFromHex(orgId)
+	objID, err := primitive.ObjectIDFromHex(orgID)
 
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
 		return
 	}
 
-	save, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": objId})
+	save, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": objID})
 
 	if save == nil {
-		utils.GetError(fmt.Errorf("organization %s not found", orgId), http.StatusNotFound, w)
+		utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
 		return
 	}
 
-	orgCollectionName := GetOrgPluginCollectionName(orgId)
+	orgCollectionName := GetOrgPluginCollectionName(orgID)
 
-	doc, err := utils.GetMongoDbDoc(orgCollectionName, bson.M{"plugin_id": pluginId})
+	doc, err := utils.GetMongoDbDoc(orgCollectionName, bson.M{"plugin_id": pluginID})
 
 	if err != nil {
-		// plugin not found in organiztion.
+		// plugin not found in organization.
 		utils.GetError(err, http.StatusNotFound, w)
 		return
 	}
@@ -186,8 +180,8 @@ func (oh *OrganizationHandler) RemoveOrganizationPlugin(w http.ResponseWriter, r
 	
 	var orgPlugin OrgPluginBody
 
-	orgId := mux.Vars(r)["id"]
-	pluginId := mux.Vars(r)["plugin_id"]
+	orgID := mux.Vars(r)["id"]
+	pluginID := mux.Vars(r)["plugin_id"]
 
 	err := json.NewDecoder(r.Body).Decode(&orgPlugin)
 	if err != nil {
@@ -196,14 +190,14 @@ func (oh *OrganizationHandler) RemoveOrganizationPlugin(w http.ResponseWriter, r
 	}
 
 	// confirm if user_id exists
-	creatorId, err := primitive.ObjectIDFromHex(orgPlugin.UserId)
+	creatorID, err := primitive.ObjectIDFromHex(orgPlugin.UserID)
 
 	if err != nil {
 		utils.GetError(errors.New("invalid user id"), http.StatusBadRequest, w)
 		return
 	}
 
-	user, _ := utils.GetMongoDbDoc(MemberCollectionName, bson.M{"_id": creatorId, "org_id": orgId})
+	user, _ := utils.GetMongoDbDoc(MemberCollectionName, bson.M{"_id": creatorID, "org_id": orgID})
 	if user == nil {
 		utils.GetError(errors.New("member doesn't exist in the organization"), http.StatusBadRequest, w)
 		return
@@ -220,22 +214,22 @@ func (oh *OrganizationHandler) RemoveOrganizationPlugin(w http.ResponseWriter, r
 		return
 	}
 
-	orgCollectionName := GetOrgPluginCollectionName(orgId)
+	orgCollectionName := GetOrgPluginCollectionName(orgID)
 
-	orgPluginDoc, _ := utils.GetMongoDbDoc(orgCollectionName, bson.M{"plugin_id": pluginId})
+	orgPluginDoc, _ := utils.GetMongoDbDoc(orgCollectionName, bson.M{"plugin_id": pluginID})
 	if orgPluginDoc == nil {
-		// plugin not found in organiztion.
+		// plugin not found in organization.
 		utils.GetError(errors.New("plugin does not exist"), http.StatusBadRequest, w)
 		return
 	}
 	
-	orgPluginObjId := orgPluginDoc["_id"]
-	orgPluginId := orgPluginObjId.(primitive.ObjectID).Hex()
+	orgPluginObjID := orgPluginDoc["_id"]
+	orgPluginID := orgPluginObjID.(primitive.ObjectID).Hex()
 	
-	doc, err := utils.DeleteOneMongoDoc(orgCollectionName, orgPluginId)
+	doc, err := utils.DeleteOneMongoDoc(orgCollectionName, orgPluginID)
 
 	if err != nil {
-		// plugin not found in organiztion.
+		// plugin not found in organization.
 		utils.GetError(err, http.StatusNotFound, w)
 		return
 	}
