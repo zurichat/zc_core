@@ -94,7 +94,7 @@ run:
   - api
   #- contact
   - docs
-  - marketplace
+  # marketplace
   - organizations
   # - plugin
   - data
