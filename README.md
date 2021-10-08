@@ -5,20 +5,21 @@ ZC_CORE [![Go Reference](https://zuri.chat/b73fbbfa9db45fc3c22e.svg)](https://do
 
 See the docs for everything:https://docs.zuri.chat/
 
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/zurichat/zc_core?style=flat-square)
+![GitHub repo size](https://img.shields.io/github/repo-size/zurichat/zc_core?style=flat-square)
+
 ## Description
 
-The zc_core is an open source API that serves as the backend and backbone of Zuri chat.
-
-Zuri Chat is an open source slack clone developed during the HNG8 internship program 
+The Zuri Chat Core (zc_core) is an open source API that serves as the backend and backbone of Zuri Chat - an open source slack clone developed during the HNG8 internship program 
 
 Zuri Chat implements a plug-in system that allows for much more functionality because different plugins can be developed by different creators. These plugins can then rest on the Zuri Chat Core backbone (zc_core) which is written in **Golang**
 
 ## Language
 
-Zc_core was written in Go because it is a fast, compiled language and it is easily scaled. Concurrency in Go is also ideal for implementing a plugin structure. This makes it easy to build on the project and allows for future expansion.
+zc_core was written in Go because it is a fast, compiled language and it is easily scaled. Concurrency in Go is also ideal for implementing a plugin structure. This makes it easy to build on the project and allows for future expansion.
 * [Golang](https://golang.org)
 
-## API's
+## API Documentation
 
 A list of the endpoints and the functions they implement can be found in the API folder that contains YAML files for each of the functionalities
 
@@ -29,7 +30,19 @@ To get a local copy up and running follow these simple example steps.
 
 ### Prerequisites
 
-You should have **go 1.16** or  **lastest version** already installed on your local machine.
+1. **Go 1.16** or  **lastest version** already installed on your local machine.
+2. MongoDB
+
+### Installation
+1. Run an instance of MongoDB
+```bash
+mongod
+```
+2. Run zc_core from project root directory
+```bash
+go run main.go
+```
+### Usage
 
 ### Testing
 golangci-lint run
