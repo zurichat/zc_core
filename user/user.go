@@ -279,7 +279,7 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 			ne, ccfilter := make(map[string]interface{}), make(map[string]interface{})
 			ne["$ne"] = ""
 			ccfilter["image_url"], ccfilter["org_id"] = ne, orgid
-			orgMembersimages, err := utils.GetMongoDbDocs(MemberCollectionName, ccfilter, findOptions)
+			orgMembersimages, err := utils.GetMongoDBDocs(MemberCollectionName, ccfilter, findOptions)
 
 			for _, member := range orgMembersimages {
 				memberImgs = append(memberImgs, member["image_url"])
