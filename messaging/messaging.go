@@ -25,16 +25,11 @@ func Connect(s socketio.Conn) {
 
 	if iid == 1 {
 		Dbname := utils.Env("DB_NAME")
-<<<<<<< HEAD
+
 		RoomCollection, er := utils.GetMongoDBCollection(Dbname, "rooms")
 		if er != nil {
-=======
-		RoomCollection, er := utils.GetMongoDbCollection(Dbname, "rooms")
-
-	if er != nil {
->>>>>>> bb99b9e3a1dd2cc66340842f09b38a2253bfecc1
 			log.Fatal(er)
-	}
+		}
 
 	Newroom := Room{
 			RoomType:  "channel",
@@ -168,12 +163,9 @@ func CreateRoom(server *socketio.Server, s socketio.Conn, msg string) {
 		}
 
 		Dbname := utils.Env("DB_NAME")
-<<<<<<< HEAD
+
 		RoomCollection, er := utils.GetMongoDBCollection(Dbname, "rooms")
-=======
-		RoomCollection, er := utils.GetMongoDbCollection(Dbname, "rooms")
-	
->>>>>>> bb99b9e3a1dd2cc66340842f09b38a2253bfecc1
+
 		if er != nil {
 			response := GetCustomMessageError(fmt.Sprintf("%v", er), ERRORCODE)
 			s.Emit("create_room", response)
