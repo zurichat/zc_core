@@ -90,6 +90,7 @@ issues:
 run:
   issues-exit-code: 1
   skip-dirs:
+  - tests
   - blog
   - api
   #- contact

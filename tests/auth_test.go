@@ -73,7 +73,6 @@ func TestLogin(t *testing.T) {
 	// run test
 	for _, test := range tests {
 		fn := func(t *testing.T) {
-
 			var b bytes.Buffer
 			json.NewEncoder(&b).Encode(test.RequestBody)
 
@@ -104,5 +103,4 @@ func TestLogin(t *testing.T) {
 
 		t.Run(test.Name, fn)
 	}
-	
 }
