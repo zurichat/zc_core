@@ -31,9 +31,9 @@ type Reaction struct {
 
 type Message struct {
 	Content     MessageContent       `json:"content,omitempty" bson:"content,omitempty"`
-	SenderId    primitive.ObjectID   `json:"senderid,omitempty" bson:"senderid,omitempty"`
+	SenderID    primitive.ObjectID   `json:"senderid,omitempty" bson:"senderid,omitempty"`
 	SenderName  string               `json:"sendername,omitempty" bson:"sendername,omitempty"`
-	RoomId      primitive.ObjectID   `json:"roomid,omitempty" bson:"roomid,omitempty"`
+	RoomID      primitive.ObjectID   `json:"roomid,omitempty" bson:"roomid,omitempty"`
 	CreatedAt   string               `json:"createdat,omitempty" bson:"createdat,omitempty"`
 	Read        string               `json:"read,omitempty" bson:"read,omitempty"` // true or false
 	ReadAt      string               `json:"readat,omitempty" bson:"readat,omitempty"`
@@ -45,7 +45,7 @@ type Message struct {
 	ReceivedBy  []primitive.ObjectID `json:"receivedby,omitempty" bson:"receivedby,omitempty"`
 	Reactions   []Reaction           `json:"reactions,omitempty" bson:"reactions,omitempty"`
 	MessageType string               `json:"messagetype,omitempty" bson:"messagetype,omitempty"` // message/comment
-	MessageId   primitive.ObjectID   `json:"messageid,omitempty" bson:"messageid,omitempty"`
+	MessageID   primitive.ObjectID   `json:"messageid,omitempty" bson:"messageid,omitempty"`
 }
 
 // type MessageResponse struct {
@@ -94,5 +94,6 @@ func GetMessageSuccess(msg string, data interface{}) interface{} {
 		StatusCode: http.StatusOK,
 		Data:       data,
 	}
+	
 	return response
 }
