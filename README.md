@@ -36,16 +36,27 @@ To get a local copy up and running follow these simple example steps.
 ### Installation
 1. Run an instance of MongoDB
 ```bash
-mongod
+$ mongod
 ```
-2. Run zc_core from project root directory
+2. Create and populate a `.env` file with its keys corresponding values as listed in `example.env`
+3. Run zc_core from project root directory
 ```bash
-go run main.go
+$ cd /path/to/zc_core
+$ go run main.go
 ```
 ### Usage
 
 ### Testing
-golangci-lint run
+1. Lint checks are done with golangci-lint
+```bash
+$ cd /path/to/zc_core
+$ golangci-lint run
+```
+2. Automated unit and integration tests done with golang's builtin [`testing`](https://pkg.go.dev/testing) package. Single test files, test files in a package, 
+```bash
+WIP
+```
+
 
 ## Contributing
 
@@ -54,5 +65,6 @@ Pull requests are welcome from the zc_core_main team. Please review the issues c
 1. Fork/Clone the Project
 2. Create your Feature Branch (`git checkout -b [branch name]`)
 3. Commit your Changes (`git commit -m Add some amazing features`)
+4. Lint your Changes
 4. Push to the Branch (`git push origin [branch name]`)
 5. Open a Pull Request
