@@ -275,7 +275,10 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 
 			//nolint:gocritic //Grego: I need to reference
 			// findOptions.SetProjection(bson.D{{"_id", 0}, {"image_url", 1}})
-			orgMembersimages, err := utils.GetMongoDbDocs(MemberCollectionName, bson.M{"org_id": orgid}, findOptions)
+			ne, ccfilter := make(map[string]interface{}), make(map[string]interface{})
+			ne["$ne"] = ""
+			ccfilter["image_url"], ccfilter["org_id"] = ne, orgid
+			orgMembersimages, err := utils.GetMongoDbDocs(MemberCollectionName, ccfilter, findOptions)
 
 			for _, member := range orgMembersimages {
 				memberImgs = append(memberImgs, member["image_url"])
@@ -306,8 +309,8 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 		}
 
 		orgDetails := orgDetailsData.Bson
-		basic["imgs"], basic["id"], basic["logo_url"], basic["name"], basic["workspace_url"] = basicimagesdata.Interfaces, orgDetails["_id"], orgDetails["logo_url"], orgDetails["name"], orgDetails["workspace_url"]
-
+		basic["imgs"], basic["id"], basic["logo_url"] = basicimagesdata.Interfaces, orgDetails["_id"], orgDetails["logo_url"]
+		basic["name"], basic["workspace_url"] = orgDetails["name"], orgDetails["workspace_url"]
 		orgs = append(orgs, basic)
 	}
 
