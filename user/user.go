@@ -34,7 +34,7 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 	response.Header().Add("content-type", "application/json")
 
 	var user User
-	err := utils.ParseJsonFromRequest(request, &user)
+	err := utils.ParseJSONFromRequest(request, &user)
 
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, response)
@@ -48,7 +48,7 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 	}
 
 	// confirm if user_email exists
-	result, _ := utils.GetMongoDbDoc(UserCollectionName, bson.M{"email": userEmail})
+	result, _ := utils.GetMongoDBDoc(UserCollectionName, bson.M{"email": userEmail})
 	if result != nil {
 		utils.GetError(
 			fmt.Errorf("user with email %s exists", userEmail),
@@ -80,7 +80,7 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 	user.Timezone = "Africa/Lagos" // set default timezone
 	detail, _ := utils.StructToMap(user)
 
-	res, err := utils.CreateMongoDbDoc(UserCollectionName, detail)
+	res, err := utils.CreateMongoDBDoc(UserCollectionName, detail)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, response)
@@ -113,7 +113,7 @@ func (uh *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	userID := params["user_id"]
 
 	deactivateUpdate := bson.M{"deactivated": true, "deactivated_at": time.Now()}
-	deactivate, err := utils.UpdateOneMongoDbDoc(UserCollectionName, userID, deactivateUpdate)
+	deactivate, err := utils.UpdateOneMongoDBDoc(UserCollectionName, userID, deactivateUpdate)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
@@ -144,7 +144,7 @@ func (uh *UserHandler) GetUser(response http.ResponseWriter, request *http.Reque
 		return
 	}
 
-	res, err := utils.GetMongoDbDoc(UserCollectionName, bson.M{"_id": objID, "deactivated": false})
+	res, err := utils.GetMongoDBDoc(UserCollectionName, bson.M{"_id": objID, "deactivated": false})
 
 	if err != nil {
 		utils.GetError(errors.New("user not found"), http.StatusNotFound, response)
@@ -168,7 +168,7 @@ func (uh *UserHandler) UpdateUser(response http.ResponseWriter, request *http.Re
 		return
 	}
 
-	userExist, err := utils.GetMongoDbDoc(UserCollectionName, bson.M{"_id": objID})
+	userExist, err := utils.GetMongoDBDoc(UserCollectionName, bson.M{"_id": objID})
 
 	if err != nil {
 		utils.GetError(errors.New("user does not exist"), http.StatusNotFound, response)
@@ -181,7 +181,7 @@ func (uh *UserHandler) UpdateUser(response http.ResponseWriter, request *http.Re
 	}
 
 	var user UserUpdate
-	if err = utils.ParseJsonFromRequest(request, &user); err != nil {
+	if err = utils.ParseJSONFromRequest(request, &user); err != nil {
 		utils.GetError(errors.New("bad update data"), http.StatusUnprocessableEntity, response)
 		return
 	}
@@ -205,7 +205,7 @@ func (uh *UserHandler) UpdateUser(response http.ResponseWriter, request *http.Re
 		return
 	}
 
-	_, err = utils.UpdateOneMongoDbDoc(UserCollectionName, userID, updateFields)
+	_, err = utils.UpdateOneMongoDBDoc(UserCollectionName, userID, updateFields)
 
 	if err != nil {
 		utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, response)
@@ -222,7 +222,7 @@ func (uh *UserHandler) GetUsers(response http.ResponseWriter, request *http.Requ
 	response.Header().Set("Access-Control-Allow-Headers", "Content-Type,access-control-allow-origin, access-control-allow-headers")
 	response.Header().Set("content-type", "application/json")
 
-	res, _ := utils.GetMongoDbDocs(UserCollectionName, bson.M{"deactivated": false})
+	res, _ := utils.GetMongoDBDocs(UserCollectionName, bson.M{"deactivated": false})
 
 	for _, doc := range res {
 		DeleteMapProps(doc, []string{"password"})
@@ -244,7 +244,7 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 	}
 
 	// find user email in members collection.
-	result, _ := utils.GetMongoDbDocs(MemberCollectionName, bson.M{"email": userEmail, "deleted": false})
+	result, _ := utils.GetMongoDBDocs(MemberCollectionName, bson.M{"email": userEmail, "deleted": false})
 
 	orgs := make([]map[string]interface{}, 0)
 
@@ -260,7 +260,7 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 		ImageUrlsChannel := make(chan GUOCR)
 
 		go func() {
-			orgMembers, err := utils.GetMongoDbDocs(MemberCollectionName, bson.M{"org_id": orgid})
+			orgMembers, err := utils.GetMongoDBDocs(MemberCollectionName, bson.M{"org_id": orgid})
 			resp := GUOCR{
 				Err:      err,
 				Interger: len(orgMembers),
@@ -275,6 +275,7 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 
 			//nolint:gocritic //Grego: I need to reference
 			// findOptions.SetProjection(bson.D{{"_id", 0}, {"image_url", 1}})
+
 			ne, ccfilter := make(map[string]interface{}), make(map[string]interface{})
 			ne["$ne"] = ""
 			ccfilter["image_url"], ccfilter["org_id"] = ne, orgid
@@ -292,7 +293,7 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 		}(imageLimit)
 
 		go func() {
-			orgDetailsrt, err := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": objID})
+			orgDetailsrt, err := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
 			resp := GUOCR{
 				Err:  err,
 				Bson: orgDetailsrt,
@@ -322,8 +323,8 @@ func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request
 	w.Header().Add("content-type", "application/json")
 
 	var uRequest UUIDUserData
-	err := utils.ParseJsonFromRequest(r, &uRequest)
 
+	err := utils.ParseJSONFromRequest(r, &uRequest)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
@@ -337,7 +338,7 @@ func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request
 	}
 
 	// Check that UUID exists
-	res, err := utils.GetMongoDbDoc(OrganizationsInvitesCollectionName, bson.M{"uuid": uRequest.UUID})
+	res, err := utils.GetMongoDBDoc(OrganizationsInvitesCollectionName, bson.M{"uuid": uRequest.UUID})
 	if err != nil {
 		utils.GetError(errors.New("uuid does not exist"), http.StatusBadRequest, w)
 		return
@@ -353,7 +354,7 @@ func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request
 	}
 
 	// Check if user_email exists
-	result, _ := utils.GetMongoDbDoc(UserCollectionName, bson.M{"email": userEmail})
+	result, _ := utils.GetMongoDBDoc(UserCollectionName, bson.M{"email": userEmail})
 	if result != nil {
 		utils.GetError(
 			fmt.Errorf("user with email %s exists", userEmail),
@@ -390,7 +391,7 @@ func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request
 
 	// Save user to DB
 	data, _ := utils.StructToMap(user)
-	resp, err := utils.CreateMongoDbDoc(UserCollectionName, data)
+	resp, err := utils.CreateMongoDBDoc(UserCollectionName, data)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)

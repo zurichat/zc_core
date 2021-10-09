@@ -1,25 +1,26 @@
 package utils
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/spf13/viper"
 )
 
-// centralize config file using viper
+// centralize config file using viper.
 type Configurations struct {
-	ClusterUrl          string
-	DbName              string
+	ClusterURL          string
+	DBName              string
 	SecretKey           string
 	SessionKey          string
-	SessionDbCollection string
+	SessionDBCollection string
 	SessionMaxAge       int
-	UserDbCollection    string
-	SendGridApiKey      string
+	UserDBCollection    string
+	SendGridAPIKey      string
 
 	ESPType       string
-	SmtpUsername  string
-	SmtpPassword  string
+	SMTPUsername  string
+	SMTPPassword  string
 	SendgridEmail string
 
 	MailGunKey         string
@@ -32,15 +33,15 @@ type Configurations struct {
 	DownloadClientTemplate     string
 	WorkspaceInviteTemplate    string
 	TokenBillingNoticeTemplate string
-	WorkSpaceInviteTemplate	   string
+	WorkSpaceInviteTemplate    string
 	WorkSpaceWelcomeTemplate   string
 
 	CentrifugoKey      string
 	CentrifugoEndpoint string
 
-	GoogleOAuthUrl   string
-	GoogleOAuthV3Url string
-	FacebookOAuthUrl string
+	GoogleOAuthURL   string
+	GoogleOAuthV3URL string
+	FacebookOAuthURL string
 
 	HmacSampleSecret string
 }
@@ -50,7 +51,10 @@ func NewConfigurations() *Configurations {
 	viper.AddConfigPath(".")
 	viper.SetConfigName(".env")
 	viper.SetConfigType("env")
-	viper.ReadInConfig()
+
+	if err := viper.ReadInConfig(); err != nil {
+		fmt.Println("could not read in config")
+	}
 
 	viper.AutomaticEnv()
 
@@ -73,14 +77,14 @@ func NewConfigurations() *Configurations {
 	viper.SetDefault("GOOGLE_OAUTH_V3", "https://www.googleapis.com/oauth2/v3/userinfo?access_token=:access_token")
 
 	configs := &Configurations{
-		ClusterUrl:          mgURL,
-		DbName:              viper.GetString("DB_NAME"),
+		ClusterURL:          mgURL,
+		DBName:              viper.GetString("DB_NAME"),
 		SecretKey:           viper.GetString("SECRET_KEY"),
 		SessionKey:          viper.GetString("SESSION_KEY"),
-		SessionDbCollection: viper.GetString("SESSION_COLLECTION"),
+		SessionDBCollection: viper.GetString("SESSION_COLLECTION"),
 		SessionMaxAge:       viper.GetInt("SESSION_MAX_AGE"),
-		UserDbCollection:    viper.GetString("USER_COLLECTION"),
-		SendGridApiKey:      viper.GetString("SENDGRID_API_KEY"),
+		UserDBCollection:    viper.GetString("USER_COLLECTION"),
+		SendGridAPIKey:      viper.GetString("SENDGRID_API_KEY"),
 		ESPType:             viper.GetString("ESP_TYPE"),
 
 		ConfirmEmailTemplate:       viper.GetString("CONFIRM_EMAIL_TEMPLATE"),
@@ -89,12 +93,11 @@ func NewConfigurations() *Configurations {
 		WorkspaceInviteTemplate:    viper.GetString("WORKSPACE_INVITE_TEMPLATE"),
 		EmailSubscriptionTemplate:  viper.GetString("EMAIL_SUBSCRIPTION_TEMPLATE"),
 		TokenBillingNoticeTemplate: viper.GetString("TOKEN_BILLING_NOTICE_TEMPLATE"),
-		WorkSpaceInviteTemplate: 	viper.GetString("WORKSPACE_INVITE_TEMPLATE"),
-		WorkSpaceWelcomeTemplate: 	viper.GetString("WORKSPACE_WELCOME_TEMPLATE"),
+		WorkSpaceInviteTemplate:    viper.GetString("WORKSPACE_INVITE_TEMPLATE"),
+		WorkSpaceWelcomeTemplate:   viper.GetString("WORKSPACE_WELCOME_TEMPLATE"),
 
-
-		SmtpUsername:  viper.GetString("SMTP_USERNAME"),
-		SmtpPassword:  viper.GetString("SMTP_PASSWORD"),
+		SMTPUsername:  viper.GetString("SMTP_USERNAME"),
+		SMTPPassword:  viper.GetString("SMTP_PASSWORD"),
 		SendgridEmail: viper.GetString("SENDGRID_EMAIL"),
 
 		MailGunKey:         viper.GetString("MAILGUN_KEY"),
@@ -104,9 +107,9 @@ func NewConfigurations() *Configurations {
 		CentrifugoKey:      viper.GetString("CENTRIFUGO_KEY"),
 		CentrifugoEndpoint: viper.GetString("CENTRIFUGO_ENDPOINT"),
 
-		GoogleOAuthUrl:   viper.GetString("GOOGLE_OAUTH"),
-		GoogleOAuthV3Url: viper.GetString("GOOGLE_OAUTH_V3"),
-		FacebookOAuthUrl: viper.GetString("FACEBOOK_OAUTH"),
+		GoogleOAuthURL:   viper.GetString("GOOGLE_OAUTH"),
+		GoogleOAuthV3URL: viper.GetString("GOOGLE_OAUTH_V3"),
+		FacebookOAuthURL: viper.GetString("FACEBOOK_OAUTH"),
 
 		HmacSampleSecret: viper.GetString("HMAC_SECRET"),
 	}

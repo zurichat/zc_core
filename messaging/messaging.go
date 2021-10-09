@@ -25,9 +25,14 @@ func Connect(s socketio.Conn) {
 
 	if iid == 1 {
 		Dbname := utils.Env("DB_NAME")
+<<<<<<< HEAD
+		RoomCollection, er := utils.GetMongoDBCollection(Dbname, "rooms")
+		if er != nil {
+=======
 		RoomCollection, er := utils.GetMongoDbCollection(Dbname, "rooms")
 
 	if er != nil {
+>>>>>>> bb99b9e3a1dd2cc66340842f09b38a2253bfecc1
 			log.Fatal(er)
 	}
 
@@ -61,7 +66,7 @@ func EnterDefaultConversation(server *socketio.Server, s socketio.Conn, msg stri
 	var filtered []bson.M
 
 	Dbname := utils.Env("DB_NAME")
-	MessageCollection, _ := utils.GetMongoDbCollection(Dbname, "messages")
+	MessageCollection, _ := utils.GetMongoDBCollection(Dbname, "messages")
 	filterCursor, err := MessageCollection.Find(context.TODO(), bson.M{"roomid": cid})
 
 	if err != nil {
@@ -99,7 +104,7 @@ func BroadCastToDefaultConversation(server *socketio.Server, s socketio.Conn, ms
 	}
 
 	Dbname := utils.Env("DB_NAME")
-	MessageCollection, _ := utils.GetMongoDbCollection(Dbname, "messages")
+	MessageCollection, _ := utils.GetMongoDBCollection(Dbname, "messages")
 	_, err := MessageCollection.InsertOne(context.TODO(), NewMessage)
 
 	if err != nil {
@@ -163,8 +168,12 @@ func CreateRoom(server *socketio.Server, s socketio.Conn, msg string) {
 		}
 
 		Dbname := utils.Env("DB_NAME")
+<<<<<<< HEAD
+		RoomCollection, er := utils.GetMongoDBCollection(Dbname, "rooms")
+=======
 		RoomCollection, er := utils.GetMongoDbCollection(Dbname, "rooms")
 	
+>>>>>>> bb99b9e3a1dd2cc66340842f09b38a2253bfecc1
 		if er != nil {
 			response := GetCustomMessageError(fmt.Sprintf("%v", er), ERRORCODE)
 			s.Emit("create_room", response)
@@ -198,7 +207,7 @@ func EnterRoom(server *socketio.Server, s socketio.Conn, msg string) {
 	var filtered []bson.M
 	
 	Dbname := utils.Env("DB_NAME")
-	MessageCollection, _ := utils.GetMongoDbCollection(Dbname, "messages")
+	MessageCollection, _ := utils.GetMongoDBCollection(Dbname, "messages")
 	filterCursor, err := MessageCollection.Find(context.TODO(), bson.M{"roomid": rid})
 	
 	if err != nil {
@@ -231,7 +240,7 @@ func LeaveRoom(server *socketio.Server, s socketio.Conn, msg string) {
 	
 	Dbname := utils.Env("DB_NAME")
 
-	MessageCollection, _ := utils.GetMongoDbCollection(Dbname, "messages")
+	MessageCollection, _ := utils.GetMongoDBCollection(Dbname, "messages")
 	_, err := MessageCollection.DeleteMany(context.TODO(), bson.M{"roomid": RoomID})
 	
 	if err != nil {

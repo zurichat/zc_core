@@ -32,7 +32,7 @@ func (oh *OrganizationHandler) GetMember(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	orgMember, err := utils.GetMongoDbDoc(MemberCollectionName, bson.M{
+	orgMember, err := utils.GetMongoDBDoc(MemberCollectionName, bson.M{
 		"org_id":  orgID,
 		"_id":     memberIDhex,
 		"deleted": bson.M{"$ne": true},
@@ -44,7 +44,7 @@ func (oh *OrganizationHandler) GetMember(w http.ResponseWriter, r *http.Request)
 	}
 
 	var member Member
-	
+
 	err = utils.ConvertStructure(orgMember, &member)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
@@ -93,13 +93,13 @@ func (oh *OrganizationHandler) GetMembers(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	orgMembers, err := utils.GetMongoDbDocs(MemberCollectionName, filter)
+	orgMembers, err := utils.GetMongoDBDocs(MemberCollectionName, filter)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
-	
+
 	utils.GetSuccess("Members retrieved successfully", orgMembers, w)
 }
 
@@ -116,7 +116,7 @@ func (oh *OrganizationHandler) CreateMember(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Get data from request json
-	if err = utils.ParseJsonFromRequest(r, &RequestData); err != nil {
+	if err = utils.ParseJSONFromRequest(r, &RequestData); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
@@ -136,23 +136,23 @@ func (oh *OrganizationHandler) CreateMember(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	userDoc, _ := utils.GetMongoDbDoc(UserCollectionName, bson.M{"email": newUserEmail})
+	userDoc, _ := utils.GetMongoDBDoc(UserCollectionName, bson.M{"email": newUserEmail})
 	if userDoc == nil {
 		fmt.Printf("user with email %s doesn't exist! Register User to Proceed", newUserEmail)
 		utils.GetError(errors.New("user with email "+newUserEmail+" doesn't exist! Register User to Proceed"), http.StatusBadRequest, w)
-		
+
 		return
 	}
-	
+
 	type GUser struct {
 		ID            primitive.ObjectID
 		Email         string
 		Organizations []string
 	}
-	
+
 	// convert user to struct
 	var guser GUser
-	
+
 	err = mapstructure.Decode(userDoc, &guser)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
@@ -162,26 +162,26 @@ func (oh *OrganizationHandler) CreateMember(w http.ResponseWriter, r *http.Reque
 	user, _ := auth.FetchUserByEmail(bson.M{"email": strings.ToLower(newUserEmail)})
 
 	// get organization
-	orgDoc, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": orgID})
+	orgDoc, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgID})
 	if orgDoc == nil {
 		fmt.Printf("organization with id %s doesn't exist!", orgID.String())
 		utils.GetError(errors.New("organization with id "+sOrgID+" doesn't exist!"), http.StatusBadRequest, w)
-		
+
 		return
 	}
 
 	// check that member isn't already in the organization
-	memDoc, _ := utils.GetMongoDbDocs(MemberCollectionName, bson.M{"org_id": sOrgID, "email": newUserEmail})
+	memDoc, _ := utils.GetMongoDBDocs(MemberCollectionName, bson.M{"org_id": sOrgID, "email": newUserEmail})
 	if memDoc != nil {
 		fmt.Printf("organization %s has member with email %s!", orgID.String(), newUserEmail)
 		utils.GetError(errors.New("user is already in this organization"), http.StatusBadRequest, w)
-		
+
 		return
 	}
 
 	// convert org to struct
 	var org Organization
-	
+
 	err = mapstructure.Decode(orgDoc, &org)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
@@ -200,12 +200,12 @@ func (oh *OrganizationHandler) CreateMember(w http.ResponseWriter, r *http.Reque
 
 	// update user organizations collection
 	updateFields := make(map[string]interface{})
-	
+
 	user.Organizations = append(user.Organizations, sOrgID)
-	
+
 	updateFields["Organizations"] = user.Organizations
-	
-	_, eerr := utils.UpdateOneMongoDbDoc(UserCollectionName, user.ID, updateFields)
+
+	_, eerr := utils.UpdateOneMongoDBDoc(UserCollectionName, user.ID, updateFields)
 	if eerr != nil {
 		utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, w)
 		return
@@ -214,7 +214,7 @@ func (oh *OrganizationHandler) CreateMember(w http.ResponseWriter, r *http.Reque
 	// publish update to subscriber
 	eventChannel := fmt.Sprintf("organizations_%s", orgID)
 	event := utils.Event{Identifier: res.InsertedID, Type: "User", Event: CreateOrganizationMember, Channel: eventChannel, Payload: make(map[string]interface{})}
-	
+
 	go utils.Emitter(event)
 
 	utils.GetSuccess("Member created successfully", utils.M{"member_id": res.InsertedID}, w)
@@ -240,9 +240,9 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
-	
+
 	if mux.Vars(r)["action"] == "delete" {
-		result, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberID, bson.M{"image_url": ""})
+		result, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, bson.M{"image_url": ""})
 
 		if err != nil {
 			utils.GetError(err, http.StatusInternalServerError, w)
@@ -253,7 +253,7 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 			utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 			return
 		}
-		
+
 		utils.GetSuccess("image deleted successfully", "", w)
 	} else {
 		uploadPath := "profile_image/" + orgID + "/" + memberID
@@ -263,7 +263,7 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 			return
 		}
 
-		result, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberID, bson.M{"image_url": imgURL})
+		result, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, bson.M{"image_url": imgURL})
 
 		if err != nil {
 			utils.GetError(err, http.StatusInternalServerError, w)
@@ -274,14 +274,14 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 			utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 			return
 		}
-		
+
 		utils.GetSuccess("image updated successfully", imgURL, w)
 	}
 
 	// publish update to subscriber
 	eventChannel := fmt.Sprintf("organizations_%s", orgID)
 	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberPic, Channel: eventChannel, Payload: make(map[string]interface{})}
-	
+
 	go utils.Emitter(event)
 }
 
@@ -309,7 +309,7 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 
 	// Get data from requestbody
 	var status Status
-	if err = utils.ParseJsonFromRequest(r, &status); err != nil {
+	if err = utils.ParseJSONFromRequest(r, &status); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
@@ -326,7 +326,7 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 	}
 
 	currentTime := time.Now().Local()
-	
+
 	switch set := status.ExpiryTime; set {
 	case DontClear:
 
@@ -345,7 +345,7 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 	case Today:
 		minutesPerHr := 60
 		hrsPerDay := 24
-		period := minutesPerHr *(hrsPerDay-currentTime.Hour())
+		period := minutesPerHr * (hrsPerDay - currentTime.Hour())
 
 		go ClearStatus(orgID, memberID, period)
 
@@ -358,7 +358,7 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		weekday := daysPerWeek - day
 
 		period := weekday * hrsPerDay * minutesPerHr
-		
+
 		go ClearStatus(orgID, memberID, period)
 
 	default:
@@ -376,7 +376,7 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 	memberStatus["status"] = statusUpdate
 
 	// updates member status
-	result, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberID, memberStatus)
+	result, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberStatus)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
@@ -390,9 +390,9 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 	// publish update to subscriber
 	eventChannel := fmt.Sprintf("organizations_%s", orgID)
 	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberStatus, Channel: eventChannel, Payload: make(map[string]interface{})}
-	
+
 	go utils.Emitter(event)
-	
+
 	utils.GetSuccess("status updated successfully", nil, w)
 }
 
@@ -418,7 +418,7 @@ func (oh *OrganizationHandler) DeactivateMember(w http.ResponseWriter, r *http.R
 	}
 
 	deleteUpdate := bson.M{"deleted": true, "deleted_at": time.Now()}
-	res, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberID, deleteUpdate)
+	res, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, deleteUpdate)
 
 	if err != nil {
 		utils.GetError(fmt.Errorf("an error occurred: %s", err), http.StatusInternalServerError, w)
@@ -432,7 +432,7 @@ func (oh *OrganizationHandler) DeactivateMember(w http.ResponseWriter, r *http.R
 	// publish update to subscriber
 	eventChannel := fmt.Sprintf("organizations_%s", orgID)
 	event := utils.Event{Identifier: memberID, Type: "User", Event: DeactivateOrganizationMember, Channel: eventChannel, Payload: make(map[string]interface{})}
-	
+
 	go utils.Emitter(event)
 
 	utils.GetSuccess("successfully deactivated member", nil, w)
@@ -461,8 +461,8 @@ func (oh *OrganizationHandler) UpdateProfile(w http.ResponseWriter, r *http.Requ
 
 	// Get data from request
 	var memberProfile Profile
-	
-	err = utils.ParseJsonFromRequest(r, &memberProfile)
+
+	err = utils.ParseJSONFromRequest(r, &memberProfile)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
@@ -482,7 +482,7 @@ func (oh *OrganizationHandler) UpdateProfile(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Fetch and update the MemberDoc from collection
-	update, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberID, mProfile)
+	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, mProfile)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
@@ -496,7 +496,7 @@ func (oh *OrganizationHandler) UpdateProfile(w http.ResponseWriter, r *http.Requ
 	// publish update to subscriber
 	eventChannel := fmt.Sprintf("organizations_%s", orgID)
 	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberProfile, Channel: eventChannel, Payload: make(map[string]interface{})}
-	
+
 	go utils.Emitter(event)
 
 	utils.GetSuccess("Member Profile updated successfully", nil, w)
@@ -523,16 +523,16 @@ func (oh *OrganizationHandler) TogglePresence(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	memberDoc, _ := utils.GetMongoDbDoc(MemberCollectionName, bson.M{"_id": pMemID, "org_id": orgID})
+	memberDoc, _ := utils.GetMongoDBDoc(MemberCollectionName, bson.M{"_id": pMemID, "org_id": orgID})
 	if memberDoc == nil {
 		fmt.Printf("member with id %s doesn't exist!", memID)
 		utils.GetError(errors.New("member with id doesn't exist"), http.StatusBadRequest, w)
-		
+
 		return
 	}
 
 	orgFilter := make(map[string]interface{})
-	
+
 	if memberDoc["presence"] == "true" {
 		orgFilter["presence"] = "false"
 	} else {
@@ -540,7 +540,7 @@ func (oh *OrganizationHandler) TogglePresence(w http.ResponseWriter, r *http.Req
 	}
 
 	// update the presence field of the member
-	update, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memID, orgFilter)
+	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memID, orgFilter)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
@@ -554,7 +554,7 @@ func (oh *OrganizationHandler) TogglePresence(w http.ResponseWriter, r *http.Req
 	// publish update to subscriber
 	eventChannel := fmt.Sprintf("organizations_%s", orgID)
 	event := utils.Event{Identifier: memID, Type: "User", Event: UpdateOrganizationMemberPresence, Channel: eventChannel, Payload: make(map[string]interface{})}
-	
+
 	go utils.Emitter(event)
 
 	utils.GetSuccess("Member presence toggled", nil, w)
@@ -582,8 +582,8 @@ func (oh *OrganizationHandler) UpdateMemberSettings(w http.ResponseWriter, r *ht
 
 	// Parse request from incoming payload
 	var settings Settings
-	
-	err = utils.ParseJsonFromRequest(r, &settings)
+
+	err = utils.ParseJSONFromRequest(r, &settings)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
@@ -600,7 +600,7 @@ func (oh *OrganizationHandler) UpdateMemberSettings(w http.ResponseWriter, r *ht
 	memberSettings["settings"] = pSettings
 
 	// fetch and update the document
-	update, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberID, memberSettings)
+	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberSettings)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
@@ -614,7 +614,7 @@ func (oh *OrganizationHandler) UpdateMemberSettings(w http.ResponseWriter, r *ht
 	// publish update to subscriber
 	eventChannel := fmt.Sprintf("organizations_%s", orgID)
 	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberSettings, Channel: eventChannel, Payload: make(map[string]interface{})}
-	
+
 	go utils.Emitter(event)
 
 	utils.GetSuccess("Member settings updated successfully", nil, w)
@@ -641,11 +641,11 @@ func (oh *OrganizationHandler) ReactivateMember(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	memberDoc, _ := utils.GetMongoDbDoc(MemberCollectionName, bson.M{"_id": pMemID, "org_id": orgID})
+	memberDoc, _ := utils.GetMongoDBDoc(MemberCollectionName, bson.M{"_id": pMemID, "org_id": orgID})
 	if memberDoc == nil {
 		fmt.Printf("member with id %s doesn't exist!", memberID)
 		utils.GetError(errors.New("member with id doesn't exist"), http.StatusBadRequest, w)
-		
+
 		return
 	}
 
@@ -655,7 +655,7 @@ func (oh *OrganizationHandler) ReactivateMember(w http.ResponseWriter, r *http.R
 	}
 
 	ActivatedMember := bson.M{"deleted": false, "deleted_at": time.Time{}}
-	res, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberID, ActivatedMember)
+	res, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, ActivatedMember)
 
 	if err != nil {
 		utils.GetError(fmt.Errorf("an error occurred: %s", err), http.StatusInternalServerError, w)
@@ -669,9 +669,9 @@ func (oh *OrganizationHandler) ReactivateMember(w http.ResponseWriter, r *http.R
 	// publish update to subscriber
 	eventChannel := fmt.Sprintf("organizations_%s", orgID)
 	event := utils.Event{Identifier: memberID, Type: "User", Event: ReactivateOrganizationMember, Channel: eventChannel, Payload: make(map[string]interface{})}
-	
+
 	go utils.Emitter(event)
-	
+
 	utils.GetSuccess("successfully reactivated member", nil, w)
 }
 
@@ -682,33 +682,33 @@ func (oh *OrganizationHandler) CheckGuestStatus(w http.ResponseWriter, r *http.R
 	// 0. Extract and validate UUID
 	guestUUID := mux.Vars(r)["uuid"]
 	_, err := utils.ValidateUUID(guestUUID)
-	
+
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
 
 	// 1. Query organization invites collection for uuid
-	res, err := utils.GetMongoDbDoc(OrganizationInviteCollection, bson.M{"uuid": guestUUID})
+	res, err := utils.GetMongoDBDoc(OrganizationInviteCollection, bson.M{"uuid": guestUUID})
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
-	
+
 	// 2. Check if email already is registered in zurichat (return 403 user already exist)
 	guestEmail := res["email"]
-	_, err = utils.GetMongoDbDoc(UserCollectionName, bson.M{"email": guestEmail})
-	
+	_, err = utils.GetMongoDBDoc(UserCollectionName, bson.M{"email": guestEmail})
+
 	if err != nil {
 		utils.GetError(
 			errors.New("guest status: user does not exist on zurichat"),
 			http.StatusNotFound,
 			w,
 		)
-		
+
 		return
 	}
-	
+
 	// 3. If email does not exist, add to
 	utils.GetSuccess("guest status: user exist on zurichat", "protected", w)
 }
@@ -725,34 +725,33 @@ func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *htt
 		return
 	}
 
-	res, err := utils.GetMongoDbDoc(OrganizationInviteCollection, bson.M{"uuid": gUUID})
+	res, err := utils.GetMongoDBDoc(OrganizationInviteCollection, bson.M{"uuid": gUUID})
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
 
 	// // TODO 0: Check that organization exists
-	orgID, ok:= res["org_id"].(string)
+	orgID, ok := res["org_id"].(string)
 	if !ok {
 		utils.GetError(errors.New("invalid email address"), http.StatusBadRequest, w)
 		return
 	}
 
-
 	validOrgID, err := primitive.ObjectIDFromHex(orgID)
-	
+
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
 		return
 	}
 
-	orgDoc, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": validOrgID})
+	orgDoc, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": validOrgID})
 	if orgDoc == nil {
 		utils.GetError(errors.New("organization with id "+orgID+" doesn't exist!"), http.StatusBadRequest, w)
 		return
 	}
 
-	email, ok := res["email"].(string) 
+	email, ok := res["email"].(string)
 	if !ok {
 		utils.GetError(errors.New("invalid email address"), http.StatusBadRequest, w)
 		return
@@ -772,7 +771,7 @@ func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *htt
 	}
 
 	// TODO 4: Check that guest does not already exist (as a member) in organization
-	memDoc, err := utils.GetMongoDbDocs(MemberCollectionName, bson.M{"org_id": orgID, "email": user.Email})
+	memDoc, err := utils.GetMongoDBDocs(MemberCollectionName, bson.M{"org_id": orgID, "email": user.Email})
 	if memDoc != nil && err == nil {
 		utils.GetError(errors.New("user is already in this organization"), http.StatusBadRequest, w)
 		return
@@ -793,14 +792,14 @@ func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *htt
 		Settings: setting,
 		Deleted:  false,
 	}
-	
+
 	data, err := utils.StructToMap(memberStruct)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
 
-	resp, err := utils.CreateMongoDbDoc(MemberCollectionName, data)
+	resp, err := utils.CreateMongoDBDoc(MemberCollectionName, data)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
@@ -809,7 +808,7 @@ func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *htt
 	// TODO 6: Add member to organization
 	organizationStruct := new(Organization)
 	err = mapstructure.Decode(orgDoc, &organizationStruct)
-	
+
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
@@ -817,12 +816,12 @@ func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *htt
 
 	// update user organizations collection
 	updateFields := make(map[string]interface{})
-	
+
 	user.Organizations = append(user.Organizations, validOrgID.Hex())
-	
+
 	updateFields["Organizations"] = user.Organizations
-	_, err = utils.UpdateOneMongoDbDoc(UserCollectionName, user.ID, updateFields)
-	
+	_, err = utils.UpdateOneMongoDBDoc(UserCollectionName, user.ID, updateFields)
+
 	if err != nil {
 		utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, w)
 		return
@@ -850,7 +849,7 @@ func (oh *OrganizationHandler) UpdateMemberRole(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if err = utils.ParseJsonFromRequest(r, &RequestData); err != nil {
+	if err = utils.ParseJSONFromRequest(r, &RequestData); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
@@ -869,14 +868,14 @@ func (oh *OrganizationHandler) UpdateMemberRole(w http.ResponseWriter, r *http.R
 	if orgMember.Role == role {
 		errorMessage := fmt.Sprintf("member role is already %s", role)
 		utils.GetError(errors.New(errorMessage), http.StatusBadRequest, w)
-		
+
 		return
 	}
 
 	// ID of the user whose role is being updated
 	memberIDHex := orgMember.ID.Hex()
 
-	updateRes, err := utils.UpdateOneMongoDbDoc(MemberCollectionName, memberIDHex, bson.M{"role": role})
+	updateRes, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberIDHex, bson.M{"role": role})
 
 	if err != nil {
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
@@ -891,7 +890,7 @@ func (oh *OrganizationHandler) UpdateMemberRole(w http.ResponseWriter, r *http.R
 	// publish update to subscriber
 	eventChannel := fmt.Sprintf("organizations_%s", orgID)
 	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberRole, Channel: eventChannel, Payload: make(map[string]interface{})}
-	
+
 	go utils.Emitter(event)
 
 	utils.GetSuccess("member role updated successfully", nil, w)
