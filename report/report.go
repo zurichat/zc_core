@@ -13,7 +13,7 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
-// Add a report
+// Add a report.
 func AddReport(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -25,22 +25,22 @@ func AddReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orgId := mux.Vars(r)["id"]
-	objId, err := primitive.ObjectIDFromHex(orgId)
+	orgID := mux.Vars(r)["id"]
+	objID, err := primitive.ObjectIDFromHex(orgID)
 
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
 		return
 	}
 
-	org_collection, member_collection := "organizations", "members"
-	orgDoc, _ := utils.GetMongoDBDoc(org_collection, bson.M{"_id": objId})
+	orgDoc, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
+
 	if orgDoc == nil {
-		utils.GetError(errors.New("organization with id "+orgId+" doesn't exist!"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("organization with id "+orgID+" doesn't exist!"), http.StatusBadRequest, w)
 		return
 	}
 
-	report.Organization = orgId
+	report.Organization = orgID
 	report.Date = time.Now()
 
 	if !utils.IsValidEmail(report.ReporterEmail) {
@@ -49,7 +49,7 @@ func AddReport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check that reporter is in the organization
-	reporterDoc, _ := utils.GetMongoDBDoc(member_collection, bson.M{"org_id": orgId, "email": report.ReporterEmail})
+	reporterDoc, _ := utils.GetMongoDBDoc(MemberCollectionName, bson.M{"org_id": orgID, "email": report.ReporterEmail})
 	if reporterDoc == nil {
 		utils.GetError(errors.New("reporter must be a member of this organization"), http.StatusBadRequest, w)
 		return
@@ -61,7 +61,7 @@ func AddReport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check that offender is in the organization
-	offenderDoc, _ := utils.GetMongoDBDoc(member_collection, bson.M{"org_id": orgId, "email": report.OffenderEmail})
+	offenderDoc, _ := utils.GetMongoDBDoc(MemberCollectionName, bson.M{"org_id": orgID, "email": report.OffenderEmail})
 	if offenderDoc == nil {
 		utils.GetError(errors.New("offender must be a member of this organization"), http.StatusBadRequest, w)
 		return
@@ -83,7 +83,12 @@ func AddReport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var reportMap map[string]interface{}
-	utils.ConvertStructure(report, &reportMap)
+	err = utils.ConvertStructure(report, &reportMap)
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
 
 	save, err := utils.CreateMongoDBDoc(ReportCollectionName, reportMap)
 	if err != nil {
@@ -94,49 +99,59 @@ func AddReport(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("report created", utils.M{"report_id": save.InsertedID}, w)
 }
 
-// Get a report
+// Get a report.
 func GetReport(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	orgId := mux.Vars(r)["id"]
+	orgID := mux.Vars(r)["id"]
 
-	reportId := mux.Vars(r)["report_id"]
-	reportObjId, err := primitive.ObjectIDFromHex(reportId)
+	reportID := mux.Vars(r)["report_id"]
+	reportObjID, err := primitive.ObjectIDFromHex(reportID)
 
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
 		return
 	}
 
-	doc, _ := utils.GetMongoDBDoc(ReportCollectionName, bson.M{"organization_id": orgId, "_id": reportObjId})
+	doc, _ := utils.GetMongoDBDoc(ReportCollectionName, bson.M{"organization_id": orgID, "_id": reportObjID})
 
 	if doc == nil {
-		utils.GetError(fmt.Errorf("report %s not found", orgId), http.StatusNotFound, w)
+		utils.GetError(fmt.Errorf("report %s not found", orgID), http.StatusNotFound, w)
 		return
 	}
 
 	var report Report
-	utils.ConvertStructure(doc, &report)
+	err = utils.ConvertStructure(doc, &report)
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
 
 	utils.GetSuccess("report  retrieved successfully", report, w)
 }
 
-// Get reports
+// Get reports.
 func GetReports(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	orgId := mux.Vars(r)["id"]
+	orgID := mux.Vars(r)["id"]
 
-	doc, _ := utils.GetMongoDBDocs(ReportCollectionName, bson.M{"organization_id": orgId})
+	doc, _ := utils.GetMongoDBDocs(ReportCollectionName, bson.M{"organization_id": orgID})
 
-	var report []Report = []Report{}
+	report := []Report{}
 
 	if doc == nil {
 		utils.GetSuccess("no report has been added yet", report, w)
 		return
 	}
 
-	utils.ConvertStructure(doc, &report)
+	err := utils.ConvertStructure(doc, &report)
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
 
 	utils.GetSuccess("report  retrieved successfully", report, w)
 }

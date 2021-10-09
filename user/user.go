@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
@@ -247,44 +248,65 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 
 	orgs := make([]map[string]interface{}, 0)
 
+	var imageLimit int64 = 11
+
 	for _, value := range result {
 		basic := make(map[string]interface{})
-
 		orgid, _ := value["org_id"].(string)
-
-		basic["isOwner"] = value["role"] == "owner"
-		basic["member_id"] = value["_id"]
-
 		objID, _ := primitive.ObjectIDFromHex(orgid)
 
 		// find all members of an org
-		orgMembers, _ := utils.GetMongoDBDocs(MemberCollectionName, bson.M{"org_id": orgid})
+		MembersLengthChannel, orgDetailsChannel := make(chan GUOCR), make(chan GUOCR)
+		ImageUrlsChannel := make(chan GUOCR)
 
-		orgDetails, err := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
-		if err != nil {
-			utils.GetError(err, http.StatusUnprocessableEntity, response)
+		go func() {
+			orgMembers, err := utils.GetMongoDBDocs(MemberCollectionName, bson.M{"org_id": orgid})
+			resp := GUOCR{
+				Err:      err,
+				Interger: len(orgMembers),
+			}
+			MembersLengthChannel <- resp
+		}()
+
+		go func(imageLimit int64) {
+			var memberImgs []interface{}
+
+			findOptions := options.Find().SetLimit(imageLimit)
+
+			//nolint:gocritic //Grego: I need to reference
+			// findOptions.SetProjection(bson.D{{"_id", 0}, {"image_url", 1}})
+			orgMembersimages, err := utils.GetMongoDBDocs(MemberCollectionName, bson.M{"org_id": orgid}, findOptions)
+
+			for _, member := range orgMembersimages {
+				memberImgs = append(memberImgs, member["image_url"])
+			}
+
+			resp := GUOCR{
+				Err:        err,
+				Interfaces: memberImgs,
+			}
+			ImageUrlsChannel <- resp
+		}(imageLimit)
+
+		go func() {
+			orgDetailsrt, err := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
+			resp := GUOCR{
+				Err:  err,
+				Bson: orgDetailsrt,
+			}
+			orgDetailsChannel <- resp
+		}()
+
+		MembersLengthData, orgDetailsData, basicimagesdata := <-MembersLengthChannel, <-orgDetailsChannel, <-ImageUrlsChannel
+		basic["no_of_members"], basic["isOwner"], basic["member_id"] = MembersLengthData.Interger, value["role"] == "owner", value["_id"]
+
+		if MembersLengthData.Err != nil || orgDetailsData.Err != nil || basicimagesdata.Err != nil {
+			utils.GetError(fmt.Errorf("query Failed, try again later"), http.StatusUnprocessableEntity, response)
 			return
 		}
 
-		// Get the images of all memebers of the organization
-		var memberImgs []interface{}
-		for _, member := range orgMembers {
-			memberImgs = append(memberImgs, member["image_url"])
-		}
-
-		// Return 10 images or less
-		imageLimit := 11
-		if len(memberImgs) < imageLimit {
-			basic["imgs"] = memberImgs
-		} else {
-			basic["imgs"] = memberImgs[:10]
-		}
-
-		basic["id"] = orgDetails["_id"]
-		basic["logo_url"] = orgDetails["logo_url"]
-		basic["name"] = orgDetails["name"]
-		basic["workspace_url"] = orgDetails["workspace_url"]
-		basic["no_of_members"] = len(orgMembers)
+		orgDetails := orgDetailsData.Bson
+		basic["imgs"], basic["id"], basic["logo_url"], basic["name"], basic["workspace_url"] = basicimagesdata.Interfaces, orgDetails["_id"], orgDetails["logo_url"], orgDetails["name"], orgDetails["workspace_url"]
 
 		orgs = append(orgs, basic)
 	}
@@ -297,8 +319,8 @@ func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request
 	w.Header().Add("content-type", "application/json")
 
 	var uRequest UUIDUserData
-	err := utils.ParseJSONFromRequest(r, &uRequest)
 
+	err := utils.ParseJSONFromRequest(r, &uRequest)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
