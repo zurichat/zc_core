@@ -69,7 +69,7 @@ func MailUs(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		mongoRes, errA := utils.CreateMongoDbDoc("contact", data)
+		mongoRes, errA := utils.CreateMongoDBDoc("contact", data)
 		if errA != nil {
 			utils.GetError(err, http.StatusInternalServerError, w)
 			return
@@ -89,7 +89,7 @@ func MailUs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mongoRes, err := utils.CreateMongoDbDoc("contact", data)
+	mongoRes, err := utils.CreateMongoDBDoc("contact", data)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return

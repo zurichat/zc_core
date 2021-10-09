@@ -34,7 +34,7 @@ func (eh *ExternalHandler) EmailSubscription(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	SubDoc, _ := utils.GetMongoDbDoc(newsletter_collection, bson.M{"email": NewSubscription.Email})
+	SubDoc, _ := utils.GetMongoDBDoc(newsletter_collection, bson.M{"email": NewSubscription.Email})
 	if SubDoc != nil {
 		// fmt.Printf("user with email %s already subscribed!", NewSubscription.Email)
 		msger := eh.mailService.NewMail(
@@ -124,75 +124,75 @@ func (eh *ExternalHandler) SendMail(w http.ResponseWriter, r *http.Request) {
 
 	var msgr *service.Mail
 	switch isCustomMail, _ := strconv.ParseInt(r.FormValue("custom_mail"), 0, 8); isCustomMail {
-		case 1:
-			//mailbody and content-type * content-type -> text/html and text/plain
-			mail := struct {
-				Email	 	string	`json:"email" validate:"email,required"`
-				Subject	 	string	`json:"subject" validate:"required"`
-				ContentType	string	`json:"content_type" validate:"required"`
-				MailBody	string	`json:"mail_body" validate:"required"`
-			} {}
+	case 1:
+		//mailbody and content-type * content-type -> text/html and text/plain
+		mail := struct {
+			Email       string `json:"email" validate:"email,required"`
+			Subject     string `json:"subject" validate:"required"`
+			ContentType string `json:"content_type" validate:"required"`
+			MailBody    string `json:"mail_body" validate:"required"`
+		}{}
 
-			if err := utils.ParseJsonFromRequest(r, &mail); err != nil {
-				utils.GetError(err, http.StatusUnprocessableEntity, w)
-				return
-			}
-		
-			if err := validate.Struct(mail); err != nil {
-				utils.GetError(err, http.StatusBadRequest, w)
-				return
-			}
+		if err := utils.ParseJSONFromRequest(r, &mail); err != nil {
+			utils.GetError(err, http.StatusUnprocessableEntity, w)
+			return
+		}
 
-			match, _ := regexp.MatchString("<(.|\n)*?>", mail.MailBody)
-			if !match && mail.ContentType == "text/html"  {
-				utils.GetError(errors.New("valid html string is required for mailbody"), http.StatusBadRequest, w)
-				return				
-			}
+		if err := validate.Struct(mail); err != nil {
+			utils.GetError(err, http.StatusBadRequest, w)
+			return
+		}
 
-			msgr = eh.mailService.NewCustomMail(
-				[]string{mail.Email},
-				mail.Subject,
-				mail.MailBody,		
-			)			
-		default:
-			mail := struct {
-				Email	 string	`json:"email" validate:"email,required"`
-				Subject	 string	`json:"subject" validate:"required"`
-				MailType int	`json:"mail_type" validate:"required"`
-				Data     map[string]interface{} `json:"data" validate:"required"`
-			} {}
-	
-			if err := utils.ParseJsonFromRequest(r, &mail); err != nil {
-				utils.GetError(err, http.StatusUnprocessableEntity, w)
-				return
-			}
-		
-			if err := validate.Struct(mail); err != nil {
-				utils.GetError(err, http.StatusBadRequest, w)
-				return
-			}
-			// ensure email is valid
-			if !utils.IsValidEmail(strings.ToLower(mail.Email)) {
-				utils.GetError(EMAIL_NOT_VALID, http.StatusBadRequest, w)
-				return
-			}	
-		
-			if _, ok := service.MailTypes[service.MailType(mail.MailType)]; !ok {
-				utils.GetError(errors.New("invalid email type, email template does not exists!"), http.StatusBadRequest, w)
-				return
-			}		
-	
-			msgr = eh.mailService.NewMail(
-				[]string{mail.Email},
-				mail.Subject, 
-				service.MailType(mail.MailType), 
-				mail.Data,
-			)
+		match, _ := regexp.MatchString("<(.|\n)*?>", mail.MailBody)
+		if !match && mail.ContentType == "text/html" {
+			utils.GetError(errors.New("valid html string is required for mailbody"), http.StatusBadRequest, w)
+			return
+		}
+
+		msgr = eh.mailService.NewCustomMail(
+			[]string{mail.Email},
+			mail.Subject,
+			mail.MailBody,
+		)
+	default:
+		mail := struct {
+			Email    string                 `json:"email" validate:"email,required"`
+			Subject  string                 `json:"subject" validate:"required"`
+			MailType int                    `json:"mail_type" validate:"required"`
+			Data     map[string]interface{} `json:"data" validate:"required"`
+		}{}
+
+		if err := utils.ParseJSONFromRequest(r, &mail); err != nil {
+			utils.GetError(err, http.StatusUnprocessableEntity, w)
+			return
+		}
+
+		if err := validate.Struct(mail); err != nil {
+			utils.GetError(err, http.StatusBadRequest, w)
+			return
+		}
+		// ensure email is valid
+		if !utils.IsValidEmail(strings.ToLower(mail.Email)) {
+			utils.GetError(EMAIL_NOT_VALID, http.StatusBadRequest, w)
+			return
+		}
+
+		if _, ok := service.MailTypes[service.MailType(mail.MailType)]; !ok {
+			utils.GetError(errors.New("invalid email type, email template does not exists!"), http.StatusBadRequest, w)
+			return
+		}
+
+		msgr = eh.mailService.NewMail(
+			[]string{mail.Email},
+			mail.Subject,
+			service.MailType(mail.MailType),
+			mail.Data,
+		)
 	}
 
 	if err := eh.mailService.SendMail(msgr); err != nil {
 		fmt.Printf("Error occured while sending mail: %s", err.Error())
 	}
-	
+
 	utils.GetSuccess("Mail sent successfully", nil, w)
 }

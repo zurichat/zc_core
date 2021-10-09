@@ -19,7 +19,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("content-type", "application/json")
 
 	p := Plugin{}
-	if err := utils.ParseJsonFromRequest(r, &p); err != nil {
+	if err := utils.ParseJSONFromRequest(r, &p); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
@@ -41,7 +41,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 func approvePlugin(id string) {
 	time.Sleep(10 * time.Second)
 	update := M{"approved": true, "deleted": false, "approved_at": time.Now().String()}
-	_, err := utils.UpdateOneMongoDbDoc(PluginCollectionName, id, update)
+	_, err := utils.UpdateOneMongoDBDoc(PluginCollectionName, id, update)
 	if err != nil {
 		log.Println("error approving plugin")
 		return
@@ -52,7 +52,7 @@ func approvePlugin(id string) {
 func Update(w http.ResponseWriter, r *http.Request) {
 	pp := PluginPatch{}
 	id := mux.Vars(r)["id"]
-	if err := utils.ParseJsonFromRequest(r, &pp); err != nil {
+	if err := utils.ParseJSONFromRequest(r, &pp); err != nil {
 		utils.GetError(errors.WithMessage(err, "error processing request"), 422, w)
 		return
 	}
@@ -66,7 +66,7 @@ func Update(w http.ResponseWriter, r *http.Request) {
 func Delete(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 
-	_, err := utils.UpdateOneMongoDbDoc("plugins", id, M{"deleted": true, "deleted_at": time.Now().String()})
+	_, err := utils.UpdateOneMongoDBDoc("plugins", id, M{"deleted": true, "deleted_at": time.Now().String()})
 	if err != nil {
 		utils.GetError(errors.WithMessage(err, "error deleting plugin"), 400, w)
 		return

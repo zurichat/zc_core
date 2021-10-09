@@ -19,7 +19,7 @@ import (
 func GetPosts(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 
-	blogs, err := utils.GetMongoDbDocs(BlogCollectionName, bson.M{"deleted": false})
+	blogs, err := utils.GetMongoDBDocs(BlogCollectionName, bson.M{"deleted": false})
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, response)
 		return
@@ -28,13 +28,12 @@ func GetPosts(response http.ResponseWriter, request *http.Request) {
 	utils.GetSuccess("success", blogs, response)
 }
 
-
 func GetBlogComments(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 
 	postID := mux.Vars(request)["post_id"]
 
-	result, err := utils.GetMongoDbDoc(BlogCommentsCollectionName, bson.M{"_id": postID})
+	result, err := utils.GetMongoDBDoc(BlogCommentsCollectionName, bson.M{"_id": postID})
 
 	if err != nil {
 		utils.GetError(errors.New("blog post comments does not exist"), http.StatusNotFound, response)
@@ -53,20 +52,19 @@ func CreatePost(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 
 	var blogPost BlogPost
-	err := utils.ParseJsonFromRequest(request, &blogPost)
+	err := utils.ParseJSONFromRequest(request, &blogPost)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, response)
 		return
 	}
 
-
 	blogTitle := strings.ToTitle(blogPost.Title)
 
 	// confirm if blog title has already been taken
-	result, _ := utils.GetMongoDbDoc(BlogCollectionName, bson.M{"title": blogTitle})
+	result, _ := utils.GetMongoDBDoc(BlogCollectionName, bson.M{"title": blogTitle})
 	if result != nil {
 		utils.GetError(
-			errors.New(fmt.Sprintf("blog post with title %s exists!", blogTitle)),
+			fmt.Errorf("blog post with title %s exists", blogTitle),
 			http.StatusBadRequest,
 			response,
 		)
@@ -82,7 +80,7 @@ func CreatePost(response http.ResponseWriter, request *http.Request) {
 
 	detail, _ := utils.StructToMap(blogPost)
 
-	res, err := utils.CreateMongoDbDoc(BlogCollectionName, detail)
+	res, err := utils.CreateMongoDBDoc(BlogCollectionName, detail)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, response)
@@ -91,10 +89,9 @@ func CreatePost(response http.ResponseWriter, request *http.Request) {
 
 	insertedPostID := res.InsertedID.(primitive.ObjectID).Hex()
 
-
 	blogPostLikes := BlogLikes{ID: insertedPostID, UsersList: []string{}}
 	blogPostLikesMap, _ := utils.StructToMap(blogPostLikes)
-	likeDocResponse, err := utils.CreateMongoDbDoc(BlogLikesCollectionName, blogPostLikesMap)
+	likeDocResponse, err := utils.CreateMongoDBDoc(BlogLikesCollectionName, blogPostLikesMap)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, response)
@@ -103,7 +100,7 @@ func CreatePost(response http.ResponseWriter, request *http.Request) {
 
 	blogPostComments := BlogsComment{ID: insertedPostID, Comments: []BlogComment{}}
 	blogPostCommentsMap, _ := utils.StructToMap(blogPostComments)
-	commentDocResponse, err := utils.CreateMongoDbDoc(BlogCommentsCollectionName, blogPostCommentsMap)
+	commentDocResponse, err := utils.CreateMongoDBDoc(BlogCommentsCollectionName, blogPostCommentsMap)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, response)
 		return
@@ -124,7 +121,7 @@ func GetPost(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	result, err := utils.GetMongoDbDoc(BlogCollectionName, bson.M{"_id": objID, "deleted": false})
+	result, err := utils.GetMongoDBDoc(BlogCollectionName, bson.M{"_id": objID, "deleted": false})
 
 	if err != nil {
 		utils.GetError(errors.New("blog post does not exist"), http.StatusNotFound, response)
@@ -148,7 +145,7 @@ func UpdatePost(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	blogExists, err := utils.GetMongoDbDoc(BlogCollectionName, bson.M{"_id": objID})
+	blogExists, err := utils.GetMongoDBDoc(BlogCollectionName, bson.M{"_id": objID})
 	if err != nil {
 		utils.GetError(errors.New("blog post does not exist"), http.StatusNotFound, response)
 		return
@@ -159,7 +156,7 @@ func UpdatePost(response http.ResponseWriter, request *http.Request) {
 	}
 
 	var blog BlogPost
-	if err := utils.ParseJsonFromRequest(request, &blog); err != nil {
+	if err := utils.ParseJSONFromRequest(request, &blog); err != nil {
 		utils.GetError(errors.New("bad update data"), http.StatusUnprocessableEntity, response)
 		return
 	}
@@ -183,7 +180,7 @@ func UpdatePost(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	updateRes, err := utils.UpdateOneMongoDbDoc(BlogCollectionName, postID, updateFields)
+	updateRes, err := utils.UpdateOneMongoDBDoc(BlogCollectionName, postID, updateFields)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, response)
 		return
@@ -208,7 +205,7 @@ func DeletePost(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	blogExists, err := utils.GetMongoDbDoc(BlogCollectionName, bson.M{"_id": objID})
+	blogExists, err := utils.GetMongoDBDoc(BlogCollectionName, bson.M{"_id": objID})
 	if err != nil {
 		utils.GetError(errors.New("blog post does not exist"), http.StatusNotFound, response)
 		return
@@ -220,7 +217,7 @@ func DeletePost(response http.ResponseWriter, request *http.Request) {
 
 	update := bson.M{"deleted": true, "deleted_at": time.Now()}
 
-	updateRes, err := utils.UpdateOneMongoDbDoc(BlogCollectionName, postID, update)
+	updateRes, err := utils.UpdateOneMongoDBDoc(BlogCollectionName, postID, update)
 	if err != nil {
 		utils.GetError(errors.New("blog post could not be deleted"), http.StatusBadRequest, response)
 		return
@@ -252,7 +249,7 @@ func LikeBlog(response http.ResponseWriter, request *http.Request) {
 
 	filter := bson.M{"_id": postID}
 
-	blogPostLikes, err := utils.GetMongoDbDoc(BlogLikesCollectionName, filter)
+	blogPostLikes, err := utils.GetMongoDBDoc(BlogLikesCollectionName, filter)
 	if err != nil {
 		utils.GetError(errors.New("blog post doesn't exist"), http.StatusBadRequest, response)
 		return
@@ -277,14 +274,14 @@ func LikeBlog(response http.ResponseWriter, request *http.Request) {
 	if !userExists {
 		updateData := bson.M{"$push": bson.M{"users_list": userID}}
 
-		userLikeResult, err := utils.GenericUpdateOneMongoDbDoc(BlogLikesCollectionName, postID, updateData)
+		userLikeResult, err := utils.GenericUpdateOneMongoDBDoc(BlogLikesCollectionName, postID, updateData)
 
 		if err != nil {
 			utils.GetError(errors.New("user could not like blog post"), http.StatusBadRequest, response)
 			return
 		}
 
-		blogPost, err := utils.GenericUpdateOneMongoDbDoc(BlogCollectionName, blogObjID, bson.M{"$inc": bson.M{"likes": 1}})
+		blogPost, err := utils.GenericUpdateOneMongoDBDoc(BlogCollectionName, blogObjID, bson.M{"$inc": bson.M{"likes": 1}})
 
 		if err != nil {
 			utils.GetError(errors.New("blog post like count could not be incremented"), http.StatusBadRequest, response)
@@ -306,14 +303,14 @@ func LikeBlog(response http.ResponseWriter, request *http.Request) {
 	} else {
 		updateData := bson.M{"$pull": bson.M{"users_list": userID}}
 
-		userLikeResult, err := utils.GenericUpdateOneMongoDbDoc(BlogLikesCollectionName, postID, updateData)
+		userLikeResult, err := utils.GenericUpdateOneMongoDBDoc(BlogLikesCollectionName, postID, updateData)
 
 		if err != nil {
 			utils.GetError(errors.New("user could not unlike blog post"), http.StatusBadRequest, response)
 			return
 		}
 
-		blogPost, err := utils.GenericUpdateOneMongoDbDoc(BlogCollectionName, blogObjID, bson.M{"$inc": bson.M{"likes": -1}})
+		blogPost, err := utils.GenericUpdateOneMongoDBDoc(BlogCollectionName, blogObjID, bson.M{"$inc": bson.M{"likes": -1}})
 
 		if err != nil {
 			utils.GetError(errors.New("blog post like count could not be decremented"), http.StatusBadRequest, response)
@@ -349,7 +346,7 @@ func CommentBlog(response http.ResponseWriter, request *http.Request) {
 
 	var blogComment BlogComment
 
-	err = utils.ParseJsonFromRequest(request, &blogComment)
+	err = utils.ParseJSONFromRequest(request, &blogComment)
 
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, response)
@@ -360,7 +357,7 @@ func CommentBlog(response http.ResponseWriter, request *http.Request) {
 	blogComment.CommentAt = time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), time.Now().UTC().Hour(), time.Now().Minute(), time.Now().Second(), 0, time.Local)
 	blogComment.CommentLikes = 0
 
-	blogCommentDoc, err := utils.GetMongoDbDoc(BlogCommentsCollectionName, bson.M{"_id": postID})
+	blogCommentDoc, err := utils.GetMongoDBDoc(BlogCommentsCollectionName, bson.M{"_id": postID})
 
 	if err != nil {
 		utils.GetError(errors.New("invalid blog post ID"), http.StatusBadRequest, response)
@@ -376,14 +373,14 @@ func CommentBlog(response http.ResponseWriter, request *http.Request) {
 
 	updateData := bson.M{"$push": bson.M{"comments": data}}
 
-	res, err := utils.GenericUpdateOneMongoDbDoc(BlogCommentsCollectionName, postID, updateData)
+	res, err := utils.GenericUpdateOneMongoDBDoc(BlogCommentsCollectionName, postID, updateData)
 
 	if err != nil {
 		utils.GetError(errors.New("comment unsuccessful"), http.StatusBadRequest, response)
 		return
 	}
 
-	blogPost, err := utils.GenericUpdateOneMongoDbDoc(BlogCollectionName, blogObjID, bson.M{"$inc": bson.M{"comments": 1}})
+	blogPost, err := utils.GenericUpdateOneMongoDBDoc(BlogCollectionName, blogObjID, bson.M{"$inc": bson.M{"comments": 1}})
 
 	if err != nil {
 		utils.GetError(errors.New("blog post comment count could not be incremented"), http.StatusBadRequest, response)
@@ -422,7 +419,7 @@ func SearchBlog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	docs, err := utils.GetMongoDbDocs("blogs", bson.M{"$text": bson.M{"$search": query}})
+	docs, err := utils.GetMongoDBDocs("blogs", bson.M{"$text": bson.M{"$search": query}})
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
@@ -430,13 +427,12 @@ func SearchBlog(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("successful", docs, w)
 }
 
-
 // function to subscribe to a mailing list
 func MailingList(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 
 	var mail MailLists
-	if err := utils.ParseJsonFromRequest(request, &mail); err != nil {
+	if err := utils.ParseJSONFromRequest(request, &mail); err != nil {
 		utils.GetError(errors.New("bad update data"), http.StatusUnprocessableEntity, response)
 		return
 	}
@@ -449,18 +445,18 @@ func MailingList(response http.ResponseWriter, request *http.Request) {
 	}
 
 	// confirm if email has not already been subscribed
-	result, _ := utils.GetMongoDbDoc(BlogMailingList, bson.M{"email": blogMail})
+	result, _ := utils.GetMongoDBDoc(BlogMailingList, bson.M{"email": blogMail})
 	if result != nil {
 		utils.GetError(errors.New("you already subscribed"), http.StatusBadRequest, response)
 		return
-	}	
+	}
 
 	mail.Email = blogMail
-	mail.SubscribedAt = time.Now() 
+	mail.SubscribedAt = time.Now()
 
 	detail, _ := utils.StructToMap(mail)
 
-	res, err := utils.CreateMongoDbDoc(BlogMailingList, detail)
+	res, err := utils.CreateMongoDBDoc(BlogMailingList, detail)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, response)

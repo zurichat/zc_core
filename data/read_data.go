@@ -25,7 +25,7 @@ func ReadData(w http.ResponseWriter, r *http.Request) {
 	prefixedCollName := getPrefixedCollectionName(pluginID, orgID, collName)
 	filter := parseURLQuery(r)
 	filter["deleted"] = bson.M{"$ne": true}
-	docs, err := utils.GetMongoDbDocs(prefixedCollName, filter)
+	docs, err := utils.GetMongoDBDocs(prefixedCollName, filter)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
@@ -79,7 +79,7 @@ type readOptions struct {
 func NewRead(w http.ResponseWriter, r *http.Request) {
 	reqData := new(readDataRequest)
 
-	if err := utils.ParseJsonFromRequest(r, reqData); err != nil {
+	if err := utils.ParseJSONFromRequest(r, reqData); err != nil {
 		utils.GetError(fmt.Errorf("error processing request: %v", err), http.StatusUnprocessableEntity, w)
 		return
 	}
@@ -98,7 +98,7 @@ func NewRead(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		doc, err := utils.GetMongoDbDoc(prefixedCollName, bson.M{"_id": id, "deleted": utils.M{"$ne": true}})
+		doc, err := utils.GetMongoDBDoc(prefixedCollName, bson.M{"_id": id, "deleted": utils.M{"$ne": true}})
 
 		if err != nil {
 			utils.GetError(err, http.StatusInternalServerError, w)
@@ -127,7 +127,7 @@ func NewRead(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filter["deleted"] = bson.M{"$ne": true}
-	docs, err := utils.GetMongoDbDocs(prefixedCollName, filter, opts)
+	docs, err := utils.GetMongoDBDocs(prefixedCollName, filter, opts)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)

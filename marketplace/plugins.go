@@ -67,7 +67,7 @@ func RemovePlugin(w http.ResponseWriter, r *http.Request) {
 
 	update := M{"deleted": true, "deleted_at": time.Now().String()}
 
-	_, err = utils.UpdateOneMongoDbDoc(plugin.PluginCollectionName, pluginID, update)
+	_, err = utils.UpdateOneMongoDBDoc(plugin.PluginCollectionName, pluginID, update)
 	if err != nil {
 		utils.GetError(errors.New("plugin removal failed"), http.StatusBadRequest, w)
 		return

@@ -355,7 +355,7 @@ func DeleteOtherSessions(userID, sessionID string) {
 		"user_id": bson.M{"$eq": uid},
 		"_id":     bson.M{"$ne": sid},
 	}
-	_, err := utils.DeleteManyMongoDoc(sessionCollection, filter)
+	_, err := utils.DeleteManyMongoDBDoc(sessionCollection, filter)
 
 	if err != nil {
 		fmt.Printf("%v", err)

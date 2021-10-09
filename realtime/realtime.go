@@ -2,6 +2,7 @@ package realtime
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -74,7 +75,7 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := utils.GetMongoDbDoc(conf.UserDBCollection, bson.M{"email": userEmail})
+	user, err := utils.GetMongoDBDoc(conf.UserDBCollection, bson.M{"email": userEmail})
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -98,7 +99,7 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 
 	ee := json.NewEncoder(w).Encode(data)
 	if ee != nil {
-		http.Error(w, utils.Get_string(ee), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("%v", ee), http.StatusBadRequest)
 		return
 	}
 }
@@ -111,7 +112,7 @@ func Refresh(w http.ResponseWriter, r *http.Request) {
 
 	ee := json.NewEncoder(w).Encode(data)
 	if ee != nil {
-		http.Error(w, utils.Get_string(ee), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("%v", ee), http.StatusBadRequest)
 		return
 	}
 }
@@ -125,7 +126,7 @@ func PublishEvent(w http.ResponseWriter, r *http.Request) {
 
 	var event utils.Event
 
-	err := utils.ParseJsonFromRequest(r, &event)
+	err := utils.ParseJSONFromRequest(r, &event)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return

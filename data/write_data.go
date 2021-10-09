@@ -28,7 +28,7 @@ type writeDataRequest struct {
 func WriteData(w http.ResponseWriter, r *http.Request) {
 	reqData := new(writeDataRequest)
 
-	if err := utils.ParseJsonFromRequest(r, reqData); err != nil {
+	if err := utils.ParseJSONFromRequest(r, reqData); err != nil {
 		utils.GetError(fmt.Errorf("error processing request: %v", err), http.StatusUnprocessableEntity, w)
 		return
 	}
@@ -136,7 +136,7 @@ func insertMany(collName string, data interface{}) (*mongo.InsertManyResult, err
 		return nil, errors.New("invalid object type, payload must be an array of objects")
 	}
 
-	return utils.CreateManyMongoDbDocs(collName, docs)
+	return utils.CreateManyMongoDBDocs(collName, docs)
 }
 
 func updateMany(collName string, filter map[string]interface{}, upd interface{}) (*mongo.UpdateResult, error) {
@@ -146,7 +146,7 @@ func updateMany(collName string, filter map[string]interface{}, upd interface{})
 		return nil, errors.New("invalid object type")
 	}
 
-	return utils.UpdateManyMongoDbDocs(collName, filter, update)
+	return utils.UpdateManyMongoDBDocs(collName, filter, update)
 }
 
 func mustObjectIDFromHex(hex string) primitive.ObjectID {

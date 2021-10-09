@@ -70,7 +70,7 @@ func (au *AuthHandler) LoginIn(response http.ResponseWriter, request *http.Reque
 	response.Header().Add("content-type", "application/json")
 
 	var creds Credentials
-	if err := utils.ParseJsonFromRequest(request, &creds); err != nil {
+	if err := utils.ParseJSONFromRequest(request, &creds); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, response)
 		return
 	}
@@ -346,7 +346,7 @@ func (au *AuthHandler) SocialAuth(w http.ResponseWriter, r *http.Request) {
 				CreatedAt:     time.Now(),
 			}
 			detail, _ := utils.StructToMap(b)
-			res, er := utils.CreateMongoDbDoc(userCollection, detail)
+			res, er := utils.CreateMongoDBDoc(userCollection, detail)
 
 			if er != nil {
 				utils.GetError(er, http.StatusInternalServerError, w)

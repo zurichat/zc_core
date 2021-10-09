@@ -32,7 +32,7 @@ func (au *AuthHandler) validateCode(r *http.Request, column string, errMsg error
 	var filter primitive.M
 
 	if vcode == "" {
-		if err := utils.ParseJsonFromRequest(r, &c); err != nil {
+		if err := utils.ParseJSONFromRequest(r, &c); err != nil {
 			return nil, err
 		}
 
@@ -111,7 +111,7 @@ func (au *AuthHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if e := utils.ParseJsonFromRequest(r, &rBody); e != nil {
+	if e := utils.ParseJSONFromRequest(r, &rBody); e != nil {
 		utils.GetError(e, http.StatusUnprocessableEntity, w)
 		return
 	}
@@ -153,7 +153,7 @@ func (au *AuthHandler) RequestResetPasswordCode(w http.ResponseWriter, r *http.R
 		Email string `json:"email" validate:"email,required"`
 	}{}
 
-	if err := utils.ParseJsonFromRequest(r, &email); err != nil {
+	if err := utils.ParseJSONFromRequest(r, &email); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
