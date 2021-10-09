@@ -15,7 +15,7 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
-// An endpoint to list all available blog posts
+// An endpoint to list all available blog posts.
 func GetPosts(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 
@@ -48,7 +48,7 @@ func GetBlogComments(response http.ResponseWriter, request *http.Request) {
 	utils.GetSuccess("success", result, response)
 }
 
-// An end point to create new blog posts
+// An end point to create new blog posts.
 func CreatePost(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 
@@ -264,7 +264,7 @@ func LikeBlog(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	bson.Unmarshal(blogPostBsonBytes, &blogLikesDoc)
+	_ = bson.Unmarshal(blogPostBsonBytes, &blogLikesDoc)
 
 	for _, value := range blogLikesDoc.UsersList {
 		if value == userID {
@@ -302,7 +302,6 @@ func LikeBlog(response http.ResponseWriter, request *http.Request) {
 		}
 
 		utils.GetSuccess("user liked successful", blogPost, response)
-
 	} else {
 		updateData := bson.M{"$pull": bson.M{"users_list": userID}}
 
@@ -331,9 +330,7 @@ func LikeBlog(response http.ResponseWriter, request *http.Request) {
 		}
 
 		utils.GetSuccess("user disliked successfully", blogPost, response)
-
 	}
-
 }
 
 func CommentBlog(response http.ResponseWriter, request *http.Request) {
@@ -396,7 +393,6 @@ func CommentBlog(response http.ResponseWriter, request *http.Request) {
 	}
 
 	utils.GetSuccess("comment successful", res, response)
-
 }
 
 func calculateReadingTime(content string) int {
@@ -406,7 +402,7 @@ func calculateReadingTime(content string) int {
 	return readingTime
 }
 
-// SearchBlog returns all posts and aggregates the ones which contain the posted search query in either title or content field
+// SearchBlog returns all posts and aggregates the ones which contain the posted search query in either title or content field.
 func SearchBlog(w http.ResponseWriter, r *http.Request) {
 	query := r.FormValue("query")
 
@@ -431,7 +427,7 @@ func SearchBlog(w http.ResponseWriter, r *http.Request) {
 }
 
 
-// function to subscribe to a mailing list
+// function to subscribe to a mailing list.
 func MailingList(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 

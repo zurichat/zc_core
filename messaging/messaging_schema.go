@@ -7,9 +7,9 @@ import (
 )
 
 type Room struct {
-	OwnerId    primitive.ObjectID   `json:"ownerid,omitempty" bson:"ownerid,omitempty"`
+	OwnerID    primitive.ObjectID   `json:"ownerid,omitempty" bson:"ownerid,omitempty"`
 	RoomName   string               `json:"roomname,omitempty" bson:"roomname,omitempty"`
-	RoomType   string               `json:"roomtype,omitempty" bson:"roomtype,omitempty"` //inbox, group, channel
+	RoomType   string               `json:"roomtype,omitempty" bson:"roomtype,omitempty"` // inbox, group, channel
 	Members    []primitive.ObjectID `json:"members,omitempty" bson:"members,omitempty"`
 	CreatedAt  string               `json:"createat,omitempty" bson:"createat,omitempty"`
 	Archived   string               `json:"archived,omitempty" bson:"archived,omitempty"` // true/false
@@ -44,7 +44,7 @@ type Message struct {
 	Status      string               `json:"status,omitempty" bson:"status,omitempty"` // pending, sent ...
 	ReceivedBy  []primitive.ObjectID `json:"receivedby,omitempty" bson:"receivedby,omitempty"`
 	Reactions   []Reaction           `json:"reactions,omitempty" bson:"reactions,omitempty"`
-	MessageType string               `json:"messagetype,omitempty" bson:"messagetype,omitempty"` //message/comment
+	MessageType string               `json:"messagetype,omitempty" bson:"messagetype,omitempty"` // message/comment
 	MessageId   primitive.ObjectID   `json:"messageid,omitempty" bson:"messageid,omitempty"`
 }
 
@@ -68,20 +68,20 @@ type SuccessResponse struct {
 }
 
 // GetError : This is helper function to prepare error model.
-func GetMessageError(err error, StatusCode int) interface{} {
+func GetMessageError(err error, statusCode int) interface{} {
 	var response = ErrorResponse{
 		ErrorMessage: err.Error(),
-		StatusCode:   StatusCode,
+		StatusCode:   statusCode,
 	}
 
 	return response
 }
 
 // GetError : This is helper function to prepare error model.
-func GetCustomMessageError(err string, StatusCode int) interface{} {
+func GetCustomMessageError(err string, statusCode int) interface{} {
 	var response = ErrorResponse{
 		ErrorMessage: err,
-		StatusCode:   StatusCode,
+		StatusCode:   statusCode,
 	}
 
 	return response
