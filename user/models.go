@@ -3,6 +3,7 @@ package user
 import (
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
@@ -34,22 +35,26 @@ const (
 	Member
 )
 
+//nolint:revive //changing name will break a lot of codes
 type UserRole struct {
 	ID   primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 	Role Role               `bson:"role"`
 }
 
+//nolint:revive //changing name will break a lot of codes
 type UserSettings struct {
 	Role []UserRole `bson:"role"`
 	// Role Role
 }
 
+//nolint:revive //changing name will break a lot of codes
 type UserEmailVerification struct {
 	Verified  bool      `bson:"verified" json:"verified"`
 	Token     string    `bson:"token" json:"token"`
 	ExpiredAt time.Time `bson:"expired_at" json:"expired_at"`
 }
 
+//nolint:revive //changing name will break a lot of codes
 type UserPasswordReset struct {
 	IPAddress string    `bson:"ip_address" json:"ip_address"`
 	Token     string    `bson:"token" json:"token"`
@@ -85,12 +90,14 @@ type User struct {
 }
 
 // Struct that user can update directly.
+//nolint:revive //changing name will break a lot of codes
 type UserUpdate struct {
 	FirstName string `bson:"first_name" validate:"required,min=2,max=100" json:"first_name"`
 	LastName  string `bson:"last_name" validate:"required,min=2,max=100" json:"last_name"`
 	Phone     string `bson:"phone" validate:"required" json:"phone"`
 }
 
+//nolint:revive //changing name will break a lot of codes
 type UserHandler struct {
 	configs     *utils.Configurations
 	mailService service.MailService
@@ -105,4 +112,13 @@ type UUIDUserData struct {
 
 func NewUserHandler(c *utils.Configurations, mail service.MailService) *UserHandler {
 	return &UserHandler{configs: c, mailService: mail}
+}
+
+type GUOCR struct {
+	Err        error
+	Interger   int
+	String     string
+	ListOFBSON []bson.M
+	Bson       bson.M
+	Interfaces []interface{}
 }
