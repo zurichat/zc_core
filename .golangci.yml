@@ -93,20 +93,19 @@ run:
   - tests
   - blog
   - api
-  #- contact
+  - contact
   - docs
-  # marketplace
+  - marketplace
   - organizations
-  # - plugin
+  - plugin
   - data
   - plugin
-  # data
   - external
   - messaging
-  #- report
+  - report
   - realtime
-   - service
+  - service
   - user
   - utils
-  # skip-files:
-  # - main.go
+  skip-files:
+  - main.go

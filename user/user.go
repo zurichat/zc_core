@@ -10,14 +10,15 @@ import (
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
 
 var (
-	errEmailNotValid   = errors.New("email address is not valid")
-	errHashingFailed   = errors.New("failed to hashed password")
+	errEmailNotValid = errors.New("email address is not valid")
+	errHashingFailed = errors.New("failed to hashed password")
 )
 
 // Method to hash password.
@@ -226,7 +227,7 @@ func (uh *UserHandler) GetUsers(response http.ResponseWriter, request *http.Requ
 	for _, doc := range res {
 		DeleteMapProps(doc, []string{"password"})
 	}
-	
+
 	utils.GetSuccess("users retrieved successfully", res, response)
 }
 
@@ -247,6 +248,8 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 
 	orgs := make([]map[string]interface{}, 0)
 
+	var imageLimit int64 = 11
+
 	for _, value := range result {
 		basic := make(map[string]interface{})
 
@@ -258,33 +261,87 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 		objID, _ := primitive.ObjectIDFromHex(orgid)
 
 		// find all members of an org
-		orgMembers, _ := utils.GetMongoDbDocs(MemberCollectionName, bson.M{"org_id": orgid})
+		MembersLengthChannel, orgDetailsChannel := make(chan GUOCR), make(chan GUOCR)
+		ImageUrlsChannel := make(chan GUOCR)
 
-		orgDetails, err := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": objID})
-		if err != nil {
-			utils.GetError(err, http.StatusUnprocessableEntity, response)
+		go func() {
+			orgMembers, err := utils.GetMongoDbDocs(MemberCollectionName, bson.M{"org_id": orgid})
+			resp := GUOCR{
+				Err:      err,
+				Interger: len(orgMembers),
+			}
+			MembersLengthChannel <- resp
+		}()
+
+		go func(imageLimit int64) {
+			var memberImgs []interface{}
+
+			findOptions := options.Find()
+
+			findOptions.SetLimit(imageLimit)
+
+			//nolint:gocritic //Grego: I need to reference
+			// findOptions.SetProjection(bson.D{{"_id", 0}, {"image_url", 1}})
+			orgMembersimages, err := utils.GetMongoDbDocs(MemberCollectionName, bson.M{"org_id": orgid}, findOptions)
+			if err != nil {
+				resp := GUOCR{
+					Err:        err,
+					Interfaces: nil,
+				}
+				ImageUrlsChannel <- resp
+
+				return
+			}
+
+			for _, member := range orgMembersimages {
+				memberImgs = append(memberImgs, member["image_url"])
+			}
+
+			resp := GUOCR{
+				Err:        err,
+				Interfaces: memberImgs,
+			}
+			ImageUrlsChannel <- resp
+		}(imageLimit)
+
+		go func() {
+			orgDetailsrt, err := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": objID})
+			resp := GUOCR{
+				Err:  err,
+				Bson: orgDetailsrt,
+			}
+			orgDetailsChannel <- resp
+		}()
+
+		MembersLengthData := <-MembersLengthChannel
+		MembersLength := MembersLengthData.Interger
+
+		if MembersLengthData.Err != nil {
+			utils.GetError(MembersLengthData.Err, http.StatusUnprocessableEntity, response)
 			return
 		}
 
-		// Get the images of all memebers of the organization
-		var memberImgs []interface{}
-		for _, member := range orgMembers {
-			memberImgs = append(memberImgs, member["image_url"])
+		orgDetailsData := <-orgDetailsChannel
+		orgDetails := orgDetailsData.Bson
+
+		if orgDetailsData.Err != nil {
+			utils.GetError(orgDetailsData.Err, http.StatusUnprocessableEntity, response)
+			return
 		}
 
-		// Return 10 images or less
-		imageLimit := 11
-		if len(memberImgs) < imageLimit {
-			basic["imgs"] = memberImgs
-		} else {
-			basic["imgs"] = memberImgs[:10]
+		basicimagesdata := <-ImageUrlsChannel
+		basic["imgs"] = basicimagesdata.Interfaces
+
+		if basicimagesdata.Err != nil {
+			utils.GetError(basicimagesdata.Err, http.StatusUnprocessableEntity, response)
+			return
 		}
 
 		basic["id"] = orgDetails["_id"]
 		basic["logo_url"] = orgDetails["logo_url"]
 		basic["name"] = orgDetails["name"]
 		basic["workspace_url"] = orgDetails["workspace_url"]
-		basic["no_of_members"] = len(orgMembers)
+		basic["no_of_members"] = MembersLength
 
 		orgs = append(orgs, basic)
 	}
@@ -298,7 +355,7 @@ func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request
 
 	var uRequest UUIDUserData
 	err := utils.ParseJsonFromRequest(r, &uRequest)
-	
+
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
