@@ -252,12 +252,7 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 
 	for _, value := range result {
 		basic := make(map[string]interface{})
-
 		orgid, _ := value["org_id"].(string)
-
-		basic["isOwner"] = value["role"] == "owner"
-		basic["member_id"] = value["_id"]
-
 		objID, _ := primitive.ObjectIDFromHex(orgid)
 
 		// find all members of an org
@@ -276,22 +271,11 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 		go func(imageLimit int64) {
 			var memberImgs []interface{}
 
-			findOptions := options.Find()
-
-			findOptions.SetLimit(imageLimit)
+			findOptions := options.Find().SetLimit(imageLimit)
 
 			//nolint:gocritic //Grego: I need to reference
 			// findOptions.SetProjection(bson.D{{"_id", 0}, {"image_url", 1}})
 			orgMembersimages, err := utils.GetMongoDbDocs(MemberCollectionName, bson.M{"org_id": orgid}, findOptions)
-			if err != nil {
-				resp := GUOCR{
-					Err:        err,
-					Interfaces: nil,
-				}
-				ImageUrlsChannel <- resp
-
-				return
-			}
 
 			for _, member := range orgMembersimages {
 				memberImgs = append(memberImgs, member["image_url"])
@@ -313,35 +297,16 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 			orgDetailsChannel <- resp
 		}()
 
-		MembersLengthData := <-MembersLengthChannel
-		MembersLength := MembersLengthData.Interger
+		MembersLengthData, orgDetailsData, basicimagesdata := <-MembersLengthChannel, <-orgDetailsChannel, <-ImageUrlsChannel
+		basic["no_of_members"], basic["isOwner"], basic["member_id"] = MembersLengthData.Interger, value["role"] == "owner", value["_id"]
 
-		if MembersLengthData.Err != nil {
-			utils.GetError(MembersLengthData.Err, http.StatusUnprocessableEntity, response)
+		if MembersLengthData.Err != nil || orgDetailsData.Err != nil || basicimagesdata.Err != nil {
+			utils.GetError(fmt.Errorf("query Failed, try again later"), http.StatusUnprocessableEntity, response)
 			return
 		}
 
-		orgDetailsData := <-orgDetailsChannel
 		orgDetails := orgDetailsData.Bson
-
-		if orgDetailsData.Err != nil {
-			utils.GetError(orgDetailsData.Err, http.StatusUnprocessableEntity, response)
-			return
-		}
-
-		basicimagesdata := <-ImageUrlsChannel
-		basic["imgs"] = basicimagesdata.Interfaces
-
-		if basicimagesdata.Err != nil {
-			utils.GetError(basicimagesdata.Err, http.StatusUnprocessableEntity, response)
-			return
-		}
-
-		basic["id"] = orgDetails["_id"]
-		basic["logo_url"] = orgDetails["logo_url"]
-		basic["name"] = orgDetails["name"]
-		basic["workspace_url"] = orgDetails["workspace_url"]
-		basic["no_of_members"] = MembersLength
+		basic["imgs"], basic["id"], basic["logo_url"], basic["name"], basic["workspace_url"] = basicimagesdata.Interfaces, orgDetails["_id"], orgDetails["logo_url"], orgDetails["name"], orgDetails["workspace_url"]
 
 		orgs = append(orgs, basic)
 	}
