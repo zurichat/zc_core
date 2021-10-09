@@ -12,10 +12,10 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
-type M map[string]interface{}
-
+// GetAllPlugins returns all approved plugins available in the database.
 func GetAllPlugins(w http.ResponseWriter, r *http.Request) {
 	ps, err := plugin.FindPlugins(r.Context(), bson.M{"approved": true, "deleted": false})
+
 	if err != nil {
 		switch err {
 		case mongo.ErrNoDocuments:
@@ -23,18 +23,23 @@ func GetAllPlugins(w http.ResponseWriter, r *http.Request) {
 		default:
 			utils.GetError(err, http.StatusNotFound, w)
 		}
+
 		return
 	}
+
 	utils.GetSuccess("success", ps, w)
 }
 
+// GetPlugin hanldes the retrieval of a plugin by its id.
 func GetPlugin(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	p, err := plugin.FindPluginByID(r.Context(), id)
+
 	if err != nil {
 		utils.GetError(err, http.StatusNotFound, w)
 		return
 	}
+
 	if !p.Approved {
 		utils.GetError(errors.New("plugin is not approved"), http.StatusForbidden, w)
 		return
@@ -48,13 +53,14 @@ func GetPlugin(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("success", p, w)
 }
 
-// an endpoint to remove plugins from marketplace
+// RemovePlugin handles removal of plugins from marketplace.
 func RemovePlugin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 
 	pluginID := mux.Vars(r)["id"]
 
 	pluginExists, err := plugin.FindPluginByID(r.Context(), pluginID)
+
 	if err != nil {
 		utils.GetError(err, http.StatusNotFound, w)
 		return
@@ -65,10 +71,9 @@ func RemovePlugin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	update := M{"deleted": true, "deleted_at": time.Now().String()}
+	update := bson.M{"deleted": true, "deleted_at": time.Now().String()}
 
-	_, err = utils.UpdateOneMongoDbDoc(plugin.PluginCollectionName, pluginID, update)
-	if err != nil {
+	if _, err = utils.UpdateOneMongoDbDoc(plugin.PluginCollectionName, pluginID, update); err != nil {
 		utils.GetError(errors.New("plugin removal failed"), http.StatusBadRequest, w)
 		return
 	}
