@@ -6,7 +6,7 @@ PORT?=8080
 
 ENV_LOCAL_TEST=\
 		DB_NAME=zurichat \
-		CLUSTER_URL=mongodb+srv://samsoft:passwordhngi8@samsoft.yxd94.mongodb.net/myFirstDatabase?retryWrites=true&w=majority \
+		CLUSTER_URL=mongodb+srv \
 		ENV=local\
 		PORT=8080
 
