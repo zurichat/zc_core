@@ -72,7 +72,7 @@ func IncrementToken(orgID, description string, tokenAmount float64) error {
 	updateData := make(map[string]interface{})
 	updateData["tokens"] = organization.Tokens
 
-	if _, err := utils.UpdateOneMongoDbDoc(OrganizationCollectionName, orgID, updateData); err != nil {
+	if _, err := utils.UpdateOneMongoDBDoc(OrganizationCollectionName, orgID, updateData); err != nil {
 		return err
 	}
 
@@ -100,11 +100,6 @@ func DeductToken(orgID, description string, tokenAmount float64) error {
 	updateData := make(map[string]interface{})
 	updateData["tokens"] = organization.Tokens
 
-	if _, err := utils.UpdateOneMongoDbDoc(OrganizationCollectionName, orgID, updateData); err != nil {
-		return err
-	}
-
-	if err := SendTokenBillingEmail(orgID, description, tokenAmount); err != nil {
 		return err
 	}
 
@@ -112,7 +107,7 @@ func DeductToken(orgID, description string, tokenAmount float64) error {
 }
 
 func SubscriptionBilling(orgID string, proVersionRate float64) error {
-	orgMembers, err := utils.GetMongoDbDocs(MemberCollectionName, bson.M{"org_id": orgID})
+	orgMembers, err := utils.GetMongoDBDocs(MemberCollectionName, bson.M{"org_id": orgID})
 	if err != nil {
 		return err
 	}
@@ -174,7 +169,7 @@ func (oh *OrganizationHandler) AddToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	org, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": objID})
+	org, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
 
 	if org == nil {
 		utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
@@ -182,7 +177,7 @@ func (oh *OrganizationHandler) AddToken(w http.ResponseWriter, r *http.Request) 
 	}
 
 	requestData := make(map[string]float64)
-	if err = utils.ParseJsonFromRequest(r, &requestData); err != nil {
+	if err = utils.ParseJSONFromRequest(r, &requestData); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
@@ -197,7 +192,7 @@ func (oh *OrganizationHandler) AddToken(w http.ResponseWriter, r *http.Request) 
 
 	orgFilter["tokens"] = org["tokens"].(float64) + (tokens * 0.2)
 
-	update, err := utils.UpdateOneMongoDbDoc(OrganizationCollectionName, orgID, orgFilter)
+	update, err := utils.UpdateOneMongoDBDoc(OrganizationCollectionName, orgID, orgFilter)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
@@ -215,7 +210,7 @@ func (oh *OrganizationHandler) AddToken(w http.ResponseWriter, r *http.Request) 
 	transaction.Token = tokens * 0.2
 	detail, _ := utils.StructToMap(transaction)
 
-	res, err := utils.CreateMongoDbDoc(TokenTransactionCollectionName, detail)
+	res, err := utils.CreateMongoDBDoc(TokenTransactionCollectionName, detail)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
@@ -236,7 +231,7 @@ func (oh *OrganizationHandler) GetTokenTransaction(w http.ResponseWriter, r *htt
 
 	orgID := mux.Vars(r)["id"]
 
-	save, _ := utils.GetMongoDbDocs(TokenTransactionCollectionName, bson.M{"org_id": orgID})
+	save, _ := utils.GetMongoDBDocs(TokenTransactionCollectionName, bson.M{"org_id": orgID})
 
 	if save == nil {
 		utils.GetError(fmt.Errorf("organization transaction %s not found", orgID), http.StatusNotFound, w)
@@ -252,7 +247,7 @@ func (oh *OrganizationHandler) ChargeTokens(w http.ResponseWriter, r *http.Reque
 	orgID := mux.Vars(r)["id"]
 
 	requestData := make(map[string]string)
-	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
+	if err := utils.ParseJSONFromRequest(r, &requestData); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
@@ -286,7 +281,7 @@ func (oh *OrganizationHandler) CreateCheckoutSession(w http.ResponseWriter, r *h
 		return
 	}
 
-	org, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": objID})
+	org, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
 
 	if org == nil {
 		utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
@@ -294,7 +289,7 @@ func (oh *OrganizationHandler) CreateCheckoutSession(w http.ResponseWriter, r *h
 	}
 
 	requestData := make(map[string]int64)
-	if err = utils.ParseJsonFromRequest(r, &requestData); err != nil {
+	if err = utils.ParseJSONFromRequest(r, &requestData); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}

@@ -33,7 +33,7 @@ func AddReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orgDoc, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": objID})
+	orgDoc, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
 
 	if orgDoc == nil {
 		utils.GetError(errors.New("organization with id "+orgID+" doesn't exist!"), http.StatusBadRequest, w)
@@ -49,7 +49,7 @@ func AddReport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check that reporter is in the organization
-	reporterDoc, _ := utils.GetMongoDbDoc(MemberCollectionName, bson.M{"org_id": orgID, "email": report.ReporterEmail})
+	reporterDoc, _ := utils.GetMongoDBDoc(MemberCollectionName, bson.M{"org_id": orgID, "email": report.ReporterEmail})
 	if reporterDoc == nil {
 		utils.GetError(errors.New("reporter must be a member of this organization"), http.StatusBadRequest, w)
 		return
@@ -61,7 +61,7 @@ func AddReport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check that offender is in the organization
-	offenderDoc, _ := utils.GetMongoDbDoc(MemberCollectionName, bson.M{"org_id": orgID, "email": report.OffenderEmail})
+	offenderDoc, _ := utils.GetMongoDBDoc(MemberCollectionName, bson.M{"org_id": orgID, "email": report.OffenderEmail})
 	if offenderDoc == nil {
 		utils.GetError(errors.New("offender must be a member of this organization"), http.StatusBadRequest, w)
 		return
@@ -90,7 +90,7 @@ func AddReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	save, err := utils.CreateMongoDbDoc(ReportCollectionName, reportMap)
+	save, err := utils.CreateMongoDBDoc(ReportCollectionName, reportMap)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
@@ -113,7 +113,7 @@ func GetReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	doc, _ := utils.GetMongoDbDoc(ReportCollectionName, bson.M{"organization_id": orgID, "_id": reportObjID})
+	doc, _ := utils.GetMongoDBDoc(ReportCollectionName, bson.M{"organization_id": orgID, "_id": reportObjID})
 
 	if doc == nil {
 		utils.GetError(fmt.Errorf("report %s not found", orgID), http.StatusNotFound, w)
@@ -137,7 +137,7 @@ func GetReports(w http.ResponseWriter, r *http.Request) {
 
 	orgID := mux.Vars(r)["id"]
 
-	doc, _ := utils.GetMongoDbDocs(ReportCollectionName, bson.M{"organization_id": orgID})
+	doc, _ := utils.GetMongoDBDocs(ReportCollectionName, bson.M{"organization_id": orgID})
 
 	report := []Report{}
 

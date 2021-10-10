@@ -13,7 +13,7 @@ const (
 	BlogMailingList            = "mailinglist"
 )
 
-type BlogPost struct {
+type Post struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 	ImageURL  string             `json:"image_url" bson:"image_url"`
 	Title     string             `json:"title" bson:"title"`
@@ -30,7 +30,7 @@ type BlogPost struct {
 	DeletedAt time.Time          `json:"deleted_at" bson:"deleted_at"`
 }
 
-type BlogComment struct {
+type Comment struct {
 	ID             primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 	CommentAuthor  string             `json:"comment_author" bson:"comment_author"`
 	CommentContent string             `json:"comment_content" bson:"comment_content"`
@@ -40,10 +40,10 @@ type BlogComment struct {
 
 type BlogsComment struct {
 	ID       string        `bson:"_id" json:"_id,omitempty"`
-	Comments []BlogComment `bson:"comments" json:"comments,omitempty"`
+	Comments []Comment `bson:"comments" json:"comments,omitempty"`
 }
 
-type BlogLikes struct {
+type Likes struct {
 	ID        string   `bson:"_id" json:"_id,omitempty"`
 	UsersList []string `bson:"users_list" json:"users_list"`
 }

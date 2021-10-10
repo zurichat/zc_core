@@ -10,14 +10,15 @@ import (
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
 
 var (
-	errEmailNotValid   = errors.New("email address is not valid")
-	errHashingFailed   = errors.New("failed to hashed password")
+	errEmailNotValid = errors.New("email address is not valid")
+	errHashingFailed = errors.New("failed to hashed password")
 )
 
 // Method to hash password.
@@ -33,7 +34,7 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 	response.Header().Add("content-type", "application/json")
 
 	var user User
-	err := utils.ParseJsonFromRequest(request, &user)
+	err := utils.ParseJSONFromRequest(request, &user)
 
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, response)
@@ -47,7 +48,7 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 	}
 
 	// confirm if user_email exists
-	result, _ := utils.GetMongoDbDoc(UserCollectionName, bson.M{"email": userEmail})
+	result, _ := utils.GetMongoDBDoc(UserCollectionName, bson.M{"email": userEmail})
 	if result != nil {
 		utils.GetError(
 			fmt.Errorf("user with email %s exists", userEmail),
@@ -79,7 +80,7 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 	user.Timezone = "Africa/Lagos" // set default timezone
 	detail, _ := utils.StructToMap(user)
 
-	res, err := utils.CreateMongoDbDoc(UserCollectionName, detail)
+	res, err := utils.CreateMongoDBDoc(UserCollectionName, detail)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, response)
@@ -112,7 +113,7 @@ func (uh *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	userID := params["user_id"]
 
 	deactivateUpdate := bson.M{"deactivated": true, "deactivated_at": time.Now()}
-	deactivate, err := utils.UpdateOneMongoDbDoc(UserCollectionName, userID, deactivateUpdate)
+	deactivate, err := utils.UpdateOneMongoDBDoc(UserCollectionName, userID, deactivateUpdate)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
@@ -143,7 +144,7 @@ func (uh *UserHandler) GetUser(response http.ResponseWriter, request *http.Reque
 		return
 	}
 
-	res, err := utils.GetMongoDbDoc(UserCollectionName, bson.M{"_id": objID, "deactivated": false})
+	res, err := utils.GetMongoDBDoc(UserCollectionName, bson.M{"_id": objID, "deactivated": false})
 
 	if err != nil {
 		utils.GetError(errors.New("user not found"), http.StatusNotFound, response)
@@ -167,7 +168,7 @@ func (uh *UserHandler) UpdateUser(response http.ResponseWriter, request *http.Re
 		return
 	}
 
-	userExist, err := utils.GetMongoDbDoc(UserCollectionName, bson.M{"_id": objID})
+	userExist, err := utils.GetMongoDBDoc(UserCollectionName, bson.M{"_id": objID})
 
 	if err != nil {
 		utils.GetError(errors.New("user does not exist"), http.StatusNotFound, response)
@@ -180,7 +181,7 @@ func (uh *UserHandler) UpdateUser(response http.ResponseWriter, request *http.Re
 	}
 
 	var user UserUpdate
-	if err = utils.ParseJsonFromRequest(request, &user); err != nil {
+	if err = utils.ParseJSONFromRequest(request, &user); err != nil {
 		utils.GetError(errors.New("bad update data"), http.StatusUnprocessableEntity, response)
 		return
 	}
@@ -204,7 +205,7 @@ func (uh *UserHandler) UpdateUser(response http.ResponseWriter, request *http.Re
 		return
 	}
 
-	_, err = utils.UpdateOneMongoDbDoc(UserCollectionName, userID, updateFields)
+	_, err = utils.UpdateOneMongoDBDoc(UserCollectionName, userID, updateFields)
 
 	if err != nil {
 		utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, response)
@@ -221,12 +222,12 @@ func (uh *UserHandler) GetUsers(response http.ResponseWriter, request *http.Requ
 	response.Header().Set("Access-Control-Allow-Headers", "Content-Type,access-control-allow-origin, access-control-allow-headers")
 	response.Header().Set("content-type", "application/json")
 
-	res, _ := utils.GetMongoDbDocs(UserCollectionName, bson.M{"deactivated": false})
+	res, _ := utils.GetMongoDBDocs(UserCollectionName, bson.M{"deactivated": false})
 
 	for _, doc := range res {
 		DeleteMapProps(doc, []string{"password"})
 	}
-	
+
 	utils.GetSuccess("users retrieved successfully", res, response)
 }
 
@@ -243,49 +244,74 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 	}
 
 	// find user email in members collection.
-	result, _ := utils.GetMongoDbDocs(MemberCollectionName, bson.M{"email": userEmail, "deleted": false})
+	result, _ := utils.GetMongoDBDocs(MemberCollectionName, bson.M{"email": userEmail, "deleted": false})
 
 	orgs := make([]map[string]interface{}, 0)
 
+	var imageLimit int64 = 11
+
 	for _, value := range result {
 		basic := make(map[string]interface{})
-
 		orgid, _ := value["org_id"].(string)
-
-		basic["isOwner"] = value["role"] == "owner"
-		basic["member_id"] = value["_id"]
-
 		objID, _ := primitive.ObjectIDFromHex(orgid)
 
 		// find all members of an org
-		orgMembers, _ := utils.GetMongoDbDocs(MemberCollectionName, bson.M{"org_id": orgid})
+		MembersLengthChannel, orgDetailsChannel := make(chan GUOCR), make(chan GUOCR)
+		ImageUrlsChannel := make(chan GUOCR)
 
-		orgDetails, err := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": objID})
-		if err != nil {
-			utils.GetError(err, http.StatusUnprocessableEntity, response)
+		go func() {
+			orgMembers, err := utils.GetMongoDBDocs(MemberCollectionName, bson.M{"org_id": orgid})
+			resp := GUOCR{
+				Err:      err,
+				Interger: len(orgMembers),
+			}
+			MembersLengthChannel <- resp
+		}()
+
+		go func(imageLimit int64) {
+			var memberImgs []interface{}
+
+			findOptions := options.Find().SetLimit(imageLimit)
+
+			//nolint:gocritic //Grego: I need to reference
+			// findOptions.SetProjection(bson.D{{"_id", 0}, {"image_url", 1}})
+
+			ne, ccfilter := make(map[string]interface{}), make(map[string]interface{})
+			ne["$ne"] = ""
+			ccfilter["image_url"], ccfilter["org_id"] = ne, orgid
+			orgMembersimages, err := utils.GetMongoDBDocs(MemberCollectionName, ccfilter, findOptions)
+
+			for _, member := range orgMembersimages {
+				memberImgs = append(memberImgs, member["image_url"])
+			}
+
+			resp := GUOCR{
+				Err:        err,
+				Interfaces: memberImgs,
+			}
+			ImageUrlsChannel <- resp
+		}(imageLimit)
+
+		go func() {
+			orgDetailsrt, err := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
+			resp := GUOCR{
+				Err:  err,
+				Bson: orgDetailsrt,
+			}
+			orgDetailsChannel <- resp
+		}()
+
+		MembersLengthData, orgDetailsData, basicimagesdata := <-MembersLengthChannel, <-orgDetailsChannel, <-ImageUrlsChannel
+		basic["no_of_members"], basic["isOwner"], basic["member_id"] = MembersLengthData.Interger, value["role"] == "owner", value["_id"]
+
+		if MembersLengthData.Err != nil || orgDetailsData.Err != nil || basicimagesdata.Err != nil {
+			utils.GetError(fmt.Errorf("query Failed, try again later"), http.StatusUnprocessableEntity, response)
 			return
 		}
 
-		// Get the images of all memebers of the organization
-		var memberImgs []interface{}
-		for _, member := range orgMembers {
-			memberImgs = append(memberImgs, member["image_url"])
-		}
-
-		// Return 10 images or less
-		imageLimit := 11
-		if len(memberImgs) < imageLimit {
-			basic["imgs"] = memberImgs
-		} else {
-			basic["imgs"] = memberImgs[:10]
-		}
-
-		basic["id"] = orgDetails["_id"]
-		basic["logo_url"] = orgDetails["logo_url"]
-		basic["name"] = orgDetails["name"]
-		basic["workspace_url"] = orgDetails["workspace_url"]
-		basic["no_of_members"] = len(orgMembers)
-
+		orgDetails := orgDetailsData.Bson
+		basic["imgs"], basic["id"], basic["logo_url"] = basicimagesdata.Interfaces, orgDetails["_id"], orgDetails["logo_url"]
+		basic["name"], basic["workspace_url"] = orgDetails["name"], orgDetails["workspace_url"]
 		orgs = append(orgs, basic)
 	}
 
@@ -297,8 +323,8 @@ func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request
 	w.Header().Add("content-type", "application/json")
 
 	var uRequest UUIDUserData
-	err := utils.ParseJsonFromRequest(r, &uRequest)
-	
+
+	err := utils.ParseJSONFromRequest(r, &uRequest)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
@@ -312,7 +338,7 @@ func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request
 	}
 
 	// Check that UUID exists
-	res, err := utils.GetMongoDbDoc(OrganizationsInvitesCollectionName, bson.M{"uuid": uRequest.UUID})
+	res, err := utils.GetMongoDBDoc(OrganizationsInvitesCollectionName, bson.M{"uuid": uRequest.UUID})
 	if err != nil {
 		utils.GetError(errors.New("uuid does not exist"), http.StatusBadRequest, w)
 		return
@@ -328,7 +354,7 @@ func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request
 	}
 
 	// Check if user_email exists
-	result, _ := utils.GetMongoDbDoc(UserCollectionName, bson.M{"email": userEmail})
+	result, _ := utils.GetMongoDBDoc(UserCollectionName, bson.M{"email": userEmail})
 	if result != nil {
 		utils.GetError(
 			fmt.Errorf("user with email %s exists", userEmail),
@@ -365,7 +391,7 @@ func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request
 
 	// Save user to DB
 	data, _ := utils.StructToMap(user)
-	resp, err := utils.CreateMongoDbDoc(UserCollectionName, data)
+	resp, err := utils.CreateMongoDBDoc(UserCollectionName, data)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)

@@ -1,3 +1,5 @@
+// +build integration
+
 package tests
 
 import (
@@ -6,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"testing"
 
 	"zuri.chat/zccore/auth"
@@ -53,7 +56,7 @@ func TestLogin(t *testing.T) {
 			ExpectedCode: http.StatusCreated,			
 		},
 		{
-			Name:   "Incorrect Credentials",
+			Name:   "should fail for incorrect password",
 			RequestBody: auth.Credentials{
 				Email: "john.doe@workable.com",
 				Password: "password223666",
@@ -61,7 +64,7 @@ func TestLogin(t *testing.T) {
 			ExpectedCode: http.StatusBadRequest,			
 		},
 		{
-			Name:   "Invalid Email Address",
+			Name:   "should throw error for invalid email",
 			RequestBody: auth.Credentials{
 				Email: "enigbe.enike.com",
 				Password: "password34223",
@@ -82,6 +85,7 @@ func TestLogin(t *testing.T) {
 			}
 			
 			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Content-length", strconv.FormatInt(req.ContentLength, 10))
 
 			defer func() {
 				if err := req.Body.Close(); err != nil {

@@ -24,7 +24,7 @@ type deleteDataRequest struct {
 func DeleteData(w http.ResponseWriter, r *http.Request) {
 	reqData := new(deleteDataRequest)
 
-	if err := utils.ParseJsonFromRequest(r, reqData); err != nil {
+	if err := utils.ParseJSONFromRequest(r, reqData); err != nil {
 		utils.GetError(fmt.Errorf("error processing request: %v", err), http.StatusUnprocessableEntity, w)
 		return
 	}

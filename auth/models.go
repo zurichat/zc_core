@@ -104,7 +104,7 @@ func CheckPassword(password, hash string) bool {
 
 func FetchUserByEmail(filter map[string]interface{}) (*user.User, error) {
 	u := &user.User{}
-	userCollection, err := utils.GetMongoDbCollection(os.Getenv("DB_NAME"), userCollection)
+	userCollection, err := utils.GetMongoDBCollection(os.Getenv("DB_NAME"), userCollection)
 
 	if err != nil {
 		return u, err
@@ -133,7 +133,7 @@ func IsAuthorized(orgID, role string, w http.ResponseWriter, r *http.Request) bo
 	userID := lguser.ID
 	luHexid, _ := primitive.ObjectIDFromHex(userID)
 	_, userCollection, memberCollection := "organizations", "users", "members"
-	userDoc, _ := utils.GetMongoDbDoc(userCollection, bson.M{"_id": luHexid})
+	userDoc, _ := utils.GetMongoDBDoc(userCollection, bson.M{"_id": luHexid})
 
 	if userDoc == nil {
 		utils.GetError(errors.New("user not found"), http.StatusBadRequest, w)
@@ -159,7 +159,7 @@ func IsAuthorized(orgID, role string, w http.ResponseWriter, r *http.Request) bo
 	}
 
 	// Getting member's document from db
-	orgMember, _ := utils.GetMongoDbDoc(memberCollection, bson.M{"org_id": orgID, "email": u.Email})
+	orgMember, _ := utils.GetMongoDBDoc(memberCollection, bson.M{"org_id": orgID, "email": u.Email})
 	if orgMember == nil {
 		utils.GetError(errors.New("access Denied"), http.StatusUnauthorized, w)
 		return false
@@ -244,7 +244,7 @@ func (au *AuthHandler) ConfirmUserPassword(w http.ResponseWriter, r *http.Reques
 		ConfirmPassword string `json:"confirm_password"`
 	}{}
 
-	if err := utils.ParseJsonFromRequest(r, &creds); err != nil {
+	if err := utils.ParseJSONFromRequest(r, &creds); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}

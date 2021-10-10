@@ -63,14 +63,14 @@ func GetandSetDB(collection string, expiry int) {
 	grt["$lt"] = int(time.Now().Unix())
 	ccfilter["expiry"] = grt
 
-	_, ee := utils.DeleteManyMongoDoc(collection, ccfilter)
+	_, ee := utils.DeleteManyMongoDBDoc(collection, ccfilter)
 	if ee != nil {
 		fmt.Println(ee)
 	}
 }
 
 func CheckOriginConnections(origin string) (int, bool) {
-	res, _ := utils.GetMongoDbDocs(CDcollection, bson.M{"origin": origin})
+	res, _ := utils.GetMongoDBDocs(CDcollection, bson.M{"origin": origin})
 
 	cCount := len(res)
 	if cCount >= MaxConnectionCount {
@@ -105,7 +105,7 @@ func AuthorizeOrigin(r *http.Request) error {
 		dt := ConnectionDocument{Origin: origin, Expiry: int(time.Now().Unix()) + expiry}
 		detail, _ := utils.StructToMap(dt)
 
-		_, err := utils.CreateMongoDbDoc(CDcollection, detail)
+		_, err := utils.CreateMongoDBDoc(CDcollection, detail)
 
 		if err != nil {
 			return err
@@ -170,7 +170,7 @@ func UserIDFromSession(sessionData *auth.ResToken, conf *utils.Configurations) (
 		return "", ee
 	}
 
-	session, err := utils.GetMongoDbDoc(conf.SessionDbCollection, data)
+	session, err := utils.GetMongoDBDoc(conf.SessionDBCollection, data)
 	if err != nil {
 		return "", err
 	}

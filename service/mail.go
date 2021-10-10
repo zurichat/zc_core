@@ -119,7 +119,7 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 		}
 
 		request := sendgrid.GetRequest(
-			ms.configs.SendGridApiKey,
+			ms.configs.SendGridAPIKey,
 			"/v3/mail/send",
 			"https://api.sendgrid.com",
 		)
@@ -174,8 +174,8 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 
 		auth := smtp.PlainAuth(
 			"",
-			ms.configs.SmtpUsername,
-			ms.configs.SmtpPassword,
+			ms.configs.SMTPUsername,
+			ms.configs.SMTPPassword,
 			"smtp.gmail.com",
 		)
 
@@ -184,7 +184,7 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 		msg := []byte(subject + mime + body)
 
 		addr := "smtp.gmail.com:587"
-		if err := smtp.SendMail(addr, auth, ms.configs.SmtpUsername, mailReq.to, msg); err != nil {
+		if err := smtp.SendMail(addr, auth, ms.configs.SMTPUsername, mailReq.to, msg); err != nil {
 			return err
 		}
 
