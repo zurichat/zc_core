@@ -76,6 +76,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations", au.IsAuthenticated(orgs.Create)).Methods("POST")
 	r.HandleFunc("/organizations", au.IsAuthenticated(orgs.GetOrganizations)).Methods("GET")
 	r.HandleFunc("/organizations/{id}", au.IsAuthenticated(orgs.GetOrganization)).Methods("GET")
+	r.HandleFunc("/organizations/{id}", au.IsAuthenticated(au.IsAuthorized(orgs.DeleteOrganization,"admin"))).Methods("DELETE")
 	r.HandleFunc("/organizations/{id}/settings", au.IsAuthenticated(orgs.UpdateOrganizationSettings)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/permission", au.IsAuthenticated(orgs.UpdateOrganizationPermission)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/auth", au.IsAuthenticated(orgs.UpdateOrganizationAuthentication)).Methods("PATCH")
@@ -85,7 +86,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/invites/{uuid}", orgs.CheckGuestStatus).Methods(http.MethodGet)
 	r.HandleFunc("/organizations/guests/{uuid}", orgs.GuestToOrganization).Methods(http.MethodPost)
 
-	r.HandleFunc("/organizations/{id}", au.IsAuthenticated(orgs.DeleteOrganization)).Methods("DELETE")
+	
 	r.HandleFunc("/organizations/url/{url}", orgs.GetOrganizationByURL).Methods("GET")
 
 	r.HandleFunc("/organizations/{id}/plugins", au.IsAuthenticated(orgs.AddOrganizationPlugin)).Methods("POST")
