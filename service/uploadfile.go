@@ -28,7 +28,8 @@ var allowedMimeTypes = []string{"application/pdf",
 }
 
 const (
-	localDH = "127.0.0.1:8080"
+	localDH  = "127.0.0.1:8080"
+	localDHL = "localhost:8080"
 )
 
 var (
@@ -163,7 +164,7 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 		filenameE := strings.Join(strings.Split(filename, "\\"), "/")
 
 		var urlPrefix = "https://api.zuri.chat/"
-		if r.Host == localDH {
+		if r.Host == localDH || r.Host == localDHL {
 			urlPrefix = "127.0.0.1:8080/"
 		}
 
@@ -304,7 +305,7 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 
 	var urldom = "api.zuri.chat"
 
-	if r.Host == localDH {
+	if r.Host == localDH || r.Host == localDHL {
 		urldom = localDH
 	}
 
@@ -373,7 +374,7 @@ func saveFile(folderName string, file multipart.File, handle *multipart.FileHead
 
 	var urlPrefix = "https://api.zuri.chat/"
 
-	if r.Host == localDH {
+	if r.Host == localDH || r.Host == localDHL {
 		urlPrefix = "127.0.0.1:8080/"
 	}
 
