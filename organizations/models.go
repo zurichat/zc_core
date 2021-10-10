@@ -14,8 +14,9 @@ const (
 	InstalledPluginsCollectionName = "installed_plugins"
 	OrganizationInviteCollection   = "organizations_invites"
 	MemberCollectionName           = "members"
+	CardCollectionName             = "cards"
 	UserCollectionName             = "users"
-	PluginCollection 			   = "plugins"
+	PluginCollection               = "plugins"
 )
 
 const (
@@ -125,7 +126,7 @@ type OrgPluginBody struct {
 }
 
 type InstalledPlugin struct {
-	ID         string                 `json:"id" bson:"_id"`
+	ID          string                 `json:"id" bson:"_id"`
 	PluginID    string                 `json:"plugin_id" bson:"plugin_id"`
 	Plugin      map[string]interface{} `json:"plugin" bson:"plugin"`
 	AddedBy     string                 `json:"added_by" bson:"added_by"`
@@ -360,8 +361,19 @@ type OrganizationHandler struct {
 }
 
 type updateParam struct {
-	orgFilterKey string
+	orgFilterKey   string
 	requestDataKey string
-	eventKey string
+	eventKey       string
 	successMessage string
+}
+
+type Card struct {
+	NameOnCard string `json:"name_on_card" bson:"name_on_card"`
+	MemberID   string `json:"member_id" bson:"member_id"`
+	Type       string `json:"type" bson:"type"`
+	ExpMonth   int    `json:"exp_month" bson:"exp_month"`
+	ExpYear    int    `json:"exp_year" bson:"exp_year"`
+	Last4      string `json:"last4" bson:"last4"`
+	Country    string `json:"country,omitempty" bson:"country,omitempty"`
+	CVCCheck   string `json:"cvc_check" bson:"cvc_check"`
 }

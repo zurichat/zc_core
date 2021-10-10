@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
-	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/stripe/stripe-go/v72"
@@ -28,19 +28,30 @@ const (
 	AUD = "aud" // Australian Dollar (A$)
 )
 
+// Credit Card Types accepted by the Stripe API.
+const (
+	AmericanExpress = "American Express"
+	DinersClub      = "Diners Club"
+	Discover        = "Discover"
+	JCB             = "JCB"
+	MasterCard      = "MasterCard"
+	Visa            = "Visa"
+	UnknownCard     = "Unknown"
+)
+
 // converts amount in real currency to equivalent token value.
 func GetTokenAmount(amount float64, currency string) (float64, error) {
 	var ExchangeMap = map[string]float64{
 		USD: 1,
 		EUR: 0.86,
 	}
-	
+
 	ConversionRate, ok := ExchangeMap[currency]
-	
+
 	if !ok {
 		return float64(0), errors.New("currency not yet supported")
 	}
-	
+
 	return amount * ConversionRate, nil
 }
 
@@ -57,10 +68,10 @@ func IncrementToken(orgID, description string, tokenAmount float64) error {
 	}
 
 	organization.Tokens += tokenAmount
-	
+
 	updateData := make(map[string]interface{})
 	updateData["tokens"] = organization.Tokens
-	
+
 	if _, err := utils.UpdateOneMongoDbDoc(OrganizationCollectionName, orgID, updateData); err != nil {
 		return err
 	}
@@ -85,18 +96,18 @@ func DeductToken(orgID, description string, tokenAmount float64) error {
 	}
 
 	organization.Tokens -= tokenAmount
-	
+
 	updateData := make(map[string]interface{})
 	updateData["tokens"] = organization.Tokens
-	
+
 	if _, err := utils.UpdateOneMongoDbDoc(OrganizationCollectionName, orgID, updateData); err != nil {
 		return err
 	}
-	
+
 	if err := SendTokenBillingEmail(orgID, description, tokenAmount); err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -112,11 +123,11 @@ func SubscriptionBilling(orgID string, proVersionRate float64) error {
 	numMembers := len(orgMembers)
 
 	description = "Billing for Pro version subscription for " + strconv.Itoa(numMembers) + " member(s) at " + strconv.Itoa(int(proVersionRate)) + " token(s) per member per month"
-	
+
 	if err := DeductToken(orgID, description, amount); err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -143,11 +154,11 @@ func SendTokenBillingEmail(orgID, description string, amount float64) error {
 			"Name":        name,
 		},
 	)
-	
+
 	if err := ms.SendMail(billingMail); err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -191,7 +202,7 @@ func (oh *OrganizationHandler) AddToken(w http.ResponseWriter, r *http.Request) 
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
-	
+
 	var transaction TokenTransaction
 
 	transaction.Amount = tokens
@@ -210,7 +221,7 @@ func (oh *OrganizationHandler) AddToken(w http.ResponseWriter, r *http.Request) 
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
-	
+
 	if update.ModifiedCount == 0 {
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
@@ -237,7 +248,7 @@ func (oh *OrganizationHandler) GetTokenTransaction(w http.ResponseWriter, r *htt
 
 func (oh *OrganizationHandler) ChargeTokens(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	
+
 	orgID := mux.Vars(r)["id"]
 
 	requestData := make(map[string]string)
@@ -266,7 +277,7 @@ func (oh *OrganizationHandler) ChargeTokens(w http.ResponseWriter, r *http.Reque
 
 func (oh *OrganizationHandler) CreateCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	
+
 	orgID := mux.Vars(r)["id"]
 	objID, err := primitive.ObjectIDFromHex(orgID)
 
@@ -293,7 +304,7 @@ func (oh *OrganizationHandler) CreateCheckoutSession(w http.ResponseWriter, r *h
 		utils.GetError(errors.New("amount not supplied"), http.StatusUnprocessableEntity, w)
 		return
 	}
-	
+
 	stripeAmount := amount * 100
 	params := &stripe.CheckoutSessionParams{
 		PaymentMethodTypes: stripe.StringSlice([]string{
@@ -312,8 +323,8 @@ func (oh *OrganizationHandler) CreateCheckoutSession(w http.ResponseWriter, r *h
 				Quantity: stripe.Int64(1),
 			},
 		},
-		SuccessURL: stripe.String(os.Getenv("FRONT_END_URL") + "/admin/settings/billings?status=success&orgId="+orgID),
-		CancelURL:  stripe.String(os.Getenv("FRONT_END_URL")+ "/admin/settings/billings?status=failed&orgId="+orgID),
+		SuccessURL: stripe.String(os.Getenv("FRONT_END_URL") + "/admin/settings/billings?status=success&orgId=" + orgID),
+		CancelURL:  stripe.String(os.Getenv("FRONT_END_URL") + "/admin/settings/billings?status=failed&orgId=" + orgID),
 	}
 
 	s, err := session.New(params)
@@ -324,4 +335,69 @@ func (oh *OrganizationHandler) CreateCheckoutSession(w http.ResponseWriter, r *h
 	}
 
 	utils.GetSuccess("successfully initiated payment", s.URL, w)
+}
+
+// AddCard encapsulates operations for creating, deleting and querying cards using the Stripe REST API.
+func (oh *OrganizationHandler) AddCard(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	MemberID := mux.Vars(r)["mem_id"]
+	objID, err := primitive.ObjectIDFromHex(MemberID)
+
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	member, _ := utils.GetMongoDbDoc(MemberCollectionName, bson.M{"_id": objID})
+
+	if member == nil {
+		utils.GetError(fmt.Errorf("member %s not found", MemberID), http.StatusNotFound, w)
+		return
+	}
+
+	var newcard Card
+
+	err = utils.ParseJsonFromRequest(r, &newcard)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	newcard.MemberID = MemberID
+
+	// convert card struct to map
+	card, err := utils.StructToMap(newcard)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	res, err := utils.CreateMongoDbDoc(CardCollectionName, card)
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("successfully added new card", res, w)
+}
+
+func (oh *OrganizationHandler) DeleteCard(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	MemberCard := mux.Vars(r)["id"]
+	res, err := utils.DeleteOneMongoDoc(CardCollectionName, MemberCard)
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if res.DeletedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("card successfully deleted", res, w)
 }

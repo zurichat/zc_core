@@ -93,17 +93,17 @@ run:
   - tests
   - blog
   - api
-  #- contact
+  - contact
   - docs
-  # marketplace
-  - organizations
-  # - plugin
+  - marketplace
+  #- organizations
+  - plugin
   - data
   - plugin
-  # data
+  - data
   - external
   - messaging
-  #- report
+  - report
   - realtime
    - service
   - user
