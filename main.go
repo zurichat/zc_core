@@ -182,7 +182,7 @@ func Router(server *socketio.Server) *mux.Router {
 	http.Handle("/", r)
 
 	// Docs
-	r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.FileServer(http.Dir("./docs/"))))
+	r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.RedirectHandler("https://docs.zuri.chat/",  http.StatusMovedPermanently)))
 
 	return r
 }
