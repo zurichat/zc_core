@@ -41,6 +41,7 @@ func (oh *OrganizationHandler) GetOrganization(w http.ResponseWriter, r *http.Re
 	var org Organization
 	// convert bson to struct
 	bsonBytes, _ := bson.Marshal(save)
+
 	err = bson.Unmarshal(bsonBytes, &org)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
@@ -360,12 +361,43 @@ func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.
 
 // Update organization logo.
 func (oh *OrganizationHandler) UpdateLogo(w http.ResponseWriter, r *http.Request) {
-	OrganizationUpdate(w, r, updateParam{
-		orgFilterKey:   "logo_url",
-		requestDataKey: "organization_logo",
-		eventKey:       UpdateOrganizationLogo,
-		successMessage: "organization logo",
-	})
+	w.Header().Set("content-Type", "application/json")
+
+	orgID := mux.Vars(r)["id"]
+
+	// check that org_id is valid
+	err := ValidateOrg(orgID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	uploadPath := "logo/" + orgID
+
+	imgURL, err := service.ProfileImageUpload(uploadPath, r)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	update, err := utils.UpdateOneMongoDBDoc(OrganizationCollectionName, orgID, bson.M{"logo_url": imgURL})
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	eventChannel := fmt.Sprintf("organizations_%s", orgID)
+	event := utils.Event{Identifier: orgID, Type: "Organization", Event: UpdateOrganizationLogo, Channel: eventChannel, Payload: make(map[string]interface{})}
+
+	go utils.Emitter(event)
+
+	utils.GetSuccess("Logo updated successfully", imgURL, w)
 }
 
 func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request) {
