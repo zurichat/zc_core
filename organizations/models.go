@@ -373,7 +373,7 @@ type Card struct {
 	Type       string `json:"type" bson:"type"`
 	ExpMonth   int    `json:"exp_month" bson:"exp_month"`
 	ExpYear    int    `json:"exp_year" bson:"exp_year"`
-	Last4      string `json:"last4" bson:"last4"`
+	CardNumber string `json:"card_number" bson:"card_number"`
 	Country    string `json:"country,omitempty" bson:"country,omitempty"`
 	CVCCheck   string `json:"cvc_check" bson:"cvc_check"`
 }

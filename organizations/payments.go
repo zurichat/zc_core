@@ -1,8 +1,14 @@
 package organizations
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/md5"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -38,6 +44,26 @@ const (
 	Visa            = "Visa"
 	UnknownCard     = "Unknown"
 )
+
+func createHash(key string) string {
+	hasher := md5.New()
+	hasher.Write([]byte(key))
+	return hex.EncodeToString(hasher.Sum(nil))
+}
+
+func encrypt(data []byte, passphrase string) []byte {
+	block, _ := aes.NewCipher([]byte(createHash(passphrase)))
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		panic(err.Error())
+	}
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
+		panic(err.Error())
+	}
+	ciphertext := gcm.Seal(nonce, nonce, data, nil)
+	return ciphertext
+}
 
 // converts amount in real currency to equivalent token value.
 func GetTokenAmount(amount float64, currency string) (float64, error) {
@@ -100,10 +126,7 @@ func DeductToken(orgID, description string, tokenAmount float64) error {
 	updateData := make(map[string]interface{})
 	updateData["tokens"] = organization.Tokens
 
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func SubscriptionBilling(orgID string, proVersionRate float64) error {
@@ -332,9 +355,23 @@ func (oh *OrganizationHandler) CreateCheckoutSession(w http.ResponseWriter, r *h
 	utils.GetSuccess("successfully initiated payment", s.URL, w)
 }
 
-// AddCard encapsulates operations for creating, deleting and querying cards using the Stripe REST API.
 func (oh *OrganizationHandler) AddCard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	orgID := mux.Vars(r)["id"]
+	// Checks if organization id is valid
+	orgIDHex, err := primitive.ObjectIDFromHex(orgID)
+	if err != nil {
+		utils.GetError(errors.New("invalid organization id"), http.StatusBadRequest, w)
+		return
+	}
+
+	// Checks if organization exists in the database
+	orgDoc, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgIDHex})
+	if orgDoc == nil {
+		utils.GetError(errors.New("organization does not exist"), http.StatusBadRequest, w)
+		return
+	}
 
 	MemberID := mux.Vars(r)["mem_id"]
 	objID, err := primitive.ObjectIDFromHex(MemberID)
@@ -344,7 +381,7 @@ func (oh *OrganizationHandler) AddCard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	member, _ := utils.GetMongoDbDoc(MemberCollectionName, bson.M{"_id": objID})
+	member, _ := utils.GetMongoDBDoc(MemberCollectionName, bson.M{"_id": objID})
 
 	if member == nil {
 		utils.GetError(fmt.Errorf("member %s not found", MemberID), http.StatusNotFound, w)
@@ -353,13 +390,13 @@ func (oh *OrganizationHandler) AddCard(w http.ResponseWriter, r *http.Request) {
 
 	var newcard Card
 
-	err = utils.ParseJsonFromRequest(r, &newcard)
-	if err != nil {
+	if err = utils.ParseJSONFromRequest(r, &newcard); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
-
 	newcard.MemberID = MemberID
+	newcard.CVCCheck = string(encrypt([]byte(newcard.CVCCheck), "zcore_key"))
+	newcard.CardNumber = string(encrypt([]byte(newcard.CardNumber), "zcore_key"))
 
 	// convert card struct to map
 	card, err := utils.StructToMap(newcard)
@@ -368,7 +405,7 @@ func (oh *OrganizationHandler) AddCard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := utils.CreateMongoDbDoc(CardCollectionName, card)
+	res, err := utils.CreateMongoDBDoc(CardCollectionName, card)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
@@ -382,7 +419,7 @@ func (oh *OrganizationHandler) DeleteCard(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", "application/json")
 
 	MemberCard := mux.Vars(r)["id"]
-	res, err := utils.DeleteOneMongoDoc(CardCollectionName, MemberCard)
+	res, err := utils.DeleteOneMongoDBDoc(CardCollectionName, MemberCard)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
