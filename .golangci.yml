@@ -92,18 +92,18 @@ run:
   skip-dirs:
   - blog
   - api
-  #- contact
+  - contact
   - docs
   - marketplace
   - organizations
   - plugin
-  # data
+  - data
   - external
   - messaging
   - report
   - realtime
-  # - service
+  - service
   - user
   - utils
-  # skip-files:
-  # - main.go
+  skip-files:
+  - main.go
