@@ -128,7 +128,7 @@ func (rh *ReportHandler) GetReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("report  retrieved successfully", report, w)
+	utils.GetSuccess("report retrieved successfully", report, w)
 }
 
 // Get reports.
@@ -153,5 +153,5 @@ func (rh *ReportHandler) GetReports(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("report  retrieved successfully", report, w)
+	utils.GetSuccess("reports retrieved successfully", report, w)
 }
