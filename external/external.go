@@ -16,46 +16,53 @@ import (
 )
 
 var (
-	validate         = validator.New()
-	CLIENT_NOT_VALID = errors.New("client type is not valid is not valid. Choose from windows, linux, mac, ios, android")
-	EMAIL_NOT_VALID  = errors.New("Email address is not valid")
+	validate          = validator.New()
+	ErrClientNotValid = errors.New("client type is not valid is not valid. Choose from windows, linux, mac, ios, android")
+	ErrEmailNotValid  = errors.New("email address is not valid")
 )
 
-func (eh *ExternalHandler) EmailSubscription(w http.ResponseWriter, r *http.Request) {
+func (eh *Handler) EmailSubscription(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	newsletter_collection := "subscription"
+
+	newsletterCollection := "subscription"
+
 	var NewSubscription Subscription
-	type sub_res struct {
+
+	type subRes struct {
 		status bool
 	}
+
 	err := json.NewDecoder(r.Body).Decode(&NewSubscription)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	SubDoc, _ := utils.GetMongoDBDoc(newsletter_collection, bson.M{"email": NewSubscription.Email})
+	SubDoc, _ := utils.GetMongoDBDoc(newsletterCollection, bson.M{"email": NewSubscription.Email})
 	if SubDoc != nil {
-		// fmt.Printf("user with email %s already subscribed!", NewSubscription.Email)
 		msger := eh.mailService.NewMail(
 			[]string{NewSubscription.Email}, "Zuri Chat Newsletter Subscription", service.EmailSubscription,
 			map[string]interface{}{
 				"Username": NewSubscription.Email,
 			})
 
-		if err := eh.mailService.SendMail(msger); err != nil {
+		if err = eh.mailService.SendMail(msger); err != nil {
 			fmt.Printf("Error occurred while sending mail: %s", err.Error())
 		}
-		utils.GetSuccess("Thanks for subscribing to for or Newsletter", sub_res{status: true}, w)
+
+		utils.GetSuccess("Thanks for subscribing to for or Newsletter", subRes{status: true}, w)
+
 		return
 	}
 
-	coll := utils.GetCollection(newsletter_collection)
+	coll := utils.GetCollection(newsletterCollection)
 	res, err := coll.InsertOne(r.Context(), NewSubscription)
+
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
+
 	fmt.Println(res.InsertedID)
 
 	msger := eh.mailService.NewMail(
@@ -67,40 +74,40 @@ func (eh *ExternalHandler) EmailSubscription(w http.ResponseWriter, r *http.Requ
 	if err := eh.mailService.SendMail(msger); err != nil {
 		fmt.Printf("Error occurred while sending mail: %s", err.Error())
 	}
-	utils.GetSuccess("Thanks for subscribing for our Newsletter", sub_res{status: true}, w)
+
+	utils.GetSuccess("Thanks for subscribing for our Newsletter", subRes{status: true}, w)
 }
 
-func (eh *ExternalHandler) DownloadClient(w http.ResponseWriter, r *http.Request) {
+func (eh *Handler) DownloadClient(w http.ResponseWriter, r *http.Request) {
 	var url string
+
 	clientType := r.URL.Query().Get("client_type")
 	email := r.URL.Query().Get("email")
 
 	if !utils.IsValidEmail(email) {
-		utils.GetError(EMAIL_NOT_VALID, http.StatusBadRequest, w)
+		utils.GetError(ErrEmailNotValid, http.StatusBadRequest, w)
 		return
 	}
 
-	windows_url := "https://api.zuri.chat/files/applications/20210922182446_0.7z"
-	linux_url := "url not available at the moment"
-	mac_url := "url not available at the moment"
-	ios_url := "url not available"
-	android_url := "url not available at the moment"
+	windowsURL := "https://api.zuri.chat/files/applications/20210922182446_0.7z"
+	defaultURL := "url not available at the moment"
 
 	switch clientType {
 	case "windows":
-		url = windows_url
+		url = windowsURL
 	case "linux":
-		url = linux_url
+		url = defaultURL
 	case "mac":
-		url = mac_url
+		url = defaultURL
 	case "ios":
-		url = ios_url
+		url = defaultURL
 	case "android":
-		url = android_url
+		url = defaultURL
 	default:
-		utils.GetError(CLIENT_NOT_VALID, http.StatusBadRequest, w)
+		utils.GetError(ErrClientNotValid, http.StatusBadRequest, w)
 		return
 	}
+
 	msger := eh.mailService.NewMail(
 		[]string{email},
 		"Zuri Chat Desktop",
@@ -114,16 +121,20 @@ func (eh *ExternalHandler) DownloadClient(w http.ResponseWriter, r *http.Request
 	if err := eh.mailService.SendMail(msger); err != nil {
 		fmt.Printf("Error occurred while sending mail: %s", err.Error())
 	}
+
 	utils.GetSuccess("Download Link Successfully sent", url, w)
 }
 
-func (eh *ExternalHandler) SendMail(w http.ResponseWriter, r *http.Request) {
+func (eh *Handler) SendMail(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var msgr *service.Mail
-	switch isCustomMail, _ := strconv.ParseInt(r.FormValue("custom_mail"), 0, 8); isCustomMail {
+
+	bitSize := 8
+
+	switch isCustomMail, _ := strconv.ParseInt(r.FormValue("custom_mail"), 0, bitSize); isCustomMail {
 	case 1:
-		//mailbody and content-type * content-type -> text/html and text/plain
+		// mailbody and content-type * content-type -> text/html and text/plain
 		mail := struct {
 			Email       string `json:"email" validate:"email,required"`
 			Subject     string `json:"subject" validate:"required"`
@@ -171,12 +182,12 @@ func (eh *ExternalHandler) SendMail(w http.ResponseWriter, r *http.Request) {
 		}
 		// ensure email is valid
 		if !utils.IsValidEmail(strings.ToLower(mail.Email)) {
-			utils.GetError(EMAIL_NOT_VALID, http.StatusBadRequest, w)
+			utils.GetError(ErrEmailNotValid, http.StatusBadRequest, w)
 			return
 		}
 
 		if _, ok := service.MailTypes[service.MailType(mail.MailType)]; !ok {
-			utils.GetError(errors.New("invalid email type, email template does not exists!"), http.StatusBadRequest, w)
+			utils.GetError(errors.New("invalid email type, email template does not exists"), http.StatusBadRequest, w)
 			return
 		}
 
