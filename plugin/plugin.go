@@ -8,6 +8,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
+	"go.mongodb.org/mongo-driver/bson"
 	"zuri.chat/zccore/utils"
 )
 
@@ -30,10 +31,17 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if ps, err := FindPlugins(r.Context(), bson.M{"template_url": p.TemplateURL}); err == nil && len(ps) > 0 {
+		utils.GetError(errors.New("duplicate plugin registration"), http.StatusForbidden, w)
+		return
+	}
+
 	if err := CreatePlugin(r.Context(), &p); err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
+
+	w.WriteHeader(201)
 
 	utils.GetSuccess("success", M{"plugin_id": p.ID.Hex()}, w)
 
