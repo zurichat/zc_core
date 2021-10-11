@@ -14,34 +14,28 @@
 				box-sizing: border-box;
 			}
 
-			main {
-				display: flex;
-				flex-direction: column;
-				margin: auto;
-			}
-
 			.container {
 				background: #f3f6f8;
-				align-items: center;
 			}
 
 			.content {
 				height: fit-content;
-				margin: 0 2em 2em 2em;
+				width: 85%;
 				background: #ffffff;
 				padding-bottom: 1em;
 			}
 
 			.header {
-				width: 85%;
 				padding: 2em 0;
-				height: max-content;
+			}
+
+			.main-content,
+			footer {
+				width: 85%;
 			}
 
 			.logo {
-				display: flex;
-				justify-content: center;
-				width: 100%;
+				width: 200px;
 			}
 
 			.logo img {
@@ -61,11 +55,9 @@
 				font-size: 18px;
 			}
 
-			main img {
-				width: 300.57px;
+			.main-content img {
+				width: 310px;
 				height: 210.11px;
-				padding: 0 0.5em;
-				margin: auto;
 			}
 
 			.paragraph {
@@ -74,7 +66,6 @@
 				font-size: 16px;
 				text-align: justify;
 				color: #1f1d1d;
-				margin: auto;
 			}
 
 			p {
@@ -101,14 +92,8 @@
 				padding-top: 1.5em;
 			}
 
-			main {
-				justify-content: center;
-			}
-
 			footer {
-				align-items: flex-start;
 				border-top: solid #c4c4c4;
-				width: 80%;
 				padding-top: 0.8em;
 				margin: 5em auto auto auto;
 			}
@@ -155,10 +140,6 @@
 				text-decoration: none;
 			}
 
-			.footer_logo {
-				width: 75vw;
-			}
-
 			.quick_links {
 				margin-top: 2em;
 			}
@@ -171,64 +152,44 @@
 			@media only screen and (min-width: 768px) {
 				.header {
 					padding: 3em 0;
-					height: max-content;
 				}
 
-				.logo,
 				.footer_link_tags_text,
 				.footer_link_tags ul {
 					display: flex;
 					justify-content: center;
 				}
 
-				.logo {
-					height: 100%;
-					width: 100%;
-				}
-
-				main {
+				.main-content {
 					height: fit-content;
 				}
-
-				main img {
+				.main-content img {
 					width: 490px;
 					height: 400.11px;
-					margin: auto;
 				}
-
 				.content {
-					margin: 0 8em 8em 8em;
+					width: 85%;
 					margin-bottom: 0;
 					height: fit-content;
 				}
-
 				.paragraph {
 					width: 100%;
 					font-size: 22px;
-				}
-
-				.header,
-				main,
-				footer {
-					width: 85%;
+					background: grey;
 				}
 
 				.footer_link {
 					font-size: 18px;
 				}
-
 				.footer_link_tags {
 					font-size: 20px;
 				}
-
 				.footer_link_tags_text {
 					width: 100%;
 				}
-
 				.footer_link_tags ul li {
 					margin: 0rem 1rem;
 				}
-
 				.footer_link_tags ul {
 					display: flex;
 					justify-content: center;
@@ -237,8 +198,7 @@
 			}
 
 			@media only screen and (min-width: 958px) {
-				main img {
-					margin: auto;
+				.main-content img {
 					width: 95%;
 					height: fit-content;
 				}
@@ -248,33 +208,40 @@
 
 	<body>
 		<div class="container">
-			<div class="header">
-				<div class="logo">
-					<div><img src="https://res.cloudinary.com/engage-cloud/image/upload/v1632683837/zuri_logo_noizec.png" alt="Zuri logo" /></div>
-					<div class="logo_name">Zuri</div>
+			<header class="header">
+				<div class="logo" style="display: flex; align-items: center; margin: auto">
+					<img src="https://res.cloudinary.com/engage-cloud/image/upload/v1632683837/zuri_logo_noizec.png" alt="Zuri logo" />
+					<span class="logo_name">Zuri</span>
 				</div>
-			</div>
-			<div class="content">
-				<main>
-					<div class="paragraph text_greetings">
+			</header>
+			<div class="content" style="margin: auto">
+				<main class="main-content" style="margin: auto">
+					<div class="paragraph text_greetings" style="margin: auto">
 						<p>Hello {{.Username}}</p>
 					</div>
-					<img src="https://res.cloudinary.com/engage-cloud/image/upload/v1632683744/people_chatting_b9bsgj.png" alt="people chatting" />
-					<div class="paragraph text_body">
+					<div style="display: flex; justify-content: center">
+						<img
+							src="https://res.cloudinary.com/engage-cloud/image/upload/v1632683744/people_chatting_b9bsgj.png"
+							style="margin: auto"
+							alt="people chatting"
+						/>
+					</div>
+
+					<div class="paragraph text_body" style="margin: auto">
 						<p>We're thrilled to welcome you to the Zuri Chat community. Thank you for signing up for updates from Zuri Chat.</p>
 						<p>
 							To make your journey with Zuri Chat smooth and easy, we will give you regular tips on how to maximize your team's productivity with Zuri
 							Chat. Also, because you are our VVIP, you will also be the first to get exclusive offers geared to you and your team.
 						</p>
 					</div>
-					<div class="paragraph text_closing">
+					<div class="paragraph text_closing" style="margin: auto">
 						<p>If you need any help at all, get in touch with us at <a href=".">contact-us@gmail.com</a>.</p>
 					</div>
-					<div class="paragraph text_signature">
+					<div class="paragraph text_signature" style="margin: auto">
 						<p>We'll be delighted to assist!</p>
 					</div>
 				</main>
-				<footer>
+				<footer style="margin: auto">
 					<div class="footer_logo">
 						<div><img src="https://res.cloudinary.com/engage-cloud/image/upload/v1632683837/zuri_logo_noizec.png" alt="Zuri logo" /></div>
 						<div class="logo_name_footer">Zuri</div>
@@ -283,17 +250,17 @@
 						<div>Workspace URL</div>
 						<a href="zuri.chat">Go to Zuri Chat</a>
 					</div>
-				</footer>
-				<div class="footer_link_tags">
-					<div class="footer_link_tags_text">Have questions about your new workspace? Drop us a note at help@Zuri.com. We're glad you are here</div>
-					<div class="quick_links">
-						<ul>
-							<li><a href=".">Our Blog</a></li>
-							<li><a href=".">Email Preferences</a></li>
-							<li><a href="https://www.zuri.chat/privacy">Policies</a></li>
-						</ul>
+					<div class="footer_link_tags">
+						<div class="footer_link_tags_text">Have questions about your new workspace? Drop us a note at help@Zuri.com. We're glad you are here</div>
+						<div class="quick_links">
+							<ul>
+								<li><a href=".">Our Blog</a></li>
+								<li><a href=".">Email Preferences</a></li>
+								<li><a href="https://www.zuri.chat/privacy">Policies</a></li>
+							</ul>
+						</div>
 					</div>
-				</div>
+				</footer>
 			</div>
 		</div>
 	</body>
