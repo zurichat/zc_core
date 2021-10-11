@@ -76,7 +76,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations", au.IsAuthenticated(orgs.Create)).Methods("POST")
 	r.HandleFunc("/organizations", au.IsAuthenticated(orgs.GetOrganizations)).Methods("GET")
 	r.HandleFunc("/organizations/{id}", au.IsAuthenticated(orgs.GetOrganization)).Methods("GET")
-	r.HandleFunc("/organizations/{id}", au.IsAuthenticated(au.IsAuthorized(orgs.DeleteOrganization,"admin"))).Methods("DELETE")
+	r.HandleFunc("/organizations/{id}", au.IsAuthenticated(au.IsAuthorized(orgs.DeleteOrganization, "admin"))).Methods("DELETE")
 	r.HandleFunc("/organizations/url/{url}", orgs.GetOrganizationByURL).Methods("GET")
 
 	r.HandleFunc("/organizations/{id}/url", au.IsAuthenticated(orgs.UpdateURL)).Methods("PATCH")
@@ -100,9 +100,9 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members", au.IsAuthenticated(au.IsAuthorized(orgs.CreateMember, "admin"))).Methods("POST")
 	r.HandleFunc("/organizations/{id}/members", orgs.GetMembers).Methods("GET")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}", au.IsAuthenticated(orgs.GetMember)).Methods("GET")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}", au.IsAuthenticated(au.IsAuthorized(orgs.DeactivateMember,"admin"))).Methods("DELETE")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}/reactivate", au.IsAuthenticated(au.IsAuthorized(orgs.ReactivateMember,"admin"))).Methods("POST")
-	
+	r.HandleFunc("/organizations/{id}/members/{mem_id}", au.IsAuthenticated(au.IsAuthorized(orgs.DeactivateMember, "admin"))).Methods("DELETE")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/reactivate", au.IsAuthenticated(au.IsAuthorized(orgs.ReactivateMember, "admin"))).Methods("POST")
+
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/status", au.IsAuthenticated(orgs.UpdateMemberStatus)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/photo/{action}", au.IsAuthenticated(orgs.UpdateProfilePicture)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/profile", au.IsAuthenticated(orgs.UpdateProfile)).Methods("PATCH")
@@ -131,6 +131,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/data/read", data.NewRead).Methods("POST")
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
 	r.HandleFunc("/data/delete", data.DeleteData).Methods("POST")
+	r.HandleFunc("/data/collections/details/{plugin_id}/{coll_name}/{org_id}", data.CollectionDetail).Methods("GET")
 	r.HandleFunc("/data/collections/{plugin_id}", data.ListCollections).Methods("GET")
 	r.HandleFunc("/data/collections/{plugin_id}/{org_id}", data.ListCollections).Methods("GET")
 

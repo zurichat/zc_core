@@ -12,11 +12,11 @@ type Subscription struct {
 	SubscribedAt time.Time `json:"subscribed_at" bson:"subscribed_at"`
 }
 
-type ExternalHandler struct {
+type Handler struct {
 	configs     *utils.Configurations
 	mailService service.MailService
 }
 
-func NewExternalHandler(c *utils.Configurations, mail service.MailService) *ExternalHandler {
-	return &ExternalHandler{configs: c, mailService: mail}
+func NewExternalHandler(c *utils.Configurations, mail service.MailService) *Handler {
+	return &Handler{configs: c, mailService: mail}
 }
