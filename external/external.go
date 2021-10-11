@@ -44,7 +44,7 @@ func (eh *ExternalHandler) EmailSubscription(w http.ResponseWriter, r *http.Requ
 			})
 
 		if err := eh.mailService.SendMail(msger); err != nil {
-			fmt.Printf("Error occured while sending mail: %s", err.Error())
+			fmt.Printf("Error occurred while sending mail: %s", err.Error())
 		}
 		utils.GetSuccess("Thanks for subscribing to for or Newsletter", sub_res{status: true}, w)
 		return
@@ -65,10 +65,9 @@ func (eh *ExternalHandler) EmailSubscription(w http.ResponseWriter, r *http.Requ
 		})
 
 	if err := eh.mailService.SendMail(msger); err != nil {
-		fmt.Printf("Error occured while sending mail: %s", err.Error())
+		fmt.Printf("Error occurred while sending mail: %s", err.Error())
 	}
 	utils.GetSuccess("Thanks for subscribing for our Newsletter", sub_res{status: true}, w)
-
 }
 
 func (eh *ExternalHandler) DownloadClient(w http.ResponseWriter, r *http.Request) {
@@ -82,10 +81,10 @@ func (eh *ExternalHandler) DownloadClient(w http.ResponseWriter, r *http.Request
 	}
 
 	windows_url := "https://api.zuri.chat/files/applications/20210922182446_0.7z"
-	linux_url := "url not avaliable at the moment"
-	mac_url := "url not avaliable at the moment"
-	ios_url := "url not avaliable"
-	android_url := "url not avaliable at the moment"
+	linux_url := "url not available at the moment"
+	mac_url := "url not available at the moment"
+	ios_url := "url not available"
+	android_url := "url not available at the moment"
 
 	switch clientType {
 	case "windows":
@@ -113,10 +112,9 @@ func (eh *ExternalHandler) DownloadClient(w http.ResponseWriter, r *http.Request
 	)
 
 	if err := eh.mailService.SendMail(msger); err != nil {
-		fmt.Printf("Error occured while sending mail: %s", err.Error())
+		fmt.Printf("Error occurred while sending mail: %s", err.Error())
 	}
 	utils.GetSuccess("Download Link Successfully sent", url, w)
-
 }
 
 func (eh *ExternalHandler) SendMail(w http.ResponseWriter, r *http.Request) {
@@ -191,7 +189,7 @@ func (eh *ExternalHandler) SendMail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := eh.mailService.SendMail(msgr); err != nil {
-		fmt.Printf("Error occured while sending mail: %s", err.Error())
+		fmt.Printf("Error occurred while sending mail: %s", err.Error())
 	}
 
 	utils.GetSuccess("Mail sent successfully", nil, w)
