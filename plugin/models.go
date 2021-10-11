@@ -36,7 +36,7 @@ type Plugin struct {
 	DeletedAt      string             `json:"deleted_at" bson:"deleted_at"`
 }
 
-type PluginPatch struct {
+type Patch struct {
 	Name        *string  `json:"name,omitempty" bson:"name,omitempty"`
 	Description *string  `json:"description,omitempty"  bson:"description,omitempty"`
 	Images      []string `json:"images,omitempty" bson:"images,omitempty"`
@@ -53,18 +53,36 @@ func CreatePlugin(ctx context.Context, p *Plugin) error {
 	p.UpdatedAt = time.Now().String()
 	collection := utils.GetCollection(PluginCollectionName)
 	res, err := collection.InsertOne(ctx, p)
-	p.ID = res.InsertedID.(primitive.ObjectID)
+
+	if err != nil {
+		return err
+	}
+
+	value, ok := res.InsertedID.(primitive.ObjectID)
+	if !ok {
+		return err
+	}
+
+	p.ID = value
+
 	return err
 }
 
 func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 	p := new(Plugin)
-	objID, _ := primitive.ObjectIDFromHex(id)
+	objID, err := primitive.ObjectIDFromHex(id)
+
+	if err != nil {
+		return nil, err
+	}
+
 	collection := utils.GetCollection(PluginCollectionName)
 	res := collection.FindOne(ctx, bson.M{"_id": objID, "deleted": M{"$ne": true}})
+
 	if err := res.Decode(p); err != nil {
 		return nil, err
 	}
+
 	return p, nil
 }
 
@@ -76,28 +94,35 @@ func FindPlugins(ctx context.Context, filter bson.M) ([]*Plugin, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err = cursor.All(ctx, &ps); err != nil {
+
+	if err := cursor.All(ctx, &ps); err != nil {
 		return nil, err
 	}
+
 	return ps, nil
 }
 
-func updatePlugin(ctx context.Context, id string, pp PluginPatch) error {
+func updatePlugin(ctx context.Context, id string, pp *Patch) error {
 	collection := utils.GetCollection(PluginCollectionName)
-	objId, _ := primitive.ObjectIDFromHex(id)
+	objID, _ := primitive.ObjectIDFromHex(id)
 	update := M{}
+
 	if pp.Name != nil {
 		update["name"] = *(pp.Name)
 	}
+
 	if pp.Description != nil {
 		update["description"] = *(pp.Description)
 	}
+
 	if pp.SidebarURL != nil {
 		update["sidebar_url"] = *(pp.SidebarURL)
 	}
+
 	if pp.InstallURL != nil {
 		update["install_url"] = *(pp.SidebarURL)
 	}
+
 	if pp.TemplateURL != nil {
 		update["template_url"] = *(pp.Description)
 	}
@@ -107,13 +132,14 @@ func updatePlugin(ctx context.Context, id string, pp PluginPatch) error {
 	}
 
 	if pp.Images != nil {
-
 		update["$push"] = bson.M{"images": bson.M{"$each": pp.Images}}
 	}
 
 	if pp.Tags != nil {
 		update["$push"] = bson.M{"tags": bson.M{"$each": pp.Tags}}
 	}
-	_, err := collection.UpdateOne(ctx, M{"_id": objId}, update)
+
+	_, err := collection.UpdateOne(ctx, M{"_id": objID}, update)
+
 	return err
 }

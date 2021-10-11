@@ -28,7 +28,7 @@ func pluginHasCollection(pluginID, orgID, collectionName string) bool {
 		"collection_name": collectionName,
 		"organization_id": orgID,
 	}
-	_, err := utils.GetMongoDbDoc(_PluginCollectionsCollectionName, filter)
+	_, err := utils.GetMongoDBDoc(_PluginCollectionsCollectionName, filter)
 
 	return err == nil
 }
@@ -41,7 +41,7 @@ func createPluginCollectionRecord(pluginID, orgID, collectionName string) error 
 		"created_at":      time.Now(),
 	}
 
-	if _, err := utils.CreateMongoDbDoc(_PluginCollectionsCollectionName, doc); err != nil {
+	if _, err := utils.CreateMongoDBDoc(_PluginCollectionsCollectionName, doc); err != nil {
 		return err
 	}
 
@@ -49,7 +49,7 @@ func createPluginCollectionRecord(pluginID, orgID, collectionName string) error 
 }
 
 func getPluginCollections(pluginID string) ([]bson.M, error) {
-	docs, err := utils.GetMongoDbDocs(_PluginCollectionsCollectionName, bson.M{"plugin_id": pluginID})
+	docs, err := utils.GetMongoDBDocs(_PluginCollectionsCollectionName, bson.M{"plugin_id": pluginID})
 
 	if err != nil {
 		return nil, fmt.Errorf("error finding collection records for this plugin: %v", err)
@@ -63,7 +63,7 @@ func getPluginCollections(pluginID string) ([]bson.M, error) {
 }
 
 func getPluginCollectionsForOrganization(pluginID, orgID string) ([]bson.M, error) {
-	docs, err := utils.GetMongoDbDocs(_PluginCollectionsCollectionName, bson.M{
+	docs, err := utils.GetMongoDBDocs(_PluginCollectionsCollectionName, bson.M{
 		"plugin_id":       pluginID,
 		"organization_id": orgID,
 	})

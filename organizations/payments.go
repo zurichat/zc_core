@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
-	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/stripe/stripe-go/v72"
@@ -34,13 +34,13 @@ func GetTokenAmount(amount float64, currency string) (float64, error) {
 		USD: 1,
 		EUR: 0.86,
 	}
-	
+
 	ConversionRate, ok := ExchangeMap[currency]
-	
+
 	if !ok {
 		return float64(0), errors.New("currency not yet supported")
 	}
-	
+
 	return amount * ConversionRate, nil
 }
 
@@ -57,11 +57,11 @@ func IncrementToken(orgID, description string, tokenAmount float64) error {
 	}
 
 	organization.Tokens += tokenAmount
-	
+
 	updateData := make(map[string]interface{})
 	updateData["tokens"] = organization.Tokens
-	
-	if _, err := utils.UpdateOneMongoDbDoc(OrganizationCollectionName, orgID, updateData); err != nil {
+
+	if _, err := utils.UpdateOneMongoDBDoc(OrganizationCollectionName, orgID, updateData); err != nil {
 		return err
 	}
 
@@ -85,23 +85,23 @@ func DeductToken(orgID, description string, tokenAmount float64) error {
 	}
 
 	organization.Tokens -= tokenAmount
-	
+
 	updateData := make(map[string]interface{})
 	updateData["tokens"] = organization.Tokens
-	
-	if _, err := utils.UpdateOneMongoDbDoc(OrganizationCollectionName, orgID, updateData); err != nil {
+
+	if _, err := utils.UpdateOneMongoDBDoc(OrganizationCollectionName, orgID, updateData); err != nil {
 		return err
 	}
-	
+
 	if err := SendTokenBillingEmail(orgID, description, tokenAmount); err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
 func SubscriptionBilling(orgID string, proVersionRate float64) error {
-	orgMembers, err := utils.GetMongoDbDocs(MemberCollectionName, bson.M{"org_id": orgID})
+	orgMembers, err := utils.GetMongoDBDocs(MemberCollectionName, bson.M{"org_id": orgID})
 	if err != nil {
 		return err
 	}
@@ -112,11 +112,11 @@ func SubscriptionBilling(orgID string, proVersionRate float64) error {
 	numMembers := len(orgMembers)
 
 	description = "Billing for Pro version subscription for " + strconv.Itoa(numMembers) + " member(s) at " + strconv.Itoa(int(proVersionRate)) + " token(s) per member per month"
-	
+
 	if err := DeductToken(orgID, description, amount); err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -143,11 +143,11 @@ func SendTokenBillingEmail(orgID, description string, amount float64) error {
 			"Name":        name,
 		},
 	)
-	
+
 	if err := ms.SendMail(billingMail); err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -163,7 +163,7 @@ func (oh *OrganizationHandler) AddToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	org, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": objID})
+	org, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
 
 	if org == nil {
 		utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
@@ -171,7 +171,7 @@ func (oh *OrganizationHandler) AddToken(w http.ResponseWriter, r *http.Request) 
 	}
 
 	requestData := make(map[string]float64)
-	if err = utils.ParseJsonFromRequest(r, &requestData); err != nil {
+	if err = utils.ParseJSONFromRequest(r, &requestData); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
@@ -186,12 +186,12 @@ func (oh *OrganizationHandler) AddToken(w http.ResponseWriter, r *http.Request) 
 
 	orgFilter["tokens"] = org["tokens"].(float64) + (tokens * 0.2)
 
-	update, err := utils.UpdateOneMongoDbDoc(OrganizationCollectionName, orgID, orgFilter)
+	update, err := utils.UpdateOneMongoDBDoc(OrganizationCollectionName, orgID, orgFilter)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
-	
+
 	var transaction TokenTransaction
 
 	transaction.Amount = tokens
@@ -204,13 +204,13 @@ func (oh *OrganizationHandler) AddToken(w http.ResponseWriter, r *http.Request) 
 	transaction.Token = tokens * 0.2
 	detail, _ := utils.StructToMap(transaction)
 
-	res, err := utils.CreateMongoDbDoc(TokenTransactionCollectionName, detail)
+	res, err := utils.CreateMongoDBDoc(TokenTransactionCollectionName, detail)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
-	
+
 	if update.ModifiedCount == 0 {
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
@@ -225,7 +225,7 @@ func (oh *OrganizationHandler) GetTokenTransaction(w http.ResponseWriter, r *htt
 
 	orgID := mux.Vars(r)["id"]
 
-	save, _ := utils.GetMongoDbDocs(TokenTransactionCollectionName, bson.M{"org_id": orgID})
+	save, _ := utils.GetMongoDBDocs(TokenTransactionCollectionName, bson.M{"org_id": orgID})
 
 	if save == nil {
 		utils.GetError(fmt.Errorf("organization transaction %s not found", orgID), http.StatusNotFound, w)
@@ -237,11 +237,11 @@ func (oh *OrganizationHandler) GetTokenTransaction(w http.ResponseWriter, r *htt
 
 func (oh *OrganizationHandler) ChargeTokens(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	
+
 	orgID := mux.Vars(r)["id"]
 
 	requestData := make(map[string]string)
-	if err := utils.ParseJsonFromRequest(r, &requestData); err != nil {
+	if err := utils.ParseJSONFromRequest(r, &requestData); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
@@ -266,7 +266,7 @@ func (oh *OrganizationHandler) ChargeTokens(w http.ResponseWriter, r *http.Reque
 
 func (oh *OrganizationHandler) CreateCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	
+
 	orgID := mux.Vars(r)["id"]
 	objID, err := primitive.ObjectIDFromHex(orgID)
 
@@ -275,7 +275,7 @@ func (oh *OrganizationHandler) CreateCheckoutSession(w http.ResponseWriter, r *h
 		return
 	}
 
-	org, _ := utils.GetMongoDbDoc(OrganizationCollectionName, bson.M{"_id": objID})
+	org, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
 
 	if org == nil {
 		utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
@@ -283,7 +283,7 @@ func (oh *OrganizationHandler) CreateCheckoutSession(w http.ResponseWriter, r *h
 	}
 
 	requestData := make(map[string]int64)
-	if err = utils.ParseJsonFromRequest(r, &requestData); err != nil {
+	if err = utils.ParseJSONFromRequest(r, &requestData); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
@@ -293,7 +293,7 @@ func (oh *OrganizationHandler) CreateCheckoutSession(w http.ResponseWriter, r *h
 		utils.GetError(errors.New("amount not supplied"), http.StatusUnprocessableEntity, w)
 		return
 	}
-	
+
 	stripeAmount := amount * 100
 	params := &stripe.CheckoutSessionParams{
 		PaymentMethodTypes: stripe.StringSlice([]string{
@@ -312,8 +312,8 @@ func (oh *OrganizationHandler) CreateCheckoutSession(w http.ResponseWriter, r *h
 				Quantity: stripe.Int64(1),
 			},
 		},
-		SuccessURL: stripe.String(os.Getenv("FRONT_END_URL") + "/admin/settings/billings?status=success&orgId="+orgID),
-		CancelURL:  stripe.String(os.Getenv("FRONT_END_URL")+ "/admin/settings/billings?status=failed&orgId="+orgID),
+		SuccessURL: stripe.String(os.Getenv("FRONT_END_URL") + "/admin/settings/billings?status=success&orgId=" + orgID),
+		CancelURL:  stripe.String(os.Getenv("FRONT_END_URL") + "/admin/settings/billings?status=failed&orgId=" + orgID),
 	}
 
 	s, err := session.New(params)

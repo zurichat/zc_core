@@ -118,7 +118,7 @@ func (au *AuthHandler) IsAuthorized(nextHandler http.HandlerFunc, role string) h
 		userID := lguser.ID
 		luHexid, _ := primitive.ObjectIDFromHex(userID)
 		_, userCollection, memberCollection := "organizations", "users", "members"
-		userDoc, _ := utils.GetMongoDbDoc(userCollection, bson.M{"_id": luHexid})
+		userDoc, _ := utils.GetMongoDBDoc(userCollection, bson.M{"_id": luHexid})
 
 		if userDoc == nil {
 			utils.GetError(errors.New("user not found"), http.StatusBadRequest, w)
@@ -135,7 +135,7 @@ func (au *AuthHandler) IsAuthorized(nextHandler http.HandlerFunc, role string) h
 			}
 		} else {
 			// Getting member's document from db
-			orgMember, _ := utils.GetMongoDbDoc(memberCollection, bson.M{"org_id": orgID, "email": authuser.Email})
+			orgMember, _ := utils.GetMongoDBDoc(memberCollection, bson.M{"org_id": orgID, "email": authuser.Email})
 			if orgMember == nil {
 				utils.GetError(errors.New("access Denied"), http.StatusUnauthorized, w)
 				return
