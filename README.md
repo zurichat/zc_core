@@ -5,7 +5,6 @@ ZC_CORE [![Go Reference](https://zuri.chat/b73fbbfa9db45fc3c22e.svg)](https://do
 
 See the docs for everything:https://docs.zuri.chat/
 
-![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/zurichat/zc_core?style=flat-square)
 ![GitHub repo size](https://img.shields.io/github/repo-size/zurichat/zc_core?style=flat-square)
 
 ## Description
@@ -38,16 +37,16 @@ To get a local copy up and running follow these simple example steps.
 ```bash
 $ mongod
 ```
+
+
 2. Create and populate a `.env` file with its keys corresponding values as listed in `example.env`
 3. Run zc_core from project root directory
 ```bash
 $ cd /path/to/zc_core
 $ go run main.go
 ```
-### Usage
-
 ### Testing
-1. Lint checks are done with golangci-lint
+1. Lint checks are done with [golangci-lint](https://golangci-lint.run/) - an aggregator of linters
 ```bash
 $ cd /path/to/zc_core
 $ golangci-lint run
@@ -57,6 +56,21 @@ $ golangci-lint run
 WIP
 ```
 
+## Features
+- [x] Blog: Content management package for the CRUD of blog posts and associated services
+- [x] Contact: Service to process all user-related inquiries, complaints, and service-related suggestions
+- [x] Data: Data management for plugins
+- [x] Docs: OpenAPI specification for all resources
+- [x] External: Desktop application download, email subscriptions, etc...
+- [x] Marketplace: Plugins marketplace
+- [x] Messaging: Realtime messaging service with SocketIO
+- [x] Organizations: Organization management system
+- [x] Plugin: Plugin management system
+- [x] Realtime Communication (RTC): Connection authentication, subcription and pulishing service with centrifugo proxy server
+- [x] Report: Report generation and viewing service
+- [x] Services: Mail and file upload service package
+- [x] Users: User management system
+- [x] Utils: Utility package of shared helper functions and data types
 
 ## Contributing
 
