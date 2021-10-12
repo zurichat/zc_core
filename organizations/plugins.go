@@ -139,7 +139,7 @@ func (oh *OrganizationHandler) GetOrganizationPlugins(w http.ResponseWriter, r *
 		return
 	}
 
-	utils.GetSuccess("plugins Retrieved successfully", org.OrgPlugins(), w)
+	utils.GetSuccess("Plugins Retrieved successfully", org.OrgPlugins(), w)
 }
 
 func (oh *OrganizationHandler) GetOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
@@ -172,7 +172,7 @@ func (oh *OrganizationHandler) GetOrganizationPlugin(w http.ResponseWriter, r *h
 		return
 	}
 
-	utils.GetSuccess("plugins returned successfully", doc, w)
+	utils.GetSuccess("Plugins returned successfully", doc, w)
 }
 
 func (oh *OrganizationHandler) RemoveOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
