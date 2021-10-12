@@ -13,9 +13,95 @@
 		<!-- <link rel="stylesheet" href="./style.css" /> -->
 		<script src="https://use.fontawesome.com/6bfc6adc6e.js"></script>
 		<title>Invite Email</title>
+		<style>
+			.body {
+				width: 40%;
+				margin: 0 auto;
+			}
+			.main-content {
+				border: 1px solid #000000;
+				width: 85%;
+				margin: 1rem auto;
+				padding: 1rem 0.5rem;
+				text-align: center;
+				border-radius: 4px;
+			}
+			.members_image {
+				width: 35%;
+				margin: 0 auto 4rem;
+				display: flex;
+				justify-content: space-between;
+			}
+			.footer {
+				width: 70%;
+				margin: 0 auto;
+				text-align: center;
+				color: #999999;
+			}
+			.social {
+				width: 22%;
+				margin: 1rem auto;
+				display: flex;
+				justify-content: space-between;
+			}
+			.copyright {
+				width: 60%;
+				margin: 0 auto;
+				display: flex;
+				justify-content: space-between;
+				font-size: 0.75rem;
+			}
+			@media screen and (max-width: 1024px) {
+				.body {
+					width: 60%;
+				}
+				.footer {
+					width: 90%;
+				}
+				.social {
+					width: 23%;
+				}
+				.copyright {
+					width: 40%;
+				}
+			}
+			@media screen and (max-width: 960px) {
+				.copyright {
+					width: 50%;
+				}
+			}
+			@media screen and (max-width: 640px) {
+				.copyright {
+					width: 70%;
+				}
+			}
+			@media screen and (max-width: 480px) {
+				.body {
+					width: 90%;
+				}
+				.main-content {
+					width: 90%;
+				}
+				.members_image {
+					width: 50%;
+					margin: 0 auto;
+					display: flex;
+					justify-content: space-between;
+				}
+				.footer {
+					width: 90%;
+				}
+				.social {
+					width: 30%;
+				}
+				.copyright {
+					width: 65%;
+				}
+			}
+		</style>
 	</head>
 	<body>
-		<div class="body" style="width: 40%; margin: 0 auto">
+		<div class="body">
 			<div class="header" style="font-size: 1.75rem">
 				<div style="text-align: center; padding: 1.25rem 7.5rem 1.25rem 0">
 					<img
@@ -42,21 +128,14 @@
 					Hello 👋🏽
 					<br />
 					Chibaby (chiomaonwuzulike@gmail.com) has invited you to use Zurichat
-					with them, <br />in a workspace called HNGi8
+					with them, in a workspace called HNGi8
 				</p>
 			</div>
-			<div
-				class="main-content"
-				style="
-					border: 1px solid #000000;
-					width: 85%;
-					margin: 1rem auto;
-					padding: 1rem 0.5rem;
-					text-align: center;
-					border-radius: 4px;
-				"
-			>
-				<img src="./assets/Group 1685.png" alt="workspace logo" />
+			<div class="main-content">
+				<img
+					src="https://res.cloudinary.com/dkhysaggr/image/upload/v1633164234/luiwevaygnic3jgdrzdu.png"
+					alt="workspace logo"
+				/>
 				<p
 					class="workspace_name"
 					style="font-size: 1.125rem; font-weight: 700; margin: 0.4rem 0 0"
@@ -102,15 +181,7 @@
 				>
 					Chioma Onwuzulike and 4 others have joined
 				</p>
-				<div
-					class="members_image"
-					style="
-						width: 35%;
-						margin: 0 auto 4rem;
-						display: flex;
-						justify-content: space-between;
-					"
-				>
+				<div class="members_image">
 					<img
 						src="https://res.cloudinary.com/dkhysaggr/image/upload/v1633163740/sgu3nibk3cc9adgz2bsu.png"
 						alt="user image"
@@ -162,7 +233,7 @@
 					Get all your work tools and information assembled in one place for
 					easy access and increase Productivity.
 					<a
-						href="#"
+						href="https://zuri.chat/about"
 						style="
 							font-size: 0.8125rem;
 							color: #1264a3;
@@ -173,38 +244,26 @@
 					>
 				</p>
 			</div>
-			<div
-				class="footer"
-				style="width: 70%; margin: 0 auto; text-align: center; color: #999999"
-			>
-				<div
-					class="social"
-					style="
-						width: 22%;
-						margin: 1rem auto;
-						display: flex;
-						justify-content: space-between;
-					"
-				>
-					<i class="fa fa-twitter" aria-hidden="true"></i>
-					<i class="fa fa-facebook-official" aria-hidden="true"></i>
-					<i class="fa fa-linkedin-square" aria-hidden="true"></i>
+			<div class="footer">
+				<div class="social">
+					<a href="#" style="color: #999999; text-decoration: none"
+						><i class="fa fa-twitter" aria-hidden="true"></i
+					></a>
+					<a href="#" style="color: #999999; text-decoration: none"
+						><i class="fa fa-facebook-official" aria-hidden="true"></i
+					></a>
+					<a href="#" style="color: #999999; text-decoration: none"
+						><i class="fa fa-linkedin-square" aria-hidden="true"></i
+					></a>
 				</div>
-				<p class="zuri" style="font-size: 1.125rem">ZuriChat</p>
-				<div
-					class="copyright"
-					style="
-						width: 50%;
-						margin: 0 auto;
-						display: flex;
-						justify-content: space-between;
-						font-size: 0.75rem;
-					"
-				>
+				<p class="zuri" style="font-size: 1.125rem; margin-bottom: 0">
+					ZuriChat
+				</p>
+				<div class="copyright">
 					<p>Copyright © 2020</p>
 					<p>
 						<a
-							href="#"
+							href="https://zuri.chat/"
 							id="zuri_social"
 							style="
 								color: #1264a3;
