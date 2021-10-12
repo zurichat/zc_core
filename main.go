@@ -109,6 +109,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/presence", au.IsAuthenticated(orgs.TogglePresence)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings", au.IsAuthenticated(orgs.UpdateMemberSettings)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/role", au.IsAuthenticated(au.IsAuthorized(orgs.UpdateMemberRole, "admin"))).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/notification", au.IsAuthenticated(orgs.UpdateNotification)).Methods("PATCH")
 
 	r.HandleFunc("/organizations/{id}/reports", report.AddReport).Methods("POST")
 	r.HandleFunc("/organizations/{id}/reports", report.GetReports).Methods("GET")
@@ -123,8 +124,8 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/upgrade-to-pro", au.IsAuthenticated(orgs.UpgradeToPro)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/charge-tokens", au.IsAuthenticated(orgs.ChargeTokens)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/checkout-session", au.IsAuthenticated(orgs.CreateCheckoutSession)).Methods("POST")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}/addcard", orgs.AddCard).Methods("POST")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}/card/{id}", orgs.DeleteCard).Methods("DELETE")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/addcard", au.IsAuthenticated(orgs.AddCard)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/card/{card_id}", au.IsAuthenticated(orgs.DeleteCard)).Methods("DELETE")
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)

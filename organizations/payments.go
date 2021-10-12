@@ -394,12 +394,16 @@ func (oh *OrganizationHandler) AddCard(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
+
+
+	newcard.OrgID = orgID
 	newcard.MemberID = MemberID
 	newcard.CVCCheck = string(encrypt([]byte(newcard.CVCCheck), "zcore_key"))
 	newcard.CardNumber = string(encrypt([]byte(newcard.CardNumber), "zcore_key"))
 
 	// convert card struct to map
 	card, err := utils.StructToMap(newcard)
+	
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
@@ -415,10 +419,41 @@ func (oh *OrganizationHandler) AddCard(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("successfully added new card", res, w)
 }
 
+
 func (oh *OrganizationHandler) DeleteCard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	MemberCard := mux.Vars(r)["id"]
+	orgID := mux.Vars(r)["id"]
+	// Checks if organization id is valid
+	orgIDHex, err := primitive.ObjectIDFromHex(orgID)
+	if err != nil {
+		utils.GetError(errors.New("invalid organization id"), http.StatusBadRequest, w)
+		return
+	}
+
+	// Checks if organization exists in the database
+	orgDoc, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgIDHex})
+	if orgDoc == nil {
+		utils.GetError(errors.New("organization does not exist"), http.StatusBadRequest, w)
+		return
+	}
+
+	MemberID := mux.Vars(r)["mem_id"]
+	objID, err := primitive.ObjectIDFromHex(MemberID)
+
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	member, _ := utils.GetMongoDBDoc(MemberCollectionName, bson.M{"_id": objID})
+
+	if member == nil {
+		utils.GetError(fmt.Errorf("member %s not found", MemberID), http.StatusNotFound, w)
+		return
+	}
+
+	MemberCard := mux.Vars(r)["card_id"]
 	res, err := utils.DeleteOneMongoDBDoc(CardCollectionName, MemberCard)
 
 	if err != nil {

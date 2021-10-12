@@ -267,21 +267,28 @@ type MessageSettings struct {
 }
 
 type Notifications struct {
-	NotifyMeAbout                    string   `json:"notify_me_about" bson:"notify_me_about"`
-	UseDifferentSettingsForMyMobile  bool     `json:"use_different_settings_mobile" bson:"use_different_settings_mobile"`
-	ChannelHurdleNotification        bool     `json:"channel_hurdle_notification" bson:"channel_hurdle_notification"`
-	MeetingRepliesNotification       bool     `json:"meeting_replies_notification" bson:"meeting_replies_notification"`
-	ThreadRepliesNotification        bool     `json:"thread_replies_notification" bson:"thread_replies_notification"`
-	MyKeywords                       []string `json:"my_keywords" bson:"my_keywords"`
-	NotificationSchedule             string   `json:"notification_schedule" bson:"notification_schedule"`
-	MessagePreviewInEachNotification bool     `json:"message_preview_in_each_notification" bson:"message_preview_in_each_notification"`
-	SetMessageNotificationsRight     string   `json:"set_message_notifications_right" bson:"set_message_notifications_right"`
-	SetLoungeNotificationsRight      string   `json:"set_lounge_notifications_right" bson:"set_lounge_notifications_right"`
-	MuteAllSounds                    bool     `json:"mute_all_sounds" bson:"mute_all_sounds"`
-	FlashWindowWhenNotificationComes string   `json:"flash_window_when_notification_comes" bson:"flash_window_when_notification_comes"`
-	DeliverNotificationsVia          string   `json:"deliver_notifications_via" bson:"deliver_notifications_via"`
-	WhenIamNotActiveOnDesktop        string   `json:"when_iam_not_active_on_desktop" bson:"when_iam_not_active_on_desktop"`
-	EmailNotificationsForMentions    bool     `json:"email_notifications_for_mentions" bson:"email_notifications_for_mentions"`
+	NotifyMeAbout                    string   				`json:"notify_me_about" bson:"notify_me_about"`
+	UseDifferentSettingsForMyMobile  bool     				`json:"use_different_settings_mobile" bson:"use_different_settings_mobile"`
+	ChannelHurdleNotification        bool     				`json:"channel_hurdle_notification" bson:"channel_hurdle_notification"`
+	MeetingRepliesNotification       bool     				`json:"meeting_replies_notification" bson:"meeting_replies_notification"`
+	ThreadRepliesNotification        bool     				`json:"thread_replies_notification" bson:"thread_replies_notification"`
+	MyKeywords                       []string 				`json:"my_keywords" bson:"my_keywords"`
+	NotificationSchedule             NotificationSchedule   `json:"notification_schedule" bson:"notification_schedule"`
+	CustomNotificationSchedule       []NotificationSchedule `json:"custom_notification_schedule" bson:"custom_notification_schedule"`
+	MessagePreviewInEachNotification bool     				`json:"message_preview_in_each_notification" bson:"message_preview_in_each_notification"`
+	SetMessageNotificationsRight     string   				`json:"set_message_notifications_right" bson:"set_message_notifications_right"`
+	SetLoungeNotificationsRight      string   				`json:"set_lounge_notifications_right" bson:"set_lounge_notifications_right"`
+	MuteAllSounds                    bool     				`json:"mute_all_sounds" bson:"mute_all_sounds"`
+	FlashWindowWhenNotificationComes string   				`json:"flash_window_when_notification_comes" bson:"flash_window_when_notification_comes"`
+	DeliverNotificationsVia          string   				`json:"deliver_notifications_via" bson:"deliver_notifications_via"`
+	WhenIamNotActiveOnDesktop        string   				`json:"when_iam_not_active_on_desktop" bson:"when_iam_not_active_on_desktop"`
+	EmailNotificationsForMentions    bool     				`json:"email_notifications_for_mentions" bson:"email_notifications_for_mentions"`
+}
+
+type NotificationSchedule struct {
+	Day   string   `json:"day" bson:"day"`
+	From  string   `json:"from" bson:"from"`
+	To    string   `json:"to" bson:"to"`
 }
 
 type Sidebar struct {
@@ -368,12 +375,13 @@ type updateParam struct {
 }
 
 type Card struct {
-	NameOnCard string `json:"name_on_card" bson:"name_on_card"`
-	MemberID   string `json:"member_id" bson:"member_id"`
-	Type       string `json:"type" bson:"type"`
-	ExpMonth   int    `json:"exp_month" bson:"exp_month"`
-	ExpYear    int    `json:"exp_year" bson:"exp_year"`
-	CardNumber string `json:"card_number" bson:"card_number"`
-	Country    string `json:"country,omitempty" bson:"country,omitempty"`
-	CVCCheck   string `json:"cvc_check" bson:"cvc_check"`
+	NameOnCard 	string  `json:"name_on_card" bson:"name_on_card"`
+	OrgID     	string  `json:"org_id" bson:"org_id"`
+	MemberID   	string  `json:"member_id" bson:"member_id"`
+	Type       	string  `json:"type" bson:"type"`
+	ExpMonth   	int     `json:"exp_month" bson:"exp_month"`
+	ExpYear    	int     `json:"exp_year" bson:"exp_year"`
+	CardNumber 	string  `json:"card_number" bson:"card_number"`
+	Country    	string  `json:"country,omitempty" bson:"country,omitempty"`
+	CVCCheck   	string  `json:"cvc_check" bson:"cvc_check"`
 }
