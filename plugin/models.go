@@ -6,6 +6,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"zuri.chat/zccore/utils"
 )
 
@@ -89,7 +90,28 @@ func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 func FindPlugins(ctx context.Context, filter bson.M) ([]*Plugin, error) {
 	ps := []*Plugin{}
 	collection := utils.GetCollection(PluginCollectionName)
+	
 	cursor, err := collection.Find(ctx, filter)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := cursor.All(ctx, &ps); err != nil {
+		return nil, err
+	}
+
+	return ps, nil
+}
+
+func SortPlugins(ctx context.Context, filter bson.M, sort bson.D) ([]*Plugin, error) {
+	ps := []*Plugin{}
+	collection := utils.GetCollection(PluginCollectionName)
+	
+	findOptions := options.Find()
+	findOptions.SetSort(sort)
+
+	cursor, err := collection.Find(ctx, filter, findOptions)
 
 	if err != nil {
 		return nil, err

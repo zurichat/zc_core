@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"zuri.chat/zccore/plugin"
 	"zuri.chat/zccore/utils"
@@ -79,4 +80,40 @@ func RemovePlugin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.GetSuccess("plugin removed", nil, w)
+}
+
+// GetPopularPlugins returns all approved plugins available in the database by popularity.
+func GetPopularPlugins(w http.ResponseWriter, r *http.Request) {
+	ps, err := plugin.SortPlugins(r.Context(), bson.M{"approved": true, "deleted": false}, bson.D{primitive.E{Key: "install_count", Value: -1}})
+
+	if err != nil {
+		switch err {
+		case mongo.ErrNoDocuments:
+			utils.GetError(errors.New("no plugin available"), http.StatusNotFound, w)
+		default:
+			utils.GetError(err, http.StatusNotFound, w)
+		}
+
+		return
+	}
+
+	utils.GetSuccess("success", ps, w)
+}
+
+// GetPopularPlugins returns all approved plugins available in the database by popularity.
+func GetRecomendedPlugins(w http.ResponseWriter, r *http.Request) {
+	ps, err := plugin.SortPlugins(r.Context(), bson.M{"approved": true, "deleted": false}, bson.D{primitive.E{Key: "category", Value: 1}})
+
+	if err != nil {
+		switch err {
+		case mongo.ErrNoDocuments:
+			utils.GetError(errors.New("no plugin available"), http.StatusNotFound, w)
+		default:
+			utils.GetError(err, http.StatusNotFound, w)
+		}
+
+		return
+	}
+
+	utils.GetSuccess("success", ps, w)
 }
