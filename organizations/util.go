@@ -92,8 +92,50 @@ func NewMember(email, userName, orgID, role string) Member {
 }
 
 // clear a member's status after a duration.
-func ClearStatus(orgID, memberID string, period int) {
-	time.Sleep(time.Duration(period) * time.Minute)
+func ClearStatusRoutine(orgID, memberID string, period int) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(period) * time.Minute)
+	defer cancel()
+	
+	d := time.Duration(period) * time.Minute
+	t := time.NewTimer(d);
+	
+	otherCond := make(chan bool)
+	
+	go func() {
+		for {
+			select {
+			case <-otherCond:
+				// some condition occurred under which we want to restart the timer
+				// the timer didn't expire so we try to stop it. There may not be
+				// a concurrent read from the timers channel when this is attempted.
+				// As we are inside the case statement there is no other read
+				// going on.
+				
+				if !t.Stop() {
+					<-t.C
+					ClearStatus(memberID)
+				}
+
+			case <-t.C: // timer expired. restart
+				fmt.Println("timer restarted")
+				t.Reset(d)
+				ClearStatus(memberID)
+				
+			case <-ctx.Done():
+				return
+			}
+		}
+	}() 
+	<-ctx.Done()
+
+	// publish update to subscriber
+	eventChannel := fmt.Sprintf("organizations_%s", orgID)
+	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberStatusCleared, Channel: eventChannel, Payload: make(map[string]interface{})}
+
+	go utils.Emitter(event)
+}
+
+func ClearStatus(memberID string) {
 
 	update, _ := utils.StructToMap(Status{})
 
@@ -107,12 +149,6 @@ func ClearStatus(orgID, memberID string, period int) {
 	}
 
 	log.Printf("%s status cleared successfully", memberID)
-
-	// publish update to subscriber
-	eventChannel := fmt.Sprintf("organizations_%s", orgID)
-	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberStatusCleared, Channel: eventChannel, Payload: make(map[string]interface{})}
-
-	go utils.Emitter(event)
 }
 
 func FetchOrganization(filter map[string]interface{}) (*Organization, error) {
