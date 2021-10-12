@@ -383,9 +383,26 @@ type LanguagesAndRegions struct {
 	LanguagesZuriShouldSpellCheck []string `json:"languages_zuri_should_spell_check" bson:"languages_zuri_should_spell_check"`
 }
 
+const (
+	FocusOnLastMessage  = "focus_on_last_message"
+	EditLastMessage  = "edit_last_message"
+)
+
+var EmptyMessageFields = map[string]string{
+	FocusOnLastMessage:  FocusOnLastMessage,
+	EditLastMessage:  EditLastMessage,
+}
+
+type DirectMessageAnnouncement struct {
+	ReceiveSound  bool     `json:"receive_sound" bson:"receive_sound"`
+	SendSound     bool     `json:"send_sound" bson:"send_sound"`
+	ReadMessage   bool     `json:"read_message" bson:"read_message"`
+}
+
 type Accessibility struct {
+	Links                     bool     `json:"links" bson:"links"`
 	Animation                 bool     `json:"animation" bson:"animation"`
-	DirectMessageAnnouncement []string `json:"direct_message_announcement" bson:"direct_message_announcement"`
+	DirectMessageAnnouncement DirectMessageAnnouncement `json:"direct_message_announcement" bson:"direct_message_announcement"`
 	PressEmptyMessageField    string   `json:"press_empty_message_field" bson:"press_empty_message_field"`
 }
 
