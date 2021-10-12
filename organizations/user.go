@@ -329,25 +329,25 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 
 	switch set := status.ExpiryTime; set {
 	case DontClear:
-
+		
 	case ThirtyMins:
 		period := 30
-		go ClearStatus(orgID, memberID, period)
+		go ClearStatusRoutine(orgID, memberID, period)
 
 	case OneHr:
 		period := 60
-		go ClearStatus(orgID, memberID, period)
+		go ClearStatusRoutine(orgID, memberID, period)
 
 	case FourHrs:
 		period := 240
-		go ClearStatus(orgID, memberID, period)
+		go ClearStatusRoutine(orgID, memberID, period)
 
 	case Today:
 		minutesPerHr := 60
 		hrsPerDay := 24
 		period := minutesPerHr * (hrsPerDay - currentTime.Hour())
 
-		go ClearStatus(orgID, memberID, period)
+		go ClearStatusRoutine(orgID, memberID, period)
 
 	case ThisWeek:
 		minutesPerHr := 60
@@ -359,11 +359,27 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 
 		period := weekday * hrsPerDay * minutesPerHr
 
-		go ClearStatus(orgID, memberID, period)
+		go ClearStatusRoutine(orgID, memberID, period)
 
 	default:
 		diff := choosenTime.Local().Sub(currentTime)
-		go ClearStatus(orgID, memberID, int(diff.Minutes()))
+		go ClearStatusRoutine(orgID, memberID, int(diff.Minutes()))
+	}
+
+	// if user decides to use a former status construct as new status 
+	// if (status.Text) == "" && (status.Tag) == "" {
+	// 	var statusHistory StatusHistory
+
+	// 	status.Text = statusHistory.TextHistory
+	// 	status.Tag = statusHistory.TagHistory
+	// 	status.ExpiryTime = statusHistory.ExpiryHistory
+	// } 
+	
+	// only the last six status history will be saved
+	maxStatusHistory := 6
+
+	if len(status.StatusHistory) > maxStatusHistory {
+		status.StatusHistory = status.StatusHistory[:6]
 	}
 
 	statusUpdate, err := utils.StructToMap(status)
