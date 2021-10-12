@@ -657,26 +657,41 @@ func (oh *OrganizationHandler) UpdateMemberMessageAndMediaSettings(w http.Respon
 	}
 
 	// Parse request from incoming payload
-	var settings Settings
+	var messageAndMediaSettings MessagesAndMedia
 
-	err = utils.ParseJSONFromRequest(r, &settings)
+	err = utils.ParseJSONFromRequest(r, &messageAndMediaSettings)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	if _, ok := MsgMedias[messageAndMediaSettings.Theme]; !ok {
+		utils.GetError(errors.New("theme is not valid"), http.StatusBadRequest, w)
+		return
+	}
+
+	if _, ok := MsgMedias[messageAndMediaSettings.Names]; !ok {
+		utils.GetError(errors.New("name is not valid"), http.StatusBadRequest, w)
+		return
+	}
+
+	if _, ok := MsgMedias[messageAndMediaSettings.Emoji]; !ok {
+		utils.GetError(errors.New("emoji is not valid"), http.StatusBadRequest, w)
 		return
 	}
 
 	// convert setting struct to map
-	pSettings, err := utils.StructToMap(settings)
+	pMessageAndMediaSettings, err := utils.StructToMap(messageAndMediaSettings)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
 
-	memberSettings := make(map[string]interface{})
-	memberSettings["settings"] = pSettings
+	memberpMessageAndMediaSettings := make(map[string]interface{})
+	memberpMessageAndMediaSettings["settings.messages_and_media"] = pMessageAndMediaSettings
 
 	// fetch and update the document
-	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberSettings)
+	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberpMessageAndMediaSettings)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return

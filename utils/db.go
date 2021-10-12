@@ -181,7 +181,7 @@ func IncrementOneMongoDBDocField(collectionName, id string, field string) (*mong
 	filter := bson.M{"_id": _id}
 
 	data := bson.M{field: 1}
-	
+
 	// updateOne sets the fields, without using $set the entire document will be overwritten
 	updateData := bson.M{"$inc": MapToBson(data)}
 	res, err := collection.UpdateOne(ctx, filter, updateData)

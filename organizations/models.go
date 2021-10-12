@@ -315,10 +315,47 @@ type Themes struct {
 	Colors                           string `json:"colors" bson:"colors"`
 }
 
+const (
+	ThemeClean  = "clean"
+	ThemeCompact  = "compact"
+	NameFull = "full & display names"
+	NameDisplay = "just display names"
+	EmojiTone1 = "EmojiTone1"
+	EmojiTone2 = "EmojiTone2"
+	EmojiTone3 = "EmojiTone3"
+	EmojiTone4 = "EmojiTone4"
+	EmojiTone5 = "EmojiTone5"
+)
+
+var MsgMedias = map[string]string{
+	ThemeClean:  ThemeClean,
+	ThemeCompact:  ThemeCompact,
+	NameFull: NameFull,
+	NameDisplay: NameDisplay,
+	EmojiTone1: EmojiTone1,
+	EmojiTone2: EmojiTone2,
+	EmojiTone3: EmojiTone3,
+	EmojiTone4: EmojiTone4,
+	EmojiTone5: EmojiTone5,
+}
+
+type AdditionalOption struct {
+	CurrentlyTyping bool `json:"currently_typing" bson:"currently_typing"`
+	Clock bool `json:"clock" bson:"clock"`
+	ColorSwatches bool `json:"color_swatches" bson:"color_swatches"`
+}
+
+type InlineMediaAndLinks struct {
+	ShowImagesAndFilesUploaded bool  `json:"show_images_and_files_uploaded_to_zurichat" bson:"show_images_and_files_uploaded_to_zurichat"`
+	ShowImagesAndFilesFromSites bool  `json:"show_images_and_files_from_linked_websites" bson:"show_images_and_files_from_linked_websites"`
+	LargerThan2MB bool   `json:"larger_than_2_mb" bson:"larger_than_2_mb"`
+	ShowTextPreviews bool  `json:"show_text_previews_of_linked_websites" bson:"show_text_previews_of_linked_websites"`
+}
+
 type MessagesAndMedia struct {
 	Theme                    string   `json:"theme" bson:"theme"`
 	Names                    string   `json:"names" bson:"names"`
-	AdditionalOptions        []string `json:"additional_options" bson:"additional_options"`
+	AdditionalOptions        AdditionalOption `json:"additional_options" bson:"additional_options"`
 	Emoji                    string   `json:"emoji" bson:"emoji"`
 	EmojiAsText              bool     `json:"emoji_as_text" bson:"emoji_as_text"`
 	ShowJumboMoji            bool     `json:"show_jumbomoji" bson:"show_jumbomoji"`
@@ -326,7 +363,7 @@ type MessagesAndMedia struct {
 	MessagesOneClickReaction []string `json:"messages_one_click_reaction" bson:"messages_one_click_reaction"`
 	FrequentlyUsedEmoji      bool     `json:"frequently_used_emoji" bson:"frequently_used_emoji"`
 	Custom                   bool     `json:"custom" bson:"custom"`
-	InlineMediaAndLinks      []string `json:"inline_media_and_links" bson:"inline_media_and_links"`
+	InlineMediaAndLinks      InlineMediaAndLinks `json:"inline_media_and_links" bson:"inline_media_and_links"`
 	BringEmailsIntoZuri      string   `json:"bring_emails_into_zuri" bson:"bring_emails_into_zuri"`
 }
 
