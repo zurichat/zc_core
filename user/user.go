@@ -269,7 +269,7 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 		}()
 
 		go func(imageLimit int64) {
-			var memberImgs []interface{}
+			memberImgs := make([]interface{}, 0)
 
 			findOptions := options.Find().SetLimit(imageLimit)
 
@@ -310,10 +310,8 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 		}
 
 		orgDetails := orgDetailsData.Bson
-		imgs := make([]interface{}, 0)
-		imgs = append(imgs, basicimagesdata.Interfaces...)
-		
-		basic["imgs"], basic["id"], basic["logo_url"] = imgs, orgDetails["_id"], orgDetails["logo_url"]
+
+		basic["imgs"], basic["id"], basic["logo_url"] = basicimagesdata.Interfaces, orgDetails["_id"], orgDetails["logo_url"]
 		basic["name"], basic["workspace_url"] = orgDetails["name"], orgDetails["workspace_url"]
 		orgs = append(orgs, basic)
 	}
