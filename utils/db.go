@@ -21,23 +21,28 @@ var defaultMongoHandle = &MongoDBHandle{}
 
 var once sync.Once
 
+type errChecker struct {
+	err error
+}
+
+func (e *errChecker) Check(err error) {
+   if e.err != nil {
+   	return
+   }
+   
+   e.err = err
+}
+
 func ConnectToDB(clusterURL string) error {
-	var err1, err2 error
+    var ec errChecker
 
 	once.Do(func() {
-		err1 = defaultMongoHandle.Connect(clusterURL)
-		err2 = CreateUniqueIndex("users", "email", 1)
+		ec.Check(defaultMongoHandle.Connect(clusterURL))
+		ec.Check(CreateUniqueIndex("users", "email", 1))
+		ec.Check(CreateUniqueIndex("plugins", "template_url", 1))
 	})
 
-	if err1 != nil {
-		return err1
-	}
-
-	if err2 != nil {
-		return err2
-	}
-
-	return nil
+	return ec.err
 }
 
 func (mh *MongoDBHandle) Connect(clusterURL string) error {
