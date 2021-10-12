@@ -110,19 +110,23 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/presence", au.IsAuthenticated(orgs.TogglePresence)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings", au.IsAuthenticated(orgs.UpdateMemberSettings)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/role", au.IsAuthenticated(au.IsAuthorized(orgs.UpdateMemberRole, "admin"))).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/notification", au.IsAuthenticated(orgs.UpdateNotification)).Methods("PATCH")
 
 	r.HandleFunc("/organizations/{id}/reports", au.IsAuthenticated(reps.AddReport)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/reports", au.IsAuthenticated(reps.GetReports)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/reports/{report_id}", au.IsAuthenticated(reps.GetReport)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/change-owner", au.IsAuthenticated(orgs.TransferOwnership)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/billing", au.IsAuthenticated(orgs.SaveBillingSettings)).Methods("PATCH")
+	
 
 	//organization: payment
 	r.HandleFunc("/organizations/{id}/add-token", au.IsAuthenticated(orgs.AddToken)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/token-transactions", au.IsAuthenticated(orgs.GetTokenTransaction)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/upgrade-to-pro", au.IsAuthenticated(orgs.UpgradeToPro)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/charge-tokens", au.IsAuthenticated(orgs.ChargeTokens)).Methods("POST")
-	r.HandleFunc("/organizations/{id}/checkout-session", orgs.CreateCheckoutSession).Methods("POST")
+	r.HandleFunc("/organizations/{id}/checkout-session", au.IsAuthenticated(orgs.CreateCheckoutSession)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/addcard", au.IsAuthenticated(orgs.AddCard)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/card/{card_id}", au.IsAuthenticated(orgs.DeleteCard)).Methods("DELETE")
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)

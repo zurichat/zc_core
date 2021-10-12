@@ -257,6 +257,7 @@ func (oh *OrganizationHandler) UpdateName(w http.ResponseWriter, r *http.Request
 	})
 }
 
+
 // transfer workspace ownership.
 func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
