@@ -346,8 +346,8 @@ type Accessibility struct {
 }
 
 type MarkAsRead struct {
-	WhenIViewAChannel string `json:"when_i_view_a_channel" bson:"when_i_view_a_channel"`
-	PromptToConfirm   bool   `json:"prompt_to_confirm" bson:"language"`
+	WhenIViewAChannel           string `json:"when_i_view_a_channel" bson:"when_i_view_a_channel"`
+	WhenIMarkEverythingAsRead   bool   `json:"when_i_mark_everything_as_read" bson:"when_i_mark_everything_as_read"`
 }
 type AudioAndVideo struct {
 	IntegratedWebcam           string   `json:"integrated_webcam" bson:"integrated_webcam"`
