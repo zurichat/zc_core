@@ -776,6 +776,72 @@ func (oh *OrganizationHandler) UpdateMemberAccessibilitySettings(w http.Response
 	utils.GetSuccess("Member settings updated successfully", nil, w)
 }
 
+// an endpoint to update a user advanced  preference.
+func (oh *OrganizationHandler) UpdateMemberAdvancedSettings(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	vars := mux.Vars(r)
+	orgID, memberID := vars["id"], vars["mem_id"]
+
+	// check that org_id is valid
+	err := ValidateOrg(orgID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	// check that member_id is valid
+	err = ValidateMember(orgID, memberID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	// Parse request from incoming payload
+	var advancedSettings Advanced
+
+	err = utils.ParseJSONFromRequest(r, &advancedSettings)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	if _, ok := EnterActions[advancedSettings.PressEnterTo]; !ok {
+		utils.GetError(errors.New("invalid enter action"), http.StatusBadRequest, w)
+		return
+	}
+
+	// convert setting struct to map
+	pAdvancedSettings, err := utils.StructToMap(advancedSettings)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	memberpAdvancedSettings := make(map[string]interface{})
+	memberpAdvancedSettings["settings.advanced"] = pAdvancedSettings
+
+	// fetch and update the document
+	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberpAdvancedSettings)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	// publish update to subscriber
+	eventChannel := fmt.Sprintf("organizations_%s", orgID)
+	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberSettings, Channel: eventChannel, Payload: make(map[string]interface{})}
+
+	go utils.Emitter(event)
+
+	utils.GetSuccess("Member settings updated successfully", nil, w)
+}
+
 // Activate single member in an organization.
 func (oh *OrganizationHandler) ReactivateMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
