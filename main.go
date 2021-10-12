@@ -140,6 +140,8 @@ func Router(server *socketio.Server) *mux.Router {
 
 	// Marketplace
 	r.HandleFunc("/marketplace/plugins", marketplace.GetAllPlugins).Methods("GET")
+	r.HandleFunc("/marketplace/plugins/popular", marketplace.GetPopularPlugins).Methods("GET")
+	r.HandleFunc("/marketplace/plugins/recommended", marketplace.GetRecomendedPlugins).Methods("GET")
 	r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetPlugin).Methods("GET")
 	r.HandleFunc("/marketplace/plugins/{id}", marketplace.RemovePlugin).Methods("DELETE")
 
