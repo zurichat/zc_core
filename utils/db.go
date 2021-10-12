@@ -172,6 +172,27 @@ func UpdateOneMongoDBDoc(collectionName, id string, data map[string]interface{})
 	return res, nil
 }
 
+// Update single MongoDb document for a collection.
+func IncrementOneMongoDBDocField(collectionName, id string, field string) (*mongo.UpdateResult, error) {
+	ctx := context.Background()
+	collection := defaultMongoHandle.GetCollection(collectionName)
+
+	_id, _ := primitive.ObjectIDFromHex(id)
+	filter := bson.M{"_id": _id}
+
+	data := bson.M{field: 1}
+	
+	// updateOne sets the fields, without using $set the entire document will be overwritten
+	updateData := bson.M{"$inc": MapToBson(data)}
+	res, err := collection.UpdateOne(ctx, filter, updateData)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 // This methods allows update of any kind e.g array increment, object embedding etc by passing the raw update data.
 func GenericUpdateOneMongoDBDoc(collectionName string, id interface{}, updateData map[string]interface{}) (*mongo.UpdateResult, error) {
 	ctx := context.Background()

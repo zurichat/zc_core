@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"zuri.chat/zccore/utils"
 )
@@ -98,9 +100,24 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 		return
 	}
 
-	// save organization
-	save, err := utils.CreateMongoDBDoc(orgCollectionName, pluginMap)
-	if err != nil {
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
+	var save *mongo.InsertOneResult
+	var increaseCount *mongo.UpdateResult
+
+	go func() {
+		defer wg.Done()
+		save, err = utils.CreateMongoDBDoc(orgCollectionName, pluginMap)
+	}()
+	go func() {
+		defer wg.Done()
+		increaseCount, err = utils.IncrementOneMongoDBDocField(PluginCollection, orgPlugin.PluginID, "install_count")
+	}()
+	wg.Wait()
+
+	
+	if err != nil || increaseCount.ModifiedCount != 1 {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
@@ -139,7 +156,7 @@ func (oh *OrganizationHandler) GetOrganizationPlugins(w http.ResponseWriter, r *
 		return
 	}
 
-	utils.GetSuccess("Plugins Retrieved successfully", org.OrgPlugins(), w)
+	utils.GetSuccess("plugins retrieved successfully", org.OrgPlugins(), w)
 }
 
 func (oh *OrganizationHandler) GetOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
@@ -172,7 +189,7 @@ func (oh *OrganizationHandler) GetOrganizationPlugin(w http.ResponseWriter, r *h
 		return
 	}
 
-	utils.GetSuccess("Plugins returned successfully", doc, w)
+	utils.GetSuccess("plugins returned successfully", doc, w)
 }
 
 func (oh *OrganizationHandler) RemoveOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
