@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	socketio "github.com/googollee/go-socket.io"
@@ -193,7 +195,7 @@ func Router(server *socketio.Server) *mux.Router {
 	http.Handle("/", r)
 
 	// Docs
-	r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.RedirectHandler("https://docs.zuri.chat/",  http.StatusMovedPermanently)))
+	r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.RedirectHandler("https://docs.zuri.chat/", http.StatusMovedPermanently)))
 
 	return r
 }
@@ -238,8 +240,10 @@ func main() {
 
 	c := cors.AllowAll()
 
+	h := RequestDurationMiddleware(r)
+
 	srv := &http.Server{
-		Handler:      handlers.LoggingHandler(os.Stdout, c.Handler(r)),
+		Handler:      handlers.LoggingHandler(os.Stdout, c.Handler(h)),
 		Addr:         ":" + port,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
@@ -269,4 +273,37 @@ func LoadApp(w http.ResponseWriter, r *http.Request) {
 func VersionHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Zuri Chat API - Version 0.0255\n")
+}
+
+func RequestDurationMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		h.ServeHTTP(w, r)
+		duration := time.Since(start)
+
+		go func() {
+			m := make(map[string]interface{})
+			scheme := "http"
+			
+			if r.TLS != nil {
+                scheme+="s"
+			}
+			
+			m["endpoint"] = fmt.Sprintf("%s://%s%s", scheme, r.Host, r.URL.Path)
+			m["timeTaken"] = duration.Seconds()
+			
+			b, _ := json.Marshal(m)
+			resp, err := http.Post("https://companyfiles.zuri.chat/api/v1/slack/message", "application/json", strings.NewReader(string(b)))
+
+			if err != nil {
+				return
+			}
+
+			if resp.StatusCode != 200 {
+				fmt.Printf("got error %d", resp.StatusCode)
+			}
+
+			defer resp.Body.Close()
+		}()
+	})
 }
