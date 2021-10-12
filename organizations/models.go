@@ -173,9 +173,10 @@ type Status struct {
 	Tag        		string 				`json:"tag" bson:"tag"`
 	Text       		string 				`json:"text" bson:"text"`
 	ExpiryTime 		string 				`json:"expiry_time" bson:"expiry_time"`
+	StatusHistory	[]StatusHistory		`json:"status_history" bson:"status_history"`
 }
 
-type StatusHistories struct {
+type StatusHistory struct {
 	TagHistory		string  `json:"tag_history" bson:"tag_history"`
 	TextHistory		string  `json:"text_history" bson:"text_history"`
 	ExpiryHistory	string	`json:"expiry_history" bson:"expiry_history"` 			
@@ -193,7 +194,6 @@ type Member struct {
 	DisplayName 	string             `json:"display_name" bson:"display_name"`
 	Bio         	string             `json:"bio" bson:"bio"`
 	Status      	Status             `json:"status" bson:"status"`
-	StatusHistory	[]StatusHistories  `json:"status_history" bson:"status_history"`
 	Presence    	string             `json:"presence" bson:"presence"`
 	Pronouns    	string             `json:"pronouns" bson:"pronouns"`
 	Phone       	string             `json:"phone" bson:"phone"`

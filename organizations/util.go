@@ -115,11 +115,6 @@ func ClearStatusRoutine(orgID, memberID string, period int) {
 					<-t.C
 					ClearStatus(memberID)
 				}
-
-			case <-t.C: // timer expired. restart
-				fmt.Println("timer restarted")
-				t.Reset(d)
-				ClearStatus(memberID)
 				
 			case <-ctx.Done():
 				return

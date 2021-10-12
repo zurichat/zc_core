@@ -366,19 +366,23 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		go ClearStatusRoutine(orgID, memberID, int(diff.Minutes()))
 	}
 
-	statusUpdate, err := utils.StructToMap(status)
-	if err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
+	// if user decides to use a former status construct as new status 
+	// if (status.Text) == "" && (status.Tag) == "" {
+	// 	var statusHistory StatusHistory
+
+	// 	status.Text = statusHistory.TextHistory
+	// 	status.Tag = statusHistory.TagHistory
+	// 	status.ExpiryTime = statusHistory.ExpiryHistory
+	// } 
+	
+	// only the last six status history will be saved
+	maxStatusHistory := 6
+
+	if len(status.StatusHistory) > maxStatusHistory {
+		status.StatusHistory = status.StatusHistory[:6]
 	}
 
-	var statusHistory StatusHistories
-
-	statusHistory.TextHistory = status.Text
-	statusHistory.TagHistory = status.Tag
-	statusHistory.ExpiryHistory = status.ExpiryTime
-
-	statusHistoryUpdate, err := utils.StructToMap(statusHistory)
+	statusUpdate, err := utils.StructToMap(status)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
@@ -386,7 +390,6 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 
 	memberStatus := make(map[string]interface{})
 	memberStatus["status"] = statusUpdate
-	memberStatus["status_history"] = statusHistoryUpdate
 
 	// updates member status
 	result, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberStatus)
