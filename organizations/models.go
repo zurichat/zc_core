@@ -230,6 +230,7 @@ type Settings struct {
 	LanguagesAndRegions LanguagesAndRegions `json:"languages_and_regions" bson:"languages_and_regions"`
 	Accessibility       Accessibility       `json:"accessibility" bson:"accessibility"`
 	MarkAsRead          MarkAsRead          `json:"mark_as_read" bson:"mark_as_read"`
+	Advanced            Advanced            `json:"advanced" bson:"advanced"`
 	AudioAndVideo       AudioAndVideo       `json:"audio_and_video" bson:"audio_and_video"`
 	PluginSettings      []PluginSettings    `json:"plugin_settings" bson:"plugin_settings"`
 }
@@ -410,6 +411,43 @@ type MarkAsRead struct {
 	WhenIViewAChannel string `json:"when_i_view_a_channel" bson:"when_i_view_a_channel"`
 	PromptToConfirm   bool   `json:"prompt_to_confirm" bson:"language"`
 }
+
+type InputOption struct {
+	DontSendWithEnter		bool	`json:"dont_send_with_enter" bson:"dont_send_with_enter"`
+	FormatMessages		    bool	`json:"format_messages" bson:"format_messages"`
+}
+
+type SearchOption struct {
+	StartSlackSearch		bool	`json:"start_slack_search" bson:"start_slack_search"`
+	StartQuickSwitcher		bool	`json:"start_quick_switcher" bson:"start_quick_switcher"`
+}
+
+type OtherOption struct {
+	KeyScrollMessages		bool	`json:"key_scroll_messages" bson:"key_scroll_messages"`
+	ToggleAwayStatus		bool	`json:"toggle_away_status"  bson:"toggle_away_status"`
+	SendSurvey				bool	`json:"send_survey" bson:"send_survey"`
+	WarnAgainstLinks		bool	`json:"warn_against_links" bson:"warn_against_links"`
+	WarnAgainstFiles		bool	`json:"warn_against_files" bson:"warn_against_files"`
+}
+
+const (
+	SendMessage  = "send_message"
+	StartNewLine  = "start_new_line"
+)
+
+var EnterActions = map[string]string{
+	SendMessage:  SendMessage,
+	StartNewLine:  StartNewLine,
+}
+
+type Advanced struct {
+	InputOption			InputOption	 	`json:"input_option" bson:"input_option"`
+	PressEnterTo		string			`json:"press_enter_to" bson:"press_enter_to"`
+	SearchOption		SearchOption	`json:"search_option" bson:"search_option"`
+	ExcludedChannels	[]string	 	`json:"excluded_channels" bson:"excluded_channels"`
+	OtherOption			OtherOption	 	`json:"other_option" bson:"other_option"`
+}
+
 type AudioAndVideo struct {
 	IntegratedWebcam           string   `json:"integrated_webcam" bson:"integrated_webcam"`
 	Microphone                 string   `json:"microphone" bson:"microphone"`
