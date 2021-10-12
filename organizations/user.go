@@ -329,25 +329,25 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 
 	switch set := status.ExpiryTime; set {
 	case DontClear:
-
+		
 	case ThirtyMins:
 		period := 30
-		go ClearStatus(orgID, memberID, period)
+		go ClearStatusRoutine(orgID, memberID, period)
 
 	case OneHr:
 		period := 60
-		go ClearStatus(orgID, memberID, period)
+		go ClearStatusRoutine(orgID, memberID, period)
 
 	case FourHrs:
 		period := 240
-		go ClearStatus(orgID, memberID, period)
+		go ClearStatusRoutine(orgID, memberID, period)
 
 	case Today:
 		minutesPerHr := 60
 		hrsPerDay := 24
 		period := minutesPerHr * (hrsPerDay - currentTime.Hour())
 
-		go ClearStatus(orgID, memberID, period)
+		go ClearStatusRoutine(orgID, memberID, period)
 
 	case ThisWeek:
 		minutesPerHr := 60
@@ -359,11 +359,27 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 
 		period := weekday * hrsPerDay * minutesPerHr
 
-		go ClearStatus(orgID, memberID, period)
+		go ClearStatusRoutine(orgID, memberID, period)
 
 	default:
 		diff := choosenTime.Local().Sub(currentTime)
-		go ClearStatus(orgID, memberID, int(diff.Minutes()))
+		go ClearStatusRoutine(orgID, memberID, int(diff.Minutes()))
+	}
+
+	// if user decides to use a former status construct as new status 
+	// if (status.Text) == "" && (status.Tag) == "" {
+	// 	var statusHistory StatusHistory
+
+	// 	status.Text = statusHistory.TextHistory
+	// 	status.Tag = statusHistory.TagHistory
+	// 	status.ExpiryTime = statusHistory.ExpiryHistory
+	// } 
+	
+	// only the last six status history will be saved
+	maxStatusHistory := 6
+
+	if len(status.StatusHistory) > maxStatusHistory {
+		status.StatusHistory = status.StatusHistory[:6]
 	}
 
 	statusUpdate, err := utils.StructToMap(status)
@@ -601,6 +617,146 @@ func (oh *OrganizationHandler) UpdateMemberSettings(w http.ResponseWriter, r *ht
 
 	// fetch and update the document
 	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberSettings)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	// publish update to subscriber
+	eventChannel := fmt.Sprintf("organizations_%s", orgID)
+	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberSettings, Channel: eventChannel, Payload: make(map[string]interface{})}
+
+	go utils.Emitter(event)
+
+	utils.GetSuccess("Member settings updated successfully", nil, w)
+}
+
+func (oh *OrganizationHandler) UpdateMemberMessageAndMediaSettings(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	vars := mux.Vars(r)
+	orgID, memberID := vars["id"], vars["mem_id"]
+
+	// check that org_id is valid
+	err := ValidateOrg(orgID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	// check that member_id is valid
+	err = ValidateMember(orgID, memberID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	// Parse request from incoming payload
+	var messageAndMediaSettings MessagesAndMedia
+
+	err = utils.ParseJSONFromRequest(r, &messageAndMediaSettings)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	if _, ok := MsgMedias[messageAndMediaSettings.Theme]; !ok {
+		utils.GetError(errors.New("theme is not valid"), http.StatusBadRequest, w)
+		return
+	}
+
+	if _, ok := MsgMedias[messageAndMediaSettings.Names]; !ok {
+		utils.GetError(errors.New("name is not valid"), http.StatusBadRequest, w)
+		return
+	}
+
+	if _, ok := MsgMedias[messageAndMediaSettings.Emoji]; !ok {
+		utils.GetError(errors.New("emoji is not valid"), http.StatusBadRequest, w)
+		return
+	}
+
+	// convert setting struct to map
+	pMessageAndMediaSettings, err := utils.StructToMap(messageAndMediaSettings)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	memberpMessageAndMediaSettings := make(map[string]interface{})
+	memberpMessageAndMediaSettings["settings.messages_and_media"] = pMessageAndMediaSettings
+
+	// fetch and update the document
+	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberpMessageAndMediaSettings)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	// publish update to subscriber
+	eventChannel := fmt.Sprintf("organizations_%s", orgID)
+	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberSettings, Channel: eventChannel, Payload: make(map[string]interface{})}
+
+	go utils.Emitter(event)
+
+	utils.GetSuccess("Member settings updated successfully", nil, w)
+}
+
+func (oh *OrganizationHandler) UpdateMemberAccessibilitySettings(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	vars := mux.Vars(r)
+	orgID, memberID := vars["id"], vars["mem_id"]
+
+	// check that org_id is valid
+	err := ValidateOrg(orgID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	// check that member_id is valid
+	err = ValidateMember(orgID, memberID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	// Parse request from incoming payload
+	var accessibilitySettings Accessibility
+
+	err = utils.ParseJSONFromRequest(r, &accessibilitySettings)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	if _, ok := EmptyMessageFields[accessibilitySettings.PressEmptyMessageField]; !ok {
+		utils.GetError(errors.New("invalid field"), http.StatusBadRequest, w)
+		return
+	}
+
+	// convert setting struct to map
+	pAccessibilitySettings, err := utils.StructToMap(accessibilitySettings)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	memberpAccessibilitySettings := make(map[string]interface{})
+	memberpAccessibilitySettings["settings.accessibility"] = pAccessibilitySettings
+
+	// fetch and update the document
+	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberpAccessibilitySettings)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return

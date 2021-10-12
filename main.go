@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	socketio "github.com/googollee/go-socket.io"
@@ -111,7 +113,10 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings", au.IsAuthenticated(orgs.UpdateMemberSettings)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/role", au.IsAuthenticated(au.IsAuthorized(orgs.UpdateMemberRole, "admin"))).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/notification", au.IsAuthenticated(orgs.UpdateNotification)).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/markasread", orgs.MarkAsRead).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/markasread", au.IsAuthenticated(orgs.MarkAsRead)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/message-media", au.IsAuthenticated(orgs.UpdateMemberMessageAndMediaSettings)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/accessibility", au.IsAuthenticated(orgs.UpdateMemberAccessibilitySettings)).Methods("PATCH")
+
 
 	r.HandleFunc("/organizations/{id}/reports", au.IsAuthenticated(reps.AddReport)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/reports", au.IsAuthenticated(reps.GetReports)).Methods("GET")
@@ -126,8 +131,8 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/upgrade-to-pro", au.IsAuthenticated(orgs.UpgradeToPro)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/charge-tokens", au.IsAuthenticated(orgs.ChargeTokens)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/checkout-session", au.IsAuthenticated(orgs.CreateCheckoutSession)).Methods("POST")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}/addcard", au.IsAuthenticated(orgs.AddCard)).Methods("POST")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}/card/{card_id}", au.IsAuthenticated(orgs.DeleteCard)).Methods("DELETE")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/cards", au.IsAuthenticated(orgs.AddCard)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/cards/{card_id}", au.IsAuthenticated(orgs.DeleteCard)).Methods("DELETE")
 
 	// Data
 	r.HandleFunc("/data/write", data.WriteData)
@@ -145,6 +150,8 @@ func Router(server *socketio.Server) *mux.Router {
 
 	// Marketplace
 	r.HandleFunc("/marketplace/plugins", marketplace.GetAllPlugins).Methods("GET")
+	r.HandleFunc("/marketplace/plugins/popular", marketplace.GetPopularPlugins).Methods("GET")
+	r.HandleFunc("/marketplace/plugins/recommended", marketplace.GetRecomendedPlugins).Methods("GET")
 	r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetPlugin).Methods("GET")
 	r.HandleFunc("/marketplace/plugins/{id}", marketplace.RemovePlugin).Methods("DELETE")
 
@@ -189,7 +196,7 @@ func Router(server *socketio.Server) *mux.Router {
 	http.Handle("/", r)
 
 	// Docs
-	r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.RedirectHandler("https://docs.zuri.chat/",  http.StatusMovedPermanently)))
+	r.PathPrefix("/").Handler(http.StripPrefix("/docs", http.RedirectHandler("https://docs.zuri.chat/", http.StatusMovedPermanently)))
 
 	return r
 }
@@ -234,8 +241,10 @@ func main() {
 
 	c := cors.AllowAll()
 
+	h := RequestDurationMiddleware(r)
+
 	srv := &http.Server{
-		Handler:      handlers.LoggingHandler(os.Stdout, c.Handler(r)),
+		Handler:      handlers.LoggingHandler(os.Stdout, c.Handler(h)),
 		Addr:         ":" + port,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
@@ -265,4 +274,37 @@ func LoadApp(w http.ResponseWriter, r *http.Request) {
 func VersionHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Zuri Chat API - Version 0.0255\n")
+}
+
+func RequestDurationMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		h.ServeHTTP(w, r)
+		duration := time.Since(start)
+
+		go func() {
+			m := make(map[string]interface{})
+			scheme := "http"
+			
+			if r.TLS != nil {
+                scheme+="s"
+			}
+			
+			m["endpoint"] = fmt.Sprintf("%s://%s%s", scheme, r.Host, r.URL.Path)
+			m["timeTaken"] = duration.Seconds()
+			
+			b, _ := json.Marshal(m)
+			resp, err := http.Post("https://companyfiles.zuri.chat/api/v1/slack/message", "application/json", strings.NewReader(string(b)))
+
+			if err != nil {
+				return
+			}
+
+			if resp.StatusCode != 200 {
+				fmt.Printf("got error %d", resp.StatusCode)
+			}
+
+			defer resp.Body.Close()
+		}()
+	})
 }
