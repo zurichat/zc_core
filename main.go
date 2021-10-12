@@ -42,6 +42,7 @@ func Router(server *socketio.Server) *mux.Router {
 	us := user.NewUserHandler(configs, mailService)
 	exts := external.NewExternalHandler(configs, mailService)
 	orgs := organizations.NewOrganizationHandler(configs, mailService)
+	reps := report.NewReportHandler(configs, mailService)
 
 	// Setup and init
 	r.HandleFunc("/", VersionHandler)
@@ -110,9 +111,9 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings", au.IsAuthenticated(orgs.UpdateMemberSettings)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/role", au.IsAuthenticated(au.IsAuthorized(orgs.UpdateMemberRole, "admin"))).Methods("PATCH")
 
-	r.HandleFunc("/organizations/{id}/reports", report.AddReport).Methods("POST")
-	r.HandleFunc("/organizations/{id}/reports", report.GetReports).Methods("GET")
-	r.HandleFunc("/organizations/{id}/reports/{report_id}", report.GetReport).Methods("GET")
+	r.HandleFunc("/organizations/{id}/reports", au.IsAuthenticated(reps.AddReport)).Methods("POST")
+	r.HandleFunc("/organizations/{id}/reports", au.IsAuthenticated(reps.GetReports)).Methods("GET")
+	r.HandleFunc("/organizations/{id}/reports/{report_id}", au.IsAuthenticated(reps.GetReport)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/change-owner", au.IsAuthenticated(orgs.TransferOwnership)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/billing", au.IsAuthenticated(orgs.SaveBillingSettings)).Methods("PATCH")
 

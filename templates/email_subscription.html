@@ -65,17 +65,11 @@
 				width: 85%;
 				height: 100px;
 				font-size: 16px;
-				text-align: justify;
 				color: #1f1d1d;
 			}
 
-			p {
-				padding-left: 0.5em;
-			}
-
 			.text_greetings {
-				padding-top: 1.5em;
-				padding-bottom: 1em;
+				padding: 1em 0;
 				height: fit-content;
 			}
 
@@ -86,11 +80,7 @@
 			}
 
 			.text_body {
-				margin-bottom: 1.5em;
-			}
-
-			.text_signature {
-				padding-top: 1.5em;
+				margin-bottom: 1em;
 			}
 
 			footer {
@@ -99,13 +89,10 @@
 				margin: 5em auto auto auto;
 			}
 
-			.footer_link,
-			.footer_logo {
-				display: flex;
-			}
-
 			.footer_link {
 				font-size: 16px;
+				margin: 0.6em 0 0 0;
+				width: 240px;
 			}
 
 			.footer_link a {
@@ -115,7 +102,7 @@
 			}
 
 			.footer_link_tags {
-				margin-top: 2em;
+				margin-top: 1em;
 				padding: 0.8rem 0 0 0;
 				border-top: solid #c4c4c4;
 				font-size: 16px;
@@ -124,12 +111,12 @@
 			.footer_link_tags_text {
 				height: fit-content;
 				line-height: 22px;
-				text-align: justify;
 				color: #1f1d1d;
 			}
 
 			.footer_link_tags ul {
 				list-style: none;
+				margin: 290px;
 			}
 
 			.footer_link_tags ul li {
@@ -155,12 +142,6 @@
 					padding: 3em 0;
 				}
 
-				.footer_link_tags_text,
-				.footer_link_tags ul {
-					display: flex;
-					justify-content: center;
-				}
-
 				.main-content {
 					height: fit-content;
 				}
@@ -174,14 +155,15 @@
 					height: fit-content;
 				}
 				.paragraph {
-					font-size: 22px;
+					font-size: 18px;
 				}
 
 				.footer_link {
 					font-size: 18px;
+					width: 270px;
 				}
 				.footer_link_tags {
-					font-size: 20px;
+					font-size: 18px;
 				}
 				.footer_link_tags_text {
 					width: 100%;
@@ -189,10 +171,9 @@
 				.footer_link_tags ul li {
 					margin: 0rem 1rem;
 				}
+
 				.footer_link_tags ul {
-					display: flex;
-					justify-content: center;
-					align-content: center;
+					width: 432px;
 				}
 			}
 
@@ -241,23 +222,22 @@
 					</div>
 				</main>
 				<footer style="margin: auto">
-					<div class="footer_logo">
+					<div class="footer_logo" style="display: flex; align-items: center; width: 100px; margin: auto">
 						<div><img src="https://res.cloudinary.com/engage-cloud/image/upload/v1632683837/zuri_logo_noizec.png" alt="Zuri logo" /></div>
 						<div class="logo_name_footer">Zuri</div>
 					</div>
-					<div class="footer_link">
-						<div>Workspace URL</div>
+					<div class="footer_link" style="margin: auto">
+						<span>Workspace URL</span>
 						<a href="zuri.chat">Go to Zuri Chat</a>
 					</div>
 					<div class="footer_link_tags">
 						<div class="footer_link_tags_text">Have questions about your new workspace? Drop us a note at help@Zuri.com. We're glad you are here</div>
-						<div class="quick_links">
-							<ul>
-								<li><a href=".">Our Blog</a></li>
-								<li><a href=".">Email Preferences</a></li>
-								<li><a href="https://www.zuri.chat/privacy">Policies</a></li>
-							</ul>
-						</div>
+
+						<ul style="display: flex; flex-wrap: wrap; margin: auto; margin-top: 1em; padding: 0">
+							<li style="padding: 0 0.5em"><a href=".">Our Blog</a></li>
+							<li style="padding: 0 0.5em"><a href=".">Email Preferences</a></li>
+							<li style="padding: 0 0.5em"><a href="https://www.zuri.chat/privacy">Policies</a></li>
+						</ul>
 					</div>
 				</footer>
 			</div>

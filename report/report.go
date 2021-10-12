@@ -14,7 +14,7 @@ import (
 )
 
 // Add a report.
-func AddReport(w http.ResponseWriter, r *http.Request) {
+func (rh *ReportHandler) AddReport(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var report Report
@@ -100,7 +100,7 @@ func AddReport(w http.ResponseWriter, r *http.Request) {
 }
 
 // Get a report.
-func GetReport(w http.ResponseWriter, r *http.Request) {
+func (rh *ReportHandler) GetReport(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	orgID := mux.Vars(r)["id"]
@@ -128,11 +128,11 @@ func GetReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("report  retrieved successfully", report, w)
+	utils.GetSuccess("report retrieved successfully", report, w)
 }
 
 // Get reports.
-func GetReports(w http.ResponseWriter, r *http.Request) {
+func (rh *ReportHandler) GetReports(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	orgID := mux.Vars(r)["id"]
@@ -153,5 +153,5 @@ func GetReports(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("report  retrieved successfully", report, w)
+	utils.GetSuccess("reports retrieved successfully", report, w)
 }

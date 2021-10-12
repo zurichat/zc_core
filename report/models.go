@@ -2,6 +2,9 @@ package report
 
 import (
 	"time"
+
+	"zuri.chat/zccore/service"
+	"zuri.chat/zccore/utils"
 )
 
 const (
@@ -19,4 +22,14 @@ type Report struct {
 	Anonymous     bool      `bson:"anonymous" default:"false" json:"anonymous"`
 	Subject       string    `bson:"subject" json:"subject"`
 	Body          string    `bson:"body" json:"body"`
+}
+
+
+type ReportHandler struct {
+	configs     *utils.Configurations
+	mailService service.MailService
+}
+
+func NewReportHandler(c *utils.Configurations, mail service.MailService) *ReportHandler {
+	return &ReportHandler{configs: c, mailService: mail}
 }
