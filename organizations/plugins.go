@@ -116,7 +116,6 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 	}()
 	wg.Wait()
 
-	
 	if err != nil || increaseCount.ModifiedCount != 1 {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return

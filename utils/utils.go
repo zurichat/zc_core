@@ -18,6 +18,7 @@ import (
 
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
+	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	// "zuri.chat/zccore/auth"/.
@@ -145,13 +146,21 @@ func StructToMap(inStruct interface{}) (map[string]interface{}, error) {
 
 // ConvertStructure does map to struct conversion and vice versa.
 // The input structure will be converted to the output.
-func ConvertStructure(input, output interface{}) error {
+func OldConvertStructure(input, output interface{}) error {
 	data, err := json.Marshal(input)
 	if err != nil {
 		return err
 	}
 
 	return json.Unmarshal(data, output)
+}
+
+func ConvertStructure(input, output interface{}) error {
+
+	if err := mapstructure.Decode(input, output); err != nil {
+		return err
+	}
+	return nil
 }
 
 func ParseJSONFromRequest(r *http.Request, v interface{}) error {
