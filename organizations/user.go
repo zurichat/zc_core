@@ -47,6 +47,8 @@ func (oh *OrganizationHandler) GetMember(w http.ResponseWriter, r *http.Request)
 
 	err = utils.ConvertStructure(orgMember, &member)
 	if err != nil {
+		fmt.Println("got into convertstructure!")
+		fmt.Println(err)
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
@@ -329,7 +331,7 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 
 	switch set := status.ExpiryTime; set {
 	case DontClear:
-		
+
 	case ThirtyMins:
 		period := 30
 		go ClearStatusRoutine(orgID, memberID, period)
@@ -366,21 +368,49 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		go ClearStatusRoutine(orgID, memberID, int(diff.Minutes()))
 	}
 
-	// if user decides to use a former status construct as new status 
+	// if user decides to use a former status construct as new status
 	// if (status.Text) == "" && (status.Tag) == "" {
 	// 	var statusHistory StatusHistory
 
 	// 	status.Text = statusHistory.TextHistory
 	// 	status.Tag = statusHistory.TagHistory
 	// 	status.ExpiryTime = statusHistory.ExpiryHistory
-	// } 
-	
-	// only the last six status history will be saved
-	maxStatusHistory := 6
+	// }
 
-	if len(status.StatusHistory) > maxStatusHistory {
-		status.StatusHistory = status.StatusHistory[:6]
+	// only the last six status history will be saved
+
+	// maxStatusHistory := 6
+
+	// if len(status.StatusHistory) > maxStatusHistory {
+	// 	status.StatusHistory = status.StatusHistory[:6] should be [1:]
+	// }
+
+	_prevStatus, err := utils.GetMongoDBDoc(MemberCollectionName, bson.M{"_id": memberID})
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
 	}
+
+	var prevStatus Status
+
+	// convert bson to struct
+	bsonBytes, _ := bson.Marshal(_prevStatus)
+	if err = bson.Unmarshal(bsonBytes, &prevStatus); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	newHistory := StatusHistory{
+		TagHistory:    status.Tag,
+		TextHistory:   status.Text,
+		ExpiryHistory: status.ExpiryTime,
+	}
+
+	prevStatus.StatusHistory = append(prevStatus.StatusHistory, newHistory)
+	if len(prevStatus.StatusHistory) > 6 {
+		prevStatus.StatusHistory = prevStatus.StatusHistory[1:]
+	}
+	status.StatusHistory = prevStatus.StatusHistory
 
 	statusUpdate, err := utils.StructToMap(status)
 	if err != nil {
@@ -1016,7 +1046,7 @@ func (oh *OrganizationHandler) UpdateNotification(w http.ResponseWriter, r *http
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
-	
+
 	memberSettings := make(map[string]interface{})
 	memberSettings["settings.notifications"] = notifications
 	// fetch and update the document
@@ -1031,5 +1061,5 @@ func (oh *OrganizationHandler) UpdateNotification(w http.ResponseWriter, r *http
 		return
 	}
 
-	utils.GetSuccess("successful", nil , w)
+	utils.GetSuccess("successful", nil, w)
 }
