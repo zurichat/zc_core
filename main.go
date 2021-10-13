@@ -117,6 +117,8 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/message-media", au.IsAuthenticated(orgs.UpdateMemberMessageAndMediaSettings)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/accessibility", au.IsAuthenticated(orgs.UpdateMemberAccessibilitySettings)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/languagesandregion", au.IsAuthenticated(orgs.SetLanguagesAndRegions)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/advanced", au.IsAuthenticated(orgs.UpdateMemberAdvancedSettings)).Methods("PATCH")
+
 
 	r.HandleFunc("/organizations/{id}/reports", au.IsAuthenticated(reps.AddReport)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/reports", au.IsAuthenticated(reps.GetReports)).Methods("GET")
