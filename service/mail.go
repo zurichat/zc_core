@@ -34,7 +34,7 @@ const (
 	PasswordReset
 	EmailSubscription
 	DownloadClient
-	WorkspaceInvite
+	// WorkspaceInvite
 	TokenBillingNotice
 	WorkSpaceInvite
 	WorkSpaceWelcome
@@ -45,7 +45,7 @@ var MailTypes = map[MailType]MailType{
 	PasswordReset:      PasswordReset,
 	EmailSubscription:  EmailSubscription,
 	DownloadClient:     DownloadClient,
-	WorkspaceInvite:    WorkspaceInvite,
+	// WorkspaceInvite:    WorkspaceInvite,
 	TokenBillingNotice: TokenBillingNotice,
 	WorkSpaceInvite:    WorkSpaceInvite,
 	WorkSpaceWelcome:   WorkSpaceWelcome,
@@ -77,7 +77,7 @@ func (ms *ZcMailService) LoadTemplate(mailReq *Mail) (string, error) {
 		PasswordReset:      ms.configs.PasswordResetTemplate,
 		EmailSubscription:  ms.configs.EmailSubscriptionTemplate,
 		DownloadClient:     ms.configs.DownloadClientTemplate,
-		WorkspaceInvite:    ms.configs.WorkspaceInviteTemplate,
+		// WorkspaceInvite:    ms.configs.WorkspaceInviteTemplate,
 		TokenBillingNotice: ms.configs.TokenBillingNoticeTemplate,
 		WorkSpaceInvite:    ms.configs.WorkSpaceInviteTemplate,
 		WorkSpaceWelcome:   ms.configs.WorkSpaceWelcomeTemplate,

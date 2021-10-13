@@ -473,7 +473,7 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 		orgName := fmt.Sprintf("%v", org["name"])
 
 		msger := oh.mailService.NewMail(
-			[]string{email}, "Zuri Chat Workspace Invite", service.WorkspaceInvite, map[string]interface{}{
+			[]string{email}, "Zuri Chat Workspace Invite", service.WorkSpaceInvite, map[string]interface{}{
 				"Username":   loggedInUser.Email,
 				"OrgName":    orgName,
 				"InviteLink": inviteLink,
