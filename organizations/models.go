@@ -413,39 +413,39 @@ type MarkAsRead struct {
 }
 
 type InputOption struct {
-	DontSendWithEnter		bool	`json:"dont_send_with_enter" bson:"dont_send_with_enter"`
-	FormatMessages		    bool	`json:"format_messages" bson:"format_messages"`
+	DontSendWithEnter bool `json:"dont_send_with_enter" bson:"dont_send_with_enter"`
+	FormatMessages    bool `json:"format_messages" bson:"format_messages"`
 }
 
 type SearchOption struct {
-	StartSlackSearch		bool	`json:"start_slack_search" bson:"start_slack_search"`
-	StartQuickSwitcher		bool	`json:"start_quick_switcher" bson:"start_quick_switcher"`
+	StartSlackSearch   bool `json:"start_slack_search" bson:"start_slack_search"`
+	StartQuickSwitcher bool `json:"start_quick_switcher" bson:"start_quick_switcher"`
 }
 
 type OtherOption struct {
-	KeyScrollMessages		bool	`json:"key_scroll_messages" bson:"key_scroll_messages"`
-	ToggleAwayStatus		bool	`json:"toggle_away_status"  bson:"toggle_away_status"`
-	SendSurvey				bool	`json:"send_survey" bson:"send_survey"`
-	WarnAgainstLinks		bool	`json:"warn_against_links" bson:"warn_against_links"`
-	WarnAgainstFiles		bool	`json:"warn_against_files" bson:"warn_against_files"`
+	KeyScrollMessages bool `json:"key_scroll_messages" bson:"key_scroll_messages"`
+	ToggleAwayStatus  bool `json:"toggle_away_status"  bson:"toggle_away_status"`
+	SendSurvey        bool `json:"send_survey" bson:"send_survey"`
+	WarnAgainstLinks  bool `json:"warn_against_links" bson:"warn_against_links"`
+	WarnAgainstFiles  bool `json:"warn_against_files" bson:"warn_against_files"`
 }
 
 const (
 	SendMessage  = "send_message"
-	StartNewLine  = "start_new_line"
+	StartNewLine = "start_new_line"
 )
 
 var EnterActions = map[string]string{
 	SendMessage:  SendMessage,
-	StartNewLine:  StartNewLine,
+	StartNewLine: StartNewLine,
 }
 
 type Advanced struct {
-	InputOption			InputOption	 	`json:"input_option" bson:"input_option"`
-	PressEnterTo		string			`json:"press_enter_to" bson:"press_enter_to"`
-	SearchOption		SearchOption	`json:"search_option" bson:"search_option"`
-	ExcludedChannels	[]string	 	`json:"excluded_channels" bson:"excluded_channels"`
-	OtherOption			OtherOption	 	`json:"other_option" bson:"other_option"`
+	InputOption      InputOption  `json:"input_option" bson:"input_option"`
+	PressEnterTo     string       `json:"press_enter_to" bson:"press_enter_to"`
+	SearchOption     SearchOption `json:"search_option" bson:"search_option"`
+	ExcludedChannels []string     `json:"excluded_channels" bson:"excluded_channels"`
+	OtherOption      OtherOption  `json:"other_option" bson:"other_option"`
 }
 
 type AudioAndVideo struct {
@@ -483,4 +483,9 @@ type Card struct {
 	CardNumber string `json:"card_number" bson:"card_number"`
 	Country    string `json:"country,omitempty" bson:"country,omitempty"`
 	CVCCheck   string `json:"cvc_check" bson:"cvc_check"`
+}
+
+type EnterLeaveMessage struct {
+	OrganizationID string `json:"organization_id" bson:"organization_id"`
+	MemberID       string `json:"member_id" bson:"member_id"`
 }

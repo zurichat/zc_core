@@ -3,6 +3,7 @@ package organizations
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -219,6 +220,15 @@ func (oh *OrganizationHandler) CreateMember(w http.ResponseWriter, r *http.Reque
 	go utils.Emitter(event)
 
 	utils.GetSuccess("Member created successfully", utils.M{"member_id": res.InsertedID}, w)
+
+	enterOrgMessage := EnterLeaveMessage{
+		OrganizationID: sOrgID,
+		MemberID:       res.InsertedID.(primitive.ObjectID).Hex(),
+	}
+	eee := AddSyncMessage(sOrgID, "enter_organization", enterOrgMessage)
+	if eee != nil {
+		log.Printf("sync error: %v", eee)
+	}
 }
 
 // endpoint to update a member's profile picture.
@@ -501,6 +511,14 @@ func (oh *OrganizationHandler) DeactivateMember(w http.ResponseWriter, r *http.R
 	go utils.Emitter(event)
 
 	utils.GetSuccess("successfully deactivated member", nil, w)
+	enterOrgMessage := EnterLeaveMessage{
+		OrganizationID: orgID,
+		MemberID:       memberID,
+	}
+	eee := AddSyncMessage(orgID, "leave_organization", enterOrgMessage)
+	if eee != nil {
+		log.Printf("sync error: %v", eee)
+	}
 }
 
 // Update a member profile.
