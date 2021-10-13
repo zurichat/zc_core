@@ -35,17 +35,21 @@ type Plugin struct {
 	CreatedAt      string             `json:"created_at" bson:"created_at"`
 	UpdatedAt      string             `json:"updated_at" bson:"updated_at"`
 	DeletedAt      string             `json:"deleted_at" bson:"deleted_at"`
+	SyncRequestUrl string             `json:"sync_request_url" bson:"sync_request_url"`
+	Queue          []MessageModel     `json:"queue" bson:"queue"`
+	QueuePID       int                `json:"queuepid" bson:"queuepid"`
 }
 
 type Patch struct {
-	Name        *string  `json:"name,omitempty" bson:"name,omitempty"`
-	Description *string  `json:"description,omitempty"  bson:"description,omitempty"`
-	Images      []string `json:"images,omitempty" bson:"images,omitempty"`
-	Tags        []string `json:"tags,omitempty"  bson:"tags,omitempty"`
-	Version     *string  `json:"version,omitempty"  bson:"version,omitempty"`
-	SidebarURL  *string  `json:"sidebar_url,omitempty"  bson:"sidebar_url,omitempty"`
-	InstallURL  *string  `json:"install_url,omitempty"  bson:"install_url,omitempty"`
-	TemplateURL *string  `json:"template_url,omitempty"  bson:"template_url,omitempty"`
+	Name           *string  `json:"name,omitempty" bson:"name,omitempty"`
+	Description    *string  `json:"description,omitempty"  bson:"description,omitempty"`
+	Images         []string `json:"images,omitempty" bson:"images,omitempty"`
+	Tags           []string `json:"tags,omitempty"  bson:"tags,omitempty"`
+	Version        *string  `json:"version,omitempty"  bson:"version,omitempty"`
+	SidebarURL     *string  `json:"sidebar_url,omitempty"  bson:"sidebar_url,omitempty"`
+	InstallURL     *string  `json:"install_url,omitempty"  bson:"install_url,omitempty"`
+	TemplateURL    *string  `json:"template_url,omitempty"  bson:"template_url,omitempty"`
+	SyncRequestUrl *string  `json:"sync_request_url" bson:"sync_request_url"`
 }
 
 func CreatePlugin(ctx context.Context, p *Plugin) error {
@@ -90,7 +94,7 @@ func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 func FindPlugins(ctx context.Context, filter bson.M) ([]*Plugin, error) {
 	ps := []*Plugin{}
 	collection := utils.GetCollection(PluginCollectionName)
-	
+
 	cursor, err := collection.Find(ctx, filter)
 
 	if err != nil {
@@ -107,7 +111,7 @@ func FindPlugins(ctx context.Context, filter bson.M) ([]*Plugin, error) {
 func SortPlugins(ctx context.Context, filter bson.M, sort bson.D) ([]*Plugin, error) {
 	ps := []*Plugin{}
 	collection := utils.GetCollection(PluginCollectionName)
-	
+
 	findOptions := options.Find()
 	findOptions.SetSort(sort)
 
@@ -152,6 +156,9 @@ func updatePlugin(ctx context.Context, id string, pp *Patch) error {
 	if pp.Version != nil {
 		update["version"] = *(pp.Version)
 	}
+	if pp.SyncRequestUrl != nil {
+		update["sync_request_url"] = *(pp.SyncRequestUrl)
+	}
 
 	if pp.Images != nil {
 		update["$push"] = bson.M{"images": bson.M{"$each": pp.Images}}
@@ -164,4 +171,14 @@ func updatePlugin(ctx context.Context, id string, pp *Patch) error {
 	_, err := collection.UpdateOne(ctx, M{"_id": objID}, update)
 
 	return err
+}
+
+type SyncUpdateRequest struct {
+	ID int `json:"id" bson:"id" validate:"required"`
+}
+
+type MessageModel struct {
+	Id      int         `json:"id" bson:"id"`
+	Event   string      `json:"event" bson:"event"`
+	Message interface{} `json:"message" bson:"message"`
 }
