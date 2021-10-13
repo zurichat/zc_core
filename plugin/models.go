@@ -135,7 +135,7 @@ func updatePlugin(ctx context.Context, id string, pp *Patch) error {
 	push := bson.M{}
 
 	if pp.Name != nil {
-		set["name"] =  *(pp.Name)
+		set["name"] = *(pp.Name)
 	}
 
 	if pp.Description != nil {
@@ -158,19 +158,19 @@ func updatePlugin(ctx context.Context, id string, pp *Patch) error {
 		set["version"] = *(pp.Version)
 	}
 	if pp.SyncRequestUrl != nil {
-		update["sync_request_url"] = *(pp.SyncRequestUrl)
+		set["sync_request_url"] = *(pp.SyncRequestUrl)
 	}
 
 	if pp.Images != nil {
-		push["images"] =  bson.M{"$each": pp.Images}
+		push["images"] = bson.M{"$each": pp.Images}
 	}
 
 	if pp.Tags != nil {
-		push["tags"] =  bson.M{"$each": pp.Tags}
+		push["tags"] = bson.M{"$each": pp.Tags}
 	}
 
 	_, err := collection.UpdateOne(ctx, M{"_id": objID}, bson.M{
-		"$set": set,
+		"$set":  set,
 		"$push": push,
 	})
 
