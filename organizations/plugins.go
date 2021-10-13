@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -62,7 +61,7 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 	}
 
 	var member Member
-	if err = mapstructure.Decode(user, &member); err != nil {
+	if err = utils.ConvertStructure(user, &member); err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
