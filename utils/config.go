@@ -72,7 +72,7 @@ func NewConfigurations() *Configurations {
 	viper.SetDefault("DOWNLOAD_CLIENT_TEMPLATE", "./templates/download_clients.html")
 	viper.SetDefault("WORKSPACE_INVITE_TEMPLATE", "./templates/workspace_invite.html")
 	viper.SetDefault("TOKEN_BILLING_NOTICE_TEMPLATE", "./templates/token_billing_notice.html")
-	viper.SetDefault("WORKSPACE_INVITE_TEMPLATE", "./templates/workspace_inivte.html")
+	viper.SetDefault("WORKSPACE_INVITE_TEMPLATE", "./templates/workspace_invite.html")
 	viper.SetDefault("WORKSPACE_WELCOME_TEMPLATE", "./templates/workspace_welcome.html")
 	viper.SetDefault("GOOGLE_OAUTH_V3", "https://www.googleapis.com/oauth2/v3/userinfo?access_token=:access_token")
 
