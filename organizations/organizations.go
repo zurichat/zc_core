@@ -182,25 +182,6 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bot := Member{
-		ID:        primitive.NewObjectID(),
-		OrgID:     iiid,
-		FirstName: "TwitterBot",
-		Role:      Bot,
-		Presence:  "true",
-		JoinedAt:  time.Now(),
-		Deleted:   false,
-	}
-
-	// add bot as member of organization
-	coll = utils.GetCollection(MemberCollectionName)
-	_, err = coll.InsertOne(r.Context(), bot)
-
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
-
 	utils.GetSuccess("organization created", utils.M{"organization_id": save.InsertedID}, w)
 }
 
@@ -256,7 +237,6 @@ func (oh *OrganizationHandler) UpdateName(w http.ResponseWriter, r *http.Request
 		successMessage: "organization name",
 	})
 }
-
 
 // transfer workspace ownership.
 func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.Request) {
