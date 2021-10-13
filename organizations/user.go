@@ -3,7 +3,6 @@ package organizations
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -220,15 +219,6 @@ func (oh *OrganizationHandler) CreateMember(w http.ResponseWriter, r *http.Reque
 	go utils.Emitter(event)
 
 	utils.GetSuccess("Member created successfully", utils.M{"member_id": res.InsertedID}, w)
-
-	enterOrgMessage := EnterLeaveMessage{
-		OrganizationID: sOrgID,
-		MemberID:       res.InsertedID.(primitive.ObjectID).Hex(),
-	}
-	eee := AddSyncMessage(sOrgID, "enter_organization", enterOrgMessage)
-	if eee != nil {
-		log.Printf("sync error: %v", eee)
-	}
 }
 
 // endpoint to update a member's profile picture.
@@ -377,32 +367,14 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		go ClearStatusRoutine(orgID, memberID, int(diff.Minutes()))
 	}
 
-	// if user decides to use a former status construct as new status
-	// if (status.Text) == "" && (status.Tag) == "" {
-	// 	var statusHistory StatusHistory
-
-	// 	status.Text = statusHistory.TextHistory
-	// 	status.Tag = statusHistory.TagHistory
-	// 	status.ExpiryTime = statusHistory.ExpiryHistory
-	// }
-
-	// only the last six status history will be saved
-
-	// maxStatusHistory := 6
-
-	// if len(status.StatusHistory) > maxStatusHistory {
-	// 	status.StatusHistory = status.StatusHistory[:6] should be [1:]
-	// }
-
 	pmemberID, err := primitive.ObjectIDFromHex(memberID)
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
 		return
 	}
 
-	_prevStatus, err := utils.GetMongoDBDoc(MemberCollectionName, bson.M{"_id": pmemberID})
+	memberRec, err := utils.GetMongoDBDoc(MemberCollectionName, bson.M{"_id": pmemberID})
 	if err != nil {
-		fmt.Println("Error while trying to get mongodb doc")
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
@@ -410,7 +382,7 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 	var prevStatus Status
 
 	// convert bson to struct
-	bsonBytes, _ := bson.Marshal(_prevStatus)
+	bsonBytes, _ := bson.Marshal(memberRec["status"])
 
 	if err = bson.Unmarshal(bsonBytes, &prevStatus); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
@@ -423,20 +395,10 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		ExpiryHistory: status.ExpiryTime,
 	}
 
-	fmt.Println("in the beninging: ")
-	fmt.Println(prevStatus.StatusHistory)
-	prevStatus.StatusHistory = append(prevStatus.StatusHistory, newHistory)
-	if len(prevStatus.StatusHistory) > 6 {
-		fmt.Println("Got in here. I should not be here!")
-		prevStatus.StatusHistory = prevStatus.StatusHistory[1:]
+	status.StatusHistory = append(prevStatus.StatusHistory, newHistory)
+	if len(status.StatusHistory) > 6 {
+		status.StatusHistory = status.StatusHistory[1:]
 	}
-
-	fmt.Println(prevStatus.StatusHistory)
-	fmt.Println(status.StatusHistory)
-	status.StatusHistory = prevStatus.StatusHistory
-	fmt.Println("After: ")
-	fmt.Println(prevStatus.StatusHistory)
-	fmt.Println(status.StatusHistory)
 
 	statusUpdate, err := utils.StructToMap(status)
 	if err != nil {
@@ -446,9 +408,6 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 
 	memberStatus := make(map[string]interface{})
 	memberStatus["status"] = statusUpdate
-
-	fmt.Println("omega: ")
-	fmt.Println(memberStatus)
 
 	// updates member status
 	result, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberStatus)
@@ -511,14 +470,6 @@ func (oh *OrganizationHandler) DeactivateMember(w http.ResponseWriter, r *http.R
 	go utils.Emitter(event)
 
 	utils.GetSuccess("successfully deactivated member", nil, w)
-	enterOrgMessage := EnterLeaveMessage{
-		OrganizationID: orgID,
-		MemberID:       memberID,
-	}
-	eee := AddSyncMessage(orgID, "leave_organization", enterOrgMessage)
-	if eee != nil {
-		log.Printf("sync error: %v", eee)
-	}
 }
 
 // Update a member profile.
