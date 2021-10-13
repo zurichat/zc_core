@@ -113,9 +113,10 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings", au.IsAuthenticated(orgs.UpdateMemberSettings)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/role", au.IsAuthenticated(au.IsAuthorized(orgs.UpdateMemberRole, "admin"))).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/notification", au.IsAuthenticated(orgs.UpdateNotification)).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/markasread", au.IsAuthenticated(orgs.MarkAsRead)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/markasread", au.IsAuthenticated(orgs.UpdateMarkAsRead)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/message-media", au.IsAuthenticated(orgs.UpdateMemberMessageAndMediaSettings)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/accessibility", au.IsAuthenticated(orgs.UpdateMemberAccessibilitySettings)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/languagesandregion", au.IsAuthenticated(orgs.SetLanguagesAndRegions)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/advanced", au.IsAuthenticated(orgs.UpdateMemberAdvancedSettings)).Methods("PATCH")
 
 
@@ -124,7 +125,6 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/reports/{report_id}", au.IsAuthenticated(reps.GetReport)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/change-owner", au.IsAuthenticated(orgs.TransferOwnership)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/billing", au.IsAuthenticated(orgs.SaveBillingSettings)).Methods("PATCH")
-	
 
 	//organization: payment
 	r.HandleFunc("/organizations/{id}/add-token", au.IsAuthenticated(orgs.AddToken)).Methods("POST")
@@ -286,14 +286,14 @@ func RequestDurationMiddleware(h http.Handler) http.Handler {
 		go func() {
 			m := make(map[string]interface{})
 			scheme := "http"
-			
+
 			if r.TLS != nil {
-                scheme+="s"
+				scheme += "s"
 			}
-			
+
 			m["endpoint"] = fmt.Sprintf("%s://%s%s", scheme, r.Host, r.URL.Path)
 			m["timeTaken"] = duration.Seconds()
-			
+
 			b, _ := json.Marshal(m)
 			resp, err := http.Post("https://companyfiles.zuri.chat/api/v1/slack/message", "application/json", strings.NewReader(string(b)))
 

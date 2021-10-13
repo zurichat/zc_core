@@ -171,41 +171,41 @@ var StatusExpiryTime = map[string]string{
 }
 
 type Status struct {
-	Tag        		string 				`json:"tag" bson:"tag"`
-	Text       		string 				`json:"text" bson:"text"`
-	ExpiryTime 		string 				`json:"expiry_time" bson:"expiry_time"`
-	StatusHistory	[]StatusHistory		`json:"status_history" bson:"status_history"`
+	Tag           string          `json:"tag" bson:"tag"`
+	Text          string          `json:"text" bson:"text"`
+	ExpiryTime    string          `json:"expiry_time" bson:"expiry_time"`
+	StatusHistory []StatusHistory `json:"status_history" bson:"status_history"`
 }
 
 type StatusHistory struct {
-	TagHistory		string  `json:"tag_history" bson:"tag_history"`
-	TextHistory		string  `json:"text_history" bson:"text_history"`
-	ExpiryHistory	string	`json:"expiry_history" bson:"expiry_history"` 			
+	TagHistory    string `json:"tag_history" bson:"tag_history"`
+	TextHistory   string `json:"text_history" bson:"text_history"`
+	ExpiryHistory string `json:"expiry_history" bson:"expiry_history"`
 }
 
 type Member struct {
-	ID          	primitive.ObjectID `json:"_id" bson:"_id"`
-	OrgID       	string             `json:"org_id" bson:"org_id"`
-	Files       	[]string           `json:"files" bson:"files"`
-	ImageURL    	string             `json:"image_url" bson:"image_url"`
-	FirstName   	string             `json:"first_name" bson:"first_name"`
-	LastName    	string             `json:"last_name" bson:"last_name"`
-	Email       	string             `json:"email" bson:"email"`
-	UserName    	string             `bson:"user_name" json:"user_name"`
-	DisplayName 	string             `json:"display_name" bson:"display_name"`
-	Bio         	string             `json:"bio" bson:"bio"`
-	Status      	Status             `json:"status" bson:"status"`
-	Presence    	string             `json:"presence" bson:"presence"`
-	Pronouns    	string             `json:"pronouns" bson:"pronouns"`
-	Phone       	string             `json:"phone" bson:"phone"`
-	TimeZone    	string             `json:"time_zone" bson:"time_zone"`
-	Role        	string             `json:"role" bson:"role"`
-	JoinedAt    	time.Time          `json:"joined_at" bson:"joined_at"`
-	Settings    	*Settings          `json:"settings" bson:"settings"`
-	Deleted     	bool               `json:"deleted" bson:"deleted"`
-	DeletedAt   	time.Time          `json:"deleted_at" bson:"deleted_at"`
-	Socials     	[]Social           `json:"socials" bson:"socials"`
-	Language    	string             `json:"language" bson:"language"`
+	ID          primitive.ObjectID `json:"_id" bson:"_id"`
+	OrgID       string             `json:"org_id" bson:"org_id"`
+	Files       []string           `json:"files" bson:"files"`
+	ImageURL    string             `json:"image_url" bson:"image_url"`
+	FirstName   string             `json:"first_name" bson:"first_name"`
+	LastName    string             `json:"last_name" bson:"last_name"`
+	Email       string             `json:"email" bson:"email"`
+	UserName    string             `bson:"user_name" json:"user_name"`
+	DisplayName string             `json:"display_name" bson:"display_name"`
+	Bio         string             `json:"bio" bson:"bio"`
+	Status      Status             `json:"status" bson:"status"`
+	Presence    string             `json:"presence" bson:"presence"`
+	Pronouns    string             `json:"pronouns" bson:"pronouns"`
+	Phone       string             `json:"phone" bson:"phone"`
+	TimeZone    string             `json:"time_zone" bson:"time_zone"`
+	Role        string             `json:"role" bson:"role"`
+	JoinedAt    time.Time          `json:"joined_at" bson:"joined_at"`
+	Settings    *Settings          `json:"settings" bson:"settings"`
+	Deleted     bool               `json:"deleted" bson:"deleted"`
+	DeletedAt   time.Time          `json:"deleted_at" bson:"deleted_at"`
+	Socials     []Social           `json:"socials" bson:"socials"`
+	Language    string             `json:"language" bson:"language"`
 }
 
 type Profile struct {
@@ -275,28 +275,28 @@ type MessageSettings struct {
 }
 
 type Notifications struct {
-	NotifyMeAbout                    string   				`json:"notify_me_about" bson:"notify_me_about"`
-	UseDifferentSettingsForMyMobile  bool     				`json:"use_different_settings_mobile" bson:"use_different_settings_mobile"`
-	ChannelHurdleNotification        bool     				`json:"channel_hurdle_notification" bson:"channel_hurdle_notification"`
-	MeetingRepliesNotification       bool     				`json:"meeting_replies_notification" bson:"meeting_replies_notification"`
-	ThreadRepliesNotification        bool     				`json:"thread_replies_notification" bson:"thread_replies_notification"`
-	MyKeywords                       []string 				`json:"my_keywords" bson:"my_keywords"`
+	NotifyMeAbout                    string                 `json:"notify_me_about" bson:"notify_me_about"`
+	UseDifferentSettingsForMyMobile  bool                   `json:"use_different_settings_mobile" bson:"use_different_settings_mobile"`
+	ChannelHurdleNotification        bool                   `json:"channel_hurdle_notification" bson:"channel_hurdle_notification"`
+	MeetingRepliesNotification       bool                   `json:"meeting_replies_notification" bson:"meeting_replies_notification"`
+	ThreadRepliesNotification        bool                   `json:"thread_replies_notification" bson:"thread_replies_notification"`
+	MyKeywords                       []string               `json:"my_keywords" bson:"my_keywords"`
 	NotificationSchedule             NotificationSchedule   `json:"notification_schedule" bson:"notification_schedule"`
 	CustomNotificationSchedule       []NotificationSchedule `json:"custom_notification_schedule" bson:"custom_notification_schedule"`
-	MessagePreviewInEachNotification bool     				`json:"message_preview_in_each_notification" bson:"message_preview_in_each_notification"`
-	SetMessageNotificationsRight     string   				`json:"set_message_notifications_right" bson:"set_message_notifications_right"`
-	SetLoungeNotificationsRight      string   				`json:"set_lounge_notifications_right" bson:"set_lounge_notifications_right"`
-	MuteAllSounds                    bool     				`json:"mute_all_sounds" bson:"mute_all_sounds"`
-	FlashWindowWhenNotificationComes string   				`json:"flash_window_when_notification_comes" bson:"flash_window_when_notification_comes"`
-	DeliverNotificationsVia          string   				`json:"deliver_notifications_via" bson:"deliver_notifications_via"`
-	WhenIamNotActiveOnDesktop        string   				`json:"when_iam_not_active_on_desktop" bson:"when_iam_not_active_on_desktop"`
-	EmailNotificationsForMentions    bool     				`json:"email_notifications_for_mentions" bson:"email_notifications_for_mentions"`
+	MessagePreviewInEachNotification bool                   `json:"message_preview_in_each_notification" bson:"message_preview_in_each_notification"`
+	SetMessageNotificationsRight     string                 `json:"set_message_notifications_right" bson:"set_message_notifications_right"`
+	SetLoungeNotificationsRight      string                 `json:"set_lounge_notifications_right" bson:"set_lounge_notifications_right"`
+	MuteAllSounds                    bool                   `json:"mute_all_sounds" bson:"mute_all_sounds"`
+	FlashWindowWhenNotificationComes string                 `json:"flash_window_when_notification_comes" bson:"flash_window_when_notification_comes"`
+	DeliverNotificationsVia          string                 `json:"deliver_notifications_via" bson:"deliver_notifications_via"`
+	WhenIamNotActiveOnDesktop        string                 `json:"when_iam_not_active_on_desktop" bson:"when_iam_not_active_on_desktop"`
+	EmailNotificationsForMentions    bool                   `json:"email_notifications_for_mentions" bson:"email_notifications_for_mentions"`
 }
 
 type NotificationSchedule struct {
-	Day   string   `json:"day" bson:"day"`
-	From  string   `json:"from" bson:"from"`
-	To    string   `json:"to" bson:"to"`
+	Day  string `json:"day" bson:"day"`
+	From string `json:"from" bson:"from"`
+	To   string `json:"to" bson:"to"`
 }
 
 type Sidebar struct {
@@ -317,55 +317,55 @@ type Themes struct {
 }
 
 const (
-	ThemeClean  = "clean"
-	ThemeCompact  = "compact"
-	NameFull = "full & display names"
-	NameDisplay = "just display names"
-	EmojiTone1 = "EmojiTone1"
-	EmojiTone2 = "EmojiTone2"
-	EmojiTone3 = "EmojiTone3"
-	EmojiTone4 = "EmojiTone4"
-	EmojiTone5 = "EmojiTone5"
+	ThemeClean   = "clean"
+	ThemeCompact = "compact"
+	NameFull     = "full & display names"
+	NameDisplay  = "just display names"
+	EmojiTone1   = "EmojiTone1"
+	EmojiTone2   = "EmojiTone2"
+	EmojiTone3   = "EmojiTone3"
+	EmojiTone4   = "EmojiTone4"
+	EmojiTone5   = "EmojiTone5"
 )
 
 var MsgMedias = map[string]string{
-	ThemeClean:  ThemeClean,
-	ThemeCompact:  ThemeCompact,
-	NameFull: NameFull,
-	NameDisplay: NameDisplay,
-	EmojiTone1: EmojiTone1,
-	EmojiTone2: EmojiTone2,
-	EmojiTone3: EmojiTone3,
-	EmojiTone4: EmojiTone4,
-	EmojiTone5: EmojiTone5,
+	ThemeClean:   ThemeClean,
+	ThemeCompact: ThemeCompact,
+	NameFull:     NameFull,
+	NameDisplay:  NameDisplay,
+	EmojiTone1:   EmojiTone1,
+	EmojiTone2:   EmojiTone2,
+	EmojiTone3:   EmojiTone3,
+	EmojiTone4:   EmojiTone4,
+	EmojiTone5:   EmojiTone5,
 }
 
 type AdditionalOption struct {
 	CurrentlyTyping bool `json:"currently_typing" bson:"currently_typing"`
-	Clock bool `json:"clock" bson:"clock"`
-	ColorSwatches bool `json:"color_swatches" bson:"color_swatches"`
+	Clock           bool `json:"clock" bson:"clock"`
+	ColorSwatches   bool `json:"color_swatches" bson:"color_swatches"`
 }
 
 type InlineMediaAndLinks struct {
-	ShowImagesAndFilesUploaded bool  `json:"show_images_and_files_uploaded_to_zurichat" bson:"show_images_and_files_uploaded_to_zurichat"`
-	ShowImagesAndFilesFromSites bool  `json:"show_images_and_files_from_linked_websites" bson:"show_images_and_files_from_linked_websites"`
-	LargerThan2MB bool   `json:"larger_than_2_mb" bson:"larger_than_2_mb"`
-	ShowTextPreviews bool  `json:"show_text_previews_of_linked_websites" bson:"show_text_previews_of_linked_websites"`
+	ShowImagesAndFilesUploaded  bool `json:"show_images_and_files_uploaded_to_zurichat" bson:"show_images_and_files_uploaded_to_zurichat"`
+	ShowImagesAndFilesFromSites bool `json:"show_images_and_files_from_linked_websites" bson:"show_images_and_files_from_linked_websites"`
+	LargerThan2MB               bool `json:"larger_than_2_mb" bson:"larger_than_2_mb"`
+	ShowTextPreviews            bool `json:"show_text_previews_of_linked_websites" bson:"show_text_previews_of_linked_websites"`
 }
 
 type MessagesAndMedia struct {
-	Theme                    string   `json:"theme" bson:"theme"`
-	Names                    string   `json:"names" bson:"names"`
-	AdditionalOptions        AdditionalOption `json:"additional_options" bson:"additional_options"`
-	Emoji                    string   `json:"emoji" bson:"emoji"`
-	EmojiAsText              bool     `json:"emoji_as_text" bson:"emoji_as_text"`
-	ShowJumboMoji            bool     `json:"show_jumbomoji" bson:"show_jumbomoji"`
-	ConvertEmoticonsToEmoji  bool     `json:"convert_emoticons_to_emoji" bson:"convert_emoticons_to_emoji"`
-	MessagesOneClickReaction []string `json:"messages_one_click_reaction" bson:"messages_one_click_reaction"`
-	FrequentlyUsedEmoji      bool     `json:"frequently_used_emoji" bson:"frequently_used_emoji"`
-	Custom                   bool     `json:"custom" bson:"custom"`
+	Theme                    string              `json:"theme" bson:"theme"`
+	Names                    string              `json:"names" bson:"names"`
+	AdditionalOptions        AdditionalOption    `json:"additional_options" bson:"additional_options"`
+	Emoji                    string              `json:"emoji" bson:"emoji"`
+	EmojiAsText              bool                `json:"emoji_as_text" bson:"emoji_as_text"`
+	ShowJumboMoji            bool                `json:"show_jumbomoji" bson:"show_jumbomoji"`
+	ConvertEmoticonsToEmoji  bool                `json:"convert_emoticons_to_emoji" bson:"convert_emoticons_to_emoji"`
+	MessagesOneClickReaction []string            `json:"messages_one_click_reaction" bson:"messages_one_click_reaction"`
+	FrequentlyUsedEmoji      bool                `json:"frequently_used_emoji" bson:"frequently_used_emoji"`
+	Custom                   bool                `json:"custom" bson:"custom"`
 	InlineMediaAndLinks      InlineMediaAndLinks `json:"inline_media_and_links" bson:"inline_media_and_links"`
-	BringEmailsIntoZuri      string   `json:"bring_emails_into_zuri" bson:"bring_emails_into_zuri"`
+	BringEmailsIntoZuri      string              `json:"bring_emails_into_zuri" bson:"bring_emails_into_zuri"`
 }
 
 type ChatSettings struct {
@@ -385,31 +385,31 @@ type LanguagesAndRegions struct {
 }
 
 const (
-	FocusOnLastMessage  = "focus_on_last_message"
-	EditLastMessage  = "edit_last_message"
+	FocusOnLastMessage = "focus_on_last_message"
+	EditLastMessage    = "edit_last_message"
 )
 
 var EmptyMessageFields = map[string]string{
-	FocusOnLastMessage:  FocusOnLastMessage,
-	EditLastMessage:  EditLastMessage,
+	FocusOnLastMessage: FocusOnLastMessage,
+	EditLastMessage:    EditLastMessage,
 }
 
 type DirectMessageAnnouncement struct {
-	ReceiveSound  bool     `json:"receive_sound" bson:"receive_sound"`
-	SendSound     bool     `json:"send_sound" bson:"send_sound"`
-	ReadMessage   bool     `json:"read_message" bson:"read_message"`
+	ReceiveSound bool `json:"receive_sound" bson:"receive_sound"`
+	SendSound    bool `json:"send_sound" bson:"send_sound"`
+	ReadMessage  bool `json:"read_message" bson:"read_message"`
 }
 
 type Accessibility struct {
-	Links                     bool     `json:"links" bson:"links"`
-	Animation                 bool     `json:"animation" bson:"animation"`
+	Links                     bool                      `json:"links" bson:"links"`
+	Animation                 bool                      `json:"animation" bson:"animation"`
 	DirectMessageAnnouncement DirectMessageAnnouncement `json:"direct_message_announcement" bson:"direct_message_announcement"`
-	PressEmptyMessageField    string   `json:"press_empty_message_field" bson:"press_empty_message_field"`
+	PressEmptyMessageField    string                    `json:"press_empty_message_field" bson:"press_empty_message_field"`
 }
 
 type MarkAsRead struct {
-	WhenIViewAChannel           string `json:"when_i_view_a_channel" bson:"when_i_view_a_channel"`
-	WhenIMarkEverythingAsRead   bool   `json:"when_i_mark_everything_as_read" bson:"when_i_mark_everything_as_read"`
+	WhenIViewAChannel         string `json:"when_i_view_a_channel" bson:"when_i_view_a_channel"`
+	WhenIMarkEverythingAsRead bool   `json:"when_i_mark_everything_as_read" bson:"when_i_mark_everything_as_read"`
 }
 
 type InputOption struct {
@@ -474,13 +474,13 @@ type updateParam struct {
 }
 
 type Card struct {
-	NameOnCard 	string  `json:"name_on_card" bson:"name_on_card"`
-	OrgID     	string  `json:"org_id" bson:"org_id"`
-	MemberID   	string  `json:"member_id" bson:"member_id"`
-	Type       	string  `json:"type" bson:"type"`
-	ExpMonth   	int     `json:"exp_month" bson:"exp_month"`
-	ExpYear    	int     `json:"exp_year" bson:"exp_year"`
-	CardNumber 	string  `json:"card_number" bson:"card_number"`
-	Country    	string  `json:"country,omitempty" bson:"country,omitempty"`
-	CVCCheck   	string  `json:"cvc_check" bson:"cvc_check"`
+	NameOnCard string `json:"name_on_card" bson:"name_on_card"`
+	OrgID      string `json:"org_id" bson:"org_id"`
+	MemberID   string `json:"member_id" bson:"member_id"`
+	Type       string `json:"type" bson:"type"`
+	ExpMonth   int    `json:"exp_month" bson:"exp_month"`
+	ExpYear    int    `json:"exp_year" bson:"exp_year"`
+	CardNumber string `json:"card_number" bson:"card_number"`
+	Country    string `json:"country,omitempty" bson:"country,omitempty"`
+	CVCCheck   string `json:"cvc_check" bson:"cvc_check"`
 }
