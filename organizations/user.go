@@ -47,8 +47,7 @@ func (oh *OrganizationHandler) GetMember(w http.ResponseWriter, r *http.Request)
 
 	err = utils.ConvertStructure(orgMember, &member)
 	if err != nil {
-		fmt.Println("got into convertstructure!")
-		fmt.Println(err)
+
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}

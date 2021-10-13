@@ -16,7 +16,7 @@ import (
 
 var RoomID interface{}
 
-const ERRORCODE =  400
+const ERRORCODE = 400
 
 func Connect(s socketio.Conn) {
 	s.SetContext("")
@@ -31,20 +31,20 @@ func Connect(s socketio.Conn) {
 			log.Fatal(er)
 		}
 
-	Newroom := Room{
+		Newroom := Room{
 			RoomType:  "channel",
 			RoomName:  "Default",
 			CreatedAt: fmt.Sprintf("%v", time.Now().Unix()),
 			Archived:  "false",
 			Private:   "false",
-	}
-	insertResult, err := RoomCollection.InsertOne(context.TODO(), Newroom)
+		}
+		insertResult, err := RoomCollection.InsertOne(context.TODO(), Newroom)
 
-	if err != nil {
+		if err != nil {
 			log.Fatal(err)
-	}
+		}
 
-	RoomID = insertResult.InsertedID.(primitive.ObjectID).Hex()
+		RoomID = insertResult.InsertedID.(primitive.ObjectID).Hex()
 	}
 
 	response := GetMessageSuccess("Connection Successful", "No data")
@@ -115,18 +115,18 @@ func BroadCastToDefaultConversation(server *socketio.Server, s socketio.Conn, ms
 func CreateRoom(server *socketio.Server, s socketio.Conn, msg string) {
 	q := make(map[string]interface{})
 	e := json.Unmarshal([]byte(msg), &q)
-	
+
 	if e != nil {
 		fmt.Println(e)
 	}
-	
+
 	var private = "true"
-	
+
 	var members []primitive.ObjectID
-	
+
 	roomType := fmt.Sprintf("%v", q["roomType"])
 
-	if	roomType != "inbox" {
+	if roomType != "inbox" {
 		if roomType != "group" {
 			if roomType != "channel" {
 				response := GetCustomMessageError("Invalid  room type: try inbox/group/channel", ERRORCODE)
@@ -135,7 +135,7 @@ func CreateRoom(server *socketio.Server, s socketio.Conn, msg string) {
 		}
 	} else {
 		var receiverID primitive.ObjectID
-	
+
 		userid, _ := primitive.ObjectIDFromHex(fmt.Sprintf("%v", q["userId"]))
 		members = append(members, userid)
 		if roomType == "inbox" {
@@ -171,7 +171,7 @@ func CreateRoom(server *socketio.Server, s socketio.Conn, msg string) {
 			s.Emit("create_room", response)
 		}
 		insertResult, err := RoomCollection.InsertOne(context.TODO(), newRoom)
-	
+
 		if err != nil {
 			response := GetCustomMessageError(fmt.Sprintf("%v", err), ERRORCODE)
 			s.Emit("create_room", response)
@@ -185,23 +185,23 @@ func CreateRoom(server *socketio.Server, s socketio.Conn, msg string) {
 func EnterRoom(server *socketio.Server, s socketio.Conn, msg string) {
 	q := make(map[string]interface{})
 	e := json.Unmarshal([]byte(msg), &q)
-	
+
 	if e != nil {
 		fmt.Println(e)
 	}
 
 	roomID := fmt.Sprintf("%v", q["roomId"])
 	rid, _ := primitive.ObjectIDFromHex(roomID)
-	
+
 	fmt.Println("Entering ROOM: " + roomID)
 	s.Join(roomID)
-	
+
 	var filtered []bson.M
-	
+
 	Dbname := utils.Env("DB_NAME")
 	MessageCollection, _ := utils.GetMongoDBCollection(Dbname, "messages")
 	filterCursor, err := MessageCollection.Find(context.TODO(), bson.M{"roomid": rid})
-	
+
 	if err != nil {
 		fmt.Println(err)
 	} else {
@@ -218,7 +218,7 @@ func EnterRoom(server *socketio.Server, s socketio.Conn, msg string) {
 func LeaveRoom(server *socketio.Server, s socketio.Conn, msg string) {
 	q := make(map[string]interface{})
 	e := json.Unmarshal([]byte(msg), &q)
-	
+
 	if e != nil {
 		fmt.Println(e)
 	}
@@ -229,12 +229,12 @@ func LeaveRoom(server *socketio.Server, s socketio.Conn, msg string) {
 
 	// get database, delete room data
 	var filtered []bson.M
-	
+
 	Dbname := utils.Env("DB_NAME")
 
 	MessageCollection, _ := utils.GetMongoDBCollection(Dbname, "messages")
 	_, err := MessageCollection.DeleteMany(context.TODO(), bson.M{"roomid": RoomID})
-	
+
 	if err != nil {
 		fmt.Println(err)
 	} else {
@@ -244,7 +244,7 @@ func LeaveRoom(server *socketio.Server, s socketio.Conn, msg string) {
 }
 
 func SocketEvents(server *socketio.Server) *socketio.Server {
-	// Connection Related Events 
+	// Connection Related Events
 	server.OnConnect("/socket.io/", func(s socketio.Conn) error {
 		Connect(s)
 		return nil
@@ -256,9 +256,9 @@ func SocketEvents(server *socketio.Server) *socketio.Server {
 	server.OnDisconnect("/", func(s socketio.Conn, reason string) {
 		fmt.Println("closed", reason)
 	})
-	// Connection Related Events 
+	// Connection Related Events
 
-	// Default Room Events 
+	// Default Room Events
 
 	server.OnEvent("/socket.io/", "enter_default_conversation", func(s socketio.Conn, msg string) {
 		EnterDefaultConversation(server, s, msg)
@@ -266,7 +266,7 @@ func SocketEvents(server *socketio.Server) *socketio.Server {
 	server.OnEvent("/socket.io/", "default_conversation", func(s socketio.Conn, msg string) {
 		BroadCastToDefaultConversation(server, s, msg)
 	})
-	// Default Room Events 
+	// Default Room Events
 
 	// Main Events
 

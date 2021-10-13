@@ -131,7 +131,6 @@ func ClearStatusRoutine(orgID, memberID string, period int) {
 }
 
 func ClearStatus(memberID string) {
-
 	update, _ := utils.StructToMap(Status{})
 
 	memberStatus := make(map[string]interface{})
