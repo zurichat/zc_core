@@ -70,7 +70,6 @@ func NewConfigurations() *Configurations {
 	viper.SetDefault("PASSWORD_RESET_TEMPLATE", "./templates/password_reset.html")
 	viper.SetDefault("EMAIL_SUBSCRIPTION_TEMPLATE", "./templates/email_subscription.html")
 	viper.SetDefault("DOWNLOAD_CLIENT_TEMPLATE", "./templates/download_clients.html")
-	// viper.SetDefault("WORKSPACE_INVITE_TEMPLATE", "./templates/workspace_invite.html")
 	viper.SetDefault("TOKEN_BILLING_NOTICE_TEMPLATE", "./templates/token_billing_notice.html")
 	viper.SetDefault("WORKSPACE_INVITE_TEMPLATE", "./templates/workspace_invite.html")
 	viper.SetDefault("WORKSPACE_WELCOME_TEMPLATE", "./templates/workspace_welcome.html")
@@ -87,9 +86,9 @@ func NewConfigurations() *Configurations {
 		SendGridAPIKey:      viper.GetString("SENDGRID_API_KEY"),
 		ESPType:             viper.GetString("ESP_TYPE"),
 
-		ConfirmEmailTemplate:       viper.GetString("CONFIRM_EMAIL_TEMPLATE"),
-		PasswordResetTemplate:      viper.GetString("PASSWORD_RESET_TEMPLATE"),
-		DownloadClientTemplate:     viper.GetString("DOWNLOAD_CLIENT_TEMPLATE"),
+		ConfirmEmailTemplate:   viper.GetString("CONFIRM_EMAIL_TEMPLATE"),
+		PasswordResetTemplate:  viper.GetString("PASSWORD_RESET_TEMPLATE"),
+		DownloadClientTemplate: viper.GetString("DOWNLOAD_CLIENT_TEMPLATE"),
 		// WorkspaceInviteTemplate:    viper.GetString("WORKSPACE_INVITE_TEMPLATE"),
 		EmailSubscriptionTemplate:  viper.GetString("EMAIL_SUBSCRIPTION_TEMPLATE"),
 		TokenBillingNoticeTemplate: viper.GetString("TOKEN_BILLING_NOTICE_TEMPLATE"),

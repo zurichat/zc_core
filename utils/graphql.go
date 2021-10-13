@@ -117,7 +117,6 @@ var aggregateSchema = graphql.Fields{
 }
 
 func (ql *GraphQlHandler) LoadGraphQlSchema() graphql.SchemaConfig {
-
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: aggregateSchema}
 	schemaConfig := graphql.SchemaConfig{
 		Query: graphql.NewObject(rootQuery),
