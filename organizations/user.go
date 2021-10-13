@@ -329,7 +329,7 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 
 	switch set := status.ExpiryTime; set {
 	case DontClear:
-		
+
 	case ThirtyMins:
 		period := 30
 		go ClearStatusRoutine(orgID, memberID, period)
@@ -366,15 +366,15 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		go ClearStatusRoutine(orgID, memberID, int(diff.Minutes()))
 	}
 
-	// if user decides to use a former status construct as new status 
+	// if user decides to use a former status construct as new status
 	// if (status.Text) == "" && (status.Tag) == "" {
 	// 	var statusHistory StatusHistory
 
 	// 	status.Text = statusHistory.TextHistory
 	// 	status.Tag = statusHistory.TagHistory
 	// 	status.ExpiryTime = statusHistory.ExpiryHistory
-	// } 
-	
+	// }
+
 	// only the last six status history will be saved
 	maxStatusHistory := 6
 
@@ -1096,12 +1096,11 @@ func (oh *OrganizationHandler) UpdateNotification(w http.ResponseWriter, r *http
 		return
 	}
 
-	utils.GetSuccess("successful", nil, w)
+	utils.GetSuccess("successfully updated status", nil, w)
 }
 
-
 //endpoints to set messages as mark as read.
-func (oh *OrganizationHandler) MarkAsRead(w http.ResponseWriter, r *http.Request) {
+func (oh *OrganizationHandler) UpdateMarkAsRead(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 
 	// validate the user ID
@@ -1129,7 +1128,6 @@ func (oh *OrganizationHandler) MarkAsRead(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-
 	memberSettings := make(map[string]interface{})
 	memberSettings["settings.mark_as_read"] = markAsRead
 	// fetch and update the document
@@ -1144,5 +1142,52 @@ func (oh *OrganizationHandler) MarkAsRead(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	utils.GetSuccess("successful", nil, w)
+	utils.GetSuccess("successfully updated settings", nil, w)
+}
+
+// endpoint to set languages and regions settings.
+func (oh *OrganizationHandler) SetLanguagesAndRegions(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("content-type", "application/json")
+
+	// validate the user ID
+	orgID := mux.Vars(r)["id"]
+	memberID := mux.Vars(r)["mem_id"]
+
+	// check that org_id is valid
+	err := ValidateOrg(orgID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	// check that member_id is valid
+	err = ValidateMember(orgID, memberID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	// Get data from requestbody
+	var languagesAndRegions LanguagesAndRegions
+	if err = utils.ParseJSONFromRequest(r, &languagesAndRegions); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	memberSettings := make(map[string]interface{})
+	memberSettings["settings.languages_and_regions"] = languagesAndRegions
+
+	// fetch and update the document
+	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberSettings)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("successfully updated settings", nil, w)
 }
