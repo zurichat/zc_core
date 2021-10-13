@@ -48,6 +48,7 @@ func (oh *OrganizationHandler) GetMember(w http.ResponseWriter, r *http.Request)
 
 	err = utils.ConvertStructure(orgMember, &member)
 	if err != nil {
+
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
@@ -386,11 +387,56 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 	// }
 
 	// only the last six status history will be saved
-	maxStatusHistory := 6
 
-	if len(status.StatusHistory) > maxStatusHistory {
-		status.StatusHistory = status.StatusHistory[:6]
+	// maxStatusHistory := 6
+
+	// if len(status.StatusHistory) > maxStatusHistory {
+	// 	status.StatusHistory = status.StatusHistory[:6] should be [1:]
+	// }
+
+	pmemberID, err := primitive.ObjectIDFromHex(memberID)
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
 	}
+
+	_prevStatus, err := utils.GetMongoDBDoc(MemberCollectionName, bson.M{"_id": pmemberID})
+	if err != nil {
+		fmt.Println("Error while trying to get mongodb doc")
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	var prevStatus Status
+
+	// convert bson to struct
+	bsonBytes, _ := bson.Marshal(_prevStatus)
+
+	if err = bson.Unmarshal(bsonBytes, &prevStatus); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	newHistory := StatusHistory{
+		TagHistory:    status.Tag,
+		TextHistory:   status.Text,
+		ExpiryHistory: status.ExpiryTime,
+	}
+
+	fmt.Println("in the beninging: ")
+	fmt.Println(prevStatus.StatusHistory)
+	prevStatus.StatusHistory = append(prevStatus.StatusHistory, newHistory)
+	if len(prevStatus.StatusHistory) > 6 {
+		fmt.Println("Got in here. I should not be here!")
+		prevStatus.StatusHistory = prevStatus.StatusHistory[1:]
+	}
+
+	fmt.Println(prevStatus.StatusHistory)
+	fmt.Println(status.StatusHistory)
+	status.StatusHistory = prevStatus.StatusHistory
+	fmt.Println("After: ")
+	fmt.Println(prevStatus.StatusHistory)
+	fmt.Println(status.StatusHistory)
 
 	statusUpdate, err := utils.StructToMap(status)
 	if err != nil {
@@ -400,6 +446,9 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 
 	memberStatus := make(map[string]interface{})
 	memberStatus["status"] = statusUpdate
+
+	fmt.Println("omega: ")
+	fmt.Println(memberStatus)
 
 	// updates member status
 	result, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberStatus)
