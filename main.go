@@ -12,6 +12,8 @@ import (
 	socketio "github.com/googollee/go-socket.io"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/graphql-go/graphql"
+	"github.com/graphql-go/handler"
 	"github.com/joho/godotenv"
 	"github.com/stripe/stripe-go/v72"
 
@@ -45,7 +47,8 @@ func Router(server *socketio.Server) *mux.Router {
 	exts := external.NewExternalHandler(configs, mailService)
 	orgs := organizations.NewOrganizationHandler(configs, mailService)
 	reps := report.NewReportHandler(configs, mailService)
-
+	gql := utils.NewGraphQlHandler(configs)
+	
 	// Setup and init
 	r.HandleFunc("/", VersionHandler)
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
@@ -192,6 +195,15 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/upload/mesc/{apk_sec}/{exe_sec}", au.IsAuthenticated(service.MescFiles)).Methods("POST")
 	r.HandleFunc("/delete/file/{plugin_id}", au.IsAuthenticated(service.DeleteFile)).Methods("DELETE")
 	r.PathPrefix("/files/").Handler(http.StripPrefix("/files/", http.FileServer(http.Dir("./files/"))))
+
+	// graphql
+	schema, _ := graphql.NewSchema(gql.LoadGraphQlSchema())
+	h := handler.New(&handler.Config{
+		Schema: &schema,
+		Pretty: true,
+		GraphiQL: true,
+	})
+	r.Handle("/graphql", h)
 
 	// Home
 	http.Handle("/", r)
