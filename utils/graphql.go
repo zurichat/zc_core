@@ -78,6 +78,7 @@ var organizationType = graphql.NewObject(
 			"name":          &graphql.Field{Type: graphql.String, Description: "Name"},
 			"creator_email": &graphql.Field{Type: graphql.String, Description: "Creator Email"},
 			"creator_id":    &graphql.Field{Type: graphql.String, Description: "Creator ID"},
+			"admins": &graphql.Field{Type: []graphql.String,Description: "Admins"}
 		},
 	},
 )
