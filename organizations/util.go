@@ -164,8 +164,13 @@ func ClearStatus(memberID string, duration int64) {
 	memberStatus := make(map[string]interface{})
 	memberStatus["status"] = update
 
-	_, err = utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberStatus)
+	result, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberStatus)
 	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	if result.ModifiedCount == 0 {
 		log.Println(err)
 		return
 	}
