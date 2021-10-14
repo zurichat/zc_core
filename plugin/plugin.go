@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	// "golang.org/x/tools/go/types/objectpath"
 	"zuri.chat/zccore/utils"
 )
@@ -148,10 +149,10 @@ func Delete(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusUnprocessableEntity, w)
-     return
+		return
 	}
 
-	_, err = coll.DeleteOne(r.Context(), bson.M{"_id": objectID })
+	_, err = coll.DeleteOne(r.Context(), bson.M{"_id": objectID})
 
 	if err != nil {
 		utils.GetError(errors.WithMessage(err, "error deleting plugin"), http.StatusBadRequest, w)
