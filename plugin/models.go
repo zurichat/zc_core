@@ -151,7 +151,7 @@ func updatePlugin(ctx context.Context, id string, pp *Patch) error {
 	}
 
 	if pp.InstallURL != nil {
-		set["install_url"] = *(pp.SidebarURL)
+		set["install_url"] = *(pp.InstallURL)
 	}
 
 	if pp.TemplateURL != nil {

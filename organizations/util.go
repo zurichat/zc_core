@@ -141,14 +141,37 @@ func ClearStatus(memberID string, duration int64) {
 		return
 	}
 
-	update, _ := utils.StructToMap(Status{})
+	pmemberID, _ := primitive.ObjectIDFromHex(memberID)
+
+	memberRec, err := utils.GetMongoDBDoc(MemberCollectionName, bson.M{"_id": pmemberID})
+	if err != nil {
+		log.Println("error while trying to get member")
+		return
+	}
+
+	var prevStatus Status
+
+	// convert bson to struct
+	bsonBytes, _ := bson.Marshal(memberRec["status"])
+
+	if err = bson.Unmarshal(bsonBytes, &prevStatus); err != nil {
+		log.Println(err)
+		return
+	}
+
+	update, _ := utils.StructToMap(Status{StatusHistory: prevStatus.StatusHistory})
 
 	memberStatus := make(map[string]interface{})
 	memberStatus["status"] = update
 
-	_, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberStatus)
+	result, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberStatus)
 	if err != nil {
-		log.Println("could not clear status")
+		log.Println(err)
+		return
+	}
+
+	if result.ModifiedCount == 0 {
+		log.Println(err)
 		return
 	}
 
