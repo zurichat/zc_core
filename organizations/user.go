@@ -81,7 +81,7 @@ func (oh *OrganizationHandler) GetmultipleMembers(w http.ResponseWriter, r *http
 
 	nw := len(pp.IdList)
 	if nw < 1 {
-		utils.GetSuccess("Member retrieved successfully", members, w)
+		utils.GetSuccess("Members retrieved successfully", members, w)
 		return
 	}
 
@@ -104,7 +104,7 @@ func (oh *OrganizationHandler) GetmultipleMembers(w http.ResponseWriter, r *http
 		}
 	}
 
-	utils.GetSuccess("Member retrieved successfully", members, w)
+	utils.GetSuccess("Members retrieved successfully", members, w)
 }
 
 // Get all members of an organization.
@@ -389,27 +389,25 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 
 	currentTime := time.Now().Local()
 
+	var period int
+
 	switch set := status.ExpiryTime; set {
 	case DontClear:
+		period = 1
 
 	case ThirtyMins:
-		period := 30
-		go ClearStatusRoutine(orgID, memberID, period)
+		period = 30
 
 	case OneHr:
-		period := 60
-		go ClearStatusRoutine(orgID, memberID, period)
+		period = 60
 
 	case FourHrs:
-		period := 240
-		go ClearStatusRoutine(orgID, memberID, period)
+		period = 240
 
 	case Today:
 		minutesPerHr := 60
 		hrsPerDay := 24
-		period := minutesPerHr * (hrsPerDay - currentTime.Hour())
-
-		go ClearStatusRoutine(orgID, memberID, period)
+		period = minutesPerHr * (hrsPerDay - currentTime.Hour())
 
 	case ThisWeek:
 		minutesPerHr := 60
@@ -419,30 +417,47 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		day := int(time.Now().Weekday())
 		weekday := daysPerWeek - day
 
-		period := weekday * hrsPerDay * minutesPerHr
-
-		go ClearStatusRoutine(orgID, memberID, period)
+		period = weekday * hrsPerDay * minutesPerHr
 
 	default:
 		diff := choosenTime.Local().Sub(currentTime)
-		go ClearStatusRoutine(orgID, memberID, int(diff.Minutes()))
+		period = int(diff.Minutes())
 	}
 
-	// if user decides to use a former status construct as new status
-	// if (status.Text) == "" && (status.Tag) == "" {
-	// 	var statusHistory StatusHistory
-
-	// 	status.Text = statusHistory.TextHistory
-	// 	status.Tag = statusHistory.TagHistory
-	// 	status.ExpiryTime = statusHistory.ExpiryHistory
-	// }
-
-	// only the last six status history will be saved
-	maxStatusHistory := 6
-
-	if len(status.StatusHistory) > maxStatusHistory {
-		status.StatusHistory = status.StatusHistory[:6]
+	pmemberID, err := primitive.ObjectIDFromHex(memberID)
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
 	}
+
+	memberRec, err := utils.GetMongoDBDoc(MemberCollectionName, bson.M{"_id": pmemberID})
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	var prevStatus Status
+
+	// convert bson to struct
+	bsonBytes, _ := bson.Marshal(memberRec["status"])
+
+	if err = bson.Unmarshal(bsonBytes, &prevStatus); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	newHistory := StatusHistory{
+		TagHistory:    status.Tag,
+		TextHistory:   status.Text,
+		ExpiryHistory: status.ExpiryTime,
+	}
+
+	prevStatus.StatusHistory = append(prevStatus.StatusHistory, newHistory)
+	if len(prevStatus.StatusHistory) > StatusHistoryLimit {
+		prevStatus.StatusHistory = prevStatus.StatusHistory[1:]
+	}
+
+	status.StatusHistory = prevStatus.StatusHistory
 
 	statusUpdate, err := utils.StructToMap(status)
 	if err != nil {
@@ -464,6 +479,12 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		utils.GetError(errors.New("operation failed"), http.StatusUnprocessableEntity, w)
 		return
 	}
+
+	// pass period to chan so it can be received by the routine
+	ExpiryTime <- int64(period)
+	ClearOld <- true
+
+	go ClearStatusRoutine(orgID, memberID, ExpiryTime, ClearOld)
 
 	// publish update to subscriber
 	eventChannel := fmt.Sprintf("organizations_%s", orgID)
@@ -514,11 +535,13 @@ func (oh *OrganizationHandler) DeactivateMember(w http.ResponseWriter, r *http.R
 	go utils.Emitter(event)
 
 	utils.GetSuccess("successfully deactivated member", nil, w)
+
 	enterOrgMessage := EnterLeaveMessage{
 		OrganizationID: orgID,
 		MemberID:       memberID,
 	}
 	eee := AddSyncMessage(orgID, "leave_organization", enterOrgMessage)
+
 	if eee != nil {
 		log.Printf("sync error: %v", eee)
 	}
@@ -1232,6 +1255,53 @@ func (oh *OrganizationHandler) UpdateNotification(w http.ResponseWriter, r *http
 	}
 
 	utils.GetSuccess("successfully updated status", nil, w)
+}
+
+// an endpoint to update a user theme preference.
+func (oh *OrganizationHandler) UpdateUserTheme(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("content-type", "application/json")
+
+	// validate the user ID
+	orgID := mux.Vars(r)["id"]
+	memberID := mux.Vars(r)["mem_id"]
+
+	// check that org_id is valid
+	err := ValidateOrg(orgID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	// check that member_id is valid
+	err = ValidateMember(orgID, memberID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	// Get data from requestbody
+	var theme UserThemes
+
+	if err = utils.ParseJSONFromRequest(r, &theme); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	memberSettings := make(map[string]interface{})
+	memberSettings["settings.theme"] = theme
+	// fetch and update the document
+	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberSettings)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("successfully updated theme preference", nil, w)
 }
 
 //endpoints to set messages as mark as read.

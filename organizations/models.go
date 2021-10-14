@@ -58,6 +58,10 @@ const (
 )
 
 const ProSubscriptionRate = 10
+const StatusHistoryLimit = 6
+
+var ExpiryTime = make(chan int64, 1)
+var ClearOld = make(chan bool, 1)
 
 var RequestData = make(map[string]string)
 
@@ -224,7 +228,7 @@ type Profile struct {
 type Settings struct {
 	Notifications       Notifications       `json:"notifications" bson:"notifications"`
 	Sidebar             Sidebar             `json:"sidebar" bson:"sidebar"`
-	Themes              Themes              `json:"themes" bson:"themes"`
+	Themes              UserThemes           `json:"themes" bson:"themes"`
 	MessagesAndMedia    MessagesAndMedia    `json:"messages_and_media" bson:"messages_and_media"`
 	ChatSettings        ChatSettings        `json:"chat_settings" bson:"chat_settings"`
 	LanguagesAndRegions LanguagesAndRegions `json:"languages_and_regions" bson:"languages_and_regions"`
@@ -315,7 +319,10 @@ type Themes struct {
 	Themes                           string `json:"themes" bson:"themes"`
 	Colors                           string `json:"colors" bson:"colors"`
 }
-
+type UserThemes struct {
+	Mode	string `json:"mode"`
+	Colors	string `json:"colors"`
+}
 const (
 	ThemeClean   = "clean"
 	ThemeCompact = "compact"

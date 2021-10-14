@@ -12,6 +12,8 @@ import (
 	socketio "github.com/googollee/go-socket.io"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/graphql-go/graphql"
+	"github.com/graphql-go/handler"
 	"github.com/joho/godotenv"
 	"github.com/stripe/stripe-go/v72"
 
@@ -45,7 +47,8 @@ func Router(server *socketio.Server) *mux.Router {
 	exts := external.NewExternalHandler(configs, mailService)
 	orgs := organizations.NewOrganizationHandler(configs, mailService)
 	reps := report.NewReportHandler(configs, mailService)
-
+	gql := utils.NewGraphQlHandler(configs)
+	
 	// Setup and init
 	r.HandleFunc("/", VersionHandler)
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
@@ -114,6 +117,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings", au.IsAuthenticated(orgs.UpdateMemberSettings)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/role", au.IsAuthenticated(au.IsAuthorized(orgs.UpdateMemberRole, "admin"))).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/notification", au.IsAuthenticated(orgs.UpdateNotification)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/theme", au.IsAuthenticated(orgs.UpdateUserTheme)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/mark-as-read", au.IsAuthenticated(orgs.UpdateMarkAsRead)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/message-media", au.IsAuthenticated(orgs.UpdateMemberMessageAndMediaSettings)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/accessibility", au.IsAuthenticated(orgs.UpdateMemberAccessibilitySettings)).Methods("PATCH")
@@ -193,6 +197,15 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/upload/mesc/{apk_sec}/{exe_sec}", au.IsAuthenticated(service.MescFiles)).Methods("POST")
 	r.HandleFunc("/delete/file/{plugin_id}", au.IsAuthenticated(service.DeleteFile)).Methods("DELETE")
 	r.PathPrefix("/files/").Handler(http.StripPrefix("/files/", http.FileServer(http.Dir("./files/"))))
+
+	// graphql
+	schema, _ := graphql.NewSchema(gql.LoadGraphQlSchema())
+	h := handler.New(&handler.Config{
+		Schema: &schema,
+		Pretty: true,
+		GraphiQL: true,
+	})
+	r.Handle("/graphql", h)
 
 	// Home
 	http.Handle("/", r)
@@ -279,13 +292,22 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func RequestDurationMiddleware(h http.Handler) http.Handler {
+	const durationLimit = 10 
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		h.ServeHTTP(w, r)
 		duration := time.Since(start)
 
-		go func() {
+		postToSlack := func() {
 			m := make(map[string]interface{})
+			m["timeTaken"] = duration.Seconds()
+
+			
+			if duration.Seconds() < durationLimit {
+				return
+			}
+			
 			scheme := "http"
 
 			if r.TLS != nil {
@@ -307,6 +329,10 @@ func RequestDurationMiddleware(h http.Handler) http.Handler {
 			}
 
 			defer resp.Body.Close()
-		}()
+		}
+
+		if strings.Contains(r.Host, "api.zuri.chat") {
+			go postToSlack()
+		}
 	})
 }

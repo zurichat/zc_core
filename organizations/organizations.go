@@ -182,24 +182,6 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bot := Member{
-		OrgID:     iiid,
-		FirstName: "TwitterBot",
-		Role:      Bot,
-		Presence:  "true",
-		JoinedAt:  time.Now(),
-		Deleted:   false,
-	}
-
-	// add bot as member of organization
-	coll = utils.GetCollection(MemberCollectionName)
-	_, err = coll.InsertOne(r.Context(), bot)
-
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
-
 	utils.GetSuccess("organization created", utils.M{"organization_id": save.InsertedID}, w)
 }
 
@@ -471,7 +453,7 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 		orgName := fmt.Sprintf("%v", org["name"])
 
 		msger := oh.mailService.NewMail(
-			[]string{email}, "Zuri Chat Workspace Invite", service.WorkspaceInvite, map[string]interface{}{
+			[]string{email}, "Zuri Chat Workspace Invite", service.WorkSpaceInvite, map[string]interface{}{
 				"Username":   loggedInUser.Email,
 				"OrgName":    orgName,
 				"InviteLink": inviteLink,

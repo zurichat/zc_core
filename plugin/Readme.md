@@ -28,3 +28,9 @@ After a success message is received, the plugin is the approved to be listed on 
 
 ### Update a plugin
 To Update a plugin, a PATCH request should be sent to /plugins/{id} containing a JSON payload with the updated fields and values
+```jsonc
+{
+    "tags": ["games"],
+    "images": ["link_to_image_1.jpg"]
+}
+```

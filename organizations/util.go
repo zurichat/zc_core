@@ -92,29 +92,34 @@ func NewMember(email, userName, orgID, role string) Member {
 }
 
 // clear a member's status after a duration.
-func ClearStatusRoutine(orgID, memberID string, period int) {
+func ClearStatusRoutine(orgID, memberID string, ch chan int64, clearOld chan bool) {
+	// get period from channel
+	period := <-ch
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(period)*time.Minute)
 	defer cancel()
 
 	d := time.Duration(period) * time.Minute
 	t := time.NewTimer(d)
 
-	otherCond := make(chan bool)
-
 	go func() {
 		for {
 			select {
-			case <-otherCond:
-				// some condition occurred under which we want to restart the timer
-				// the timer didn't expire so we try to stop it. There may not be
-				// a concurrent read from the timers channel when this is attempted.
-				// As we are inside the case statement there is no other read
-				// going on.
-
+			case <-clearOld:
+				// force timer to stop when new time is available
+				// this occures everytime a new time is set so that old times
+				// running can be interrupted
 				if !t.Stop() {
 					<-t.C
-					ClearStatus(memberID)
 				}
+
+				// restart timer because a condition occurred
+				newD := time.Duration(period) * time.Minute
+				t.Reset(newD)
+
+			case <-t.C:
+				// clear status when the timer completes!
+				ClearStatus(memberID, period)
 
 			case <-ctx.Done():
 				return
@@ -130,7 +135,12 @@ func ClearStatusRoutine(orgID, memberID string, period int) {
 	go utils.Emitter(event)
 }
 
-func ClearStatus(memberID string) {
+func ClearStatus(memberID string, duration int64) {
+	// duration 1 represents dont_clear time
+	if duration == 1 {
+		return
+	}
+
 	update, _ := utils.StructToMap(Status{})
 
 	memberStatus := make(map[string]interface{})
@@ -142,7 +152,7 @@ func ClearStatus(memberID string) {
 		return
 	}
 
-	log.Printf("%s status cleared successfully", memberID)
+	log.Printf("%s status cleared successfully. Duration: %d", memberID, duration)
 }
 
 func FetchOrganization(filter map[string]interface{}) (*Organization, error) {

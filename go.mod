@@ -16,6 +16,8 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
+	github.com/graphql-go/graphql v0.8.0
+	github.com/graphql-go/handler v0.2.3
 	github.com/joho/godotenv v1.4.0
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/mailgun/mailgun-go/v4 v4.5.3
