@@ -117,7 +117,6 @@ func FindPlugins(ctx context.Context, filter bson.M) ([]*Plugin, error) {
 		mapstructure.Decode(plng, &bp)
 		nps.Queue = bp.Queue
 		ps = append(ps, nps)
-
 	}
 
 	return ps, nil

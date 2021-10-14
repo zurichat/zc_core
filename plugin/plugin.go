@@ -13,8 +13,6 @@ import (
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-
-	// "golang.org/x/tools/go/types/objectpath"
 	"zuri.chat/zccore/utils"
 )
 
@@ -137,7 +135,7 @@ func SyncUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("synchronization updated successfull", nil, w)
+	utils.GetSuccess("synchronization updated successful", nil, w)
 }
 
 func Delete(w http.ResponseWriter, r *http.Request) {
