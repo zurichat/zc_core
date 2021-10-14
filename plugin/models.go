@@ -93,16 +93,18 @@ func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 
 func FindPlugins(ctx context.Context, filter bson.M) ([]*Plugin, error) {
 	ps := []*Plugin{}
-	collection := utils.GetCollection(PluginCollectionName)
 
-	cursor, err := collection.Find(ctx, filter)
+	cursor, err := utils.GetMongoDBDocs(PluginCollectionName, filter)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if err := cursor.All(ctx, &ps); err != nil {
-		return nil, err
+	for _, plng := range cursor {
+		var nps *Plugin
+		bsonBytes, _ := bson.Marshal(plng)
+		bson.Unmarshal(bsonBytes, &nps)
+		ps = append(ps, nps)
 	}
 
 	return ps, nil

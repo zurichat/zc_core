@@ -26,15 +26,15 @@ type errChecker struct {
 }
 
 func (e *errChecker) Check(err error) {
-   if e.err != nil {
-   	return
-   }
-   
-   e.err = err
+	if e.err != nil {
+		return
+	}
+
+	e.err = err
 }
 
 func ConnectToDB(clusterURL string) error {
-    var ec errChecker
+	var ec errChecker
 
 	once.Do(func() {
 		ec.Check(defaultMongoHandle.Connect(clusterURL))
@@ -173,7 +173,7 @@ func UpdateOneMongoDBDoc(collectionName, id string, data map[string]interface{})
 }
 
 // Update single MongoDb document for a collection.
-func IncrementOneMongoDBDocField(collectionName, id string, field string) (*mongo.UpdateResult, error) {
+func IncrementOneMongoDBDocField(collectionName, id, field string) (*mongo.UpdateResult, error) {
 	ctx := context.Background()
 	collection := defaultMongoHandle.GetCollection(collectionName)
 

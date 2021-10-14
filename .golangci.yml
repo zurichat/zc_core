@@ -96,12 +96,12 @@ run:
     - organizations
     - plugin
     - data
-    # - external
+    - external
     - messaging
     - report
     - realtime
     - service
     - user
-    - utils
+    # - utils
   skip-files:
     - main.go

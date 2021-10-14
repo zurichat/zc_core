@@ -86,6 +86,7 @@ func NewConfigurations() *Configurations {
 		SendGridAPIKey:      viper.GetString("SENDGRID_API_KEY"),
 		ESPType:             viper.GetString("ESP_TYPE"),
 
+
 		ConfirmEmailTemplate:       viper.GetString("CONFIRM_EMAIL_TEMPLATE"),
 		PasswordResetTemplate:      viper.GetString("PASSWORD_RESET_TEMPLATE"),
 		DownloadClientTemplate:     viper.GetString("DOWNLOAD_CLIENT_TEMPLATE"),

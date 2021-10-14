@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	UserCollectionName   = "users"
-	PluginCollectionName = "plugins"
+	UserCollectionName         = "users"
+	PluginCollectionName       = "plugins"
+	OrganizationCollectionName = "organizations"
 )
 
 type GraphQlHandler struct {
@@ -70,6 +71,20 @@ var userType = graphql.NewObject(
 	},
 )
 
+var organizationType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "Organizations",
+		Fields: graphql.Fields{
+			"_id":           &graphql.Field{Type: ObjectID},
+			"name":          &graphql.Field{Type: graphql.String, Description: "Name"},
+			"creator_email": &graphql.Field{Type: graphql.String, Description: "Creator Email"},
+			"creator_id":    &graphql.Field{Type: graphql.String, Description: "Creator ID"},
+			"admins":        &graphql.Field{Type: graphql.NewList(graphql.String), Description: "Admins"},
+			"logo_url":      &graphql.Field{Type: graphql.String, Description: "Logo url"},
+		},
+	},
+)
+
 func loadUsersSchema() *graphql.Field {
 	return &graphql.Field{
 		Type:        graphql.NewList(userType),
@@ -86,8 +101,23 @@ func loadUsersSchema() *graphql.Field {
 }
 
 var aggregateSchema = graphql.Fields{
-	"users":   loadUsersSchema(),
-	"plugins": loadPluginsSchema(),
+	"users":         loadUsersSchema(),
+	"plugins":       loadPluginsSchema(),
+	"organizations": loadOrganizationsSchema(),
+}
+
+func loadOrganizationsSchema() *graphql.Field {
+	return &graphql.Field{
+		Type:        graphql.NewList(organizationType),
+		Description: "Get Organization list",
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			organizations, err := GetMongoDBDocs(OrganizationCollectionName, bson.M{})
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+			return organizations, nil
+		},
+	}
 }
 
 func (ql *GraphQlHandler) LoadGraphQlSchema() graphql.SchemaConfig {
