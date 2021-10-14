@@ -894,11 +894,6 @@ func (oh *OrganizationHandler) UpdateMemberAdvancedSettings(w http.ResponseWrite
 		return
 	}
 
-	if _, ok := EnterActions[advancedSettings.PressEnterTo]; !ok {
-		utils.GetError(errors.New("invalid enter action"), http.StatusBadRequest, w)
-		return
-	}
-
 	// convert setting struct to map
 	pAdvancedSettings, err := utils.StructToMap(advancedSettings)
 	if err != nil {
