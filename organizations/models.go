@@ -58,6 +58,10 @@ const (
 )
 
 const ProSubscriptionRate = 10
+const StatusHistoryLimit = 6
+
+var ExpiryTime = make(chan int64, 1)
+var ClearOld = make(chan bool, 1)
 
 var RequestData = make(map[string]string)
 
@@ -185,28 +189,28 @@ type StatusHistory struct {
 }
 
 type Member struct {
-	ID          primitive.ObjectID `json:"_id" bson:"_id"`
-	OrgID       string             `json:"org_id" bson:"org_id"`
-	Files       []string           `json:"files" bson:"files"`
-	ImageURL    string             `json:"image_url" bson:"image_url"`
-	FirstName   string             `json:"first_name" bson:"first_name"`
-	LastName    string             `json:"last_name" bson:"last_name"`
-	Email       string             `json:"email" bson:"email"`
-	UserName    string             `bson:"user_name" json:"user_name"`
-	DisplayName string             `json:"display_name" bson:"display_name"`
-	Bio         string             `json:"bio" bson:"bio"`
-	Status      Status             `json:"status" bson:"status"`
-	Presence    string             `json:"presence" bson:"presence"`
-	Pronouns    string             `json:"pronouns" bson:"pronouns"`
-	Phone       string             `json:"phone" bson:"phone"`
-	TimeZone    string             `json:"time_zone" bson:"time_zone"`
-	Role        string             `json:"role" bson:"role"`
-	JoinedAt    time.Time          `json:"joined_at" bson:"joined_at"`
-	Settings    *Settings          `json:"settings" bson:"settings"`
-	Deleted     bool               `json:"deleted" bson:"deleted"`
-	DeletedAt   time.Time          `json:"deleted_at" bson:"deleted_at"`
-	Socials     []Social           `json:"socials" bson:"socials"`
-	Language    string             `json:"language" bson:"language"`
+	ID          string    `json:"_id,omitempty" bson:"_id,omitempty"`
+	OrgID       string    `json:"org_id" bson:"org_id"`
+	Files       []string  `json:"files" bson:"files"`
+	ImageURL    string    `json:"image_url" bson:"image_url"`
+	FirstName   string    `json:"first_name" bson:"first_name"`
+	LastName    string    `json:"last_name" bson:"last_name"`
+	Email       string    `json:"email" bson:"email"`
+	UserName    string    `bson:"user_name" json:"user_name"`
+	DisplayName string    `json:"display_name" bson:"display_name"`
+	Bio         string    `json:"bio" bson:"bio"`
+	Status      Status    `json:"status" bson:"status"`
+	Presence    string    `json:"presence" bson:"presence"`
+	Pronouns    string    `json:"pronouns" bson:"pronouns"`
+	Phone       string    `json:"phone" bson:"phone"`
+	TimeZone    string    `json:"time_zone" bson:"time_zone"`
+	Role        string    `json:"role" bson:"role"`
+	JoinedAt    time.Time `json:"joined_at" bson:"joined_at"`
+	Settings    *Settings `json:"settings" bson:"settings"`
+	Deleted     bool      `json:"deleted" bson:"deleted"`
+	DeletedAt   time.Time `json:"deleted_at" bson:"deleted_at"`
+	Socials     []Social  `json:"socials" bson:"socials"`
+	Language    string    `json:"language" bson:"language"`
 }
 
 type Profile struct {
@@ -225,7 +229,7 @@ type Profile struct {
 type Settings struct {
 	Notifications       Notifications       `json:"notifications" bson:"notifications"`
 	Sidebar             Sidebar             `json:"sidebar" bson:"sidebar"`
-	Themes              Themes              `json:"themes" bson:"themes"`
+	Themes              UserThemes           `json:"themes" bson:"themes"`
 	MessagesAndMedia    MessagesAndMedia    `json:"messages_and_media" bson:"messages_and_media"`
 	ChatSettings        ChatSettings        `json:"chat_settings" bson:"chat_settings"`
 	LanguagesAndRegions LanguagesAndRegions `json:"languages_and_regions" bson:"languages_and_regions"`
@@ -316,7 +320,10 @@ type Themes struct {
 	Themes                           string `json:"themes" bson:"themes"`
 	Colors                           string `json:"colors" bson:"colors"`
 }
-
+type UserThemes struct {
+	Mode	string `json:"mode"`
+	Colors	string `json:"colors"`
+}
 const (
 	ThemeClean   = "clean"
 	ThemeCompact = "compact"
@@ -489,4 +496,13 @@ type Card struct {
 type EnterLeaveMessage struct {
 	OrganizationID string `json:"organization_id" bson:"organization_id"`
 	MemberID       string `json:"member_id" bson:"member_id"`
+}
+
+type MemberIDS struct {
+	IdList []string `json:"id_list" bson:"id_list" validate:"required"`
+}
+
+type HandleMemberSearchResponse struct {
+	Memberinfo Member
+	Err        error
 }

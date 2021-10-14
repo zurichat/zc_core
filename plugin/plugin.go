@@ -13,6 +13,8 @@ import (
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	// "golang.org/x/tools/go/types/objectpath"
 	"zuri.chat/zccore/utils"
 )
 
@@ -141,7 +143,16 @@ func SyncUpdate(w http.ResponseWriter, r *http.Request) {
 func Delete(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 
-	_, err := utils.UpdateOneMongoDBDoc("plugins", id, M{"deleted": true, "deleted_at": time.Now().String()})
+	coll := utils.GetCollection("plugins")
+
+	objectID, err := primitive.ObjectIDFromHex(id)
+
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	_, err = coll.DeleteOne(r.Context(), bson.M{"_id": objectID})
 
 	if err != nil {
 		utils.GetError(errors.WithMessage(err, "error deleting plugin"), http.StatusBadRequest, w)

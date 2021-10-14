@@ -106,6 +106,7 @@ func Router(server *socketio.Server) *mux.Router {
 
 	r.HandleFunc("/organizations/{id}/members", au.IsAuthenticated(au.IsAuthorized(orgs.CreateMember, "admin"))).Methods("POST")
 	r.HandleFunc("/organizations/{id}/members", orgs.GetMembers).Methods("GET")
+	r.HandleFunc("/organizations/{id}/members/multiple", au.IsAuthenticated(orgs.GetmultipleMembers)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}", au.IsAuthenticated(orgs.GetMember)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}", au.IsAuthenticated(au.IsAuthorized(orgs.DeactivateMember, "admin"))).Methods("DELETE")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/reactivate", au.IsAuthenticated(au.IsAuthorized(orgs.ReactivateMember, "admin"))).Methods("POST")
@@ -117,6 +118,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings", au.IsAuthenticated(orgs.UpdateMemberSettings)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/role", au.IsAuthenticated(au.IsAuthorized(orgs.UpdateMemberRole, "admin"))).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/notification", au.IsAuthenticated(orgs.UpdateNotification)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/theme", au.IsAuthenticated(orgs.UpdateUserTheme)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/mark-as-read", au.IsAuthenticated(orgs.UpdateMarkAsRead)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/message-media", au.IsAuthenticated(orgs.UpdateMemberMessageAndMediaSettings)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/accessibility", au.IsAuthenticated(orgs.UpdateMemberAccessibilitySettings)).Methods("PATCH")

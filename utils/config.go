@@ -86,10 +86,10 @@ func NewConfigurations() *Configurations {
 		SendGridAPIKey:      viper.GetString("SENDGRID_API_KEY"),
 		ESPType:             viper.GetString("ESP_TYPE"),
 
-		ConfirmEmailTemplate:   viper.GetString("CONFIRM_EMAIL_TEMPLATE"),
-		PasswordResetTemplate:  viper.GetString("PASSWORD_RESET_TEMPLATE"),
-		DownloadClientTemplate: viper.GetString("DOWNLOAD_CLIENT_TEMPLATE"),
-		// WorkspaceInviteTemplate:    viper.GetString("WORKSPACE_INVITE_TEMPLATE"),
+
+		ConfirmEmailTemplate:       viper.GetString("CONFIRM_EMAIL_TEMPLATE"),
+		PasswordResetTemplate:      viper.GetString("PASSWORD_RESET_TEMPLATE"),
+		DownloadClientTemplate:     viper.GetString("DOWNLOAD_CLIENT_TEMPLATE"),
 		EmailSubscriptionTemplate:  viper.GetString("EMAIL_SUBSCRIPTION_TEMPLATE"),
 		TokenBillingNoticeTemplate: viper.GetString("TOKEN_BILLING_NOTICE_TEMPLATE"),
 		WorkSpaceInviteTemplate:    viper.GetString("WORKSPACE_INVITE_TEMPLATE"),

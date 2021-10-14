@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -53,6 +54,57 @@ func (oh *OrganizationHandler) GetMember(w http.ResponseWriter, r *http.Request)
 	}
 
 	utils.GetSuccess("Member retrieved successfully", orgMember, w)
+}
+
+// Get a several member infos with a slice member ids.
+func (oh *OrganizationHandler) GetmultipleMembers(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	pp := MemberIDS{}
+	orgID := mux.Vars(r)["id"]
+
+	if err := utils.ParseJSONFromRequest(r, &pp); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	// check that org_id is valid
+	err := ValidateOrg(orgID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	var (
+		members = []Member{}
+	)
+
+	nw := len(pp.IdList)
+	if nw < 1 {
+		utils.GetSuccess("Members retrieved successfully", members, w)
+		return
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(nw)
+	wrkchan := make(chan HandleMemberSearchResponse, nw)
+
+	for _, memberId := range pp.IdList {
+		go HandleMemberSearch(orgID, memberId, wrkchan, &wg)
+	}
+
+	go func() {
+		defer close(wrkchan)
+		wg.Wait()
+	}()
+
+	for n := range wrkchan {
+		if n.Err == nil {
+			members = append(members, n.Memberinfo)
+		}
+	}
+
+	utils.GetSuccess("Members retrieved successfully", members, w)
 }
 
 // Get all members of an organization.
@@ -337,27 +389,25 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 
 	currentTime := time.Now().Local()
 
+	var period int
+
 	switch set := status.ExpiryTime; set {
 	case DontClear:
+		period = 1
 
 	case ThirtyMins:
-		period := 1
-		go ClearStatusRoutine(orgID, memberID, period)
+		period = 30
 
 	case OneHr:
-		period := 60
-		go ClearStatusRoutine(orgID, memberID, period)
+		period = 60
 
 	case FourHrs:
-		period := 240
-		go ClearStatusRoutine(orgID, memberID, period)
+		period = 240
 
 	case Today:
 		minutesPerHr := 60
 		hrsPerDay := 24
-		period := minutesPerHr * (hrsPerDay - currentTime.Hour())
-
-		go ClearStatusRoutine(orgID, memberID, period)
+		period = minutesPerHr * (hrsPerDay - currentTime.Hour())
 
 	case ThisWeek:
 		minutesPerHr := 60
@@ -367,13 +417,11 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		day := int(time.Now().Weekday())
 		weekday := daysPerWeek - day
 
-		period := weekday * hrsPerDay * minutesPerHr
-
-		go ClearStatusRoutine(orgID, memberID, period)
+		period = weekday * hrsPerDay * minutesPerHr
 
 	default:
 		diff := choosenTime.Local().Sub(currentTime)
-		go ClearStatusRoutine(orgID, memberID, int(diff.Minutes()))
+		period = int(diff.Minutes())
 	}
 
 	pmemberID, err := primitive.ObjectIDFromHex(memberID)
@@ -404,10 +452,12 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		ExpiryHistory: status.ExpiryTime,
 	}
 
-	status.StatusHistory = append(prevStatus.StatusHistory, newHistory)
-	if len(status.StatusHistory) > 6 {
-		status.StatusHistory = status.StatusHistory[1:]
+	prevStatus.StatusHistory = append(prevStatus.StatusHistory, newHistory)
+	if len(prevStatus.StatusHistory) > StatusHistoryLimit {
+		prevStatus.StatusHistory = prevStatus.StatusHistory[1:]
 	}
+
+	status.StatusHistory = prevStatus.StatusHistory
 
 	statusUpdate, err := utils.StructToMap(status)
 	if err != nil {
@@ -429,6 +479,12 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		utils.GetError(errors.New("operation failed"), http.StatusUnprocessableEntity, w)
 		return
 	}
+
+	// pass period to chan so it can be received by the routine
+	ExpiryTime <- int64(period)
+	ClearOld <- true
+
+	go ClearStatusRoutine(orgID, memberID, ExpiryTime, ClearOld)
 
 	// publish update to subscriber
 	eventChannel := fmt.Sprintf("organizations_%s", orgID)
@@ -485,6 +541,7 @@ func (oh *OrganizationHandler) DeactivateMember(w http.ResponseWriter, r *http.R
 		MemberID:       memberID,
 	}
 	eee := AddSyncMessage(orgID, "leave_organization", enterOrgMessage)
+
 	if eee != nil {
 		log.Printf("sync error: %v", eee)
 	}
@@ -1040,7 +1097,6 @@ func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *htt
 	username := strings.Split(user.Email, "@")[0]
 
 	memberStruct := Member{
-		ID:       primitive.NewObjectID(),
 		Email:    user.Email,
 		UserName: username,
 		OrgID:    validOrgID.Hex(),
@@ -1139,7 +1195,7 @@ func (oh *OrganizationHandler) UpdateMemberRole(w http.ResponseWriter, r *http.R
 	}
 
 	// ID of the user whose role is being updated
-	memberIDHex := orgMember.ID.Hex()
+	memberIDHex := orgMember.ID
 
 	updateRes, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberIDHex, bson.M{"role": role})
 
@@ -1207,6 +1263,53 @@ func (oh *OrganizationHandler) UpdateNotification(w http.ResponseWriter, r *http
 	}
 
 	utils.GetSuccess("successfully updated status", nil, w)
+}
+
+// an endpoint to update a user theme preference.
+func (oh *OrganizationHandler) UpdateUserTheme(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("content-type", "application/json")
+
+	// validate the user ID
+	orgID := mux.Vars(r)["id"]
+	memberID := mux.Vars(r)["mem_id"]
+
+	// check that org_id is valid
+	err := ValidateOrg(orgID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	// check that member_id is valid
+	err = ValidateMember(orgID, memberID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	// Get data from requestbody
+	var theme UserThemes
+
+	if err = utils.ParseJSONFromRequest(r, &theme); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	memberSettings := make(map[string]interface{})
+	memberSettings["settings.theme"] = theme
+	// fetch and update the document
+	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberSettings)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("successfully updated theme preference", nil, w)
 }
 
 //endpoints to set messages as mark as read.
