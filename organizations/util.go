@@ -141,13 +141,13 @@ func ClearStatus(memberID string, duration int64) {
 		return
 	}
 
-	pmemberID, err := primitive.ObjectIDFromHex(memberID)
+	pmemberID, _ := primitive.ObjectIDFromHex(memberID)
+
+	memberRec, err := utils.GetMongoDBDoc(MemberCollectionName, bson.M{"_id": pmemberID})
 	if err != nil {
-		log.Println(err)
+		log.Println("error while trying to get member")
 		return
 	}
-
-	memberRec, _ := utils.GetMongoDBDoc(MemberCollectionName, bson.M{"_id": pmemberID})
 
 	var prevStatus Status
 
