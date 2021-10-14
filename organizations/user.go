@@ -1140,8 +1140,16 @@ func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *htt
 		utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, w)
 		return
 	}
+	// update invite status
+	inviteID := res["_id"].(primitive.ObjectID).Hex()
 
-	utils.GetSuccess("Member created successfully", utils.M{"member_id": resp.InsertedID}, w)
+	_, err = utils.UpdateOneMongoDBDoc(OrganizationInviteCollection, inviteID, bson.M{"has_accepted": true})
+	if err != nil {
+		utils.GetError(errors.New("invite update failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("Member created successfully", utils.M{"member_id": resp.InsertedID, "organization_id": orgID}, w)
 }
 
 func (oh *OrganizationHandler) UpdateMemberRole(w http.ResponseWriter, r *http.Request) {

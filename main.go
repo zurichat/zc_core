@@ -48,7 +48,7 @@ func Router(server *socketio.Server) *mux.Router {
 	orgs := organizations.NewOrganizationHandler(configs, mailService)
 	reps := report.NewReportHandler(configs, mailService)
 	gql := utils.NewGraphQlHandler(configs)
-	
+
 	// Setup and init
 	r.HandleFunc("/", VersionHandler)
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
@@ -95,6 +95,7 @@ func Router(server *socketio.Server) *mux.Router {
 
 	// Organization: Guest Invites
 	r.HandleFunc("/organizations/{id}/send-invite", au.IsAuthenticated(au.IsAuthorized(orgs.SendInvite, "admin"))).Methods("POST")
+	r.HandleFunc("/organizations/{id}/invite-stats", au.IsAuthenticated(au.IsAuthorized(orgs.InviteStats, "admin"))).Methods("GET")
 	r.HandleFunc("/organizations/invites/{uuid}", orgs.CheckGuestStatus).Methods(http.MethodGet)
 	r.HandleFunc("/organizations/guests/{uuid}", orgs.GuestToOrganization).Methods(http.MethodPost)
 
@@ -201,8 +202,8 @@ func Router(server *socketio.Server) *mux.Router {
 	// graphql
 	schema, _ := graphql.NewSchema(gql.LoadGraphQlSchema())
 	h := handler.New(&handler.Config{
-		Schema: &schema,
-		Pretty: true,
+		Schema:   &schema,
+		Pretty:   true,
 		GraphiQL: true,
 	})
 	r.Handle("/graphql", h)
@@ -292,7 +293,7 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func RequestDurationMiddleware(h http.Handler) http.Handler {
-	const durationLimit = 10 
+	const durationLimit = 10
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -303,11 +304,10 @@ func RequestDurationMiddleware(h http.Handler) http.Handler {
 			m := make(map[string]interface{})
 			m["timeTaken"] = duration.Seconds()
 
-			
 			if duration.Seconds() < durationLimit {
 				return
 			}
-			
+
 			scheme := "http"
 
 			if r.TLS != nil {
