@@ -15,8 +15,8 @@ import (
 func ReadData(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	pluginID, collName, orgID := vars["plugin_id"], vars["coll_name"], vars["org_id"]
-    
-    actualCollName := mongoCollectionName(pluginID, collName)
+
+	actualCollName := mongoCollectionName(pluginID, collName)
 
 	filter := parseURLQuery(r)
 	filter["deleted"] = bson.M{"$ne": true}
@@ -67,6 +67,7 @@ type readDataRequest struct {
 	ObjectID       string                 `json:"object_id,omitempty"`
 	ObjectIDs      []string               `json:"object_ids,omitempty"`
 	Filter         map[string]interface{} `json:"filter,omitempty"`
+	RawQuery       map[string]interface{}            `json:"raw_query,omitempty"`
 	ReadOptions    *readOptions           `json:"options,omitempty"`
 }
 
@@ -76,7 +77,6 @@ type readOptions struct {
 	Sort       map[string]interface{} `json:"sort,omitempty"`
 	Projection map[string]interface{} `json:"projection,omitempty"`
 }
-
 
 func (r *readDataRequest) containsID() bool {
 	return r.ObjectID != "" || idInFilter(bson.M(r.Filter))
@@ -148,7 +148,13 @@ func NewRead(w http.ResponseWriter, r *http.Request) {
 		filter["_id"] = bson.M{"$in": hexToObjectIDs(reqData.ObjectIDs)}
 	}
 
+	if reqData.RawQuery != nil {
+		filter = reqData.RawQuery
+		filter["organization_id"] = reqData.OrganizationID
+	} 
+	
 	docs, err := findMany(actualCollName, filter, opts)
+	
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)

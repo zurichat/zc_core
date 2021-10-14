@@ -45,7 +45,7 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "POST":
-		reqData.handlePostAlt(w, r)
+		reqData.handlePost(w, r)
 	case "PUT", "PATCH":
 		reqData.handlePut(w, r)
 	default:
@@ -54,35 +54,6 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wdr *writeDataRequest) handlePost(w http.ResponseWriter, _ *http.Request) {
-	var payload interface{}
-
-	if wdr.BulkWrite {
-		payload = wdr.Payload
-	} else {
-		payload = []interface{}{wdr.Payload}
-	}
-
-	res, err := insertMany(wdr.prefixCollectionName(), "", payload)
-	if err != nil {
-		utils.GetError(fmt.Errorf("an error occurred: %v", err), http.StatusInternalServerError, w)
-		return
-	}
-
-	data := utils.M{
-		"insert_count": len(res.InsertedIDs),
-	}
-
-	if wdr.BulkWrite {
-		data["object_ids"] = res.InsertedIDs
-	} else {
-		data["object_id"] = res.InsertedIDs[0]
-	}
-
-	w.WriteHeader(http.StatusCreated)
-	utils.GetSuccess("success", data, w)
-}
-
-func (wdr *writeDataRequest) handlePostAlt(w http.ResponseWriter, _ *http.Request) {
 	var payload interface{}
 
 	if wdr.BulkWrite {
@@ -118,15 +89,19 @@ func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, _ *http.Request) {
 	var res *mongo.UpdateResult
 
 	filter := make(map[string]interface{})
-	collName := wdr.prefixCollectionName()
+	collName := mongoCollectionName(wdr.PluginID, wdr.CollectionName)
 
 	if wdr.ObjectID != "" {
 		filter["_id"] = wdr.ObjectID
-	} else {
+	} else if wdr.Filter != nil {
 		filter = wdr.Filter
+	}else {
+		utils.GetError(errors.New("object id or filter object not specified"), http.StatusUnprocessableEntity, w)
+		return
 	}
 
 	filter["deleted"] = bson.M{"$ne": true}
+	filter["organization_id"] = wdr.OrganizationID
 	normalizeIDIfExists(filter)
 
 	if wdr.RawQuery != nil {
@@ -146,10 +121,6 @@ func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, _ *http.Request) {
 	}
 
 	utils.GetSuccess("success", data, w)
-}
-
-func (wdr *writeDataRequest) prefixCollectionName() string {
-	return getPrefixedCollectionName(wdr.PluginID, wdr.OrganizationID, wdr.CollectionName)
 }
 
 func mongoCollectionName(pluginID, pluginCollName string) string {
@@ -174,7 +145,7 @@ func modifyDocs(docs []interface{}, orgID string) error {
 
 	for _, doc := range docs {
 		x, ok := doc.(map[string]interface{})
-		
+
 		if !ok {
 			return errors.New("modify: invalid object type, payload must be an array of objects")
 		}

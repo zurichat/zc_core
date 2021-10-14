@@ -1,7 +1,6 @@
 package data
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -34,16 +33,7 @@ func DeleteData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !pluginHasCollection(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName) {
-		utils.GetError(errors.New("collection does not exist"), http.StatusNotFound, w)
-		return
-	}
-
 	reqData.handleDelete(w, r)
-}
-
-func (ddr *deleteDataRequest) prefixCollectionName() string {
-	return getPrefixedCollectionName(ddr.PluginID, ddr.OrganizationID, ddr.CollectionName)
 }
 
 func (ddr *deleteDataRequest) handleDelete(w http.ResponseWriter, _ *http.Request) {
@@ -57,7 +47,9 @@ func (ddr *deleteDataRequest) handleDelete(w http.ResponseWriter, _ *http.Reques
 		filter["_id"] = mustObjectIDFromHex(ddr.ObjectID)
 	}
 
-	deletedCount, err := deleteMany(ddr.prefixCollectionName(), filter)
+	filter["organization_id"] = ddr.OrganizationID
+	collName := mongoCollectionName(ddr.PluginID, ddr.CollectionName)
+	deletedCount, err := deleteMany(collName, filter)
 
 	if err != nil {
 		utils.GetError(fmt.Errorf("an error occurred: %v", err), http.StatusInternalServerError, w)

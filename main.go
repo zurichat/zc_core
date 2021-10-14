@@ -145,10 +145,8 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/data/read", data.NewRead).Methods("POST")
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
 	r.HandleFunc("/data/delete", data.DeleteData).Methods("POST")
-	r.HandleFunc("/data/collections/details/{plugin_id}/{coll_name}/{org_id}", data.CollectionDetail).Methods("GET")
-	r.HandleFunc("/data/collections/{plugin_id}", data.ListCollections).Methods("GET")
-	r.HandleFunc("/data/collections/{plugin_id}/{org_id}", data.ListCollections).Methods("GET")
-
+	r.HandleFunc("/data/collections/info/{plugin_id}/{coll_name}/{org_id}", data.CollectionDetail).Methods("GET")
+	
 	// Plugins
 	r.HandleFunc("/plugins/register", plugin.Register).Methods("POST")
 	r.HandleFunc("/plugins/{id}", plugin.Update).Methods("PATCH")
