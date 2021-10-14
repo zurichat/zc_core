@@ -127,7 +127,8 @@ var MessageModelType = graphql.NewObject(
 		Fields: graphql.Fields{
 			"_id":     &graphql.Field{Type: ObjectID, Description: "Id"},
 			"event":   &graphql.Field{Type: graphql.String, Description: "Event"},
-			"message": &graphql.Field{Type: &graphql.Interface{}, Description: "Message"},
+			// Please resolve, throw Error: Invalid or incomplete schema, unknown type
+			// "message": &graphql.Field{Type: &graphql.Interface{}, Description: "Message"},
 		},
 	},
 )
@@ -178,7 +179,6 @@ func loadUsersSchema() *graphql.Field {
 		},
 	}
 }
-
 
 var aggregateSchema = graphql.Fields{
 	"users":         loadUsersSchema(),
