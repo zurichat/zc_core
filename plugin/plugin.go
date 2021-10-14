@@ -135,7 +135,7 @@ func SyncUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.GetSuccess("synchronization updated successfull", nil, w)
+	utils.GetSuccess("synchronization updated successful", nil, w)
 }
 
 func Delete(w http.ResponseWriter, r *http.Request) {

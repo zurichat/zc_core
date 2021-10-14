@@ -68,7 +68,6 @@ func TestRegister(t *testing.T) {
 		Register(w, r)
 
 		assertStatusCode(t, 201, w.Code)
-
 	})
 
 	t.Run("plugins cannot register same data more than once", func(t *testing.T) {
@@ -85,7 +84,6 @@ func TestRegister(t *testing.T) {
 			t.Fail()
 		}
 	})
-
 }
 
 func assertStatusCode(t testing.TB, want, got int) {
