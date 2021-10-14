@@ -2,8 +2,10 @@ package plugin
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -93,15 +95,17 @@ func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 
 func FindPlugins(ctx context.Context, filter bson.M) ([]*Plugin, error) {
 	ps := []*Plugin{}
-	collection := utils.GetCollection(PluginCollectionName)
+	// collection := utils.GetCollection(PluginCollectionName)
 
-	cursor, err := collection.Find(ctx, filter)
+	cursor, err := utils.GetMongoDBDocs(PluginCollectionName, filter)
 
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(cursor)
 
-	if err := cursor.All(ctx, &ps); err != nil {
+	err = mapstructure.Decode(cursor, &ps)
+	if err != nil {
 		return nil, err
 	}
 
