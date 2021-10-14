@@ -42,11 +42,11 @@ func Router(server *socketio.Server) *mux.Router {
 	configs := utils.NewConfigurations()
 	mailService := service.NewZcMailService(configs)
 
+	orgs := organizations.NewOrganizationHandler(configs, mailService)
+	exts := external.NewExternalHandler(configs, mailService)
+	reps := report.NewReportHandler(configs, mailService)
 	au := auth.NewAuthHandler(configs, mailService)
 	us := user.NewUserHandler(configs, mailService)
-	exts := external.NewExternalHandler(configs, mailService)
-	orgs := organizations.NewOrganizationHandler(configs, mailService)
-	reps := report.NewReportHandler(configs, mailService)
 	gql := utils.NewGraphQlHandler(configs)
 
 	// Setup and init
@@ -187,11 +187,6 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/external/download-client", exts.DownloadClient).Methods("GET")
 	r.HandleFunc("/external/send-mail", exts.SendMail).Queries("custom_mail", "{custom_mail:[0-9]+}").Methods("POST")
 
-	// Ping endpoint
-	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		utils.GetSuccess("Server is live", nil, w)
-	})
-
 	// file upload
 	r.HandleFunc("/upload/file/{plugin_id}", au.IsAuthenticated(service.UploadOneFile)).Methods("POST")
 	r.HandleFunc("/upload/files/{plugin_id}", au.IsAuthenticated(service.UploadMultipleFiles)).Methods("POST")
@@ -207,6 +202,11 @@ func Router(server *socketio.Server) *mux.Router {
 		GraphiQL: true,
 	})
 	r.Handle("/graphql", h)
+
+	// Ping endpoint
+	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		utils.GetSuccess("Server is live", nil, w)
+	})	
 
 	// Home
 	http.Handle("/", r)
