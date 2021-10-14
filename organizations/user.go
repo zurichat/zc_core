@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -53,6 +54,57 @@ func (oh *OrganizationHandler) GetMember(w http.ResponseWriter, r *http.Request)
 	}
 
 	utils.GetSuccess("Member retrieved successfully", orgMember, w)
+}
+
+// Get a several member infos with a slice member ids.
+func (oh *OrganizationHandler) GetmultipleMembers(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	pp := MemberIDS{}
+	orgID := mux.Vars(r)["id"]
+
+	if err := utils.ParseJSONFromRequest(r, &pp); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	// check that org_id is valid
+	err := ValidateOrg(orgID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	var (
+		members = []Member{}
+	)
+
+	nw := len(pp.IdList)
+	if nw < 1 {
+		utils.GetSuccess("Members retrieved successfully", members, w)
+		return
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(nw)
+	wrkchan := make(chan HandleMemberSearchResponse, nw)
+
+	for _, memberId := range pp.IdList {
+		go HandleMemberSearch(orgID, memberId, wrkchan, &wg)
+	}
+
+	go func() {
+		defer close(wrkchan)
+		wg.Wait()
+	}()
+
+	for n := range wrkchan {
+		if n.Err == nil {
+			members = append(members, n.Memberinfo)
+		}
+	}
+
+	utils.GetSuccess("Members retrieved successfully", members, w)
 }
 
 // Get all members of an organization.
@@ -371,7 +423,7 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		diff := choosenTime.Local().Sub(currentTime)
 		period = int(diff.Minutes())
 	}
-	
+
 	pmemberID, err := primitive.ObjectIDFromHex(memberID)
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
@@ -433,7 +485,7 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 	ClearOld <- true
 
 	go ClearStatusRoutine(orgID, memberID, ExpiryTime, ClearOld)
-	
+
 	// publish update to subscriber
 	eventChannel := fmt.Sprintf("organizations_%s", orgID)
 	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberStatus, Channel: eventChannel, Payload: make(map[string]interface{})}
@@ -483,7 +535,7 @@ func (oh *OrganizationHandler) DeactivateMember(w http.ResponseWriter, r *http.R
 	go utils.Emitter(event)
 
 	utils.GetSuccess("successfully deactivated member", nil, w)
-	
+
 	enterOrgMessage := EnterLeaveMessage{
 		OrganizationID: orgID,
 		MemberID:       memberID,
@@ -1045,7 +1097,6 @@ func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *htt
 	username := strings.Split(user.Email, "@")[0]
 
 	memberStruct := Member{
-		ID:       primitive.NewObjectID(),
 		Email:    user.Email,
 		UserName: username,
 		OrgID:    validOrgID.Hex(),
@@ -1136,7 +1187,7 @@ func (oh *OrganizationHandler) UpdateMemberRole(w http.ResponseWriter, r *http.R
 	}
 
 	// ID of the user whose role is being updated
-	memberIDHex := orgMember.ID.Hex()
+	memberIDHex := orgMember.ID
 
 	updateRes, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberIDHex, bson.M{"role": role})
 
@@ -1252,8 +1303,6 @@ func (oh *OrganizationHandler) UpdateUserTheme(w http.ResponseWriter, r *http.Re
 
 	utils.GetSuccess("successfully updated theme preference", nil, w)
 }
-
-
 
 //endpoints to set messages as mark as read.
 func (oh *OrganizationHandler) UpdateMarkAsRead(w http.ResponseWriter, r *http.Request) {

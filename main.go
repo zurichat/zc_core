@@ -105,6 +105,7 @@ func Router(server *socketio.Server) *mux.Router {
 
 	r.HandleFunc("/organizations/{id}/members", au.IsAuthenticated(au.IsAuthorized(orgs.CreateMember, "admin"))).Methods("POST")
 	r.HandleFunc("/organizations/{id}/members", orgs.GetMembers).Methods("GET")
+	r.HandleFunc("/organizations/{id}/members/multiple", au.IsAuthenticated(orgs.GetmultipleMembers)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}", au.IsAuthenticated(orgs.GetMember)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}", au.IsAuthenticated(au.IsAuthorized(orgs.DeactivateMember, "admin"))).Methods("DELETE")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/reactivate", au.IsAuthenticated(au.IsAuthorized(orgs.ReactivateMember, "admin"))).Methods("POST")

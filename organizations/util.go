@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -79,7 +80,6 @@ func ValidateMember(orgID, memberID string) error {
 // create member instance.
 func NewMember(email, userName, orgID, role string) Member {
 	return Member{
-		ID:       primitive.NewObjectID(),
 		Email:    email,
 		UserName: userName,
 		OrgID:    orgID,
@@ -95,37 +95,37 @@ func NewMember(email, userName, orgID, role string) Member {
 func ClearStatusRoutine(orgID, memberID string, ch chan int64, clearOld chan bool) {
 	// get period from channel
 	period := <-ch
-	
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(period) * time.Minute)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(period)*time.Minute)
 	defer cancel()
-	
+
 	d := time.Duration(period) * time.Minute
-	t := time.NewTimer(d);
-	
+	t := time.NewTimer(d)
+
 	go func() {
 		for {
 			select {
 			case <-clearOld:
 				// force timer to stop when new time is available
-				// this occures everytime a new time is set so that old times 
+				// this occures everytime a new time is set so that old times
 				// running can be interrupted
 				if !t.Stop() {
 					<-t.C
 				}
 
-				// restart timer because a condition occurred 
+				// restart timer because a condition occurred
 				newD := time.Duration(period) * time.Minute
 				t.Reset(newD)
 
-			case <- t.C:
+			case <-t.C:
 				// clear status when the timer completes!
 				ClearStatus(memberID, period)
-				
+
 			case <-ctx.Done():
 				return
 			}
 		}
-	}() 
+	}()
 	<-ctx.Done()
 
 	// publish update to subscriber
@@ -136,7 +136,7 @@ func ClearStatusRoutine(orgID, memberID string, ch chan int64, clearOld chan boo
 }
 
 func ClearStatus(memberID string, duration int64) {
-	// duration 1 represents dont_clear time 
+	// duration 1 represents dont_clear time
 	if duration == 1 {
 		return
 	}
@@ -222,4 +222,35 @@ func OrganizationUpdate(w http.ResponseWriter, r *http.Request, updateParam upda
 	go utils.Emitter(event)
 
 	utils.GetSuccess(fmt.Sprintf("%s updated successfully", updateParam.successMessage), nil, w)
+}
+
+func HandleMemberSearch(orgID string, memberId string, ch chan HandleMemberSearchResponse, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	memberIDhex, err := primitive.ObjectIDFromHex(memberId)
+	if err != nil {
+		resp := HandleMemberSearchResponse{Memberinfo: Member{}, Err: err}
+		ch <- resp
+		return
+	}
+
+	orgMember, err := utils.GetMongoDBDoc(MemberCollectionName, bson.M{
+		"org_id":  orgID,
+		"_id":     memberIDhex,
+		"deleted": bson.M{"$ne": true},
+	})
+
+	if err != nil {
+		resp := HandleMemberSearchResponse{Memberinfo: Member{}, Err: err}
+		ch <- resp
+		return
+	}
+
+	var member Member
+
+	bsonBytes, _ := bson.Marshal(orgMember)
+	bson.Unmarshal(bsonBytes, &member)
+
+	resp := HandleMemberSearchResponse{Memberinfo: member, Err: nil}
+	ch <- resp
 }
