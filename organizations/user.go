@@ -1202,6 +1202,55 @@ func (oh *OrganizationHandler) UpdateNotification(w http.ResponseWriter, r *http
 	utils.GetSuccess("successfully updated status", nil, w)
 }
 
+// an endpoint to update a user theme preference.
+func (oh *OrganizationHandler) UpdateUserTheme(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("content-type", "application/json")
+
+	// validate the user ID
+	orgID := mux.Vars(r)["id"]
+	memberID := mux.Vars(r)["mem_id"]
+
+	// check that org_id is valid
+	err := ValidateOrg(orgID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	// check that member_id is valid
+	err = ValidateMember(orgID, memberID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	// Get data from requestbody
+	var theme UserThemes
+
+	if err = utils.ParseJSONFromRequest(r, &theme); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	memberSettings := make(map[string]interface{})
+	memberSettings["settings.theme"] = theme
+	// fetch and update the document
+	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberSettings)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("successfully updated theme preference", nil, w)
+}
+
+
+
 //endpoints to set messages as mark as read.
 func (oh *OrganizationHandler) UpdateMarkAsRead(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
