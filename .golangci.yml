@@ -102,6 +102,6 @@ run:
     - realtime
     - service
     - user
-    - utils
+    # - utils
   skip-files:
     - main.go

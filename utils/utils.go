@@ -156,10 +156,10 @@ func OldConvertStructure(input, output interface{}) error {
 }
 
 func ConvertStructure(input, output interface{}) error {
-
 	if err := mapstructure.Decode(input, output); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -225,6 +225,7 @@ func RandomGen(n int, sType string) (status bool, str string) {
 		s := strings.Split(randgenS, "")
 
 		for j := 1; j <= n; j++ {
+			//nolint:gosec //CODEI8: ignore error check
 			randIdx := rand.Intn(len(s))
 			finalString += s[randIdx]
 		}
@@ -237,6 +238,7 @@ func RandomGen(n int, sType string) (status bool, str string) {
 		i := strings.Split(randgenI, "")
 
 		for j := 1; j <= n; j++ {
+			//nolint:gosec //CODEI8: ignore error check
 			randIdx := rand.Intn(len(i))
 			finalString += i[randIdx]
 		}
