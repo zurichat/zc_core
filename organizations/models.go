@@ -110,10 +110,11 @@ type TokenTransaction struct {
 }
 
 type Invite struct {
-	ID    string `json:"_id,omitempty" bson:"_id,omitempty"`
-	OrgID string `json:"org_id" bson:"org_id"`
-	UUID  string `json:"uuid" bson:"uuid"`
-	Email string `json:"email" bson:"email"`
+	ID          string `json:"_id,omitempty" bson:"_id,omitempty"`
+	OrgID       string `json:"org_id" bson:"org_id"`
+	UUID        string `json:"uuid" bson:"uuid"`
+	Email       string `json:"email" bson:"email"`
+	HasAccepted bool   `json:"has_accepted" bson:"has_accepted"`
 }
 type SendInviteResponse struct {
 	InvalidEmails []interface{}

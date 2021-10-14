@@ -426,7 +426,7 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 		// Generate new UUI for invite and
 		uuid := utils.GenUUID()
 
-		newInvite := Invite{OrgID: sOrgID, UUID: uuid, Email: email}
+		newInvite := Invite{OrgID: sOrgID, UUID: uuid, Email: email, HasAccepted: false}
 
 		var invInterface map[string]interface{}
 
@@ -467,6 +467,18 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 	resonse := SendInviteResponse{InvalidEmails: invalidEmails, InviteIDs: inviteIDs}
 
 	utils.GetSuccess("Organization invite operation result", resonse, w)
+}
+
+func (oh *OrganizationHandler) InviteStats(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	orgID := mux.Vars(r)["id"]
+
+	invites, err := utils.GetMongoDBDocs(OrganizationInviteCollection, bson.M{"org_id": orgID})
+	if err != nil {
+		utils.GetError(err, http.StatusNotFound, w)
+	}
+	utils.GetSuccess("successful", invites, w)
 }
 
 func (oh *OrganizationHandler) UpgradeToPro(w http.ResponseWriter, r *http.Request) {
