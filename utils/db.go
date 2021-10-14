@@ -278,11 +278,20 @@ func CreateUniqueIndex(collName, field string, order int) error {
 
 	indexName, err := collection.Indexes().CreateOne(context.Background(), indexModel)
 	if err != nil {
-		fmt.Println("errror creating unique index on email field in users collection")
+		fmt.Printf("error creating unique index on %s field in %s", field, collName)
 		return err
 	}
 
 	fmt.Printf("%s index on %s collection created successfully\n", indexName, collName)
 
 	return nil
+}
+
+func CountCollection(ctx context.Context, name string, filter bson.M) int64 {
+	collection := defaultMongoHandle.GetCollection(name)
+	count, err := collection.CountDocuments(ctx, filter)
+	if err != nil {
+		return 0
+	}
+	return count
 }

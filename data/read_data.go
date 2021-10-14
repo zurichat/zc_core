@@ -41,9 +41,6 @@ func ReadData(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("the use of this endpoint is being deprecated, switch to the POST method.", docs, w)
 }
 
-func getPrefixedCollectionName(pluginID, orgID, collName string) string {
-	return fmt.Sprintf("%s:%s:%s", pluginID, orgID, collName)
-}
 
 func parseURLQuery(r *http.Request) map[string]interface{} {
 	m := utils.M{}
@@ -154,7 +151,6 @@ func NewRead(w http.ResponseWriter, r *http.Request) {
 	} 
 	
 	docs, err := findMany(actualCollName, filter, opts)
-	
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)

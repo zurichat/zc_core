@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -27,7 +26,6 @@ type Plugin struct {
 	IconURL        string             `json:"icon_url" bson:"icon_url"`
 	InstallCount   int64              `json:"install_count" bson:"install_count"`
 	Approved       bool               `json:"approved" bson:"approved"`
-	Deleted        bool               `json:"deleted" bson:"deleted"`
 	Images         []string           `json:"images,omitempty" bson:"images,omitempty"`
 	Version        string             `json:"version" bson:"version"`
 	Category       string             `json:"category" bson:"category"`
@@ -75,8 +73,7 @@ func CreatePlugin(ctx context.Context, p *Plugin) error {
 }
 
 func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
-	var p *Plugin
-	var bp *Plugin
+	p := &Plugin{}
 
 	objID, err := primitive.ObjectIDFromHex(id)
 
@@ -84,39 +81,28 @@ func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 		return nil, err
 	}
 
-	res, err := utils.GetMongoDBDoc(PluginCollectionName, bson.M{"_id": objID })
+	collection := utils.GetCollection(PluginCollectionName)
+	res := collection.FindOne(ctx, bson.M{"_id": objID })
 
-	bsonBytes, err := bson.Marshal(res)
-	bson.Unmarshal(bsonBytes, &p)
-
-	if err != nil {
+	if err := res.Decode(p); err != nil {
 		return nil, err
 	}
-	if err = mapstructure.Decode(res, &bp); err != nil {
-		return nil, err
-	}
-	p.Queue = bp.Queue
 
 	return p, nil
 }
 
-func FindPlugins(ctx context.Context, filter bson.M) ([]*Plugin, error) {
+func FindPlugins(ctx context.Context, filter bson.M, opts ...*options.FindOptions) ([]*Plugin, error) {
 	ps := []*Plugin{}
 
-	cursor, err := utils.GetMongoDBDocs(PluginCollectionName, filter)
+    collection := utils.GetCollection(PluginCollectionName)
+	cursor, err := collection.Find(ctx, filter, opts...)
 
 	if err != nil {
 		return nil, err
 	}
 
-	for _, plng := range cursor {
-		var nps *Plugin
-		var bp *Plugin
-		bsonBytes, _ := bson.Marshal(plng)
-		bson.Unmarshal(bsonBytes, &nps)
-		mapstructure.Decode(plng, &bp)
-		nps.Queue = bp.Queue
-		ps = append(ps, nps)
+	if err := cursor.All(ctx, &ps); err != nil {
+		return nil, err
 	}
 
 	return ps, nil
