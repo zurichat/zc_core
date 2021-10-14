@@ -163,9 +163,7 @@ func ClearStatus(memberID string, duration int64) {
 		return
 	}
 
-	log.Println("prev status: ", prevStatus)
 	update, _ := utils.StructToMap(Status{StatusHistory: prevStatus.StatusHistory})
-	log.Println("update: ", update)
 
 	memberStatus := make(map[string]interface{})
 	memberStatus["status"] = update
