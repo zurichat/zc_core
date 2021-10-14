@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -74,19 +75,27 @@ func CreatePlugin(ctx context.Context, p *Plugin) error {
 }
 
 func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
-	p := new(Plugin)
+	var p *Plugin
+	var bp *Plugin
+
 	objID, err := primitive.ObjectIDFromHex(id)
 
 	if err != nil {
 		return nil, err
 	}
 
-	collection := utils.GetCollection(PluginCollectionName)
-	res := collection.FindOne(ctx, bson.M{"_id": objID, "deleted": M{"$ne": true}})
+	res, _ := utils.GetMongoDBDoc(PluginCollectionName, bson.M{"_id": objID, "deleted": false})
 
-	if err := res.Decode(p); err != nil {
+	bsonBytes, err := bson.Marshal(res)
+	bson.Unmarshal(bsonBytes, &p)
+
+	if err != nil {
 		return nil, err
 	}
+	if err = mapstructure.Decode(res, &bp); err != nil {
+		return nil, err
+	}
+	p.Queue = bp.Queue
 
 	return p, nil
 }
@@ -102,8 +111,11 @@ func FindPlugins(ctx context.Context, filter bson.M) ([]*Plugin, error) {
 
 	for _, plng := range cursor {
 		var nps *Plugin
+		var bp *Plugin
 		bsonBytes, _ := bson.Marshal(plng)
 		bson.Unmarshal(bsonBytes, &nps)
+		mapstructure.Decode(plng, &bp)
+		nps.Queue = bp.Queue
 		ps = append(ps, nps)
 
 	}
