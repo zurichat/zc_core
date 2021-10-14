@@ -58,6 +58,10 @@ const (
 )
 
 const ProSubscriptionRate = 10
+const StatusHistoryLimit = 6
+
+var ExpiryTime = make(chan int64, 1)
+var ClearOld = make(chan bool, 1)
 
 var RequestData = make(map[string]string)
 
