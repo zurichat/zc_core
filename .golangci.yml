@@ -96,7 +96,7 @@ run:
     - organizations
     - plugin
     - data
-    # - external
+    - external
     - messaging
     - report
     - realtime
