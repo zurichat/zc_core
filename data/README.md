@@ -1,6 +1,6 @@
 ## How it works
 
-Data Write
+Data Write (Create and Update)
 ----------
 Plugins are allowed to write data to the database by calling the /data/write endpoint with any of the POST, PUT, http methods.
 Based on this methods a CREATE, UPDATE action will be performed on the database. The plugin would have to provide the following json data body
@@ -12,7 +12,7 @@ Based on this methods a CREATE, UPDATE action will be performed on the database.
  "bulk_write": false,
  "object_id": "xxxx",
  "filter": {},
- "payload": {}
+ "payload": {},
  "raw_query": {}
 }
 ```
@@ -35,6 +35,26 @@ The data read operation occurs at the [GET]  /data/read/{plugin_id}/{collection_
 Once the api receives this request, it checks the internal record to validate that the plugin with this {plugin_id} is the one that created the {collection_name} for the org with this {organization_id}. Once this is established to be true, then access is granted and the api returns the data requested as an array.
 Extra simple mongodb query parameters can be passed as a url query param e.g ?title=this and the api uses it to query the database.
 To find an item by id, pass in the query parameter `id` or `_id` with the appropriate value . A single document/object is returned instead of a list if the item is found.
+
+An alternative implementation is exposed at the [POST] /data/read endpoint. The request payload expected is of the following format. 
+```jsonc
+{
+    "plugin_id": "",
+    "collection_name": "",
+    "organization_id": "",
+    "object_id": "",
+    "object_ids": [], // useful if you want to get results for a list of ids.
+    "filter": {}, // can be used in place of id to match documents by other fields.
+    "options": {} // contains query results modifiers.
+}
+
+```
+the `filter` object should contain the field(s) you want to match and their values. The `options` is an object with the following valid properties:
+
+- limit (integer): To set a limit on the results to be returned.
+- skip (integer): to set an offset value for the results.
+- sort (Object): field to sort by in descending (-1) or ascending order (1) e.g `"sort": {"name": 1}`
+- projection (Object): field to include (1) or exclude (0) in the results e.g `"projection": {"field": 1}`
 
 
 Delete Data
@@ -61,8 +81,3 @@ Plugins can now request to see a list of collections they have created.
 The a GET request to `/data/collections/<plugin_id>` will return a record of collections created by the plugin.
 while a request to `/data/collections/<plugin_id>/<org_id>` will return a record of collections a plugin has created for a particular organization
 
-
-
-TODO:
-- Allow zuri main to have read/write access
-- Improve queries for for read.
