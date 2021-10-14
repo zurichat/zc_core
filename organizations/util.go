@@ -143,15 +143,11 @@ func ClearStatus(memberID string, duration int64) {
 
 	pmemberID, err := primitive.ObjectIDFromHex(memberID)
 	if err != nil {
-		log.Println("Invalid id")
+		log.Println(err)
 		return
 	}
 
-	memberRec, err := utils.GetMongoDBDoc(MemberCollectionName, bson.M{"_id": pmemberID})
-	if err != nil {
-		log.Println("error while trying to get member")
-		return
-	}
+	memberRec, _ := utils.GetMongoDBDoc(MemberCollectionName, bson.M{"_id": pmemberID})
 
 	var prevStatus Status
 
@@ -159,7 +155,7 @@ func ClearStatus(memberID string, duration int64) {
 	bsonBytes, _ := bson.Marshal(memberRec["status"])
 
 	if err = bson.Unmarshal(bsonBytes, &prevStatus); err != nil {
-		log.Println("error while trying to unmarshal")
+		log.Println(err)
 		return
 	}
 
@@ -170,7 +166,7 @@ func ClearStatus(memberID string, duration int64) {
 
 	_, err = utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberStatus)
 	if err != nil {
-		log.Println("could not clear status")
+		log.Println(err)
 		return
 	}
 
