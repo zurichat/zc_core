@@ -758,11 +758,6 @@ func (oh *OrganizationHandler) UpdateMemberMessageAndMediaSettings(w http.Respon
 		return
 	}
 
-	if _, ok := MsgMedias[messageAndMediaSettings.Theme]; !ok {
-		utils.GetError(errors.New("theme is not valid"), http.StatusBadRequest, w)
-		return
-	}
-
 	if _, ok := MsgMedias[messageAndMediaSettings.Names]; !ok {
 		utils.GetError(errors.New("name is not valid"), http.StatusBadRequest, w)
 		return
