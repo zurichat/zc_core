@@ -290,13 +290,22 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func RequestDurationMiddleware(h http.Handler) http.Handler {
+	const durationLimit = 10 
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		h.ServeHTTP(w, r)
 		duration := time.Since(start)
 
-		go func() {
+		postToSlack := func() {
 			m := make(map[string]interface{})
+			m["timeTaken"] = duration.Seconds()
+
+			
+			if duration.Seconds() < durationLimit {
+				return
+			}
+			
 			scheme := "http"
 
 			if r.TLS != nil {
@@ -318,6 +327,10 @@ func RequestDurationMiddleware(h http.Handler) http.Handler {
 			}
 
 			defer resp.Body.Close()
-		}()
+		}
+
+		if strings.Contains(r.Host, "api.zuri.chat") {
+			go postToSlack()
+		}
 	})
 }
