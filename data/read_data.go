@@ -73,6 +73,7 @@ type readOptions struct {
 	Limit *int64                 `json:"limit,omitempty"`
 	Skip  *int64                 `json:"skip,omitempty"`
 	Sort  map[string]interface{} `json:"sort,omitempty"`
+	Projection map[string]interface{} `json:"projection,omitempty"`
 }
 
 // NewRead handles data retrieval process using POST requests, providing flexibility for the query.
@@ -118,6 +119,8 @@ func NewRead(w http.ResponseWriter, r *http.Request) {
 
 	if reqData.ObjectIDs != nil {
 		filter["_id"] = bson.M{"$in": hexToObjectIDs(reqData.ObjectIDs)}
+	}else {
+		normalizeIDIfExists(filter)
 	}
 
 	var opts *options.FindOptions
@@ -127,6 +130,7 @@ func NewRead(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filter["deleted"] = bson.M{"$ne": true}
+
 	docs, err := utils.GetMongoDBDocs(prefixedCollName, filter, opts)
 
 	if err != nil {
@@ -139,6 +143,7 @@ func NewRead(w http.ResponseWriter, r *http.Request) {
 
 func setOptions(r readOptions) *options.FindOptions {
 	findOptions := options.Find()
+
 	if r.Limit != nil {
 		findOptions.SetLimit(*r.Limit)
 	}
@@ -149,6 +154,10 @@ func setOptions(r readOptions) *options.FindOptions {
 
 	if len(r.Sort) > 0 {
 		findOptions.SetSort(r.Sort)
+	}
+
+	if r.Projection != nil {
+       findOptions.SetProjection(r.Projection)
 	}
 
 	return findOptions
