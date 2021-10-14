@@ -1,7 +1,6 @@
 package data
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -16,16 +15,13 @@ import (
 func ReadData(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	pluginID, collName, orgID := vars["plugin_id"], vars["coll_name"], vars["org_id"]
+    
+    actualCollName := mongoCollectionName(pluginID, collName)
 
-	if !pluginHasCollection(pluginID, orgID, collName) {
-		utils.GetError(errors.New("collection not found"), http.StatusNotFound, w)
-		return
-	}
-
-	prefixedCollName := getPrefixedCollectionName(pluginID, orgID, collName)
 	filter := parseURLQuery(r)
 	filter["deleted"] = bson.M{"$ne": true}
-	docs, err := utils.GetMongoDBDocs(prefixedCollName, filter)
+	filter["organization_id"] = orgID
+	docs, err := utils.GetMongoDBDocs(actualCollName, filter)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
@@ -33,11 +29,16 @@ func ReadData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, exists := filter["_id"]; exists && len(docs) == 1 {
+		delete(docs[0], "organization_id")
 		utils.GetSuccess("success", docs[0], w)
 		return
 	}
 
-	utils.GetSuccess("success", docs, w)
+	for _, doc := range docs {
+		delete(doc, "organization_id")
+	}
+
+	utils.GetSuccess("the use of this endpoint is being deprecated, switch to the POST method.", docs, w)
 }
 
 func getPrefixedCollectionName(pluginID, orgID, collName string) string {
@@ -70,10 +71,30 @@ type readDataRequest struct {
 }
 
 type readOptions struct {
-	Limit *int64                 `json:"limit,omitempty"`
-	Skip  *int64                 `json:"skip,omitempty"`
-	Sort  map[string]interface{} `json:"sort,omitempty"`
+	Limit      *int64                 `json:"limit,omitempty"`
+	Skip       *int64                 `json:"skip,omitempty"`
+	Sort       map[string]interface{} `json:"sort,omitempty"`
 	Projection map[string]interface{} `json:"projection,omitempty"`
+}
+
+
+func (r *readDataRequest) containsID() bool {
+	return r.ObjectID != "" || idInFilter(bson.M(r.Filter))
+}
+
+func (r *readDataRequest) getIDString() string {
+	if r.ObjectID != "" {
+		return r.ObjectID
+	}
+
+	if id, exists := r.Filter["_id"]; exists {
+		return id.(string)
+	}
+
+	if id, exists := r.Filter["id"]; exists {
+		return id.(string)
+	}
+	return ""
 }
 
 // NewRead handles data retrieval process using POST requests, providing flexibility for the query.
@@ -85,42 +106,36 @@ func NewRead(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !pluginHasCollection(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName) {
-		utils.GetError(errors.New("collection not found"), http.StatusNotFound, w)
-		return
+	filter := bson.M(reqData.Filter)
+
+	if filter == nil {
+		filter = bson.M{}
 	}
 
-	prefixedCollName := getPrefixedCollectionName(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName)
+	filter["deleted"] = bson.M{"$ne": true}
+	filter["organization_id"] = reqData.OrganizationID
 
-	if reqData.ObjectID != "" {
-		id, err := primitive.ObjectIDFromHex(reqData.ObjectID)
-		if err != nil {
-			utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
-			return
+	actualCollName := mongoCollectionName(reqData.PluginID, reqData.CollectionName)
+
+	if reqData.containsID() {
+		id := reqData.getIDString()
+		var opts *options.FindOneOptions
+		filter["_id"] = mustObjectIDFromHex(id)
+
+		if r := reqData.ReadOptions; r != nil {
+			opts = setFindOneOptions(*r)
 		}
 
-		doc, err := utils.GetMongoDBDoc(prefixedCollName, bson.M{"_id": id, "deleted": utils.M{"$ne": true}})
+		doc, err := findOne(actualCollName, filter, opts)
 
 		if err != nil {
 			utils.GetError(err, http.StatusInternalServerError, w)
 			return
 		}
 
+		delete(doc, "organization_id")
 		utils.GetSuccess("success", doc, w)
-
 		return
-	}
-
-	filter := reqData.Filter
-
-	if filter == nil {
-		filter = utils.M{}
-	}
-
-	if reqData.ObjectIDs != nil {
-		filter["_id"] = bson.M{"$in": hexToObjectIDs(reqData.ObjectIDs)}
-	}else {
-		normalizeIDIfExists(filter)
 	}
 
 	var opts *options.FindOptions
@@ -129,16 +144,47 @@ func NewRead(w http.ResponseWriter, r *http.Request) {
 		opts = setOptions(*r)
 	}
 
-	filter["deleted"] = bson.M{"$ne": true}
+	if reqData.ObjectIDs != nil {
+		filter["_id"] = bson.M{"$in": hexToObjectIDs(reqData.ObjectIDs)}
+	}
 
-	docs, err := utils.GetMongoDBDocs(prefixedCollName, filter, opts)
+	docs, err := findMany(actualCollName, filter, opts)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
 
+	for _, doc := range docs {
+		delete(doc, "organization_id")
+	}
+
 	utils.GetSuccess("success", docs, w)
+}
+
+func findOne(collName string, filter bson.M, opts ...*options.FindOneOptions) (bson.M, error) {
+	return utils.GetMongoDBDoc(collName, filter, opts...)
+}
+
+func findMany(collName string, filter bson.M, opts ...*options.FindOptions) ([]bson.M, error) {
+	return utils.GetMongoDBDocs(collName, filter, opts...)
+}
+
+func idInFilter(filter bson.M) bool {
+	_, exists := filter["_id"]
+	_, exists2 := filter["id"]
+
+	return exists || exists2
+}
+
+func hexToObjectIDs(ids []string) []primitive.ObjectID {
+	objIDs := make([]primitive.ObjectID, len(ids))
+
+	for i, id := range ids {
+		objIDs[i] = mustObjectIDFromHex(id)
+	}
+
+	return objIDs
 }
 
 func setOptions(r readOptions) *options.FindOptions {
@@ -157,18 +203,26 @@ func setOptions(r readOptions) *options.FindOptions {
 	}
 
 	if r.Projection != nil {
-       findOptions.SetProjection(r.Projection)
+		findOptions.SetProjection(r.Projection)
 	}
 
 	return findOptions
 }
 
-func hexToObjectIDs(ids []string) []primitive.ObjectID {
-	objIDs := make([]primitive.ObjectID, len(ids))
+func setFindOneOptions(r readOptions) *options.FindOneOptions {
+	findOneOpts := options.FindOne()
 
-	for i, id := range ids {
-		objIDs[i] = mustObjectIDFromHex(id)
+	if r.Skip != nil {
+		findOneOpts.SetSkip(*r.Skip)
 	}
 
-	return objIDs
+	if len(r.Sort) > 0 {
+		findOneOpts.SetSort(r.Sort)
+	}
+
+	if r.Projection != nil {
+		findOneOpts.SetProjection(r.Projection)
+	}
+
+	return findOneOpts
 }
