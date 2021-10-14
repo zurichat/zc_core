@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -79,7 +80,6 @@ func ValidateMember(orgID, memberID string) error {
 // create member instance.
 func NewMember(email, userName, orgID, role string) Member {
 	return Member{
-		ID:       primitive.NewObjectID(),
 		Email:    email,
 		UserName: userName,
 		OrgID:    orgID,
@@ -93,14 +93,14 @@ func NewMember(email, userName, orgID, role string) Member {
 
 // clear a member's status after a duration.
 func ClearStatusRoutine(orgID, memberID string, period int) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(period) * time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(period)*time.Minute)
 	defer cancel()
-	
+
 	d := time.Duration(period) * time.Minute
-	t := time.NewTimer(d);
-	
+	t := time.NewTimer(d)
+
 	otherCond := make(chan bool)
-	
+
 	go func() {
 		for {
 			select {
@@ -110,17 +110,17 @@ func ClearStatusRoutine(orgID, memberID string, period int) {
 				// a concurrent read from the timers channel when this is attempted.
 				// As we are inside the case statement there is no other read
 				// going on.
-				
+
 				if !t.Stop() {
 					<-t.C
 					ClearStatus(memberID)
 				}
-				
+
 			case <-ctx.Done():
 				return
 			}
 		}
-	}() 
+	}()
 	<-ctx.Done()
 
 	// publish update to subscriber
@@ -212,4 +212,35 @@ func OrganizationUpdate(w http.ResponseWriter, r *http.Request, updateParam upda
 	go utils.Emitter(event)
 
 	utils.GetSuccess(fmt.Sprintf("%s updated successfully", updateParam.successMessage), nil, w)
+}
+
+func HandleMemberSearch(orgID string, memberId string, ch chan HandleMemberSearchResponse, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	memberIDhex, err := primitive.ObjectIDFromHex(memberId)
+	if err != nil {
+		resp := HandleMemberSearchResponse{Memberinfo: Member{}, Err: err}
+		ch <- resp
+		return
+	}
+
+	orgMember, err := utils.GetMongoDBDoc(MemberCollectionName, bson.M{
+		"org_id":  orgID,
+		"_id":     memberIDhex,
+		"deleted": bson.M{"$ne": true},
+	})
+
+	if err != nil {
+		resp := HandleMemberSearchResponse{Memberinfo: Member{}, Err: err}
+		ch <- resp
+		return
+	}
+
+	var member Member
+
+	bsonBytes, _ := bson.Marshal(orgMember)
+	bson.Unmarshal(bsonBytes, &member)
+
+	resp := HandleMemberSearchResponse{Memberinfo: member, Err: nil}
+	ch <- resp
 }
