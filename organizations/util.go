@@ -95,37 +95,37 @@ func NewMember(email, userName, orgID, role string) Member {
 func ClearStatusRoutine(orgID, memberID string, ch chan int64, clearOld chan bool) {
 	// get period from channel
 	period := <-ch
-	
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(period) * time.Minute)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(period)*time.Minute)
 	defer cancel()
-	
+
 	d := time.Duration(period) * time.Minute
-	t := time.NewTimer(d);
-	
+	t := time.NewTimer(d)
+
 	go func() {
 		for {
 			select {
 			case <-clearOld:
 				// force timer to stop when new time is available
-				// this occures everytime a new time is set so that old times 
+				// this occures everytime a new time is set so that old times
 				// running can be interrupted
 				if !t.Stop() {
 					<-t.C
 				}
 
-				// restart timer because a condition occurred 
+				// restart timer because a condition occurred
 				newD := time.Duration(period) * time.Minute
 				t.Reset(newD)
 
-			case <- t.C:
+			case <-t.C:
 				// clear status when the timer completes!
 				ClearStatus(memberID, period)
-				
+
 			case <-ctx.Done():
 				return
 			}
 		}
-	}() 
+	}()
 	<-ctx.Done()
 
 	// publish update to subscriber
@@ -136,17 +136,41 @@ func ClearStatusRoutine(orgID, memberID string, ch chan int64, clearOld chan boo
 }
 
 func ClearStatus(memberID string, duration int64) {
-	// duration 1 represents dont_clear time 
+	// duration 1 represents dont_clear time
 	if duration == 1 {
 		return
 	}
 
-	update, _ := utils.StructToMap(Status{})
+	pmemberID, err := primitive.ObjectIDFromHex(memberID)
+	if err != nil {
+		log.Println("Invalid id")
+		return
+	}
+
+	memberRec, err := utils.GetMongoDBDoc(MemberCollectionName, bson.M{"_id": pmemberID})
+	if err != nil {
+		log.Println("error while trying to get member")
+		return
+	}
+
+	var prevStatus Status
+
+	// convert bson to struct
+	bsonBytes, _ := bson.Marshal(memberRec["status"])
+
+	if err = bson.Unmarshal(bsonBytes, &prevStatus); err != nil {
+		log.Println("error while trying to unmarshal")
+		return
+	}
+
+	log.Println("prev status: ", prevStatus)
+	update, _ := utils.StructToMap(Status{StatusHistory: prevStatus.StatusHistory})
+	log.Println("update: ", update)
 
 	memberStatus := make(map[string]interface{})
 	memberStatus["status"] = update
 
-	_, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberStatus)
+	_, err = utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberStatus)
 	if err != nil {
 		log.Println("could not clear status")
 		return
