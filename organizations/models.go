@@ -321,7 +321,7 @@ type Themes struct {
 }
 type UserThemes struct {
 	Mode	string `json:"mode"`
-	Colors	string `json:"Colors"`
+	Colors	string `json:"colors"`
 }
 const (
 	ThemeClean   = "clean"
