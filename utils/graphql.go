@@ -19,6 +19,7 @@ type GraphQlHandler struct {
 	configs *Configurations
 }
 
+// Utils
 var ObjectID = graphql.NewScalar(graphql.ScalarConfig{
 	Name:        "BSON",
 	Description: "The `bson` scalar type represents a BSON Object.",
@@ -55,6 +56,7 @@ var ObjectID = graphql.NewScalar(graphql.ScalarConfig{
 	},
 })
 
+// ********** Users **********
 var userType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Users",
@@ -63,7 +65,7 @@ var userType = graphql.NewObject(
 			"first_name": &graphql.Field{Type: graphql.String, Description: "First Name"},
 			"last_name":  &graphql.Field{Type: graphql.String, Description: "Last Name"},
 			"phone":      &graphql.Field{Type: graphql.String, Description: "Phone number"},
-			"email":      &graphql.Field{Type: graphql.String, Description: " Email Address"},
+			"email":      &graphql.Field{Type: graphql.String, Description: "Email Address"},
 			"time_zone":  &graphql.Field{Type: graphql.String, Description: "Time zone"},
 			"updated_at": &graphql.Field{Type: graphql.String, Description: "Updated At"},
 			"created_at": &graphql.Field{Type: graphql.String, Description: "Created At"},
@@ -71,6 +73,7 @@ var userType = graphql.NewObject(
 	},
 )
 
+// ********** Orgnisation **********
 var organizationType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Organizations",
@@ -84,55 +87,6 @@ var organizationType = graphql.NewObject(
 		},
 	},
 )
-
-func loadUsersSchema() *graphql.Field {
-	return &graphql.Field{
-		Type:        graphql.NewList(userType),
-		Description: "Get User List",
-		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-			users, err := GetMongoDBDocs(UserCollectionName, bson.M{})
-			if err != nil {
-				log.Fatal(err.Error())
-			}
-
-			return users, nil
-		},
-	}
-}
-
-var aggregateSchema = graphql.Fields{
-	"users":         loadUsersSchema(),
-	"plugins":       loadPluginsSchema(),
-	"organizations": loadOrganizationsSchema(),
-}
-
-func loadOrganizationsSchema() *graphql.Field {
-	return &graphql.Field{
-		Type:        graphql.NewList(organizationType),
-		Description: "Get Organization list",
-		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			organizations, err := GetMongoDBDocs(OrganizationCollectionName, bson.M{})
-			if err != nil {
-				log.Fatal(err.Error())
-			}
-			return organizations, nil
-		},
-	}
-}
-
-func (ql *GraphQlHandler) LoadGraphQlSchema() graphql.SchemaConfig {
-	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: aggregateSchema}
-	schemaConfig := graphql.SchemaConfig{
-		Query: graphql.NewObject(rootQuery),
-		// Mutation: aggregateMutations,
-	}
-
-	return schemaConfig
-}
-
-func NewGraphQlHandler(c *Configurations) *GraphQlHandler {
-	return &GraphQlHandler{configs: c}
-}
 
 // ********** Plugins **********
 // PluginType.
@@ -178,6 +132,21 @@ var MessageModelType = graphql.NewObject(
 	},
 )
 
+// Load Organisation Schema.
+func loadOrganizationsSchema() *graphql.Field {
+	return &graphql.Field{
+		Type:        graphql.NewList(organizationType),
+		Description: "Get Organization list",
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			organizations, err := GetMongoDBDocs(OrganizationCollectionName, bson.M{})
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+			return organizations, nil
+		},
+	}
+}
+
 // Load Plugins Schema.
 func loadPluginsSchema() *graphql.Field {
 	return &graphql.Field{
@@ -192,4 +161,41 @@ func loadPluginsSchema() *graphql.Field {
 			return plugins, nil
 		},
 	}
+}
+
+// Load User Schema.
+func loadUsersSchema() *graphql.Field {
+	return &graphql.Field{
+		Type:        graphql.NewList(userType),
+		Description: "Get User List",
+		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+			users, err := GetMongoDBDocs(UserCollectionName, bson.M{})
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+
+			return users, nil
+		},
+	}
+}
+
+
+var aggregateSchema = graphql.Fields{
+	"users":         loadUsersSchema(),
+	"plugins":       loadPluginsSchema(),
+	"organizations": loadOrganizationsSchema(),
+}
+
+func (ql *GraphQlHandler) LoadGraphQlSchema() graphql.SchemaConfig {
+	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: aggregateSchema}
+	schemaConfig := graphql.SchemaConfig{
+		Query: graphql.NewObject(rootQuery),
+		// Mutation: aggregateMutations,
+	}
+
+	return schemaConfig
+}
+
+func NewGraphQlHandler(c *Configurations) *GraphQlHandler {
+	return &GraphQlHandler{configs: c}
 }
