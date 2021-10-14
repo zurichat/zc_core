@@ -11,6 +11,7 @@ import (
 
 const (
 	UserCollectionName         = "users"
+	PluginCollectionName       = "plugins"
 	OrganizationCollectionName = "organizations"
 )
 
@@ -99,6 +100,12 @@ func loadUsersSchema() *graphql.Field {
 	}
 }
 
+var aggregateSchema = graphql.Fields{
+	"users":         loadUsersSchema(),
+	"plugins":       loadPluginsSchema(),
+	"organizations": loadOrganizationsSchema(),
+}
+
 func loadOrganizationsSchema() *graphql.Field {
 	return &graphql.Field{
 		Type:        graphql.NewList(organizationType),
@@ -113,11 +120,6 @@ func loadOrganizationsSchema() *graphql.Field {
 	}
 }
 
-var aggregateSchema = graphql.Fields{
-	"users":         loadUsersSchema(),
-	"organizations": loadOrganizationsSchema(),
-}
-
 func (ql *GraphQlHandler) LoadGraphQlSchema() graphql.SchemaConfig {
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: aggregateSchema}
 	schemaConfig := graphql.SchemaConfig{
@@ -130,4 +132,64 @@ func (ql *GraphQlHandler) LoadGraphQlSchema() graphql.SchemaConfig {
 
 func NewGraphQlHandler(c *Configurations) *GraphQlHandler {
 	return &GraphQlHandler{configs: c}
+}
+
+// ********** Plugins **********
+// PluginType.
+var pluginType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "Plugins",
+		Fields: graphql.Fields{
+			"_id":              &graphql.Field{Type: ObjectID},
+			"name":             &graphql.Field{Type: graphql.String, Description: "Name"},
+			"description":      &graphql.Field{Type: graphql.String, Description: "Description"},
+			"developer_name":   &graphql.Field{Type: graphql.String, Description: "DeveloperName"},
+			"template_url":     &graphql.Field{Type: graphql.String, Description: "TemplateURL"},
+			"sidebar_url":      &graphql.Field{Type: graphql.String, Description: "SidebarURL"},
+			"install_url":      &graphql.Field{Type: graphql.String, Description: "InstallURL"},
+			"icon_url":         &graphql.Field{Type: graphql.String, Description: "IconURL"},
+			"install_count":    &graphql.Field{Type: graphql.Int, Description: "InstallCount"},
+			"approved":         &graphql.Field{Type: graphql.Boolean, Description: "Approved"},
+			"deleted":          &graphql.Field{Type: graphql.Boolean, Description: "Deleted"},
+			"images":           &graphql.Field{Type: graphql.NewList(graphql.String), Description: "Images"},
+			"version":          &graphql.Field{Type: graphql.String, Description: "Version"},
+			"category":         &graphql.Field{Type: graphql.String, Description: "Category"},
+			"tags":             &graphql.Field{Type: graphql.NewList(graphql.String), Description: "Tags"},
+			"approved_at":      &graphql.Field{Type: graphql.String, Description: "ApprovedAt"},
+			"created_at":       &graphql.Field{Type: graphql.String, Description: "CreatedAt"},
+			"updated_at":       &graphql.Field{Type: graphql.String, Description: "UpdatedAt"},
+			"deleted_at":       &graphql.Field{Type: graphql.String, Description: "DeletedAt"},
+			"sync_request_url": &graphql.Field{Type: graphql.String, Description: "SyncRequestUrl"},
+			"queue":            &graphql.Field{Type: MessageModelType, Description: "Queue"},
+			"queuepid":         &graphql.Field{Type: graphql.String, Description: "QueuePID"},
+		},
+	},
+)
+
+// MessageModelType ...
+var MessageModelType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "MessageModel",
+		Fields: graphql.Fields{
+			"_id":     &graphql.Field{Type: ObjectID, Description: "Id"},
+			"event":   &graphql.Field{Type: graphql.String, Description: "Event"},
+			"message": &graphql.Field{Type: &graphql.Interface{}, Description: "Message"},
+		},
+	},
+)
+
+// Load Plugins Schema.
+func loadPluginsSchema() *graphql.Field {
+	return &graphql.Field{
+		Type:        graphql.NewList(pluginType),
+		Description: "Get Plugins List",
+		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+			plugins, err := GetMongoDBDocs(PluginCollectionName, bson.M{})
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+
+			return plugins, nil
+		},
+	}
 }
