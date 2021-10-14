@@ -30,7 +30,6 @@ func AddSyncMessage(organization_id string, event string, message interface{}) e
 	}
 
 	return nil
-
 }
 
 func PingPlugins(plugins []string) error {
@@ -62,7 +61,6 @@ func PingPlugins(plugins []string) error {
 	}
 
 	return nil
-
 }
 
 func AddToPluginsQueue(plugins []string, event string, message interface{}) error {
@@ -138,7 +136,6 @@ func HandlePingPlugin(plgd string, ch chan error, wg *sync.WaitGroup) {
 		return
 	}
 	defer res.Body.Close()
-
 }
 
 func HandleAddingMessage(pluginid, event string, message interface{}, ch chan error, wg *sync.WaitGroup) {
@@ -214,5 +211,4 @@ func GetInstalledPlugins(organization_id string) ([]string, error) {
 	}
 
 	return pluginSlice, nil
-
 }

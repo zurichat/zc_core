@@ -48,7 +48,6 @@ func (oh *OrganizationHandler) GetMember(w http.ResponseWriter, r *http.Request)
 
 	err = utils.ConvertStructure(orgMember, &member)
 	if err != nil {
-
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
@@ -338,27 +337,25 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 
 	currentTime := time.Now().Local()
 
+	var period int
+
 	switch set := status.ExpiryTime; set {
 	case DontClear:
+		period = 1
 
 	case ThirtyMins:
-		period := 1
-		go ClearStatusRoutine(orgID, memberID, period)
+		period = 30
 
 	case OneHr:
-		period := 60
-		go ClearStatusRoutine(orgID, memberID, period)
+		period = 60
 
 	case FourHrs:
-		period := 240
-		go ClearStatusRoutine(orgID, memberID, period)
+		period = 240
 
 	case Today:
 		minutesPerHr := 60
 		hrsPerDay := 24
-		period := minutesPerHr * (hrsPerDay - currentTime.Hour())
-
-		go ClearStatusRoutine(orgID, memberID, period)
+		period = minutesPerHr * (hrsPerDay - currentTime.Hour())
 
 	case ThisWeek:
 		minutesPerHr := 60
@@ -368,15 +365,13 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		day := int(time.Now().Weekday())
 		weekday := daysPerWeek - day
 
-		period := weekday * hrsPerDay * minutesPerHr
-
-		go ClearStatusRoutine(orgID, memberID, period)
+		period = weekday * hrsPerDay * minutesPerHr
 
 	default:
 		diff := choosenTime.Local().Sub(currentTime)
-		go ClearStatusRoutine(orgID, memberID, int(diff.Minutes()))
+		period = int(diff.Minutes())
 	}
-
+	
 	pmemberID, err := primitive.ObjectIDFromHex(memberID)
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
@@ -405,10 +400,12 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		ExpiryHistory: status.ExpiryTime,
 	}
 
-	status.StatusHistory = append(prevStatus.StatusHistory, newHistory)
-	if len(status.StatusHistory) > 6 {
-		status.StatusHistory = status.StatusHistory[1:]
+	prevStatus.StatusHistory = append(prevStatus.StatusHistory, newHistory)
+	if len(prevStatus.StatusHistory) > StatusHistoryLimit {
+		prevStatus.StatusHistory = prevStatus.StatusHistory[1:]
 	}
+
+	status.StatusHistory = prevStatus.StatusHistory
 
 	statusUpdate, err := utils.StructToMap(status)
 	if err != nil {
@@ -431,6 +428,12 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		return
 	}
 
+	// pass period to chan so it can be received by the routine
+	ExpiryTime <- int64(period)
+	ClearOld <- true
+
+	go ClearStatusRoutine(orgID, memberID, ExpiryTime, ClearOld)
+	
 	// publish update to subscriber
 	eventChannel := fmt.Sprintf("organizations_%s", orgID)
 	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberStatus, Channel: eventChannel, Payload: make(map[string]interface{})}
@@ -486,6 +489,7 @@ func (oh *OrganizationHandler) DeactivateMember(w http.ResponseWriter, r *http.R
 		MemberID:       memberID,
 	}
 	eee := AddSyncMessage(orgID, "leave_organization", enterOrgMessage)
+
 	if eee != nil {
 		log.Printf("sync error: %v", eee)
 	}
