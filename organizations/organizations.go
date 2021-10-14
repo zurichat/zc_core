@@ -293,7 +293,7 @@ func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.
 	}
 
 	// member ID of the proposed new owner
-	memberID := orgMember.ID.Hex()
+	memberID := orgMember.ID
 
 	// upgrades status from member to owner
 	updateRes, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, bson.M{"role": OwnerRole})
@@ -321,7 +321,7 @@ func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.
 	formerOwner, _ := FetchMember(bson.M{"org_id": orgID, "email": loggedInUser.Email})
 
 	// ID of former owner
-	formerOwnerID := formerOwner.ID.Hex()
+	formerOwnerID := formerOwner.ID
 
 	// role downgraded from owner to member
 	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, formerOwnerID, bson.M{"role": AdminRole})
