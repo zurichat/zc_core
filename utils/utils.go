@@ -156,7 +156,6 @@ func OldConvertStructure(input, output interface{}) error {
 }
 
 func ConvertStructure(input, output interface{}) error {
-
 	if err := mapstructure.Decode(input, output); err != nil {
 		return err
 	}
