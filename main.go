@@ -146,7 +146,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
 	r.HandleFunc("/data/delete", data.DeleteData).Methods("POST")
 	r.HandleFunc("/data/collections/info/{plugin_id}/{coll_name}/{org_id}", data.CollectionDetail).Methods("GET")
-	
+
 	// Plugins
 	r.HandleFunc("/plugins/register", plugin.Register).Methods("POST")
 	r.HandleFunc("/plugins/{id}", plugin.Update).Methods("PATCH")
@@ -172,7 +172,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/guests/invite", us.CreateUserFromUUID).Methods("POST")
 
 	// Contact Us
-	r.HandleFunc("/contact", au.OptionalAuthentication(contact.MailUs, au)).Methods("POST")
+	r.HandleFunc("/contact", au.OptionalAuthentication(contact.MailUs)).Methods("POST")
 
 	// Realtime communications
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
@@ -205,7 +205,7 @@ func Router(server *socketio.Server) *mux.Router {
 	// Ping endpoint
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		utils.GetSuccess("Server is live", nil, w)
-	})	
+	})
 
 	// Home
 	http.Handle("/", r)
