@@ -40,6 +40,7 @@ func ConnectToDB(clusterURL string) error {
 		ec.Check(defaultMongoHandle.Connect(clusterURL))
 		ec.Check(CreateUniqueIndex("users", "email", 1))
 		ec.Check(CreateUniqueIndex("plugins", "template_url", 1))
+		ec.Check(CreateTextIndexForPlugins())
 	})
 
 	return ec.err
@@ -278,11 +279,49 @@ func CreateUniqueIndex(collName, field string, order int) error {
 
 	indexName, err := collection.Indexes().CreateOne(context.Background(), indexModel)
 	if err != nil {
-		fmt.Println("errror creating unique index on email field in users collection")
+		fmt.Printf("error creating unique index on %s field in %s: %v", field, collName, err)
 		return err
 	}
 
 	fmt.Printf("%s index on %s collection created successfully\n", indexName, collName)
 
 	return nil
+}
+
+func CreateTextIndexForPlugins() error {
+	collection := defaultMongoHandle.GetCollection("plugins")
+   
+   indexModel := mongo.IndexModel{
+   	Keys: bson.D{
+   		{Key: "name", Value: "text"},
+   		{Key: "category", Value: "text"},
+   		{Key: "tags", Value: "text"},
+   	},
+   	Options: options.Index().SetWeights(bson.M{
+   		"name": 10,
+   		"category": 5,
+   		"tags": 1,
+   	}).SetName("TextIndex"),
+   }
+
+	indexName, err := collection.Indexes().CreateOne(context.Background(), indexModel)
+	
+	if err != nil {
+		fmt.Printf("error creating text index for plugins collection %v", err)
+		return err
+	}
+
+	fmt.Printf("%s index on plugins collection created successfully\n", indexName)
+
+	return nil
+}
+
+
+func CountCollection(ctx context.Context, name string, filter bson.M) int64 {
+	collection := defaultMongoHandle.GetCollection(name)
+	count, err := collection.CountDocuments(ctx, filter)
+	if err != nil {
+		return 0
+	}
+	return count
 }

@@ -31,12 +31,7 @@ Once this data is passed, the api performs the operation and sends a response co
 
 Data Read
 ----------
-The data read operation occurs at the [GET]  /data/read/{plugin_id}/{collection_name}/{organization_id} endpoint.
-Once the api receives this request, it checks the internal record to validate that the plugin with this {plugin_id} is the one that created the {collection_name} for the org with this {organization_id}. Once this is established to be true, then access is granted and the api returns the data requested as an array.
-Extra simple mongodb query parameters can be passed as a url query param e.g ?title=this and the api uses it to query the database.
-To find an item by id, pass in the query parameter `id` or `_id` with the appropriate value . A single document/object is returned instead of a list if the item is found.
-
-An alternative implementation is exposed at the [POST] /data/read endpoint. The request payload expected is of the following format. 
+The current implementation is exposed at the [POST] /data/read endpoint. The request payload expected is of the following format. 
 ```jsonc
 {
     "plugin_id": "",
@@ -44,8 +39,9 @@ An alternative implementation is exposed at the [POST] /data/read endpoint. The 
     "organization_id": "",
     "object_id": "",
     "object_ids": [], // useful if you want to get results for a list of ids.
-    "filter": {}, // can be used in place of id to match documents by other fields.
-    "options": {} // contains query results modifiers.
+    "filter": {},  // can be used in place of id to match documents by other fields.
+    "options": {},  //[OPTIONAL] contains query results modifiers.
+    "raw_query": {}  // [OPTIONAL] if you are not satisfied with the filter object and are a mongodb wiz use this to send an object in regular mongoDB query language format. 
 }
 
 ```
@@ -55,6 +51,13 @@ the `filter` object should contain the field(s) you want to match and their valu
 - skip (integer): to set an offset value for the results.
 - sort (Object): field to sort by in descending (-1) or ascending order (1) e.g `"sort": {"name": 1}`
 - projection (Object): field to include (1) or exclude (0) in the results e.g `"projection": {"field": 1}`
+
+
+The old data read endpoint is exposed at the [GET]  /data/read/{plugin_id}/{collection_name}/{organization_id} endpoint.
+Once the api receives this request, it checks the internal record to validate that the plugin with this {plugin_id} is the one that created the {collection_name} for the org with this {organization_id}. Once this is established to be true, then access is granted and the api returns the data requested as an array.
+Extra simple mongodb query parameters can be passed as a url query param e.g ?title=this and the api uses it to query the database.
+To find an item by id, pass in the query parameter `id` or `_id` with the appropriate value . A single document/object is returned instead of a list if the item is found.
+**NOTE: This endpoint will be deprecated, switch to the POST endpoint.**
 
 
 Delete Data
