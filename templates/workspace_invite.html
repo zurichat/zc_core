@@ -6,7 +6,7 @@
   <meta name="description" content="">
   <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
   <meta name="generator" content="Hugo 0.88.1">
-
+  <meta name="theme-color" content="#000000">
   <title>Hngi8 mail Invite</title>
 <style>
   .main-div{
@@ -15,13 +15,7 @@ width: 50%;
 margin-right: auto !important;
 margin-left: auto !important;
   }
-  .social {
-    width: 25% !important;
-          display: flex;
-          justify-content: space-evenly;
-margin: 0.5rem auto !important;
 
-  }
   @media screen and (max-width: 680px){
     .main-div{
 width: 70%;
@@ -31,9 +25,7 @@ width: 70%;
     .main-div{
 width: 85%;
     }
-    .social {
-      width: 30% !important;
-    }
+   
   }
 </style>
 
@@ -119,7 +111,7 @@ border-radius: 0.3rem;
             </p>
 
             <h2 style="
-font-size: calc(1.425rem + 2.1vw);
+font-size: calc(1.375rem + 1.5vw);
 font-weight: 300;
 line-height: 1.2;
 font-weight: 700 !important;
@@ -128,7 +120,7 @@ margin: 0 !important;
             <p style="
 font-size: 1.25rem;
 font-weight: 300;
-width: 7.875rem !important;
+min-width: 7.875rem !important;
 margin: 1rem auto !important;
 ">
               <a type="button" href="{{.InviteLink}}" style="background-color:#00B87C;
@@ -220,7 +212,10 @@ text-align: center !important;
 --bs-text-opacity: 1;
 color: #6c757d !important;
 '>
-          <div class="social">
+          <div style="
+          margin-top: 0.5rem !important;
+          margin-bottom: 0.5rem !important;
+          ">
 
               <a href="#" style="margin: 0 0.1rem !important">      <img src="https://res.cloudinary.com/dkhysaggr/image/upload/v1633163808/qcrlootognyhjgqngjcl.png"
               alt="Girl in a jacket" width="16" height="16" /></a>

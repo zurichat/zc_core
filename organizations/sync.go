@@ -162,7 +162,7 @@ func HandleAddingMessage(pluginid, event string, message interface{}, ch chan er
 
 	newID := plugin.QueuePID + 1
 	newMessage := pluginp.MessageModel{
-		Id:      newID,
+		ID:      newID,
 		Event:   event,
 		Message: message,
 	}

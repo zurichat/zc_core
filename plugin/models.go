@@ -27,7 +27,6 @@ type Plugin struct {
 	IconURL        string             `json:"icon_url" bson:"icon_url"`
 	InstallCount   int64              `json:"install_count" bson:"install_count"`
 	Approved       bool               `json:"approved" bson:"approved"`
-	Deleted        bool               `json:"deleted" bson:"deleted"`
 	Images         []string           `json:"images,omitempty" bson:"images,omitempty"`
 	Version        string             `json:"version" bson:"version"`
 	Category       string             `json:"category" bson:"category"`
@@ -36,7 +35,7 @@ type Plugin struct {
 	CreatedAt      string             `json:"created_at" bson:"created_at"`
 	UpdatedAt      string             `json:"updated_at" bson:"updated_at"`
 	DeletedAt      string             `json:"deleted_at" bson:"deleted_at"`
-	SyncRequestUrl string             `json:"sync_request_url" bson:"sync_request_url"`
+	SyncRequestURL string             `json:"sync_request_url" bson:"sync_request_url"`
 	Queue          []MessageModel     `json:"queue" bson:"queue"`
 	QueuePID       int                `json:"queuepid" bson:"queuepid"`
 }
@@ -50,7 +49,7 @@ type Patch struct {
 	SidebarURL     *string  `json:"sidebar_url,omitempty"  bson:"sidebar_url,omitempty"`
 	InstallURL     *string  `json:"install_url,omitempty"  bson:"install_url,omitempty"`
 	TemplateURL    *string  `json:"template_url,omitempty"  bson:"template_url,omitempty"`
-	SyncRequestUrl *string  `json:"sync_request_url" bson:"sync_request_url"`
+	SyncRequestURL *string  `json:"sync_request_url" bson:"sync_request_url"`
 }
 
 func CreatePlugin(ctx context.Context, p *Plugin) error {
@@ -75,8 +74,10 @@ func CreatePlugin(ctx context.Context, p *Plugin) error {
 }
 
 func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
-	var p *Plugin
-	var bp *Plugin
+	var (
+		p  *Plugin
+		bp *Plugin
+	)
 
 	objID, err := primitive.ObjectIDFromHex(id)
 
@@ -87,20 +88,26 @@ func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 	res, _ := utils.GetMongoDBDoc(PluginCollectionName, bson.M{"_id": objID, "deleted": false})
 
 	bsonBytes, err := bson.Marshal(res)
-	bson.Unmarshal(bsonBytes, &p)
 
 	if err != nil {
 		return nil, err
 	}
-	if err = mapstructure.Decode(res, &bp); err != nil {
+
+	err = bson.Unmarshal(bsonBytes, &p)
+	if err != nil {
 		return nil, err
 	}
+
+	if err := mapstructure.Decode(res, &bp); err != nil {
+		return nil, err
+	}
+
 	p.Queue = bp.Queue
 
 	return p, nil
 }
 
-func FindPlugins(ctx context.Context, filter bson.M) ([]*Plugin, error) {
+func FindPlugins(ctx context.Context, filter bson.M, opts ...*options.FindOptions) ([]*Plugin, error) {
 	ps := []*Plugin{}
 
 	cursor, err := utils.GetMongoDBDocs(PluginCollectionName, filter)
@@ -110,11 +117,25 @@ func FindPlugins(ctx context.Context, filter bson.M) ([]*Plugin, error) {
 	}
 
 	for _, plng := range cursor {
-		var nps *Plugin
-		var bp *Plugin
-		bsonBytes, _ := bson.Marshal(plng)
-		bson.Unmarshal(bsonBytes, &nps)
-		mapstructure.Decode(plng, &bp)
+		var (
+			nps *Plugin
+			bp  *Plugin
+		)
+
+		bsonBytes, err := bson.Marshal(plng)
+		if err != nil {
+			return nil, err
+		}
+
+		err = bson.Unmarshal(bsonBytes, &nps)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := mapstructure.Decode(plng, &bp); err != nil {
+			return nil, err
+		}
+
 		nps.Queue = bp.Queue
 		ps = append(ps, nps)
 	}
@@ -165,14 +186,15 @@ func updatePlugin(ctx context.Context, id string, pp *Patch) error {
 	}
 
 	if pp.TemplateURL != nil {
-		set["template_url"] = *(pp.Description)
+		set["template_url"] = *(pp.TemplateURL)
 	}
 
 	if pp.Version != nil {
 		set["version"] = *(pp.Version)
 	}
-	if pp.SyncRequestUrl != nil {
-		set["sync_request_url"] = *(pp.SyncRequestUrl)
+
+	if pp.SyncRequestURL != nil {
+		set["sync_request_url"] = *(pp.SyncRequestURL)
 	}
 
 	if pp.Images != nil {
@@ -196,7 +218,7 @@ type SyncUpdateRequest struct {
 }
 
 type MessageModel struct {
-	Id      int         `json:"id" bson:"id"`
+	ID      int         `json:"id" bson:"id"`
 	Event   string      `json:"event" bson:"event"`
 	Message interface{} `json:"message" bson:"message"`
 }

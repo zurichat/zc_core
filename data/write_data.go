@@ -21,7 +21,8 @@ type writeDataRequest struct {
 	ObjectID       string                 `json:"object_id,omitempty"`
 	Filter         map[string]interface{} `json:"filter"`
 	Payload        interface{}            `json:"payload,omitempty"`
-	RawQuery       interface{}            `json:"raw_query,omitempty"`
+	Document       map[string]interface{}
+	RawQuery       interface{} `json:"raw_query,omitempty"`
 }
 
 // WriteData handles data mutation operations(write, update, delete) for plugins.
@@ -38,14 +39,6 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 		utils.GetError(errors.New(msg), http.StatusNotFound, w)
 
 		return
-	}
-
-	// if plugin is writing to this collection the first time, we create a record linking this collection to the plugin.
-	if !pluginHasCollection(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName) {
-		if err := createPluginCollectionRecord(reqData.PluginID, reqData.OrganizationID, reqData.CollectionName); err != nil {
-			utils.GetError(err, http.StatusInternalServerError, w)
-			return
-		}
 	}
 
 	w.Header().Set("content-type", "application/json")
@@ -69,7 +62,9 @@ func (wdr *writeDataRequest) handlePost(w http.ResponseWriter, _ *http.Request) 
 		payload = []interface{}{wdr.Payload}
 	}
 
-	res, err := insertMany(wdr.prefixCollectionName(), payload)
+	actualCollName := mongoCollectionName(wdr.PluginID, wdr.CollectionName)
+	res, err := insertMany(actualCollName, wdr.OrganizationID, payload)
+	
 	if err != nil {
 		utils.GetError(fmt.Errorf("an error occurred: %v", err), http.StatusInternalServerError, w)
 		return
@@ -95,15 +90,20 @@ func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, _ *http.Request) {
 	var res *mongo.UpdateResult
 
 	filter := make(map[string]interface{})
-	collName := wdr.prefixCollectionName()
+	collName := mongoCollectionName(wdr.PluginID, wdr.CollectionName)
 
+    //nolint:gocritic // dod-san: ignore if else-if chain
 	if wdr.ObjectID != "" {
 		filter["_id"] = wdr.ObjectID
-	} else {
+	} else if wdr.Filter != nil {
 		filter = wdr.Filter
+	}else {
+		utils.GetError(errors.New("object id or filter object not specified"), http.StatusUnprocessableEntity, w)
+		return
 	}
 
 	filter["deleted"] = bson.M{"$ne": true}
+	filter["organization_id"] = wdr.OrganizationID
 	normalizeIDIfExists(filter)
 
 	if wdr.RawQuery != nil {
@@ -125,18 +125,36 @@ func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, _ *http.Request) {
 	utils.GetSuccess("success", data, w)
 }
 
-func (wdr *writeDataRequest) prefixCollectionName() string {
-	return getPrefixedCollectionName(wdr.PluginID, wdr.OrganizationID, wdr.CollectionName)
+func mongoCollectionName(pluginID, pluginCollName string) string {
+	return fmt.Sprintf("%s__%s", pluginID, pluginCollName)
 }
 
-func insertMany(collName string, data interface{}) (*mongo.InsertManyResult, error) {
+func insertMany(collName, orgID string, data interface{}) (*mongo.InsertManyResult, error) {
 	docs, ok := data.([]interface{})
 
 	if !ok {
-		return nil, errors.New("invalid object type, payload must be an array of objects")
+		return nil, errors.New("insert: invalid object type, payload must be an array of objects")
+	}
+
+	if err := modifyDocs(docs, orgID); err != nil {
+		return nil, err
 	}
 
 	return utils.CreateManyMongoDBDocs(collName, docs)
+}
+
+func modifyDocs(docs []interface{}, orgID string) error {
+	for _, doc := range docs {
+		x, ok := doc.(map[string]interface{})
+
+		if !ok {
+			return errors.New("modify: invalid object type, payload must be an array of objects")
+		}
+
+		x["organization_id"] = orgID
+	}
+
+	return nil
 }
 
 func updateMany(collName string, filter map[string]interface{}, upd interface{}) (*mongo.UpdateResult, error) {

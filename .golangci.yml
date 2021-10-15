@@ -105,3 +105,4 @@ run:
     - utils
   skip-files:
     - main.go
+    - _test\.go 
