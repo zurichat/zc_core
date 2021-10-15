@@ -792,3 +792,80 @@ func (oh *OrganizationHandler) UpdateOrganizationAuthentication(w http.ResponseW
 
 	utils.GetSuccess("organization settings updated successfully", nil, w)
 }
+
+// Custom Orgainization Emojis
+func (oh *OrganizationHandler) CustomEmoji(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("content-Type", "application/json")
+
+	orgID := mux.Vars(r)["id"]
+	memID := mux.Vars(r)["mem_id"]
+
+	// check that org_id is valid
+	err := ValidateOrg(orgID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	// check that member_id is valid
+	err = ValidateMember(orgID, memID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	var emoji CustomEmoji
+	err = utils.ParseJSONFromRequest(r, &emoji)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	// fetches the details of the member uploading the emoji
+	orgMember, err := FetchMember(bson.M{"org_id": orgID, "_id": memID})
+
+	if err != nil {
+		utils.GetError(errors.New("user not a member of this work space"), http.StatusBadRequest, w)
+		return
+	}
+
+	emoji.DateAdded = time.Now().Local()
+	uploadPath := "custom-emoji/" + orgID
+	emoji.EmojiName = ":" + emoji.EmojiName + ":"
+	emoji.MemberName = orgMember.FirstName + "" + orgMember.LastName
+
+
+	imgURL, err := service.ProfileImageUpload(uploadPath, r)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	emoji.EmojiUrl = imgURL
+
+	// convert struct to map
+	emojiStruct, err := utils.StructToMap(emoji)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	update, err := utils.UpdateOneMongoDBDoc(OrganizationCollectionName, orgID, emojiStruct)
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	eventChannel := fmt.Sprintf("organizations_%s", orgID)
+	event := utils.Event{Identifier: orgID, Type: "Organization", Event: UpdateOrganizationCustomEmoji, Channel: eventChannel, Payload: make(map[string]interface{})}
+
+	go utils.Emitter(event)
+
+	utils.GetSuccess("emoji added successfully", imgURL, w)
+}

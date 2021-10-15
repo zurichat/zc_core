@@ -25,6 +25,7 @@ const (
 	UpdateOrganizationMemberPic           = "UpdateOrganizationMemberPic"
 	UpdateOrganizationURL                 = "UpdateOrganizationUrl"
 	UpdateOrganizationLogo                = "UpdateOrganizationLogo"
+	UpdateOrganizationCustomEmoji		  = "UpdateOrganizationCustomEmoji"
 	DeactivateOrganizationMember          = "DeactivateOrganizationMember"
 	ReactivateOrganizationMember          = "ReactivateOrganizationMember"
 	UpdateOrganizationMemberStatus        = "UpdateOrganizationMemberStatus"
@@ -85,6 +86,15 @@ type Organization struct {
 	Tokens       float64                  `json:"tokens" bson:"tokens"`
 	Version      string                   `json:"version" bson:"version"`
 	Billing      Billing                  `json:"billing" bson:"billing"`
+	CustomEmoji	 []CustomEmoji			  `json:"custom_emoji" bson:"custom_emoji"`
+}
+
+type CustomEmoji struct {
+	EmojiID		primitive.ObjectID 		`json:"emoji_id" bson:"emoji_id"`
+	EmojiUrl	string					`json:"emoji_url" bson:"emoji_url"`
+	EmojiName	string					`json:"emoji_name" bson:"emoji_name"`
+	DateAdded	time.Time				`json:"date_added" bson:"date_added"`
+	MemberName	string					`json:"member_name" bson:"member_name"`
 }
 
 type Billing struct {
