@@ -25,11 +25,11 @@ type Report struct {
 }
 
 
-type ReportHandler struct {
+type Handler struct {
 	configs     *utils.Configurations
 	mailService service.MailService
 }
 
-func NewReportHandler(c *utils.Configurations, mail service.MailService) *ReportHandler {
-	return &ReportHandler{configs: c, mailService: mail}
+func NewReportHandler(c *utils.Configurations, mail service.MailService) *Handler {
+	return &Handler{configs: c, mailService: mail}
 }

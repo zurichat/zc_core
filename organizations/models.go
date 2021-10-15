@@ -484,7 +484,7 @@ type EnterLeaveMessage struct {
 }
 
 type MemberIDS struct {
-	IdList []string `json:"id_list" bson:"id_list" validate:"required"`
+	IDList []string `json:"id_list" bson:"id_list" validate:"required"`
 }
 
 type HandleMemberSearchResponse struct {

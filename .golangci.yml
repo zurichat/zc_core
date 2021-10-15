@@ -90,19 +90,19 @@ issues:
 run:
   issues-exit-code: 1
   skip-dirs:
-    - blog
-    - contact
-    - marketplace
-    # - organizations
-    - plugin
-    - data
-    - external
-    - messaging
-    - report
-    - realtime
-    - service
-    - user
-    - utils
+    # - blog
+    # - contact
+    # - marketplace
+    - organizations
+    # - plugin
+    # - data
+    # - external
+    # - messaging
+    # - report
+    # - realtime
+    # - service
+    # - user
+    # - utils
   skip-files:
     - main.go
     - _test\.go 
