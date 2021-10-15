@@ -88,7 +88,7 @@ type Organization struct {
 }
 
 type Billing struct {
-	Settings BillingSetting
+	Settings BillingSetting 	`json:"billing_setting" bson:"billing_setting"`
 }
 
 type BillingSetting struct {

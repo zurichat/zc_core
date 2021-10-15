@@ -93,7 +93,7 @@ run:
     - blog
     - contact
     - marketplace
-    - organizations
+    # - organizations
     - plugin
     - data
     - external
