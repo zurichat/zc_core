@@ -242,9 +242,9 @@ type Settings struct {
 }
 
 type Customize struct {
-	Prefixes       []ChannelPrefixes `json:"prefixes" bson:"prefixes"`
-	AddCustomEmoji CustomEmoji       `json:"addcustomemoji" bson:"addcustomemoji"`
-	SlackBot       []SlackBot        `json:"slackbot" bson:"slackbot"`
+	Prefixes       ChannelPrefixes `json:"prefixes" bson:"prefixes"`
+	AddCustomEmoji CustomEmoji     `json:"addcustomemoji" bson:"addcustomemoji"`
+	SlackBot       SlackBot        `json:"slackbot" bson:"slackbot"`
 }
 
 type SlackBot struct {
