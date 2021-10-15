@@ -3,24 +3,24 @@ ZC_CORE [![Go Reference](https://zuri.chat/b73fbbfa9db45fc3c22e.svg)](https://do
 
 # Zuri Chat Core Api <img align='right' src="https://zuri.chat/b73fbbfa9db45fc3c22e.svg" width='100"'>
 
-See the docs for everything:https://docs.zuri.chat/
+See the docs for everything: [Zuri Chat Documentation](https://docs.zuri.chat/)
 
 ![GitHub repo size](https://img.shields.io/github/repo-size/zurichat/zc_core?style=flat-square)
 
 ## Description
 
-The Zuri Chat Core (zc_core) is an open source API that serves as the backend and backbone of Zuri Chat - an open source slack clone developed during the HNG8 internship program 
+The Zuri Chat Core (ZC_Core) is an open source API that serves as the backend and backbone of Zuri Chat - an open source slack clone developed during the HNG8 internship program 
 
-Zuri Chat implements a plug-in system that allows for much more functionality because different plugins can be developed by different creators. These plugins can then rest on the Zuri Chat Core backbone (zc_core) which is written in **Golang**
+Zuri Chat implements a plug-in system that allows for much more functionality because different plugins can be developed by different creators. These plugins can then rest on the Zuri Chat Core backbone (ZC_Core) which is written in **Golang**
 
 ## Language
 
-zc_core was written in Go because it is a fast, compiled language and it is easily scaled. Concurrency in Go is also ideal for implementing a plugin structure. This makes it easy to build on the project and allows for future expansion.
+ZC_Core was written in Go because it is a fast, compiled language and it is easily scaled. Concurrency in Go is also ideal for implementing a plugin structure. This makes it easy to build on the project and allows for future expansion.
 * [Golang](https://golang.org)
 
 ## API Documentation
 
-A list of the endpoints and the functions they implement can be found in the API folder that contains YAML files for each of the functionalities
+A list of the endpoints and the functions they implement can be found [here](https://docs.zuri.chat/) detailing information about the all API resources.
 
 ## Getting Started
 

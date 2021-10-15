@@ -849,11 +849,6 @@ func (oh *OrganizationHandler) UpdateMemberMessageAndMediaSettings(w http.Respon
 		return
 	}
 
-	if _, ok := MsgMedias[messageAndMediaSettings.Theme]; !ok {
-		utils.GetError(errors.New("theme is not valid"), http.StatusBadRequest, w)
-		return
-	}
-
 	if _, ok := MsgMedias[messageAndMediaSettings.Names]; !ok {
 		utils.GetError(errors.New("name is not valid"), http.StatusBadRequest, w)
 		return
@@ -987,11 +982,6 @@ func (oh *OrganizationHandler) UpdateMemberAdvancedSettings(w http.ResponseWrite
 	err = utils.ParseJSONFromRequest(r, &advancedSettings)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
-	}
-
-	if _, ok := EnterActions[advancedSettings.PressEnterTo]; !ok {
-		utils.GetError(errors.New("invalid enter action"), http.StatusBadRequest, w)
 		return
 	}
 
@@ -1231,8 +1221,16 @@ func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *htt
 		utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, w)
 		return
 	}
+	// update invite status
+	inviteID := res["_id"].(primitive.ObjectID).Hex()
 
-	utils.GetSuccess("Member created successfully", utils.M{"member_id": resp.InsertedID}, w)
+	_, err = utils.UpdateOneMongoDBDoc(OrganizationInviteCollection, inviteID, bson.M{"has_accepted": true})
+	if err != nil {
+		utils.GetError(errors.New("invite update failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("Member created successfully", utils.M{"member_id": resp.InsertedID, "organization_id": orgID}, w)
 }
 
 func (oh *OrganizationHandler) UpdateMemberRole(w http.ResponseWriter, r *http.Request) {

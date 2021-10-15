@@ -26,7 +26,6 @@ type Plugin struct {
 	IconURL        string             `json:"icon_url" bson:"icon_url"`
 	InstallCount   int64              `json:"install_count" bson:"install_count"`
 	Approved       bool               `json:"approved" bson:"approved"`
-	Deleted        bool               `json:"deleted" bson:"deleted"`
 	Images         []string           `json:"images,omitempty" bson:"images,omitempty"`
 	Version        string             `json:"version" bson:"version"`
 	Category       string             `json:"category" bson:"category"`
@@ -74,7 +73,8 @@ func CreatePlugin(ctx context.Context, p *Plugin) error {
 }
 
 func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
-	p := new(Plugin)
+	p := &Plugin{}
+
 	objID, err := primitive.ObjectIDFromHex(id)
 
 	if err != nil {
@@ -82,7 +82,7 @@ func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 	}
 
 	collection := utils.GetCollection(PluginCollectionName)
-	res := collection.FindOne(ctx, bson.M{"_id": objID, "deleted": M{"$ne": true}})
+	res := collection.FindOne(ctx, bson.M{"_id": objID })
 
 	if err := res.Decode(p); err != nil {
 		return nil, err
@@ -91,11 +91,11 @@ func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 	return p, nil
 }
 
-func FindPlugins(ctx context.Context, filter bson.M) ([]*Plugin, error) {
+func FindPlugins(ctx context.Context, filter bson.M, opts ...*options.FindOptions) ([]*Plugin, error) {
 	ps := []*Plugin{}
-	collection := utils.GetCollection(PluginCollectionName)
 
-	cursor, err := collection.Find(ctx, filter)
+    collection := utils.GetCollection(PluginCollectionName)
+	cursor, err := collection.Find(ctx, filter, opts...)
 
 	if err != nil {
 		return nil, err

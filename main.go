@@ -42,13 +42,13 @@ func Router(server *socketio.Server) *mux.Router {
 	configs := utils.NewConfigurations()
 	mailService := service.NewZcMailService(configs)
 
+	orgs := organizations.NewOrganizationHandler(configs, mailService)
+	exts := external.NewExternalHandler(configs, mailService)
+	reps := report.NewReportHandler(configs, mailService)
 	au := auth.NewAuthHandler(configs, mailService)
 	us := user.NewUserHandler(configs, mailService)
-	exts := external.NewExternalHandler(configs, mailService)
-	orgs := organizations.NewOrganizationHandler(configs, mailService)
-	reps := report.NewReportHandler(configs, mailService)
 	gql := utils.NewGraphQlHandler(configs)
-	
+
 	// Setup and init
 	r.HandleFunc("/", VersionHandler)
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
@@ -95,6 +95,7 @@ func Router(server *socketio.Server) *mux.Router {
 
 	// Organization: Guest Invites
 	r.HandleFunc("/organizations/{id}/send-invite", au.IsAuthenticated(au.IsAuthorized(orgs.SendInvite, "admin"))).Methods("POST")
+	r.HandleFunc("/organizations/{id}/invite-stats", au.IsAuthenticated(au.IsAuthorized(orgs.InviteStats, "admin"))).Methods("GET")
 	r.HandleFunc("/organizations/invites/{uuid}", orgs.CheckGuestStatus).Methods(http.MethodGet)
 	r.HandleFunc("/organizations/guests/{uuid}", orgs.GuestToOrganization).Methods(http.MethodPost)
 
@@ -144,10 +145,8 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/data/read", data.NewRead).Methods("POST")
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
 	r.HandleFunc("/data/delete", data.DeleteData).Methods("POST")
-	r.HandleFunc("/data/collections/details/{plugin_id}/{coll_name}/{org_id}", data.CollectionDetail).Methods("GET")
-	r.HandleFunc("/data/collections/{plugin_id}", data.ListCollections).Methods("GET")
-	r.HandleFunc("/data/collections/{plugin_id}/{org_id}", data.ListCollections).Methods("GET")
-
+	r.HandleFunc("/data/collections/info/{plugin_id}/{coll_name}/{org_id}", data.CollectionDetail).Methods("GET")
+	
 	// Plugins
 	r.HandleFunc("/plugins/register", plugin.Register).Methods("POST")
 	r.HandleFunc("/plugins/{id}", plugin.Update).Methods("PATCH")
@@ -158,6 +157,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/marketplace/plugins", marketplace.GetAllPlugins).Methods("GET")
 	r.HandleFunc("/marketplace/plugins/popular", marketplace.GetPopularPlugins).Methods("GET")
 	r.HandleFunc("/marketplace/plugins/recommended", marketplace.GetRecomendedPlugins).Methods("GET")
+	r.HandleFunc("/marketplace/plugins/search", marketplace.Search).Methods("GET")
 	r.HandleFunc("/marketplace/plugins/{id}", marketplace.GetPlugin).Methods("GET")
 	r.HandleFunc("/marketplace/plugins/{id}", marketplace.RemovePlugin).Methods("DELETE")
 
@@ -186,11 +186,6 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/external/download-client", exts.DownloadClient).Methods("GET")
 	r.HandleFunc("/external/send-mail", exts.SendMail).Queries("custom_mail", "{custom_mail:[0-9]+}").Methods("POST")
 
-	// Ping endpoint
-	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		utils.GetSuccess("Server is live", nil, w)
-	})
-
 	// file upload
 	r.HandleFunc("/upload/file/{plugin_id}", au.IsAuthenticated(service.UploadOneFile)).Methods("POST")
 	r.HandleFunc("/upload/files/{plugin_id}", au.IsAuthenticated(service.UploadMultipleFiles)).Methods("POST")
@@ -201,11 +196,16 @@ func Router(server *socketio.Server) *mux.Router {
 	// graphql
 	schema, _ := graphql.NewSchema(gql.LoadGraphQlSchema())
 	h := handler.New(&handler.Config{
-		Schema: &schema,
-		Pretty: true,
+		Schema:   &schema,
+		Pretty:   true,
 		GraphiQL: true,
 	})
 	r.Handle("/graphql", h)
+
+	// Ping endpoint
+	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		utils.GetSuccess("Server is live", nil, w)
+	})	
 
 	// Home
 	http.Handle("/", r)
@@ -292,7 +292,7 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func RequestDurationMiddleware(h http.Handler) http.Handler {
-	const durationLimit = 10 
+	const durationLimit = 10
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -303,11 +303,10 @@ func RequestDurationMiddleware(h http.Handler) http.Handler {
 			m := make(map[string]interface{})
 			m["timeTaken"] = duration.Seconds()
 
-			
 			if duration.Seconds() < durationLimit {
 				return
 			}
-			
+
 			scheme := "http"
 
 			if r.TLS != nil {
