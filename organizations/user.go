@@ -514,7 +514,6 @@ func (oh *OrganizationHandler) RemoveStatusHistory(w http.ResponseWriter, r *htt
 	orgID, memberID := vars["id"], vars["mem_id"]
 
 	historyID, err := strconv.Atoi(vars["history_index"])
-	log.Println("history id: ", historyID)
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
@@ -586,8 +585,6 @@ func (oh *OrganizationHandler) RemoveStatusHistory(w http.ResponseWriter, r *htt
 	}
 
 	utils.GetSuccess("status history successfully deleted", nil, w)
-
-	// call jb
 }
 
 // Delete single member from an organization.
