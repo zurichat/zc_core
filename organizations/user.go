@@ -453,17 +453,20 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		ExpiryHistory: status.ExpiryTime,
 	}
 
-	for i, history := range prevStatus.StatusHistory {
-		if history.TextHistory == newHistory.TextHistory && history.TagHistory == newHistory.TagHistory {
-			prevStatus.StatusHistory = RemoveHistoryAtIndex(prevStatus.StatusHistory, i)
-			prevStatus.StatusHistory = InsertHistoryAtIndex(prevStatus.StatusHistory, newHistory, 0)
-			break
+	if prevStatus.StatusHistory == nil {
+		prevStatus.StatusHistory = []StatusHistory{newHistory}
+	} else {
+		for i, history := range prevStatus.StatusHistory {
+			if history.TextHistory == newHistory.TextHistory && history.TagHistory == newHistory.TagHistory {
+				prevStatus.StatusHistory = RemoveHistoryAtIndex(prevStatus.StatusHistory, i)
+				break
+			}
 		}
-		prevStatus.StatusHistory = InsertHistoryAtIndex(prevStatus.StatusHistory, newHistory, 0)
-	}
 
-	if len(prevStatus.StatusHistory) > StatusHistoryLimit {
-		prevStatus.StatusHistory = prevStatus.StatusHistory[:StatusHistoryLimit]
+		prevStatus.StatusHistory = InsertHistoryAtIndex(prevStatus.StatusHistory, newHistory, 0)
+		if len(prevStatus.StatusHistory) > StatusHistoryLimit {
+			prevStatus.StatusHistory = prevStatus.StatusHistory[:StatusHistoryLimit]
+		}
 	}
 
 	status.StatusHistory = prevStatus.StatusHistory
@@ -504,13 +507,14 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 	utils.GetSuccess("status updated successfully", nil, w)
 }
 
-func (oh *OrganizationHandler) DeleteStatusHistory(w http.ResponseWriter, r *http.Request) {
+func (oh *OrganizationHandler) RemoveStatusHistory(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	vars := mux.Vars(r)
 	orgID, memberID := vars["id"], vars["mem_id"]
 
 	historyID, err := strconv.Atoi(vars["history_index"])
+	log.Println("history id: ", historyID)
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
