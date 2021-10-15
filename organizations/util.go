@@ -277,3 +277,11 @@ func HandleMemberSearch(orgID string, memberId string, ch chan HandleMemberSearc
 	resp := HandleMemberSearchResponse{Memberinfo: member, Err: nil}
 	ch <- resp
 }
+
+func RemoveHistoryAtIndex(s []StatusHistory, index int) []StatusHistory {
+	return append(s[:index], s[index+1:]...)
+}
+
+func InsertHistoryAtIndex(s []StatusHistory, history StatusHistory, index int) []StatusHistory {
+	return append(s[:index], append([]StatusHistory{history}, s[index:]...)...)
+}

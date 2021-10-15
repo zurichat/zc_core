@@ -112,6 +112,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/reactivate", au.IsAuthenticated(au.IsAuthorized(orgs.ReactivateMember, "admin"))).Methods("POST")
 
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/status", au.IsAuthenticated(orgs.UpdateMemberStatus)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/status/remove-history/{history_index}", au.IsAuthenticated(orgs.RemoveStatusHistory)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/photo/{action}", au.IsAuthenticated(orgs.UpdateProfilePicture)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/profile", au.IsAuthenticated(orgs.UpdateProfile)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/presence", au.IsAuthenticated(orgs.TogglePresence)).Methods("POST")
@@ -146,7 +147,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
 	r.HandleFunc("/data/delete", data.DeleteData).Methods("POST")
 	r.HandleFunc("/data/collections/info/{plugin_id}/{coll_name}/{org_id}", data.CollectionDetail).Methods("GET")
-	
+
 	// Plugins
 	r.HandleFunc("/plugins/register", plugin.Register).Methods("POST")
 	r.HandleFunc("/plugins/{id}", plugin.Update).Methods("PATCH")
@@ -205,7 +206,7 @@ func Router(server *socketio.Server) *mux.Router {
 	// Ping endpoint
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		utils.GetSuccess("Server is live", nil, w)
-	})	
+	})
 
 	// Home
 	http.Handle("/", r)
