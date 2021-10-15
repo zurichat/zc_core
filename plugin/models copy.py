@@ -27,6 +27,7 @@ type Plugin struct {
 	IconURL        string             `json:"icon_url" bson:"icon_url"`
 	InstallCount   int64              `json:"install_count" bson:"install_count"`
 	Approved       bool               `json:"approved" bson:"approved"`
+	Deleted        bool               `json:"deleted" bson:"deleted"`
 	Images         []string           `json:"images,omitempty" bson:"images,omitempty"`
 	Version        string             `json:"version" bson:"version"`
 	Category       string             `json:"category" bson:"category"`
@@ -35,7 +36,7 @@ type Plugin struct {
 	CreatedAt      string             `json:"created_at" bson:"created_at"`
 	UpdatedAt      string             `json:"updated_at" bson:"updated_at"`
 	DeletedAt      string             `json:"deleted_at" bson:"deleted_at"`
-	SyncRequestURL string             `json:"sync_request_url" bson:"sync_request_url"`
+	SyncRequestUrl string             `json:"sync_request_url" bson:"sync_request_url"`
 	Queue          []MessageModel     `json:"queue" bson:"queue"`
 	QueuePID       int                `json:"queuepid" bson:"queuepid"`
 }
@@ -49,7 +50,7 @@ type Patch struct {
 	SidebarURL     *string  `json:"sidebar_url,omitempty"  bson:"sidebar_url,omitempty"`
 	InstallURL     *string  `json:"install_url,omitempty"  bson:"install_url,omitempty"`
 	TemplateURL    *string  `json:"template_url,omitempty"  bson:"template_url,omitempty"`
-	SyncRequestURL *string  `json:"sync_request_url" bson:"sync_request_url"`
+	SyncRequestUrl *string  `json:"sync_request_url" bson:"sync_request_url"`
 }
 
 func CreatePlugin(ctx context.Context, p *Plugin) error {
@@ -99,7 +100,7 @@ func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 	return p, nil
 }
 
-func FindPlugins(ctx context.Context, filter bson.M, opts ...*options.FindOptions) ([]*Plugin, error) {
+func FindPlugins(ctx context.Context, filter bson.M) ([]*Plugin, error) {
 	ps := []*Plugin{}
 
 	cursor, err := utils.GetMongoDBDocs(PluginCollectionName, filter)
@@ -165,15 +166,14 @@ func updatePlugin(ctx context.Context, id string, pp *Patch) error {
 	}
 
 	if pp.TemplateURL != nil {
-		set["template_url"] = *(pp.TemplateURL)
+		set["template_url"] = *(pp.Description)
 	}
 
 	if pp.Version != nil {
 		set["version"] = *(pp.Version)
 	}
-
-	if pp.SyncRequestURL != nil {
-		set["sync_request_url"] = *(pp.SyncRequestURL)
+	if pp.SyncRequestUrl != nil {
+		set["sync_request_url"] = *(pp.SyncRequestUrl)
 	}
 
 	if pp.Images != nil {
@@ -197,7 +197,7 @@ type SyncUpdateRequest struct {
 }
 
 type MessageModel struct {
-	ID      int         `json:"id" bson:"id"`
+	Id      int         `json:"id" bson:"id"`
 	Event   string      `json:"event" bson:"event"`
 	Message interface{} `json:"message" bson:"message"`
 }

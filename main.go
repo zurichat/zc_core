@@ -119,7 +119,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/role", au.IsAuthenticated(au.IsAuthorized(orgs.UpdateMemberRole, "admin"))).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/notification", au.IsAuthenticated(orgs.UpdateNotification)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/theme", au.IsAuthenticated(orgs.UpdateUserTheme)).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/mark-as-read", au.IsAuthenticated(orgs.UpdateMarkAsRead)).Methods("PATCH")
+	// r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/mark-as-read", au.IsAuthenticated(orgs.UpdateMarkAsRead)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/message-media", au.IsAuthenticated(orgs.UpdateMemberMessageAndMediaSettings)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/accessibility", au.IsAuthenticated(orgs.UpdateMemberAccessibilitySettings)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/languages-and-region", au.IsAuthenticated(orgs.SetLanguagesAndRegions)).Methods("PATCH")
@@ -146,7 +146,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
 	r.HandleFunc("/data/delete", data.DeleteData).Methods("POST")
 	r.HandleFunc("/data/collections/info/{plugin_id}/{coll_name}/{org_id}", data.CollectionDetail).Methods("GET")
-	
+
 	// Plugins
 	r.HandleFunc("/plugins/register", plugin.Register).Methods("POST")
 	r.HandleFunc("/plugins/{id}", plugin.Update).Methods("PATCH")
@@ -205,7 +205,7 @@ func Router(server *socketio.Server) *mux.Router {
 	// Ping endpoint
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		utils.GetSuccess("Server is live", nil, w)
-	})	
+	})
 
 	// Home
 	http.Handle("/", r)
