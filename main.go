@@ -88,6 +88,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/url", au.IsAuthenticated(orgs.UpdateURL)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/name", au.IsAuthenticated(orgs.UpdateName)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/logo", au.IsAuthenticated(orgs.UpdateLogo)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/custom-emoji", au.IsAuthenticated(orgs.CustomEmoji)).Methods("POST")
 
 	r.HandleFunc("/organizations/{id}/settings", au.IsAuthenticated(orgs.UpdateOrganizationSettings)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/permission", au.IsAuthenticated(orgs.UpdateOrganizationPermission)).Methods("PATCH")
