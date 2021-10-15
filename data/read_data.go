@@ -31,6 +31,7 @@ func ReadData(w http.ResponseWriter, r *http.Request) {
 	if _, exists := filter["_id"]; exists && len(docs) == 1 {
 		delete(docs[0], "organization_id")
 		utils.GetSuccess("success", docs[0], w)
+		
 		return
 	}
 
@@ -91,6 +92,7 @@ func (r *readDataRequest) getIDString() string {
 	if id, exists := r.Filter["id"]; exists {
 		return id.(string)
 	}
+	
 	return ""
 }
 
@@ -116,7 +118,7 @@ func NewRead(w http.ResponseWriter, r *http.Request) {
 
 	if reqData.containsID() {
 		id := reqData.getIDString()
-		var opts *options.FindOneOptions
+		opts := new(options.FindOneOptions)
 		filter["_id"] = mustObjectIDFromHex(id)
 
 		if r := reqData.ReadOptions; r != nil {
@@ -132,6 +134,7 @@ func NewRead(w http.ResponseWriter, r *http.Request) {
 
 		delete(doc, "organization_id")
 		utils.GetSuccess("success", doc, w)
+		
 		return
 	}
 

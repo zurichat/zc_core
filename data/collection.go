@@ -9,7 +9,7 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
-// CollectionDetail returns details about a collection
+// CollectionDetail returns details about a collection.
 func CollectionDetail(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
