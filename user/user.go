@@ -71,6 +71,7 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 
 	con := &UserEmailVerification{false, comfimationToken, time.Now().Add(time.Minute * time.Duration(timeLimit))}
 
+	user.Email = userEmail
 	user.CreatedAt = time.Now()
 	user.Password = hashPassword
 	user.Deactivated = false
