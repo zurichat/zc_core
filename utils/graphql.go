@@ -19,7 +19,7 @@ type GraphQlHandler struct {
 	configs *Configurations
 }
 
-// Utils
+// Utils.
 var ObjectID = graphql.NewScalar(graphql.ScalarConfig{
 	Name:        "BSON",
 	Description: "The `bson` scalar type represents a BSON Object.",
@@ -56,7 +56,7 @@ var ObjectID = graphql.NewScalar(graphql.ScalarConfig{
 	},
 })
 
-// ********** Users **********
+// ********** Users **********.
 var userType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Users",
@@ -73,7 +73,7 @@ var userType = graphql.NewObject(
 	},
 )
 
-// ********** Orgnisation **********
+// ********** Orgnisation **********.
 var organizationType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Organizations",
