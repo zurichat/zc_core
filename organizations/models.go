@@ -234,7 +234,6 @@ type Settings struct {
 	ChatSettings        ChatSettings        `json:"chat_settings" bson:"chat_settings"`
 	LanguagesAndRegions LanguagesAndRegions `json:"languages_and_regions" bson:"languages_and_regions"`
 	Accessibility       Accessibility       `json:"accessibility" bson:"accessibility"`
-	MarkAsRead          MarkAsRead          `json:"mark_as_read" bson:"mark_as_read"`
 	Advanced            Advanced            `json:"advanced" bson:"advanced"`
 	AudioAndVideo       AudioAndVideo       `json:"audio_and_video" bson:"audio_and_video"`
 	PluginSettings      []PluginSettings    `json:"plugin_settings" bson:"plugin_settings"`
@@ -280,22 +279,13 @@ type MessageSettings struct {
 }
 
 type Notifications struct {
-	NotifyMeAbout                    string                 `json:"notify_me_about" bson:"notify_me_about"`
-	UseDifferentSettingsForMyMobile  bool                   `json:"use_different_settings_mobile" bson:"use_different_settings_mobile"`
 	ChannelHurdleNotification        bool                   `json:"channel_hurdle_notification" bson:"channel_hurdle_notification"`
-	MeetingRepliesNotification       bool                   `json:"meeting_replies_notification" bson:"meeting_replies_notification"`
-	ThreadRepliesNotification        bool                   `json:"thread_replies_notification" bson:"thread_replies_notification"`
-	MyKeywords                       []string               `json:"my_keywords" bson:"my_keywords"`
 	NotificationSchedule             NotificationSchedule   `json:"notification_schedule" bson:"notification_schedule"`
 	CustomNotificationSchedule       []NotificationSchedule `json:"custom_notification_schedule" bson:"custom_notification_schedule"`
 	MessagePreviewInEachNotification bool                   `json:"message_preview_in_each_notification" bson:"message_preview_in_each_notification"`
 	SetMessageNotificationsRight     string                 `json:"set_message_notifications_right" bson:"set_message_notifications_right"`
 	SetLoungeNotificationsRight      string                 `json:"set_lounge_notifications_right" bson:"set_lounge_notifications_right"`
 	MuteAllSounds                    bool                   `json:"mute_all_sounds" bson:"mute_all_sounds"`
-	FlashWindowWhenNotificationComes string                 `json:"flash_window_when_notification_comes" bson:"flash_window_when_notification_comes"`
-	DeliverNotificationsVia          string                 `json:"deliver_notifications_via" bson:"deliver_notifications_via"`
-	WhenIamNotActiveOnDesktop        string                 `json:"when_iam_not_active_on_desktop" bson:"when_iam_not_active_on_desktop"`
-	EmailNotificationsForMentions    bool                   `json:"email_notifications_for_mentions" bson:"email_notifications_for_mentions"`
 }
 
 type NotificationSchedule struct {
@@ -413,11 +403,6 @@ type Accessibility struct {
 	Animation                 bool                      `json:"animation" bson:"animation"`
 	DirectMessageAnnouncement DirectMessageAnnouncement `json:"direct_message_announcement" bson:"direct_message_announcement"`
 	PressEmptyMessageField    string                    `json:"press_empty_message_field" bson:"press_empty_message_field"`
-}
-
-type MarkAsRead struct {
-	WhenIViewAChannel         string `json:"when_i_view_a_channel" bson:"when_i_view_a_channel"`
-	WhenIMarkEverythingAsRead bool   `json:"when_i_mark_everything_as_read" bson:"when_i_mark_everything_as_read"`
 }
 
 type InputOption struct {
