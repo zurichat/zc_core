@@ -74,8 +74,10 @@ func CreatePlugin(ctx context.Context, p *Plugin) error {
 }
 
 func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
-	var p *Plugin
-	var bp *Plugin
+	var (
+		p  *Plugin
+		bp *Plugin
+	)
 
 	objID, err := primitive.ObjectIDFromHex(id)
 
@@ -86,14 +88,20 @@ func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 	res, _ := utils.GetMongoDBDoc(PluginCollectionName, bson.M{"_id": objID, "deleted": false})
 
 	bsonBytes, err := bson.Marshal(res)
-	bson.Unmarshal(bsonBytes, &p)
 
 	if err != nil {
 		return nil, err
 	}
-	if err = mapstructure.Decode(res, &bp); err != nil {
+
+	err = bson.Unmarshal(bsonBytes, &p)
+	if err != nil {
 		return nil, err
 	}
+
+	if err := mapstructure.Decode(res, &bp); err != nil {
+		return nil, err
+	}
+
 	p.Queue = bp.Queue
 
 	return p, nil
@@ -109,14 +117,27 @@ func FindPlugins(ctx context.Context, filter bson.M, opts ...*options.FindOption
 	}
 
 	for _, plng := range cursor {
-		var nps *Plugin
-		var bp *Plugin
-		bsonBytes, _ := bson.Marshal(plng)
-		bson.Unmarshal(bsonBytes, &nps)
-		mapstructure.Decode(plng, &bp)
+		var (
+			nps *Plugin
+			bp  *Plugin
+		)
+
+		bsonBytes, err := bson.Marshal(plng)
+		if err != nil {
+			return nil, err
+		}
+
+		err = bson.Unmarshal(bsonBytes, &nps)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := mapstructure.Decode(plng, &bp); err != nil {
+			return nil, err
+		}
+
 		nps.Queue = bp.Queue
 		ps = append(ps, nps)
-
 	}
 
 	return ps, nil
