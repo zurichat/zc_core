@@ -840,7 +840,7 @@ func (oh *OrganizationHandler) UpdateOrganizationPrefixes(w http.ResponseWriter,
 	}
 	// adds new prefixes with existing settings
 	orgPref := Customize{
-		channelprefixes,
+		append(org.Customize.Prefixes, channelprefixes),
 		org.Customize.AddCustomEmoji,
 		org.Customize.SlackBot,
 	}
