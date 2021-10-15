@@ -79,13 +79,10 @@ func (au *AuthHandler) OptionalAuthentication(nextHandler http.HandlerFunc) http
 		status, sessData, err := GetSessionDataFromToken(r, []byte(au.configs.HmacSampleSecret))
 
 		if er != nil || err != nil {
-			utils.GetError(ErrNotAuthorized, http.StatusUnauthorized, w)
-			return
-		}
-
-		if !status && sessData.Email == "" {
-			nextHandler.ServeHTTP(w, r)
-			return
+			if !status && sessData.Email == "" {
+				nextHandler.ServeHTTP(w, r)
+				return
+			}
 		}
 
 		ctx := context.WithValue(r.Context(), UserDetails, &sessData)
