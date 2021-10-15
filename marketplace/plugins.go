@@ -16,7 +16,6 @@ import (
 
 // GetAllPlugins returns all approved plugins available in the database.
 func GetAllPlugins(w http.ResponseWriter, r *http.Request) {
-
 	query := r.URL.Query()
 
 	limit, page := getLimitandPage(query.Get("limit"), query.Get("page"))
@@ -154,16 +153,17 @@ func Search(w http.ResponseWriter, r *http.Request) {
 	}, w)
 }
 
-func getLimitandPage(limit, page string) (int, int) {
-	l, _ := strconv.Atoi(limit)
-	p, _ := strconv.Atoi(page)
+func getLimitandPage(l, p string) (limit, page int) {
+	limit, _ = strconv.Atoi(l)
+	page, _ = strconv.Atoi(p)
 
-	if p < 1 {
-		p = 1
+	if page < 1 {
+		page = 1
 	}
 
-	if l < 1 {
-		l = 10
+	if limit < 1 {
+		limit = 10
 	}
-	return l, p
+	
+	return
 }
