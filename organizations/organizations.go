@@ -907,11 +907,11 @@ func (oh *OrganizationHandler) UpdateSlackBotResponses(w http.ResponseWriter, r 
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
-	// adds new slackbotresponse with existing slackbotresponse
+
 	orgPref := Customize{
 		org.Customize.Prefixes,
 		org.Customize.AddCustomEmoji,
-		slackbotresponse,
+		append(org.Customize.SlackBot, slackbotresponse),
 	}
 
 	orgFilter := make(map[string]interface{})
