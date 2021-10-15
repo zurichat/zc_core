@@ -93,6 +93,9 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/permission", au.IsAuthenticated(orgs.UpdateOrganizationPermission)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/auth", au.IsAuthenticated(orgs.UpdateOrganizationAuthentication)).Methods("PATCH")
 
+	r.HandleFunc("/organizations/{id}/prefixes", au.IsAuthenticated(orgs.UpdateOrganizationPrefixes)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/addcustomemoji", au.IsAuthenticated(orgs.UpdateSlackBotResponses)).Methods("PATCH")
+
 	// Organization: Guest Invites
 	r.HandleFunc("/organizations/{id}/send-invite", au.IsAuthenticated(au.IsAuthorized(orgs.SendInvite, "admin"))).Methods("POST")
 	r.HandleFunc("/organizations/{id}/invite-stats", au.IsAuthenticated(au.IsAuthorized(orgs.InviteStats, "admin"))).Methods("GET")
@@ -146,7 +149,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/data/read/{plugin_id}/{coll_name}/{org_id}", data.ReadData).Methods("GET")
 	r.HandleFunc("/data/delete", data.DeleteData).Methods("POST")
 	r.HandleFunc("/data/collections/info/{plugin_id}/{coll_name}/{org_id}", data.CollectionDetail).Methods("GET")
-	
+
 	// Plugins
 	r.HandleFunc("/plugins/register", plugin.Register).Methods("POST")
 	r.HandleFunc("/plugins/{id}", plugin.Update).Methods("PATCH")
@@ -205,7 +208,7 @@ func Router(server *socketio.Server) *mux.Router {
 	// Ping endpoint
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		utils.GetSuccess("Server is live", nil, w)
-	})	
+	})
 
 	// Home
 	http.Handle("/", r)
