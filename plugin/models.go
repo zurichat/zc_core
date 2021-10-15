@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -73,7 +74,10 @@ func CreatePlugin(ctx context.Context, p *Plugin) error {
 }
 
 func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
-	p := &Plugin{}
+	var (
+		p  *Plugin
+		bp *Plugin
+	)
 
 	objID, err := primitive.ObjectIDFromHex(id)
 
@@ -81,12 +85,24 @@ func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 		return nil, err
 	}
 
-	collection := utils.GetCollection(PluginCollectionName)
-	res := collection.FindOne(ctx, bson.M{"_id": objID })
+	res, _ := utils.GetMongoDBDoc(PluginCollectionName, bson.M{"_id": objID, "deleted": false})
 
-	if err := res.Decode(p); err != nil {
+	bsonBytes, err := bson.Marshal(res)
+
+	if err != nil {
 		return nil, err
 	}
+
+	err = bson.Unmarshal(bsonBytes, &p)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := mapstructure.Decode(res, &bp); err != nil {
+		return nil, err
+	}
+
+	p.Queue = bp.Queue
 
 	return p, nil
 }
@@ -94,15 +110,34 @@ func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 func FindPlugins(ctx context.Context, filter bson.M, opts ...*options.FindOptions) ([]*Plugin, error) {
 	ps := []*Plugin{}
 
-    collection := utils.GetCollection(PluginCollectionName)
-	cursor, err := collection.Find(ctx, filter, opts...)
+	cursor, err := utils.GetMongoDBDocs(PluginCollectionName, filter)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if err := cursor.All(ctx, &ps); err != nil {
-		return nil, err
+	for _, plng := range cursor {
+		var (
+			nps *Plugin
+			bp  *Plugin
+		)
+
+		bsonBytes, err := bson.Marshal(plng)
+		if err != nil {
+			return nil, err
+		}
+
+		err = bson.Unmarshal(bsonBytes, &nps)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := mapstructure.Decode(plng, &bp); err != nil {
+			return nil, err
+		}
+
+		nps.Queue = bp.Queue
+		ps = append(ps, nps)
 	}
 
 	return ps, nil
