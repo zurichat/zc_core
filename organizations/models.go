@@ -78,6 +78,7 @@ type Organization struct {
 	Plugins      []map[string]interface{} `json:"plugins" bson:"plugins"`
 	Admins       []string                 `json:"admins" bson:"admins"`
 	Settings     OrganizationPreference   `json:"settings" bson:"settings"`
+	Customize    Customize                `json:"customize" bson:"customize"`
 	LogoURL      string                   `json:"logo_url" bson:"logo_url"`
 	WorkspaceURL string                   `json:"workspace_url" bson:"workspace_url"`
 	CreatedAt    time.Time                `json:"created_at" bson:"created_at"`
@@ -229,7 +230,7 @@ type Profile struct {
 type Settings struct {
 	Notifications       Notifications       `json:"notifications" bson:"notifications"`
 	Sidebar             Sidebar             `json:"sidebar" bson:"sidebar"`
-	Themes              UserThemes           `json:"themes" bson:"themes"`
+	Themes              UserThemes          `json:"themes" bson:"themes"`
 	MessagesAndMedia    MessagesAndMedia    `json:"messages_and_media" bson:"messages_and_media"`
 	ChatSettings        ChatSettings        `json:"chat_settings" bson:"chat_settings"`
 	LanguagesAndRegions LanguagesAndRegions `json:"languages_and_regions" bson:"languages_and_regions"`
@@ -238,6 +239,29 @@ type Settings struct {
 	Advanced            Advanced            `json:"advanced" bson:"advanced"`
 	AudioAndVideo       AudioAndVideo       `json:"audio_and_video" bson:"audio_and_video"`
 	PluginSettings      []PluginSettings    `json:"plugin_settings" bson:"plugin_settings"`
+}
+
+type Customize struct {
+	Prefixes       []ChannelPrefixes `json:"prefixes" bson:"prefixes"`
+	AddCustomEmoji CustomEmoji       `json:"addcustomemoji" bson:"addcustomemoji"`
+	SlackBot       []SlackBot        `json:"slackbot" bson:"slackbot"`
+}
+
+type SlackBot struct {
+	WhenSomeOneSays string `json:"whensomeonesays" bson:"whensomeonesays"`
+	SlackResponds   string `json:"slackresponds" bson:"slackresponds"`
+}
+
+type ChannelPrefixes struct {
+	Title       string `json:"title" bson:"title"`
+	Description string `json:"description" bson:"description"`
+}
+
+type CustomEmoji struct {
+	Name      string    `json:"name" bson:"name"`
+	ImageUrl  string    `json:"imageurl" bson:"imageurl"`
+	User      string    `json:"user" bson:"user"`
+	CreatedAt time.Time `json:"created_at" bson:"created_at"`
 }
 
 type OrganizationPreference struct {
@@ -321,9 +345,10 @@ type Themes struct {
 	Colors                           string `json:"colors" bson:"colors"`
 }
 type UserThemes struct {
-	Mode	string `json:"mode"`
-	Colors	string `json:"colors"`
+	Mode   string `json:"mode"`
+	Colors string `json:"colors"`
 }
+
 const (
 	ThemeClean   = "clean"
 	ThemeCompact = "compact"
