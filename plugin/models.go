@@ -34,7 +34,7 @@ type Plugin struct {
 	CreatedAt      string             `json:"created_at" bson:"created_at"`
 	UpdatedAt      string             `json:"updated_at" bson:"updated_at"`
 	DeletedAt      string             `json:"deleted_at" bson:"deleted_at"`
-	SyncRequestUrl string             `json:"sync_request_url" bson:"sync_request_url"`
+	SyncRequestURL string             `json:"sync_request_url" bson:"sync_request_url"`
 	Queue          []MessageModel     `json:"queue" bson:"queue"`
 	QueuePID       int                `json:"queuepid" bson:"queuepid"`
 }
@@ -48,7 +48,7 @@ type Patch struct {
 	SidebarURL     *string  `json:"sidebar_url,omitempty"  bson:"sidebar_url,omitempty"`
 	InstallURL     *string  `json:"install_url,omitempty"  bson:"install_url,omitempty"`
 	TemplateURL    *string  `json:"template_url,omitempty"  bson:"template_url,omitempty"`
-	SyncRequestUrl *string  `json:"sync_request_url" bson:"sync_request_url"`
+	SyncRequestURL *string  `json:"sync_request_url" bson:"sync_request_url"`
 }
 
 func CreatePlugin(ctx context.Context, p *Plugin) error {
@@ -151,14 +151,15 @@ func updatePlugin(ctx context.Context, id string, pp *Patch) error {
 	}
 
 	if pp.TemplateURL != nil {
-		set["template_url"] = *(pp.Description)
+		set["template_url"] = *(pp.TemplateURL)
 	}
 
 	if pp.Version != nil {
 		set["version"] = *(pp.Version)
 	}
-	if pp.SyncRequestUrl != nil {
-		set["sync_request_url"] = *(pp.SyncRequestUrl)
+
+	if pp.SyncRequestURL != nil {
+		set["sync_request_url"] = *(pp.SyncRequestURL)
 	}
 
 	if pp.Images != nil {
@@ -182,7 +183,7 @@ type SyncUpdateRequest struct {
 }
 
 type MessageModel struct {
-	Id      int         `json:"id" bson:"id"`
+	ID      int         `json:"id" bson:"id"`
 	Event   string      `json:"event" bson:"event"`
 	Message interface{} `json:"message" bson:"message"`
 }
