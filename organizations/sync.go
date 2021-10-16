@@ -13,8 +13,8 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
-func AddSyncMessage(organization_id string, event string, message interface{}) error {
-	plugins, err := GetInstalledPlugins(organization_id)
+func AddSyncMessage(organizationID, event string, message interface{}) error {
+	plugins, err := GetInstalledPlugins(organizationID)
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,9 @@ func PingPlugins(plugins []string) error {
 	}
 
 	var wg sync.WaitGroup
+
 	wg.Add(nw)
+	
 	wrkchan := make(chan error, nw)
 
 	for _, plgd := range plugins {
@@ -53,7 +55,6 @@ func PingPlugins(plugins []string) error {
 	}()
 
 	for n := range wrkchan {
-		// println("error ", n)
 		if n != nil {
 			println("Ping error ", n)
 			return n
@@ -71,7 +72,9 @@ func AddToPluginsQueue(plugins []string, event string, message interface{}) erro
 	}
 
 	var wg sync.WaitGroup
+
 	wg.Add(nw)
+	
 	wrkchan := make(chan error, nw)
 
 	for _, plgd := range plugins {
@@ -84,7 +87,6 @@ func AddToPluginsQueue(plugins []string, event string, message interface{}) erro
 	}()
 
 	for n := range wrkchan {
-		// println("error ", n)
 		if n != nil {
 			println("add error ", n)
 			return n
@@ -109,14 +111,13 @@ func HandlePingPlugin(plgd string, ch chan error, wg *sync.WaitGroup) {
 		return
 	}
 
-	pingUrl := fmt.Sprintf("%v", pluginDetails["sync_request_url"])
-	// fmt.Println(pingUrl)
-	if pingUrl == "" {
+	pingURL := fmt.Sprintf("%v", pluginDetails["sync_request_url"])
+	if pingURL == "" {
 		ch <- fmt.Errorf("no endpoint provided")
 		return
 	}
 
-	Url, erro := url.Parse(pingUrl)
+	URL, erro := url.Parse(pingURL)
 	if erro != nil {
 		ch <- err
 		return
@@ -124,7 +125,7 @@ func HandlePingPlugin(plgd string, ch chan error, wg *sync.WaitGroup) {
 
 	client := &http.Client{}
 
-	req, err := http.NewRequest("POST", Url.String(), nil)
+	req, err := http.NewRequest("POST", URL.String(), nil)
 	if err != nil {
 		ch <- err
 		return
@@ -135,7 +136,8 @@ func HandlePingPlugin(plgd string, ch chan error, wg *sync.WaitGroup) {
 		ch <- err
 		return
 	}
-	defer res.Body.Close()
+
+	res.Body.Close()
 }
 
 func HandleAddingMessage(pluginid, event string, message interface{}, ch chan error, wg *sync.WaitGroup) {
@@ -162,12 +164,13 @@ func HandleAddingMessage(pluginid, event string, message interface{}, ch chan er
 
 	newID := plugin.QueuePID + 1
 	newMessage := pluginp.MessageModel{
-		Id:      newID,
+		ID:      newID,
 		Event:   event,
 		Message: message,
 	}
 
 	updateFields := make(map[string]interface{})
+
 	plugin.Queue = append(plugin.Queue, newMessage)
 
 	updateFields["queue"], updateFields["queuepid"] = plugin.Queue, newID
@@ -181,12 +184,12 @@ func HandleAddingMessage(pluginid, event string, message interface{}, ch chan er
 	ch <- nil
 }
 
-func GetInstalledPlugins(organization_id string) ([]string, error) {
+func GetInstalledPlugins(organizationID string) ([]string, error) {
 	collection := "organizations"
 
 	var org Organization
 
-	objID, err := primitive.ObjectIDFromHex(organization_id)
+	objID, err := primitive.ObjectIDFromHex(organizationID)
 	if err != nil {
 		return nil, err
 	}

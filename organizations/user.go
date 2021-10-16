@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -79,18 +80,20 @@ func (oh *OrganizationHandler) GetmultipleMembers(w http.ResponseWriter, r *http
 		members = []Member{}
 	)
 
-	nw := len(pp.IdList)
+	nw := len(pp.IDList)
 	if nw < 1 {
 		utils.GetSuccess("Members retrieved successfully", members, w)
 		return
 	}
 
 	var wg sync.WaitGroup
+
 	wg.Add(nw)
+
 	wrkchan := make(chan HandleMemberSearchResponse, nw)
 
-	for _, memberId := range pp.IdList {
-		go HandleMemberSearch(orgID, memberId, wrkchan, &wg)
+	for _, memberID := range pp.IDList {
+		go HandleMemberSearch(orgID, memberID, wrkchan, &wg)
 	}
 
 	go func() {
@@ -276,6 +279,7 @@ func (oh *OrganizationHandler) CreateMember(w http.ResponseWriter, r *http.Reque
 		OrganizationID: sOrgID,
 		MemberID:       res.InsertedID.(primitive.ObjectID).Hex(),
 	}
+
 	eee := AddSyncMessage(sOrgID, "enter_organization", enterOrgMessage)
 	if eee != nil {
 		log.Printf("sync error: %v", eee)
@@ -302,6 +306,20 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
+	// Get image dimension
+
+	width, err := strconv.Atoi(r.FormValue("width"))
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+	
+	height, err := strconv.Atoi(r.FormValue("height"))
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
 
 	if mux.Vars(r)["action"] == "delete" {
 		result, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, bson.M{"image_url": ""})
@@ -319,7 +337,7 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 		utils.GetSuccess("image deleted successfully", "", w)
 	} else {
 		uploadPath := "profile_image/" + orgID + "/" + memberID
-		imgURL, err := service.ProfileImageUpload(uploadPath, r)
+		imgURL, err := service.ProfileImageUpload(uploadPath, width, height, r)
 		if err != nil {
 			utils.GetError(err, http.StatusInternalServerError, w)
 			return
@@ -452,9 +470,20 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 		ExpiryHistory: status.ExpiryTime,
 	}
 
-	prevStatus.StatusHistory = append(prevStatus.StatusHistory, newHistory)
-	if len(prevStatus.StatusHistory) > StatusHistoryLimit {
-		prevStatus.StatusHistory = prevStatus.StatusHistory[1:]
+	if prevStatus.StatusHistory == nil {
+		prevStatus.StatusHistory = []StatusHistory{newHistory}
+	} else {
+		for i, history := range prevStatus.StatusHistory {
+			if history.TextHistory == newHistory.TextHistory && history.TagHistory == newHistory.TagHistory {
+				prevStatus.StatusHistory = RemoveHistoryAtIndex(prevStatus.StatusHistory, i)
+				break
+			}
+		}
+
+		prevStatus.StatusHistory = InsertHistoryAtIndex(prevStatus.StatusHistory, newHistory, 0)
+		if len(prevStatus.StatusHistory) > StatusHistoryLimit {
+			prevStatus.StatusHistory = prevStatus.StatusHistory[:StatusHistoryLimit]
+		}
 	}
 
 	status.StatusHistory = prevStatus.StatusHistory
@@ -493,6 +522,86 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 	go utils.Emitter(event)
 
 	utils.GetSuccess("status updated successfully", nil, w)
+}
+
+func (oh *OrganizationHandler) RemoveStatusHistory(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	vars := mux.Vars(r)
+	orgID, memberID := vars["id"], vars["mem_id"]
+
+	historyID, err := strconv.Atoi(vars["history_index"])
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	// check that org_id is valid
+	err = ValidateOrg(orgID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	// check that member_id is valid
+	err = ValidateMember(orgID, memberID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	pmemberID, err := primitive.ObjectIDFromHex(memberID)
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	// get member and then status
+	memberRec, err := utils.GetMongoDBDoc(MemberCollectionName, bson.M{"_id": pmemberID})
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	var status Status
+
+	// convert bson to struct
+	bsonBytes, _ := bson.Marshal(memberRec["status"])
+
+	if err = bson.Unmarshal(bsonBytes, &status); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	if historyID < 0 || historyID >= len(status.StatusHistory) {
+		utils.GetError(errors.New("history index out of range"), http.StatusBadRequest, w)
+		return
+	}
+
+	status.StatusHistory = RemoveHistoryAtIndex(status.StatusHistory, historyID)
+
+	statusUpdate, err := utils.StructToMap(status)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	memberStatus := make(map[string]interface{})
+	memberStatus["status"] = statusUpdate
+
+	// updates member status
+	result, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberStatus)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	if result.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	utils.GetSuccess("status history successfully deleted", nil, w)
 }
 
 // Delete single member from an organization.
@@ -1302,51 +1411,6 @@ func (oh *OrganizationHandler) UpdateUserTheme(w http.ResponseWriter, r *http.Re
 	utils.GetSuccess("successfully updated theme preference", nil, w)
 }
 
-//endpoints to set messages as mark as read.
-func (oh *OrganizationHandler) UpdateMarkAsRead(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("content-type", "application/json")
-
-	// validate the user ID
-	orgID := mux.Vars(r)["id"]
-	memberID := mux.Vars(r)["mem_id"]
-
-	// check that org_id is valid
-	err := ValidateOrg(orgID)
-	if err != nil {
-		utils.GetError(err, http.StatusBadRequest, w)
-		return
-	}
-
-	// check that member_id is valid
-	err = ValidateMember(orgID, memberID)
-	if err != nil {
-		utils.GetError(err, http.StatusBadRequest, w)
-		return
-	}
-
-	// Get data from requestbody
-	var markAsRead MarkAsRead
-	if err = utils.ParseJSONFromRequest(r, &markAsRead); err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
-	}
-
-	memberSettings := make(map[string]interface{})
-	memberSettings["settings.mark_as_read"] = markAsRead
-	// fetch and update the document
-	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberSettings)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
-
-	if update.ModifiedCount == 0 {
-		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
-		return
-	}
-
-	utils.GetSuccess("successfully updated settings", nil, w)
-}
 
 // endpoint to set languages and regions settings.
 func (oh *OrganizationHandler) SetLanguagesAndRegions(w http.ResponseWriter, r *http.Request) {

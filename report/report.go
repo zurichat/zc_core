@@ -14,7 +14,7 @@ import (
 )
 
 // Add a report.
-func (rh *ReportHandler) AddReport(w http.ResponseWriter, r *http.Request) {
+func (rh *Handler) AddReport(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var report Report
@@ -100,7 +100,7 @@ func (rh *ReportHandler) AddReport(w http.ResponseWriter, r *http.Request) {
 }
 
 // Get a report.
-func (rh *ReportHandler) GetReport(w http.ResponseWriter, r *http.Request) {
+func (rh *Handler) GetReport(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	orgID := mux.Vars(r)["id"]
@@ -132,7 +132,7 @@ func (rh *ReportHandler) GetReport(w http.ResponseWriter, r *http.Request) {
 }
 
 // Get reports.
-func (rh *ReportHandler) GetReports(w http.ResponseWriter, r *http.Request) {
+func (rh *Handler) GetReports(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	orgID := mux.Vars(r)["id"]

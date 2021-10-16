@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
@@ -36,7 +37,7 @@ func FetchMember(filter map[string]interface{}) (*Member, error) {
 
 	result := memberCollection.FindOne(context.TODO(), filter)
 
-	err = result.Decode(&member)
+	err = mapstructure.Decode(result, &member)
 
 	return member, err
 }
@@ -247,13 +248,14 @@ func OrganizationUpdate(w http.ResponseWriter, r *http.Request, updateParam upda
 	utils.GetSuccess(fmt.Sprintf("%s updated successfully", updateParam.successMessage), nil, w)
 }
 
-func HandleMemberSearch(orgID string, memberId string, ch chan HandleMemberSearchResponse, wg *sync.WaitGroup) {
+func HandleMemberSearch(orgID, memberID string, ch chan HandleMemberSearchResponse, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	memberIDhex, err := primitive.ObjectIDFromHex(memberId)
+	memberIDhex, err := primitive.ObjectIDFromHex(memberID)
 	if err != nil {
 		resp := HandleMemberSearchResponse{Memberinfo: Member{}, Err: err}
 		ch <- resp
+
 		return
 	}
 
@@ -266,14 +268,25 @@ func HandleMemberSearch(orgID string, memberId string, ch chan HandleMemberSearc
 	if err != nil {
 		resp := HandleMemberSearchResponse{Memberinfo: Member{}, Err: err}
 		ch <- resp
+
 		return
 	}
 
 	var member Member
 
 	bsonBytes, _ := bson.Marshal(orgMember)
-	bson.Unmarshal(bsonBytes, &member)
+	if err := bson.Unmarshal(bsonBytes, &member); err != nil {
+		return
+	}
 
 	resp := HandleMemberSearchResponse{Memberinfo: member, Err: nil}
 	ch <- resp
+}
+
+func RemoveHistoryAtIndex(s []StatusHistory, index int) []StatusHistory {
+	return append(s[:index], s[index+1:]...)
+}
+
+func InsertHistoryAtIndex(s []StatusHistory, history StatusHistory, index int) []StatusHistory {
+	return append(s[:index], append([]StatusHistory{history}, s[index:]...)...)
 }

@@ -78,6 +78,7 @@ type Organization struct {
 	Plugins      []map[string]interface{} `json:"plugins" bson:"plugins"`
 	Admins       []string                 `json:"admins" bson:"admins"`
 	Settings     OrganizationPreference   `json:"settings" bson:"settings"`
+	Customize    Customize                `json:"customize" bson:"customize"`
 	LogoURL      string                   `json:"logo_url" bson:"logo_url"`
 	WorkspaceURL string                   `json:"workspace_url" bson:"workspace_url"`
 	CreatedAt    time.Time                `json:"created_at" bson:"created_at"`
@@ -88,7 +89,17 @@ type Organization struct {
 }
 
 type Billing struct {
-	Settings BillingSetting
+	Settings 	BillingSetting 	`json:"billing_setting" bson:"setting"`
+	Contact 	BillingContact	`json:"billing_contact" bson:"contact"`
+}
+
+type BillingContact struct {
+	ToDefaultEmail      bool 		`json:"to_default_email" bson:"to_default_email"`
+	Contact 			[]Contact	`json:"contacts" bson:"contacts"`
+}
+
+type Contact struct {
+	Email         string `json:"email" bson:"email"`
 }
 
 type BillingSetting struct {
@@ -234,10 +245,32 @@ type Settings struct {
 	ChatSettings        ChatSettings        `json:"chat_settings" bson:"chat_settings"`
 	LanguagesAndRegions LanguagesAndRegions `json:"languages_and_regions" bson:"languages_and_regions"`
 	Accessibility       Accessibility       `json:"accessibility" bson:"accessibility"`
-	MarkAsRead          MarkAsRead          `json:"mark_as_read" bson:"mark_as_read"`
 	Advanced            Advanced            `json:"advanced" bson:"advanced"`
 	AudioAndVideo       AudioAndVideo       `json:"audio_and_video" bson:"audio_and_video"`
 	PluginSettings      []PluginSettings    `json:"plugin_settings" bson:"plugin_settings"`
+}
+
+type Customize struct {
+	Prefixes       []ChannelPrefixes `json:"prefixes" bson:"prefixes"`
+	AddCustomEmoji []CustomEmoji     `json:"addcustomemoji" bson:"addcustomemoji"`
+	SlackBot       []SlackBot        `json:"slackbot" bson:"slackbot"`
+}
+
+type SlackBot struct {
+	WhenSomeOneSays string `json:"whensomeonesays" bson:"whensomeonesays"`
+	SlackResponds   string `json:"slackresponds" bson:"slackresponds"`
+}
+
+type ChannelPrefixes struct {
+	Title       string `json:"title" bson:"title"`
+	Description string `json:"description" bson:"description"`
+}
+
+type CustomEmoji struct {
+	Name      string    `json:"name" bson:"name"`
+	ImageURL  string    `json:"imageurl" bson:"imageurl"`
+	User      string    `json:"user" bson:"user"`
+	CreatedAt time.Time `json:"created_at" bson:"created_at"`
 }
 
 type OrganizationPreference struct {
@@ -280,22 +313,13 @@ type MessageSettings struct {
 }
 
 type Notifications struct {
-	NotifyMeAbout                    string                 `json:"notify_me_about" bson:"notify_me_about"`
-	UseDifferentSettingsForMyMobile  bool                   `json:"use_different_settings_mobile" bson:"use_different_settings_mobile"`
 	ChannelHurdleNotification        bool                   `json:"channel_hurdle_notification" bson:"channel_hurdle_notification"`
-	MeetingRepliesNotification       bool                   `json:"meeting_replies_notification" bson:"meeting_replies_notification"`
-	ThreadRepliesNotification        bool                   `json:"thread_replies_notification" bson:"thread_replies_notification"`
-	MyKeywords                       []string               `json:"my_keywords" bson:"my_keywords"`
 	NotificationSchedule             NotificationSchedule   `json:"notification_schedule" bson:"notification_schedule"`
 	CustomNotificationSchedule       []NotificationSchedule `json:"custom_notification_schedule" bson:"custom_notification_schedule"`
 	MessagePreviewInEachNotification bool                   `json:"message_preview_in_each_notification" bson:"message_preview_in_each_notification"`
 	SetMessageNotificationsRight     string                 `json:"set_message_notifications_right" bson:"set_message_notifications_right"`
 	SetLoungeNotificationsRight      string                 `json:"set_lounge_notifications_right" bson:"set_lounge_notifications_right"`
 	MuteAllSounds                    bool                   `json:"mute_all_sounds" bson:"mute_all_sounds"`
-	FlashWindowWhenNotificationComes string                 `json:"flash_window_when_notification_comes" bson:"flash_window_when_notification_comes"`
-	DeliverNotificationsVia          string                 `json:"deliver_notifications_via" bson:"deliver_notifications_via"`
-	WhenIamNotActiveOnDesktop        string                 `json:"when_iam_not_active_on_desktop" bson:"when_iam_not_active_on_desktop"`
-	EmailNotificationsForMentions    bool                   `json:"email_notifications_for_mentions" bson:"email_notifications_for_mentions"`
 }
 
 type NotificationSchedule struct {
@@ -415,11 +439,6 @@ type Accessibility struct {
 	PressEmptyMessageField    string                    `json:"press_empty_message_field" bson:"press_empty_message_field"`
 }
 
-type MarkAsRead struct {
-	WhenIViewAChannel         string `json:"when_i_view_a_channel" bson:"when_i_view_a_channel"`
-	WhenIMarkEverythingAsRead bool   `json:"when_i_mark_everything_as_read" bson:"when_i_mark_everything_as_read"`
-}
-
 type InputOption struct {
 	DontSendWithEnter bool `json:"dont_send_with_enter" bson:"dont_send_with_enter"`
 	FormatMessages    bool `json:"format_messages" bson:"format_messages"`
@@ -499,7 +518,7 @@ type EnterLeaveMessage struct {
 }
 
 type MemberIDS struct {
-	IdList []string `json:"id_list" bson:"id_list" validate:"required"`
+	IDList []string `json:"id_list" bson:"id_list" validate:"required"`
 }
 
 type HandleMemberSearchResponse struct {
