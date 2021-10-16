@@ -3,8 +3,8 @@
 ## Marketplace List
 The marketplace list endpoint lists all approved plugins
 
-A [GET] request to /marketplace/plugins will return information of all approved plugins. To request for paginated response, the limit and page should be sent via URL query e.g limit=10&page=1
-The response is of this format. The `page`, `limit` and `total` are absent if the request does not include pagination data.
+A [GET] request to /marketplace/plugins?limit=10&page=1 will return information of all approved plugins. This endpoint supports pagination by default, and is limited to 10 if no limit and page values are passed. in the query parameter.
+the response is of this format 
 ```jsonc
 {
   "status": 200,
@@ -23,9 +23,8 @@ To get the next page, increment the page in the response by one.
 ## Marketplace Search
 The marketplace list endpoint lists all approved plugins
 
-A [GET] request to /marketplace/plugins/search?q=query will return information of all approved plugins that match the query term `q` in the `name`, `description`, `category` and `tags` fields of the plugins.
-To limit and page should be sent via URL query e.g limit=10&page=1
-The response is of this format. The `page`, `limit` and `total` are absent if the request does not include pagination data.
+A [GET] request to /marketplace/plugins/search?q=query&limit=10&page=1 will return information of all approved plugins that match the query term `q` in the `name`, `category` and `tags` fields of the plugins. This endpoint supports pagination by default, and is limited to 10 if no limit and page values are passed. in the query parameter.
+the response is of this format 
 ```jsonc
 {
   "status": 200,
