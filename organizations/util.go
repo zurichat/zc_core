@@ -247,13 +247,14 @@ func OrganizationUpdate(w http.ResponseWriter, r *http.Request, updateParam upda
 	utils.GetSuccess(fmt.Sprintf("%s updated successfully", updateParam.successMessage), nil, w)
 }
 
-func HandleMemberSearch(orgID string, memberId string, ch chan HandleMemberSearchResponse, wg *sync.WaitGroup) {
+func HandleMemberSearch(orgID, memberID string, ch chan HandleMemberSearchResponse, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	memberIDhex, err := primitive.ObjectIDFromHex(memberId)
+	memberIDhex, err := primitive.ObjectIDFromHex(memberID)
 	if err != nil {
 		resp := HandleMemberSearchResponse{Memberinfo: Member{}, Err: err}
 		ch <- resp
+
 		return
 	}
 
@@ -266,13 +267,16 @@ func HandleMemberSearch(orgID string, memberId string, ch chan HandleMemberSearc
 	if err != nil {
 		resp := HandleMemberSearchResponse{Memberinfo: Member{}, Err: err}
 		ch <- resp
+
 		return
 	}
 
 	var member Member
 
 	bsonBytes, _ := bson.Marshal(orgMember)
-	bson.Unmarshal(bsonBytes, &member)
+	if err := bson.Unmarshal(bsonBytes, &member); err != nil {
+		return
+	}
 
 	resp := HandleMemberSearchResponse{Memberinfo: member, Err: nil}
 	ch <- resp

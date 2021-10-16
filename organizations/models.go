@@ -89,7 +89,7 @@ type Organization struct {
 }
 
 type Billing struct {
-	Settings BillingSetting
+	Settings BillingSetting 	`json:"billing_setting" bson:"billing_setting"`
 }
 
 type BillingSetting struct {
@@ -524,7 +524,7 @@ type EnterLeaveMessage struct {
 }
 
 type MemberIDS struct {
-	IdList []string `json:"id_list" bson:"id_list" validate:"required"`
+	IDList []string `json:"id_list" bson:"id_list" validate:"required"`
 }
 
 type HandleMemberSearchResponse struct {

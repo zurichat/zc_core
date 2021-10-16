@@ -101,19 +101,25 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 	}
 
 	wg := sync.WaitGroup{}
-	wg.Add(2)
+	num := 2
+	wg.Add(num)
 
 	var save *mongo.InsertOneResult
+	
 	var increaseCount *mongo.UpdateResult
 
 	go func() {
 		defer wg.Done()
+
 		save, err = utils.CreateMongoDBDoc(orgCollectionName, pluginMap)
 	}()
+
 	go func() {
 		defer wg.Done()
+
 		increaseCount, err = utils.IncrementOneMongoDBDocField(PluginCollection, orgPlugin.PluginID, "install_count")
 	}()
+
 	wg.Wait()
 
 	if err != nil || increaseCount.ModifiedCount != 1 {
