@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
@@ -36,7 +37,7 @@ func FetchMember(filter map[string]interface{}) (*Member, error) {
 
 	result := memberCollection.FindOne(context.TODO(), filter)
 
-	err = result.Decode(&member)
+	err = mapstructure.Decode(result, &member)
 
 	return member, err
 }
