@@ -199,7 +199,7 @@ func DeleteFileFromServer(filePath string) error {
 	return nil
 }
 
-func Resize(f multipart.File, width, height int, r *http.Request, handle *multipart.FileHeader, folderName string) (string, error) {
+func Resize(f multipart.File, width int, height int, r *http.Request, handle *multipart.FileHeader, folderName string) (string, error) {
 	img, err := decodeFile(f, handle)
 	// img, _, err := image.Decode(f)
 	if err != nil {
