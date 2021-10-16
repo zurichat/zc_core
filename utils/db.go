@@ -280,7 +280,7 @@ func CreateUniqueIndex(collName, field string, order int) error {
 	indexName, err := collection.Indexes().CreateOne(context.Background(), indexModel)
 	if err != nil {
 		fmt.Printf("error creating unique index on %s field in %s: %v", field, collName, err)
-		return err
+		return nil
 	}
 
 	fmt.Printf("%s index on %s collection created successfully\n", indexName, collName)
@@ -294,21 +294,23 @@ func CreateTextIndexForPlugins() error {
    indexModel := mongo.IndexModel{
    	Keys: bson.D{
    		{Key: "name", Value: "text"},
+   		{Key:"description", Value:"text"},
    		{Key: "category", Value: "text"},
    		{Key: "tags", Value: "text"},
    	},
    	Options: options.Index().SetWeights(bson.M{
    		"name": 10,
-   		"category": 5,
+   		"description": 5,
+   		"category": 3,
    		"tags": 1,
-   	}).SetName("TextIndex"),
+   	}),
    }
 
 	indexName, err := collection.Indexes().CreateOne(context.Background(), indexModel)
 	
 	if err != nil {
 		fmt.Printf("error creating text index for plugins collection %v", err)
-		return err
+		return nil
 	}
 
 	fmt.Printf("%s index on plugins collection created successfully\n", indexName)

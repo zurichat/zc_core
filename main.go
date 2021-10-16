@@ -93,10 +93,6 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/permission", au.IsAuthenticated(orgs.UpdateOrganizationPermission)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/auth", au.IsAuthenticated(orgs.UpdateOrganizationAuthentication)).Methods("PATCH")
 
-	r.HandleFunc("/organizations/{id}/prefixes", au.IsAuthenticated(orgs.UpdateOrganizationPrefixes)).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/slackbotresponses", au.IsAuthenticated(orgs.UpdateSlackBotResponses)).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/customemoji", au.IsAuthenticated(orgs.AddSlackCustomEmoji)).Methods("PATCH")
-
 	// Organization: Guest Invites
 	r.HandleFunc("/organizations/{id}/send-invite", au.IsAuthenticated(au.IsAuthorized(orgs.SendInvite, "admin"))).Methods("POST")
 	r.HandleFunc("/organizations/{id}/invite-stats", au.IsAuthenticated(au.IsAuthorized(orgs.InviteStats, "admin"))).Methods("GET")
@@ -116,6 +112,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/reactivate", au.IsAuthenticated(au.IsAuthorized(orgs.ReactivateMember, "admin"))).Methods("POST")
 
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/status", au.IsAuthenticated(orgs.UpdateMemberStatus)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/status/remove-history/{history_index}", au.IsAuthenticated(orgs.RemoveStatusHistory)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/photo/{action}", au.IsAuthenticated(orgs.UpdateProfilePicture)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/profile", au.IsAuthenticated(orgs.UpdateProfile)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/presence", au.IsAuthenticated(orgs.TogglePresence)).Methods("POST")
@@ -123,7 +120,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/role", au.IsAuthenticated(au.IsAuthorized(orgs.UpdateMemberRole, "admin"))).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/notification", au.IsAuthenticated(orgs.UpdateNotification)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/theme", au.IsAuthenticated(orgs.UpdateUserTheme)).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/mark-as-read", au.IsAuthenticated(orgs.UpdateMarkAsRead)).Methods("PATCH")
+	// r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/mark-as-read", au.IsAuthenticated(orgs.UpdateMarkAsRead)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/message-media", au.IsAuthenticated(orgs.UpdateMemberMessageAndMediaSettings)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/accessibility", au.IsAuthenticated(orgs.UpdateMemberAccessibilitySettings)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/languages-and-region", au.IsAuthenticated(orgs.SetLanguagesAndRegions)).Methods("PATCH")
