@@ -478,6 +478,7 @@ func (oh *OrganizationHandler) InviteStats(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		utils.GetError(err, http.StatusNotFound, w)
 	}
+	
 	utils.GetSuccess("successful", invites, w)
 }
 
