@@ -309,7 +309,16 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 	// Get image dimension
 
 	width, err := strconv.Atoi(r.FormValue("width"))
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+	
 	height, err := strconv.Atoi(r.FormValue("height"))
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
 
 
 	if mux.Vars(r)["action"] == "delete" {

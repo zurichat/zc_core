@@ -268,7 +268,7 @@ type ChannelPrefixes struct {
 
 type CustomEmoji struct {
 	Name      string    `json:"name" bson:"name"`
-	ImageUrl  string    `json:"imageurl" bson:"imageurl"`
+	ImageURL  string    `json:"imageurl" bson:"imageurl"`
 	User      string    `json:"user" bson:"user"`
 	CreatedAt time.Time `json:"created_at" bson:"created_at"`
 }

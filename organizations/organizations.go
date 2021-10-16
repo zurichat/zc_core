@@ -355,7 +355,16 @@ func (oh *OrganizationHandler) UpdateLogo(w http.ResponseWriter, r *http.Request
 	}
 
 	width, err := strconv.Atoi(r.FormValue("width"))
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+	
 	height, err := strconv.Atoi(r.FormValue("height"))
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
 
 	uploadPath := "logo/" + orgID
 

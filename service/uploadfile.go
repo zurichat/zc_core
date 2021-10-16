@@ -201,10 +201,10 @@ func DeleteFileFromServer(filePath string) error {
 
 func Resize(f multipart.File, width, height int, r *http.Request, handle *multipart.FileHeader, folderName string) (string, error) {
 	img, err := decodeFile(f, handle)
-	// img, _, err := image.Decode(f)
 	if err != nil {
 		return "", err
 	}
+
 	resized := transform.Resize(img, width, height, transform.Linear)
 
     imagePath, err := saveImageFile(folderName, resized, handle, r, imgio.PNGEncoder())
@@ -226,6 +226,7 @@ func decodeFile(f multipart.File, handle *multipart.FileHeader) (image.Image, er
 			fmt.Println(err)
 			return nil, fmt.Errorf("error decoding")
 		}
+
 		return nil, nil
 	} else if fileExtension == ".jpg" || fileExtension == ".jpeg" {
 		img, err := jpeg.Decode(f)
@@ -233,15 +234,16 @@ func decodeFile(f multipart.File, handle *multipart.FileHeader) (image.Image, er
 			fmt.Println(err)
 			return nil, fmt.Errorf("error decoding")
 		}
+
 		return img, nil
 	}
 	
-	// img, _, err := image.Decode(f)
 	img, err := png.Decode(f)
 	if err != nil {
 		fmt.Println(err)
 		return nil, fmt.Errorf("error decoding")
 	}
+
 	return img, nil
 }
 
@@ -278,7 +280,10 @@ func saveImageFile(folderName string, file *image.RGBA, handle *multipart.FileHe
 
 	defer destinationFile.Close()
 
-	encoder(destinationFile, file)
+	err := encoder(destinationFile, file)
+	if err != nil {
+		return "", err
+	}
 
 	filenameE := strings.Join(strings.Split(filename, "\\"), "/")
 
@@ -296,7 +301,7 @@ func saveImageFile(folderName string, file *image.RGBA, handle *multipart.FileHe
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 // profile image upload.
-func ProfileImageUpload(folderName string, width int, height int, r *http.Request) (string, error) {
+func ProfileImageUpload(folderName string, width, height int, r *http.Request) (string, error) {
 	var allowedMimeImageTypes = []string{
 		"image/bmp", "image/cis-cod", "image/gif", "image/ief", "image/jpeg", "image/jpeg", "image/jpeg", "image/pipeg	jfif", "image/svg+xml",
 		"image/tiff", "image/tiff", "image/x-cmu-raster", "	image/x-cmx", "image/x-icon", "image/x-portable-anymap", "image/x-portable-bitmap",
