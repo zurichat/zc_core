@@ -134,6 +134,9 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/reports/{report_id}", au.IsAuthenticated(reps.GetReport)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/change-owner", au.IsAuthenticated(orgs.TransferOwnership)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/billing", au.IsAuthenticated(orgs.SaveBillingSettings)).Methods("PATCH")
+	// the above endpoint need to change to the commented endpoint below for uniformity but every front end using it has to be updated so as to prevent their code from braking
+	// r.HandleFunc("/organizations/{id}/billing/settings", au.IsAuthenticated(orgs.SaveBillingSettings)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/billing/contact", au.IsAuthenticated(orgs.SaveBillingContact)).Methods("PATCH")
 
 	//organization: payment
 	r.HandleFunc("/organizations/{id}/add-token", au.IsAuthenticated(orgs.AddToken)).Methods("POST")

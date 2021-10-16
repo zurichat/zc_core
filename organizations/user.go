@@ -79,18 +79,20 @@ func (oh *OrganizationHandler) GetmultipleMembers(w http.ResponseWriter, r *http
 		members = []Member{}
 	)
 
-	nw := len(pp.IdList)
+	nw := len(pp.IDList)
 	if nw < 1 {
 		utils.GetSuccess("Members retrieved successfully", members, w)
 		return
 	}
 
 	var wg sync.WaitGroup
+
 	wg.Add(nw)
+
 	wrkchan := make(chan HandleMemberSearchResponse, nw)
 
-	for _, memberId := range pp.IdList {
-		go HandleMemberSearch(orgID, memberId, wrkchan, &wg)
+	for _, memberID := range pp.IDList {
+		go HandleMemberSearch(orgID, memberID, wrkchan, &wg)
 	}
 
 	go func() {
@@ -276,6 +278,7 @@ func (oh *OrganizationHandler) CreateMember(w http.ResponseWriter, r *http.Reque
 		OrganizationID: sOrgID,
 		MemberID:       res.InsertedID.(primitive.ObjectID).Hex(),
 	}
+
 	eee := AddSyncMessage(sOrgID, "enter_organization", enterOrgMessage)
 	if eee != nil {
 		log.Printf("sync error: %v", eee)

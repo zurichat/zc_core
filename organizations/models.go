@@ -89,7 +89,17 @@ type Organization struct {
 }
 
 type Billing struct {
-	Settings BillingSetting
+	Settings 	BillingSetting 	`json:"billing_setting" bson:"setting"`
+	Contact 	BillingContact	`json:"billing_contact" bson:"contact"`
+}
+
+type BillingContact struct {
+	ToDefaultEmail      bool 		`json:"to_default_email" bson:"to_default_email"`
+	Contact 			[]Contact	`json:"contacts" bson:"contacts"`
+}
+
+type Contact struct {
+	Email         string `json:"email" bson:"email"`
 }
 
 type BillingSetting struct {
@@ -524,7 +534,7 @@ type EnterLeaveMessage struct {
 }
 
 type MemberIDS struct {
-	IdList []string `json:"id_list" bson:"id_list" validate:"required"`
+	IDList []string `json:"id_list" bson:"id_list" validate:"required"`
 }
 
 type HandleMemberSearchResponse struct {

@@ -320,8 +320,10 @@ func CreateTextIndexForPlugins() error {
 func CountCollection(ctx context.Context, name string, filter bson.M) int64 {
 	collection := defaultMongoHandle.GetCollection(name)
 	count, err := collection.CountDocuments(ctx, filter)
+	
 	if err != nil {
 		return 0
 	}
+	
 	return count
 }

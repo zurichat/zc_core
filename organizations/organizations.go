@@ -478,6 +478,7 @@ func (oh *OrganizationHandler) InviteStats(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		utils.GetError(err, http.StatusNotFound, w)
 	}
+
 	utils.GetSuccess("successful", invites, w)
 }
 
@@ -552,8 +553,53 @@ func (oh *OrganizationHandler) SaveBillingSettings(w http.ResponseWriter, r *htt
 		return
 	}
 
-	billing := Billing{
-		billingSetting,
+	loggedInUser, ok := r.Context().Value("user").(*auth.AuthUser)
+	if !ok {
+		utils.GetError(errors.New("invalid user"), http.StatusBadRequest, w)
+		return
+	}
+
+	fmt.Fprintln(w, loggedInUser.Email)
+
+	if _, err := FetchMember(bson.M{"org_id": orgID, "email": loggedInUser.Email}); err != nil {
+		utils.GetError(errors.New("access denied"), http.StatusNotFound, w)
+		return
+	}
+
+	orgFilter := make(map[string]interface{})
+	orgFilter["billing.setting"] = billingSetting
+
+	update, err := utils.UpdateOneMongoDBDoc(OrganizationCollectionName, orgID, orgFilter)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	utils.GetSuccess("organization billing settings updated successfully", nil, w)
+}
+
+func (oh *OrganizationHandler) SaveBillingContact(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	orgID := mux.Vars(r)["id"]
+
+	var billingContact BillingContact
+
+	if err := utils.ParseJSONFromRequest(r, &billingContact); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	validate := validator.New()
+
+	if err := validate.Struct(billingContact); err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
 	}
 
 	loggedInUser, ok := r.Context().Value("user").(*auth.AuthUser)
@@ -568,7 +614,7 @@ func (oh *OrganizationHandler) SaveBillingSettings(w http.ResponseWriter, r *htt
 	}
 
 	orgFilter := make(map[string]interface{})
-	orgFilter["billing"] = billing
+	orgFilter["billing.contact"] = billingContact
 
 	update, err := utils.UpdateOneMongoDBDoc(OrganizationCollectionName, orgID, orgFilter)
 	if err != nil {
@@ -581,7 +627,7 @@ func (oh *OrganizationHandler) SaveBillingSettings(w http.ResponseWriter, r *htt
 		return
 	}
 
-	utils.GetSuccess("organization billing settings updated successfully", nil, w)
+	utils.GetSuccess("organization billing contact updated successfully", nil, w)
 }
 
 func (oh *OrganizationHandler) UpdateOrganizationSettings(w http.ResponseWriter, r *http.Request) {
