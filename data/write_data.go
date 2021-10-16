@@ -64,7 +64,6 @@ func (wdr *writeDataRequest) handlePost(w http.ResponseWriter, _ *http.Request) 
 
 	actualCollName := mongoCollectionName(wdr.PluginID, wdr.CollectionName)
 	res, err := insertMany(actualCollName, wdr.OrganizationID, payload)
-	
 	if err != nil {
 		utils.GetError(fmt.Errorf("an error occurred: %v", err), http.StatusInternalServerError, w)
 		return
@@ -92,7 +91,6 @@ func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, _ *http.Request) {
 	filter := make(map[string]interface{})
 	collName := mongoCollectionName(wdr.PluginID, wdr.CollectionName)
 
-    //nolint:gocritic // dod-san: ignore if else-if chain
 	if wdr.ObjectID != "" {
 		filter["_id"] = wdr.ObjectID
 	} else if wdr.Filter != nil {
@@ -144,6 +142,7 @@ func insertMany(collName, orgID string, data interface{}) (*mongo.InsertManyResu
 }
 
 func modifyDocs(docs []interface{}, orgID string) error {
+
 	for _, doc := range docs {
 		x, ok := doc.(map[string]interface{})
 
@@ -153,7 +152,6 @@ func modifyDocs(docs []interface{}, orgID string) error {
 
 		x["organization_id"] = orgID
 	}
-
 	return nil
 }
 

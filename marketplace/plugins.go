@@ -16,20 +16,18 @@ import (
 
 // GetAllPlugins returns all approved plugins available in the database.
 func GetAllPlugins(w http.ResponseWriter, r *http.Request) {
+
 	query := r.URL.Query()
-	opts := options.Find()
-	limStr, pgStr := query.Get("limit"), query.Get("page")
-	resp := utils.M{}
-	filter := bson.M{"approved": true}
 
-	if limStr != "" || pgStr != "" {
-		limit, page := getLimitandPage(limStr, pgStr)
-		opts.SetLimit(int64(limit)).SetSkip(int64((limit * page) - limit))
+	limit, page := getLimitandPage(query.Get("limit"), query.Get("page"))
 
-		resp["page"], resp["limit"] = page, limit
-		resp["total"] = utils.CountCollection(r.Context(), "plugins", filter)
+	opts := options.Find().SetLimit(int64(limit))
+
+	if page > 1 {
+		opts.SetSkip(int64(limit * page))
 	}
 
+	filter := bson.M{"approved": true}
 	ps, err := plugin.FindPlugins(r.Context(), filter, opts)
 
 	if err != nil {
@@ -37,10 +35,15 @@ func GetAllPlugins(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp["plugins"] = ps
-
-	utils.GetSuccess("success", resp, w)
+	utils.GetSuccess("success", utils.M{
+		"plugins": ps,
+		"page":    page,
+		"limit":   limit,
+		"total":   utils.CountCollection(r.Context(), "plugins", filter),
+	}, w)
 }
+
+
 
 // GetPlugin hanldes the retrieval of a plugin by its id.
 func GetPlugin(w http.ResponseWriter, r *http.Request) {
@@ -127,20 +130,13 @@ func GetRecomendedPlugins(w http.ResponseWriter, r *http.Request) {
 func Search(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	q := query.Get("q")
+	limit, page := getLimitandPage(query.Get("limit"), query.Get("page"))
 	filter := bson.M{"$text": bson.M{"$search": q}, "approved": true}
-	resp := utils.M{}
-	opts := options.Find()
+	opts := options.Find().SetProjection(bson.M{"score": bson.M{"$meta": "textScore"}}).
+		SetSort(bson.M{"score": bson.M{"$meta": "textScore"}}).SetLimit(int64(limit))
 
-	if query.Get("limit") != "" || query.Get("page") != "" {
-		limit, page := getLimitandPage(query.Get("limit"), query.Get("page"))
-
-		opts.SetProjection(bson.M{"score": bson.M{"$meta": "textScore"}}).
-			SetSort(bson.M{"score": bson.M{"$meta": "textScore"}}).
-			SetLimit(int64(limit)).
-			SetSkip(int64((limit * page) - limit))
-
-		resp["limit"], resp["page"] = limit, page
-		resp["total"] = utils.CountCollection(r.Context(), "plugins", filter)
+	if page > 1 {
+		opts.SetSkip(int64(limit * page))
 	}
 
 	docs, err := utils.GetMongoDBDocs("plugins", filter, opts)
@@ -150,22 +146,24 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp["plugins"] = docs
-
-	utils.GetSuccess("success", resp, w)
+	utils.GetSuccess("success", utils.M{
+		"limit": limit,
+		"page": page,
+		"plugins": docs,
+		"total":   utils.CountCollection(r.Context(), "plugins", filter),
+	}, w)
 }
 
-func getLimitandPage(l, p string) (limit, page int) {
-	limit, _ = strconv.Atoi(l)
-	page, _ = strconv.Atoi(p)
+func getLimitandPage(limit, page string) (int, int) {
+	l, _ := strconv.Atoi(limit)
+	p, _ := strconv.Atoi(page)
 
-	if page < 1 {
-		page = 1
+	if p < 1 {
+		p = 1
 	}
 
-	if limit < 1 {
-		limit = 10
+	if l < 1 {
+		l = 10
 	}
-
-	return
+	return l, p
 }
