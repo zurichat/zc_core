@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -353,9 +354,12 @@ func (oh *OrganizationHandler) UpdateLogo(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	width, err := strconv.Atoi(r.FormValue("width"))
+	height, err := strconv.Atoi(r.FormValue("height"))
+
 	uploadPath := "logo/" + orgID
 
-	imgURL, err := service.ProfileImageUpload(uploadPath, r)
+	imgURL, err := service.ProfileImageUpload(uploadPath, width, height, r)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return

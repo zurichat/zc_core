@@ -304,6 +304,11 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 		return
 	}
 
+	// Get image dimension
+
+	width, err := strconv.Atoi(r.FormValue("width"))
+	height, err := strconv.Atoi(r.FormValue("height"))
+
 	if mux.Vars(r)["action"] == "delete" {
 		result, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, bson.M{"image_url": ""})
 
@@ -320,7 +325,7 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 		utils.GetSuccess("image deleted successfully", "", w)
 	} else {
 		uploadPath := "profile_image/" + orgID + "/" + memberID
-		imgURL, err := service.ProfileImageUpload(uploadPath, r)
+		imgURL, err := service.ProfileImageUpload(uploadPath, width, height, r)
 		if err != nil {
 			utils.GetError(err, http.StatusInternalServerError, w)
 			return
@@ -1393,7 +1398,6 @@ func (oh *OrganizationHandler) UpdateUserTheme(w http.ResponseWriter, r *http.Re
 
 	utils.GetSuccess("successfully updated theme preference", nil, w)
 }
-
 
 // endpoint to set languages and regions settings.
 func (oh *OrganizationHandler) SetLanguagesAndRegions(w http.ResponseWriter, r *http.Request) {
