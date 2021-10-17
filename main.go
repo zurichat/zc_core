@@ -179,7 +179,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/guests/invite", us.CreateUserFromUUID).Methods("POST")
 
 	// Contact Us
-	r.HandleFunc("/contact", au.OptionalAuthentication(contact.MailUs, au)).Methods("POST")
+	r.HandleFunc("/contact", au.OptionalAuthentication(contact.MailUs)).Methods("POST")
 
 	// Realtime communications
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")

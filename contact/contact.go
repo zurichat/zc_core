@@ -2,11 +2,11 @@ package contact
 
 import (
 	"errors"
-	"fmt"
 	"mime/multipart"
 	"net/http"
 	"time"
 
+	"github.com/mitchellh/mapstructure"
 	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
@@ -14,8 +14,6 @@ import (
 
 func MailUs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("content-type", "application/json")
-
-	fmt.Println("Parsing Form Data")
 
 	err := r.ParseMultipartForm(MaxFileSize * MaxFileCount)
 	if err != nil {
@@ -82,7 +80,8 @@ func MailUs(w http.ResponseWriter, r *http.Request) {
 
 	var emptyFileInfo []service.MultipleTempResponse
 	contactFormData := GenerateContactData(email, subject, content, emptyFileInfo)
-	data, err := utils.StructToMap(contactFormData)
+	data := make(map[string]interface{})
+	err = mapstructure.Decode(contactFormData, &data)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
