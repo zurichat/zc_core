@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"strconv"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -354,21 +353,9 @@ func (oh *OrganizationHandler) UpdateLogo(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	width, err := strconv.Atoi(r.FormValue("width"))
-	if err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
-	}
-	
-	height, err := strconv.Atoi(r.FormValue("height"))
-	if err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
-	}
-
 	uploadPath := "logo/" + orgID
 
-	imgURL, err := service.ProfileImageUpload(uploadPath, width, height, r)
+	imgURL, err := service.ProfileImageUpload(uploadPath, logoWidth, logoHeight, r)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
