@@ -322,7 +322,7 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 		utils.GetSuccess("image deleted successfully", "", w)
 	} else {
 		uploadPath := "profile_image/" + orgID + "/" + memberID
-		imgURL, err := service.ProfileImageUpload(uploadPath, 170, 170, r)
+		imgURL, err := service.ProfileImageUpload(uploadPath, imageWidth, imageHeight, r)
 		if err != nil {
 			utils.GetError(err, http.StatusInternalServerError, w)
 			return

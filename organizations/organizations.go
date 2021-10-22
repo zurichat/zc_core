@@ -355,7 +355,7 @@ func (oh *OrganizationHandler) UpdateLogo(w http.ResponseWriter, r *http.Request
 
 	uploadPath := "logo/" + orgID
 
-	imgURL, err := service.ProfileImageUpload(uploadPath, 170, 170, r)
+	imgURL, err := service.ProfileImageUpload(uploadPath, logoWidth, logoHeight, r)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
