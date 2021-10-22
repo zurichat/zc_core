@@ -330,7 +330,7 @@ func RequestDurationMiddleware(h http.Handler) http.Handler {
 				return
 			}
 
-			if resp.StatusCode != 200 {
+			if resp.StatusCode != http.StatusOK {
 				fmt.Printf("got error %d", resp.StatusCode)
 			}
 
