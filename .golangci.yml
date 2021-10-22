@@ -93,6 +93,5 @@ run:
     - organizations
     - service
     - utils
-
-  skip-files:
-    - _test\.go 
+  
+  tests: false
