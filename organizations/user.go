@@ -306,6 +306,7 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
+	
 	if mux.Vars(r)["action"] == "delete" {
 		result, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, bson.M{"image_url": ""})
 
@@ -764,259 +765,74 @@ func (oh *OrganizationHandler) TogglePresence(w http.ResponseWriter, r *http.Req
 }
 
 func (oh *OrganizationHandler) UpdateMemberSettings(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	vars := mux.Vars(r)
-	orgID, memberID := vars["id"], vars["mem_id"]
-
-	// check that org_id is valid
-	err := ValidateOrg(orgID)
-	if err != nil {
-		utils.GetError(err, http.StatusBadRequest, w)
-		return
-	}
-
-	// check that member_id is valid
-	err = ValidateMember(orgID, memberID)
-	if err != nil {
-		utils.GetError(err, http.StatusBadRequest, w)
-		return
-	}
-
-	// Parse request from incoming payload
 	var settings Settings
 
-	err = utils.ParseJSONFromRequest(r, &settings)
-	if err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
+	payload := settingsPayload {
+		settings: &settings,
+		checkSettingsPayload: func() bool{
+			return true
+		},
+		field: "settings",
 	}
 
-	// convert setting struct to map
-	pSettings, err := utils.StructToMap(settings)
-	if err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
-	}
-
-	memberSettings := make(map[string]interface{})
-	memberSettings["settings"] = pSettings
-
-	// fetch and update the document
-	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberSettings)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
-
-	if update.ModifiedCount == 0 {
-		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
-		return
-	}
-
-	// publish update to subscriber
-	eventChannel := fmt.Sprintf("organizations_%s", orgID)
-	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberSettings, Channel: eventChannel, Payload: make(map[string]interface{})}
-
-	go utils.Emitter(event)
-
-	utils.GetSuccess("Member settings updated successfully", nil, w)
+	updateMemberSettings(w, r, payload)
 }
 
 func (oh *OrganizationHandler) UpdateMemberMessageAndMediaSettings(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	vars := mux.Vars(r)
-	orgID, memberID := vars["id"], vars["mem_id"]
-
-	// check that org_id is valid
-	err := ValidateOrg(orgID)
-	if err != nil {
-		utils.GetError(err, http.StatusBadRequest, w)
-		return
-	}
-
-	// check that member_id is valid
-	err = ValidateMember(orgID, memberID)
-	if err != nil {
-		utils.GetError(err, http.StatusBadRequest, w)
-		return
-	}
-
-	// Parse request from incoming payload
 	var messageAndMediaSettings MessagesAndMedia
 
-	err = utils.ParseJSONFromRequest(r, &messageAndMediaSettings)
-	if err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
+	payload := settingsPayload {
+		settings: &messageAndMediaSettings,
+		checkSettingsPayload: func() bool {
+			if _, ok := MsgMedias[messageAndMediaSettings.Names]; !ok {
+				utils.GetError(errors.New("name is not valid"), http.StatusBadRequest, w)
+				return false
+			}
+		
+			if _, ok := MsgMedias[messageAndMediaSettings.Emoji]; !ok {
+				utils.GetError(errors.New("emoji is not valid"), http.StatusBadRequest, w)
+				return false
+			}
+
+			return true
+		},
+		field: "settings.messages_and_media",
 	}
 
-	if _, ok := MsgMedias[messageAndMediaSettings.Names]; !ok {
-		utils.GetError(errors.New("name is not valid"), http.StatusBadRequest, w)
-		return
-	}
-
-	if _, ok := MsgMedias[messageAndMediaSettings.Emoji]; !ok {
-		utils.GetError(errors.New("emoji is not valid"), http.StatusBadRequest, w)
-		return
-	}
-
-	// convert setting struct to map
-	pMessageAndMediaSettings, err := utils.StructToMap(messageAndMediaSettings)
-	if err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
-	}
-
-	memberpMessageAndMediaSettings := make(map[string]interface{})
-	memberpMessageAndMediaSettings["settings.messages_and_media"] = pMessageAndMediaSettings
-
-	// fetch and update the document
-	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberpMessageAndMediaSettings)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
-
-	if update.ModifiedCount == 0 {
-		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
-		return
-	}
-
-	// publish update to subscriber
-	eventChannel := fmt.Sprintf("organizations_%s", orgID)
-	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberSettings, Channel: eventChannel, Payload: make(map[string]interface{})}
-
-	go utils.Emitter(event)
-
-	utils.GetSuccess("Member settings updated successfully", nil, w)
+	updateMemberSettings(w, r, payload)
 }
 
 func (oh *OrganizationHandler) UpdateMemberAccessibilitySettings(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	vars := mux.Vars(r)
-	orgID, memberID := vars["id"], vars["mem_id"]
-
-	// check that org_id is valid
-	err := ValidateOrg(orgID)
-	if err != nil {
-		utils.GetError(err, http.StatusBadRequest, w)
-		return
-	}
-
-	// check that member_id is valid
-	err = ValidateMember(orgID, memberID)
-	if err != nil {
-		utils.GetError(err, http.StatusBadRequest, w)
-		return
-	}
-
-	// Parse request from incoming payload
 	var accessibilitySettings Accessibility
 
-	err = utils.ParseJSONFromRequest(r, &accessibilitySettings)
-	if err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
+	payload := settingsPayload {
+		settings: &accessibilitySettings,
+		checkSettingsPayload: func() bool{
+			if _, ok := EmptyMessageFields[accessibilitySettings.PressEmptyMessageField]; !ok {
+				utils.GetError(errors.New("invalid field"), http.StatusBadRequest, w)
+				return false
+			}
+			return true
+		},
+		field: "settings.accessibility",
 	}
 
-	if _, ok := EmptyMessageFields[accessibilitySettings.PressEmptyMessageField]; !ok {
-		utils.GetError(errors.New("invalid field"), http.StatusBadRequest, w)
-		return
-	}
-
-	// convert setting struct to map
-	pAccessibilitySettings, err := utils.StructToMap(accessibilitySettings)
-	if err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
-	}
-
-	memberpAccessibilitySettings := make(map[string]interface{})
-	memberpAccessibilitySettings["settings.accessibility"] = pAccessibilitySettings
-
-	// fetch and update the document
-	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberpAccessibilitySettings)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
-
-	if update.ModifiedCount == 0 {
-		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
-		return
-	}
-
-	// publish update to subscriber
-	eventChannel := fmt.Sprintf("organizations_%s", orgID)
-	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberSettings, Channel: eventChannel, Payload: make(map[string]interface{})}
-
-	go utils.Emitter(event)
-
-	utils.GetSuccess("Member settings updated successfully", nil, w)
+	updateMemberSettings(w, r, payload)
 }
 
 // an endpoint to update a user advanced  preference.
 func (oh *OrganizationHandler) UpdateMemberAdvancedSettings(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	vars := mux.Vars(r)
-	orgID, memberID := vars["id"], vars["mem_id"]
-
-	// check that org_id is valid
-	err := ValidateOrg(orgID)
-	if err != nil {
-		utils.GetError(err, http.StatusBadRequest, w)
-		return
-	}
-
-	// check that member_id is valid
-	err = ValidateMember(orgID, memberID)
-	if err != nil {
-		utils.GetError(err, http.StatusBadRequest, w)
-		return
-	}
-
-	// Parse request from incoming payload
 	var advancedSettings Advanced
 
-	err = utils.ParseJSONFromRequest(r, &advancedSettings)
-	if err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
+	payload := settingsPayload {
+		settings: &advancedSettings,
+		checkSettingsPayload: func() bool {
+			return true
+		},
+		field: "settings.advanced",
 	}
 
-	// convert setting struct to map
-	pAdvancedSettings, err := utils.StructToMap(advancedSettings)
-	if err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
-	}
-
-	memberpAdvancedSettings := make(map[string]interface{})
-	memberpAdvancedSettings["settings.advanced"] = pAdvancedSettings
-
-	// fetch and update the document
-	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberpAdvancedSettings)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
-
-	if update.ModifiedCount == 0 {
-		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
-		return
-	}
-
-	// publish update to subscriber
-	eventChannel := fmt.Sprintf("organizations_%s", orgID)
-	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberSettings, Channel: eventChannel, Payload: make(map[string]interface{})}
-
-	go utils.Emitter(event)
-
-	utils.GetSuccess("Member settings updated successfully", nil, w)
+	updateMemberSettings(w, r, payload)
 }
 
 // Activate single member in an organization.
@@ -1304,142 +1120,46 @@ func (oh *OrganizationHandler) UpdateMemberRole(w http.ResponseWriter, r *http.R
 
 // an endpoint to update a user notification preference.
 func (oh *OrganizationHandler) UpdateNotification(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("content-type", "application/json")
-
-	// validate the user ID
-	orgID := mux.Vars(r)["id"]
-	memberID := mux.Vars(r)["mem_id"]
-
-	// check that org_id is valid
-	err := ValidateOrg(orgID)
-	if err != nil {
-		utils.GetError(err, http.StatusBadRequest, w)
-		return
-	}
-
-	// check that member_id is valid
-	err = ValidateMember(orgID, memberID)
-	if err != nil {
-		utils.GetError(err, http.StatusBadRequest, w)
-		return
-	}
-
-	// Get data from requestbody
 	var notifications Notifications
 
-	if err = utils.ParseJSONFromRequest(r, &notifications); err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
+	payload := settingsPayload {
+		settings: &notifications,
+		checkSettingsPayload: func() bool{
+			return true
+		},
+		field: "settings.notifications",
 	}
 
-	memberSettings := make(map[string]interface{})
-	memberSettings["settings.notifications"] = notifications
-	// fetch and update the document
-	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberSettings)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
-
-	if update.ModifiedCount == 0 {
-		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
-		return
-	}
-
-	utils.GetSuccess("successfully updated status", nil, w)
+	updateMemberSettings(w, r, payload)
 }
 
 // an endpoint to update a user theme preference.
 func (oh *OrganizationHandler) UpdateUserTheme(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("content-type", "application/json")
-
-	// validate the user ID
-	orgID := mux.Vars(r)["id"]
-	memberID := mux.Vars(r)["mem_id"]
-
-	// check that org_id is valid
-	err := ValidateOrg(orgID)
-	if err != nil {
-		utils.GetError(err, http.StatusBadRequest, w)
-		return
-	}
-
-	// check that member_id is valid
-	err = ValidateMember(orgID, memberID)
-	if err != nil {
-		utils.GetError(err, http.StatusBadRequest, w)
-		return
-	}
-
-	// Get data from requestbody
 	var theme UserThemes
 
-	if err = utils.ParseJSONFromRequest(r, &theme); err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
+	payload := settingsPayload {
+		settings: &theme,
+		checkSettingsPayload: func() bool{
+			return true
+		},
+		field: "settings.theme",
 	}
 
-	memberSettings := make(map[string]interface{})
-	memberSettings["settings.theme"] = theme
-	// fetch and update the document
-	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberSettings)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
-
-	if update.ModifiedCount == 0 {
-		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
-		return
-	}
-
-	utils.GetSuccess("successfully updated theme preference", nil, w)
+	updateMemberSettings(w, r, payload)
 }
 
 
 // endpoint to set languages and regions settings.
 func (oh *OrganizationHandler) SetLanguagesAndRegions(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("content-type", "application/json")
-
-	// validate the user ID
-	orgID := mux.Vars(r)["id"]
-	memberID := mux.Vars(r)["mem_id"]
-
-	// check that org_id is valid
-	err := ValidateOrg(orgID)
-	if err != nil {
-		utils.GetError(err, http.StatusBadRequest, w)
-		return
-	}
-
-	// check that member_id is valid
-	err = ValidateMember(orgID, memberID)
-	if err != nil {
-		utils.GetError(err, http.StatusBadRequest, w)
-		return
-	}
-
-	// Get data from requestbody
 	var languagesAndRegions LanguagesAndRegions
-	if err = utils.ParseJSONFromRequest(r, &languagesAndRegions); err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
+
+	payload := settingsPayload {
+		settings: &languagesAndRegions,
+		checkSettingsPayload: func() bool{
+			return true
+		},
+		field: "settings.languages_and_regions",
 	}
 
-	memberSettings := make(map[string]interface{})
-	memberSettings["settings.languages_and_regions"] = languagesAndRegions
-
-	// fetch and update the document
-	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberSettings)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
-
-	if update.ModifiedCount == 0 {
-		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
-		return
-	}
-
-	utils.GetSuccess("successfully updated settings", nil, w)
+	updateMemberSettings(w, r, payload)
 }
