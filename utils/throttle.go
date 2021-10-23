@@ -10,7 +10,7 @@ import (
 )
 
 // Map to hold the throttle rate limiters for each visitor.
-var zc_visitors = make(map[string]*rate.Limiter)
+var zcVisitors = make(map[string]*rate.Limiter)
 var mutex sync.Mutex
 
 // Retrieve and return the rate limiter for the current visitor if it
@@ -20,17 +20,18 @@ func getVisitor(ip string) *rate.Limiter {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	limiter, exists := zc_visitors[ip]
+	limiter, exists := zcVisitors[ip]
 	if !exists {
-		limiter = rate.NewLimiter(1, 2)
-		zc_visitors[ip] = limiter
+		two := 2
+		limiter = rate.NewLimiter(1, two)
+		zcVisitors[ip] = limiter
 	}
 
 	return limiter
 }
 
 // Throttling middleware.
-func throttle(next http.HandlerFunc) http.HandlerFunc {
+func Throttle(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Get the IP address for the current user
 		ip, _, err := net.SplitHostPort(r.RemoteAddr)
@@ -42,7 +43,7 @@ func throttle(next http.HandlerFunc) http.HandlerFunc {
 		// Call the getVisitor function to retrieve the rate limiter for the
 		// current user
 		limiter := getVisitor(ip)
-		if limiter.Allow() == false {
+		if !limiter.Allow() {
 			GetError(err, http.StatusTooManyRequests, w)
 			return
 		}

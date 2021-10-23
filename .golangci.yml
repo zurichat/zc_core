@@ -88,8 +88,5 @@ issues:
   max-same-issues: 0
 
 run:
-  issues-exit-code: 1
-  skip-dirs:
-    - utils
-  
+  issues-exit-code: 1  
   tests: false
