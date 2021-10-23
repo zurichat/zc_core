@@ -90,7 +90,6 @@ issues:
 run:
   issues-exit-code: 1
   skip-dirs:
-    - service
     - utils
   
   tests: false
