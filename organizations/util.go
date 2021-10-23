@@ -12,11 +12,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
+	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
@@ -299,6 +301,7 @@ type settingsPayload struct {
 	field string
 }
 
+// utility function to manage updates to a member's setting.
 func updateMemberSettings(w http.ResponseWriter, r *http.Request, settingsPayload settingsPayload) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -359,4 +362,57 @@ func updateMemberSettings(w http.ResponseWriter, r *http.Request, settingsPayloa
 	go utils.Emitter(event)
 
 	utils.GetSuccess("Member settings updated successfully", nil, w)
+}
+
+// utility function to manage update to organization billing.
+func updateBilling(w http.ResponseWriter, r *http.Request, settingsPayload settingsPayload) {
+	w.Header().Set("Content-Type", "application/json")
+
+	orgID := mux.Vars(r)["id"]
+
+	if err := utils.ParseJSONFromRequest(r, &settingsPayload.settings); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	validate := validator.New()
+
+	if err := validate.Struct(settingsPayload.settings); err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	loggedInUser, ok := r.Context().Value("user").(*auth.AuthUser)
+	if !ok {
+		utils.GetError(errors.New("invalid user"), http.StatusBadRequest, w)
+		return
+	}
+
+	member, err := FetchMember(bson.M{"org_id": orgID, "email": loggedInUser.Email})
+	if err != nil {
+		utils.GetError(errors.New("access denied"), http.StatusNotFound, w)
+		return
+	}
+
+	orgFilter := make(map[string]interface{})
+	orgFilter[settingsPayload.field] = settingsPayload.settings
+
+	update, err := utils.UpdateOneMongoDBDoc(OrganizationCollectionName, orgID, orgFilter)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	// publish update to subscriber
+	eventChannel := fmt.Sprintf("organizations_%s", orgID)
+	event := utils.Event{Identifier: member.ID, Type: "User", Event: UpdateOrganizationBillingSettings, Channel: eventChannel, Payload: make(map[string]interface{})}
+
+	go utils.Emitter(event)
+
+	utils.GetSuccess("organization billing updated successfully", nil, w)
 }

@@ -18,6 +18,7 @@ import (
 
 var ErrNoAuthToken = errors.New("no authorization header provided")
 
+// Install plugin into an organization.
 func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -130,6 +131,7 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 	utils.GetSuccess("plugin saved successfully", save, w)
 }
 
+// Get an organization plugins.
 func (oh *OrganizationHandler) GetOrganizationPlugins(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -164,6 +166,7 @@ func (oh *OrganizationHandler) GetOrganizationPlugins(w http.ResponseWriter, r *
 	utils.GetSuccess("plugins retrieved successfully", org.OrgPlugins(), w)
 }
 
+// Get an organization plugin.
 func (oh *OrganizationHandler) GetOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -197,6 +200,7 @@ func (oh *OrganizationHandler) GetOrganizationPlugin(w http.ResponseWriter, r *h
 	utils.GetSuccess("plugins returned successfully", doc, w)
 }
 
+// Remove an organization plugin.
 func (oh *OrganizationHandler) RemoveOrganizationPlugin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
