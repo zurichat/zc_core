@@ -94,8 +94,8 @@ type Billing struct {
 }
 
 type BillingContact struct {
-	ToDefaultEmail      bool 		`json:"to_default_email" bson:"to_default_email"`
-	Contact 			[]Contact	`json:"contacts" bson:"contacts"`
+	ToDefaultEmail      bool 		`json:"to_default_email" bson:"to_default_email" default:"true"`
+	Contact 			[]Contact	`json:"contacts" bson:"contacts" default:"[]"`
 }
 
 type Contact struct {

@@ -3,7 +3,7 @@ module zuri.chat/zccore
 go 1.16
 
 require (
-	github.com/anthonynsimon/bild v0.13.0 // indirect
+	github.com/anthonynsimon/bild v0.13.0
 	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/getsentry/sentry-go v0.11.0
 	github.com/go-playground/validator/v10 v10.9.0
@@ -37,6 +37,5 @@ require (
 	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1 // indirect
 	golang.org/x/sys v0.0.0-20211007075335-d3039528d8ac // indirect
 	golang.org/x/text v0.3.7 // indirect
-	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
-	golang.org/x/tools v0.1.5
+	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac
 )
