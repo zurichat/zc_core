@@ -70,7 +70,7 @@ func encrypt(data []byte, passphrase string) []byte {
 	return ciphertext
 }
 
-// converts amount in real currency to equivalent token value.
+// Converts amount in real currency to equivalent token value.
 func GetTokenAmount(amount float64, currency string) (float64, error) {
 	var ExchangeMap = map[string]float64{
 		USD: 1,
@@ -86,7 +86,7 @@ func GetTokenAmount(amount float64, currency string) (float64, error) {
 	return amount * ConversionRate, nil
 }
 
-// takes as input org id and token amount and increments token by that amount.
+// Takes as input org id and token amount and increments token by that amount.
 func IncrementToken(orgID, description string, tokenAmount float64) error {
 	OrgIDFromHex, err := primitive.ObjectIDFromHex(orgID)
 	if err != nil {
@@ -110,7 +110,7 @@ func IncrementToken(orgID, description string, tokenAmount float64) error {
 	return nil
 }
 
-// takes as input org id and token amount and decreases token by that amount if available, else returns error.
+// Takes as input org id and token amount and decreases token by that amount if available, else returns error.
 func DeductToken(orgID, description string, tokenAmount float64) error {
 	OrgIDFromHex, err := primitive.ObjectIDFromHex(orgID)
 	if err != nil {
@@ -185,7 +185,7 @@ func SendTokenBillingEmail(orgID, description string, amount float64) error {
 	return nil
 }
 
-// allows user to be able to load tokens into organization wallet.
+// Allows user to be able to load tokens into organization wallet.
 func (oh *OrganizationHandler) AddToken(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -269,26 +269,26 @@ func (oh *OrganizationHandler) GetTokenTransaction(w http.ResponseWriter, r *htt
 	utils.GetSuccess("transactions retrieved successfully", save, w)
 }
 
+// Charge token.
 func (oh *OrganizationHandler) ChargeTokens(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	orgID := mux.Vars(r)["id"]
 
-	requestData := make(map[string]string)
-	if err := utils.ParseJSONFromRequest(r, &requestData); err != nil {
+	if err := utils.ParseJSONFromRequest(r, &RequestData); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
 
 	bitSize := 64
 
-	amount, err := strconv.ParseFloat(requestData["amount"], bitSize)
+	amount, err := strconv.ParseFloat(RequestData["amount"], bitSize)
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
 
-	description := requestData["description"]
+	description := RequestData["description"]
 
 	if err := DeductToken(orgID, description, amount); err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
@@ -298,6 +298,7 @@ func (oh *OrganizationHandler) ChargeTokens(w http.ResponseWriter, r *http.Reque
 	utils.GetSuccess("Billing successful for: "+description, nil, w)
 }
 
+// Create checkout session. 
 func (oh *OrganizationHandler) CreateCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -360,6 +361,7 @@ func (oh *OrganizationHandler) CreateCheckoutSession(w http.ResponseWriter, r *h
 	utils.GetSuccess("successfully initiated payment", s.URL, w)
 }
 
+// Save card details of a user for future payment.
 func (oh *OrganizationHandler) AddCard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -424,7 +426,7 @@ func (oh *OrganizationHandler) AddCard(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("successfully added new card", res, w)
 }
 
-
+// Delete card detail of a user.
 func (oh *OrganizationHandler) DeleteCard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 

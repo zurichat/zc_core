@@ -33,6 +33,7 @@ const (
 	UpdateOrganizationMemberSettings      = "UpdateOrganizationMemberSettings"
 	UpdateOrganizationMemberRole          = "UpdateOrganizationMemberRole"
 	UpdateOrganizationMemberStatusCleared = "UpdateOrganizationMemberStatusCleared"
+	UpdateOrganizationBillingSettings     = "UpdateOrganizationBillingSettings"
 )
 
 const (
@@ -355,6 +356,7 @@ type UserThemes struct {
 	Mode	string `json:"mode"`
 	Colors	string `json:"colors"`
 }
+
 const (
 	ThemeClean   = "clean"
 	ThemeCompact = "compact"

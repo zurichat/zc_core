@@ -26,10 +26,14 @@ func (oh *OrganizationHandler) GetMember(w http.ResponseWriter, r *http.Request)
 	orgID := mux.Vars(r)["id"]
 	memID := mux.Vars(r)["mem_id"]
 
-	memberIDhex, _ := primitive.ObjectIDFromHex(memID)
+	memberIDhex, err := primitive.ObjectIDFromHex(memID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
 
 	// check that org_id is valid
-	err := ValidateOrg(orgID)
+	err = ValidateOrg(orgID)
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
@@ -57,7 +61,7 @@ func (oh *OrganizationHandler) GetMember(w http.ResponseWriter, r *http.Request)
 	utils.GetSuccess("Member retrieved successfully", orgMember, w)
 }
 
-// Get a several member infos with a slice member ids.
+// Get several members in an organization infos with a slice member ids.
 func (oh *OrganizationHandler) GetmultipleMembers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -286,7 +290,7 @@ func (oh *OrganizationHandler) CreateMember(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-// endpoint to update a member's profile picture.
+// Update a member's profile picture.
 func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-Type", "application/json")
 
@@ -352,7 +356,7 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 	go utils.Emitter(event)
 }
 
-// an endpoint to update a user status.
+// Update a member's status.
 func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 
@@ -511,6 +515,7 @@ func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http
 	utils.GetSuccess("status updated successfully", nil, w)
 }
 
+// Remove a member's status history.
 func (oh *OrganizationHandler) RemoveStatusHistory(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -765,6 +770,7 @@ func (oh *OrganizationHandler) TogglePresence(w http.ResponseWriter, r *http.Req
 	utils.GetSuccess("Member presence toggled", nil, w)
 }
 
+// Update a member's setting.
 func (oh *OrganizationHandler) UpdateMemberSettings(w http.ResponseWriter, r *http.Request) {
 	var settings Settings
 
@@ -779,6 +785,7 @@ func (oh *OrganizationHandler) UpdateMemberSettings(w http.ResponseWriter, r *ht
 	updateMemberSettings(w, r, payload)
 }
 
+// Update a member's message and media setting.
 func (oh *OrganizationHandler) UpdateMemberMessageAndMediaSettings(w http.ResponseWriter, r *http.Request) {
 	var messageAndMediaSettings MessagesAndMedia
 
@@ -803,6 +810,7 @@ func (oh *OrganizationHandler) UpdateMemberMessageAndMediaSettings(w http.Respon
 	updateMemberSettings(w, r, payload)
 }
 
+// Update a member's accessibility setting.
 func (oh *OrganizationHandler) UpdateMemberAccessibilitySettings(w http.ResponseWriter, r *http.Request) {
 	var accessibilitySettings Accessibility
 
@@ -821,7 +829,7 @@ func (oh *OrganizationHandler) UpdateMemberAccessibilitySettings(w http.Response
 	updateMemberSettings(w, r, payload)
 }
 
-// an endpoint to update a user advanced  preference.
+// Update a member's advanced preference.
 func (oh *OrganizationHandler) UpdateMemberAdvancedSettings(w http.ResponseWriter, r *http.Request) {
 	var advancedSettings Advanced
 
@@ -836,7 +844,7 @@ func (oh *OrganizationHandler) UpdateMemberAdvancedSettings(w http.ResponseWrite
 	updateMemberSettings(w, r, payload)
 }
 
-// Activate single member in an organization.
+// Activate a deactivated member in an organization.
 func (oh *OrganizationHandler) ReactivateMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -1053,6 +1061,7 @@ func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *htt
 	utils.GetSuccess("Member created successfully", utils.M{"member_id": resp.InsertedID, "organization_id": orgID}, w)
 }
 
+// Update a member's role.
 func (oh *OrganizationHandler) UpdateMemberRole(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -1119,7 +1128,7 @@ func (oh *OrganizationHandler) UpdateMemberRole(w http.ResponseWriter, r *http.R
 	utils.GetSuccess("member role updated successfully", nil, w)
 }
 
-// an endpoint to update a user notification preference.
+// Update a member's notification preference.
 func (oh *OrganizationHandler) UpdateNotification(w http.ResponseWriter, r *http.Request) {
 	var notifications Notifications
 
@@ -1134,7 +1143,7 @@ func (oh *OrganizationHandler) UpdateNotification(w http.ResponseWriter, r *http
 	updateMemberSettings(w, r, payload)
 }
 
-// an endpoint to update a user theme preference.
+// Update a member's theme preference.
 func (oh *OrganizationHandler) UpdateUserTheme(w http.ResponseWriter, r *http.Request) {
 	var theme UserThemes
 
@@ -1149,9 +1158,8 @@ func (oh *OrganizationHandler) UpdateUserTheme(w http.ResponseWriter, r *http.Re
 	updateMemberSettings(w, r, payload)
 }
 
-
-// endpoint to set languages and regions settings.
-func (oh *OrganizationHandler) SetLanguagesAndRegions(w http.ResponseWriter, r *http.Request) {
+// Update a member's languages and regions settings.
+func (oh *OrganizationHandler) UpdateLanguagesAndRegions(w http.ResponseWriter, r *http.Request) {
 	var languagesAndRegions LanguagesAndRegions
 
 	payload := settingsPayload {
