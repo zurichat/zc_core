@@ -49,7 +49,7 @@ $ go run main.go
 1. Lint checks are done with [golangci-lint](https://golangci-lint.run/) - an aggregator of linters
 ```bash
 $ cd /path/to/zc_core
-$ golangci-lint run
+$ golangci-lint run --timeout 2m
 ```
 2. Automated unit and integration tests done with golang's builtin [`testing`](https://pkg.go.dev/testing) package. 
 ```bash

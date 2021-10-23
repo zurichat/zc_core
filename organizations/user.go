@@ -306,21 +306,6 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
-	// Get image dimension
-
-	width, err := strconv.Atoi(r.FormValue("width"))
-	if err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
-	}
-	
-	height, err := strconv.Atoi(r.FormValue("height"))
-	if err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
-	}
-
-
 	if mux.Vars(r)["action"] == "delete" {
 		result, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, bson.M{"image_url": ""})
 
@@ -337,7 +322,7 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 		utils.GetSuccess("image deleted successfully", "", w)
 	} else {
 		uploadPath := "profile_image/" + orgID + "/" + memberID
-		imgURL, err := service.ProfileImageUpload(uploadPath, width, height, r)
+		imgURL, err := service.ProfileImageUpload(uploadPath, imageWidth, imageHeight, r)
 		if err != nil {
 			utils.GetError(err, http.StatusInternalServerError, w)
 			return

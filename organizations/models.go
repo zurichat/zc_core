@@ -65,6 +65,13 @@ var ClearOld = make(chan bool, 1)
 
 var RequestData = make(map[string]string)
 
+const(
+	logoWidth = 111
+	logoHeight = 74
+	imageWidth = 170
+	imageHeight = 170
+)
+
 type MemberPassword struct {
 	MemberID string `bson:"member_id"`
 	Password string `bson:"password"`
