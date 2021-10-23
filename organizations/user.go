@@ -302,6 +302,7 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 
 	// check that member_id is valid
 	err = ValidateMember(orgID, memberID)
+	
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return

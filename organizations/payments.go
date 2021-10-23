@@ -335,7 +335,7 @@ func (oh *OrganizationHandler) CreateCheckoutSession(w http.ResponseWriter, r *h
 		}),
 		Mode: stripe.String(string(stripe.CheckoutSessionModePayment)),
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
-			&stripe.CheckoutSessionLineItemParams{
+			{
 				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
 					Currency: stripe.String("usd"),
 					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
