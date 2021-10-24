@@ -49,6 +49,10 @@ func Router(server *socketio.Server) *mux.Router {
 	us := user.NewUserHandler(configs, mailService)
 	gql := utils.NewGraphQlHandler(configs)
 
+	client := utils.GetDefaultMongoClient()
+	ps := plugin.NewMongoService(client)
+	ph := plugin.NewHandler(ps)
+
 	// Setup and init
 	r.HandleFunc("/", VersionHandler)
 	r.HandleFunc("/loadapp/{appid}", LoadApp).Methods("GET")
@@ -154,8 +158,9 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/data/collections/info/{plugin_id}/{coll_name}/{org_id}", data.CollectionDetail).Methods("GET")
 
 	// Plugins
-	r.HandleFunc("/plugins/register", plugin.Register).Methods("POST")
-	r.HandleFunc("/plugins/{id}", plugin.Update).Methods("PATCH")
+	r.HandleFunc("/plugins/register", ph.Register).Methods("POST")
+	r.HandleFunc("/plugins", ph.Register).Methods("POST")
+	r.HandleFunc("/plugins/{id}", ph.Update).Methods("PATCH")
 	r.HandleFunc("/plugins/{id}", plugin.Delete).Methods("DELETE")
 	r.HandleFunc("/plugins/{id}/sync", plugin.SyncUpdate).Methods("PATCH")
 

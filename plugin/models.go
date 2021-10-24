@@ -34,7 +34,6 @@ type Plugin struct {
 	ApprovedAt     string             `json:"approved_at" bson:"approved_at"`
 	CreatedAt      string             `json:"created_at" bson:"created_at"`
 	UpdatedAt      string             `json:"updated_at" bson:"updated_at"`
-	DeletedAt      string             `json:"deleted_at" bson:"deleted_at"`
 	SyncRequestURL string             `json:"sync_request_url" bson:"sync_request_url"`
 	Queue          []MessageModel     `json:"queue" bson:"queue"`
 	QueuePID       int                `json:"queuepid" bson:"queuepid"`
@@ -85,6 +84,7 @@ func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 		return nil, err
 	}
 
+
 	res, _ := utils.GetMongoDBDoc(PluginCollectionName, bson.M{"_id": objID, "deleted": false})
 
 	bsonBytes, err := bson.Marshal(res)
@@ -110,7 +110,9 @@ func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 func FindPlugins(ctx context.Context, filter bson.M, opts ...*options.FindOptions) ([]*Plugin, error) {
 	ps := []*Plugin{}
 
+
 	cursor, err := utils.GetMongoDBDocs(PluginCollectionName, filter)
+
 
 	if err != nil {
 		return nil, err
@@ -205,7 +207,7 @@ func updatePlugin(ctx context.Context, id string, pp *Patch) error {
 		push["tags"] = bson.M{"$each": pp.Tags}
 	}
 
-	_, err := collection.UpdateOne(ctx, M{"_id": objID}, bson.M{
+	_, err := collection.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{
 		"$set":  set,
 		"$push": push,
 	})
