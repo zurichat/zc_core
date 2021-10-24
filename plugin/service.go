@@ -26,10 +26,14 @@ type mongoService struct {
 func (m *mongoService) Create(ctx context.Context, p *Plugin) error {
 	db := m.database()
 	res, err := db.Collection("plugins").InsertOne(ctx, p)
+	
 	if err != nil {
 		return err
 	}
+	
+	//nolint:errcheck // the return value is always primitive.ObjectID
 	p.ID = res.InsertedID.(primitive.ObjectID)
+
 	return nil
 }
 
@@ -37,6 +41,7 @@ func (m *mongoService) FindOne(ctx context.Context, f interface{}) (*Plugin, err
 	p := &Plugin{}
 	db := m.database()
 	res := db.Collection("plugins").FindOne(ctx, f)
+
 	return p, res.Decode(p)
 }
 
@@ -48,9 +53,14 @@ func (m *mongoService) FindMany(ctx context.Context, f interface{}) (ps []*Plugi
 		return nil, err
 	}
 
-	return ps, cursor.All(ctx, &ps)
+	if err := cursor.All(ctx, &ps); err != nil {
+		return nil, err
+	}
+
+	return ps, nil
 }
 
+//nolint:gocritic // why do you always criticize my code? 🙄
 func (m *mongoService) Update(ctx context.Context, f interface{}, pp Patch) error {
 	set := bson.M{}
 	push := bson.M{}
@@ -117,8 +127,10 @@ func (m *mongoService) database() *mongo.Database {
 
 func NewMongoService(c *mongo.Client) Service {
 	dbName := os.Getenv("DB_NAME")
+	
 	if dbName == "" {
 		dbName = "zurichat"
 	}
+	
 	return &mongoService{c, dbName}
 }

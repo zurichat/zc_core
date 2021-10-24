@@ -24,7 +24,7 @@ func NewHandler(s Service) *Handler {
 	return &Handler{s, validator.New()}
 }
 
-func (ph *Handler) Register(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		Name           string   `json:"name" validate:"required"`
 		Description    string   `json:"description" validate:"required"`
@@ -40,26 +40,26 @@ func (ph *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		Tags           []string `json:"tags,omitempty"`
 	}{}
 
-	if err := ph.readJSON(r, &data); err != nil {
-		ph.errorResponse(w, http.StatusUnprocessableEntity, ErrorMessage(err))
+	if err := h.readJSON(r, &data); err != nil {
+		h.errorResponse(w, http.StatusUnprocessableEntity, ErrorMessage(err))
 		LogError(err)
 
 		return
 	}
 
-	if err := ph.validate.Struct(data); err != nil {
+	if err := h.validate.Struct(data); err != nil {
 		err = Errorf(EINVALID, "validation error: %v", err)
-		ph.errorResponse(w, http.StatusBadRequest, ErrorMessage(err))
+		h.errorResponse(w, http.StatusBadRequest, ErrorMessage(err))
 		LogError(err)
 
 		return
 	}
 
-	if p, err := ph.Service.FindOne(r.Context(), bson.M{
+	if p, err := h.Service.FindOne(r.Context(), bson.M{
 		"template_url": data.TemplateURL,
 	}); err == nil && p != nil {
 		err := Errorf(EDUPLICATE, "plugin exists")
-		ph.errorResponse(w, http.StatusForbidden, ErrorMessage(err))
+		h.errorResponse(w, http.StatusForbidden, ErrorMessage(err))
 		LogError(err)
 
 		return
@@ -68,7 +68,7 @@ func (ph *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	newPlugin := &Plugin{}
 
 	if err := mapstructure.Decode(data, newPlugin); err != nil {
-		ph.errorResponse(w, http.StatusInternalServerError, ErrorMessage(err))
+		h.errorResponse(w, http.StatusInternalServerError, ErrorMessage(err))
 		LogError(err)
 
 		return
@@ -77,22 +77,22 @@ func (ph *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	newPlugin.Approved = true
 	newPlugin.ApprovedAt = time.Now().String()
 
-	if err := ph.Service.Create(r.Context(), newPlugin); err != nil {
-		ph.errorResponse(w, http.StatusInternalServerError, ErrorMessage(err))
+	if err := h.Service.Create(r.Context(), newPlugin); err != nil {
+		h.errorResponse(w, http.StatusInternalServerError, ErrorMessage(err))
 		LogError(err)
 
 		return
 	}
 
-	ph.successResponse(w, http.StatusCreated, "plugin created", D{"plugin": newPlugin})
+	h.successResponse(w, http.StatusCreated, "plugin created", D{"plugin": newPlugin})
 }
 
-func (ph *Handler) Update(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	pp := Patch{}
 	id := mux.Vars(r)["id"]
 
-	if err := ph.readJSON(r, &pp); err != nil {
-		ph.errorResponse(w, http.StatusUnprocessableEntity, ErrorMessage(err))
+	if err := h.readJSON(r, &pp); err != nil {
+		h.errorResponse(w, http.StatusUnprocessableEntity, ErrorMessage(err))
 		LogError(err)
 
 		return
@@ -101,40 +101,40 @@ func (ph *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	objID, err := primitive.ObjectIDFromHex(id)
 	
 	if err != nil {
-       ph.errorResponse(w, http.StatusBadRequest, ErrorMessage(Errorf(ENOENT, "plugin with id %s not found", id)))
+       h.errorResponse(w, http.StatusBadRequest, ErrorMessage(Errorf(ENOENT, "plugin with id %s not found", id)))
        return
 	}
 
-	if err := ph.Service.Update(r.Context(), bson.M{"_id": objID}, pp); err != nil {
-		ph.errorResponse(w, http.StatusInternalServerError, ErrorMessage(err))
+	if err := h.Service.Update(r.Context(), bson.M{"_id": objID}, pp); err != nil {
+		h.errorResponse(w, http.StatusInternalServerError, ErrorMessage(err))
 		LogError(err)
 
 		return
 	}
 
-	ph.successResponse(w, http.StatusOK, "plugin updated", nil)
+	h.successResponse(w, http.StatusOK, "plugin updated", nil)
 }
 
-func(ph *Handler) Delete(w http.ResponseWriter, r *http.Request) {
+func(h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 
 	objID, err := primitive.ObjectIDFromHex(id)
 
 	if err != nil {
-		err = Errorf(EINVALID, "cannot proccess request: invalid object id")
-		ph.errorResponse(w, http.StatusUnprocessableEntity, ErrorMessage(err))
+		err = Errorf(EINVALID, "cannot process request: invalid object id")
+		h.errorResponse(w, http.StatusUnprocessableEntity, ErrorMessage(err))
 		
 		return
 	}
 
-	if err := ph.Service.Delete(r.Context(), bson.M{"_id": objID}); err != nil {
-		ph.errorResponse(w, http.StatusInternalServerError, ErrorMessage(err))
+	if err := h.Service.Delete(r.Context(), bson.M{"_id": objID}); err != nil {
+		h.errorResponse(w, http.StatusInternalServerError, ErrorMessage(err))
 		LogError(err)
 
 		return
 	}
 
-	ph.successResponse(w, http.StatusOK, "plugin deleted", nil)
+	h.successResponse(w, http.StatusOK, "plugin deleted", nil)
 }
 
 func (h *Handler) readJSON(r *http.Request, out interface{}) error {
@@ -160,10 +160,14 @@ func (h *Handler) successResponse(w http.ResponseWriter, code int, msg string, d
 		Message: msg,
 		Data:    data,
 	}
+	
+	//nolint:errcheck // why do you need me to perform err checking here 🙈?
 	h.writeJSON(w, code, resp)
 }
 
 func (h *Handler) errorResponse(w http.ResponseWriter, code int, message string) {
 	resp := ResponseModel{"error", message, nil}
+	
+	//nolint:errcheck // again, why do you need me to perform err checking here 🙈?
 	h.writeJSON(w, code, resp)
 }
