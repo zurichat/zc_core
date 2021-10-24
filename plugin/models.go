@@ -2,7 +2,6 @@ package plugin
 
 import (
 	"context"
-	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
@@ -51,27 +50,6 @@ type Patch struct {
 	SyncRequestURL *string  `json:"sync_request_url" bson:"sync_request_url"`
 }
 
-func CreatePlugin(ctx context.Context, p *Plugin) error {
-	p.Approved = false
-	p.CreatedAt = time.Now().String()
-	p.UpdatedAt = time.Now().String()
-	collection := utils.GetCollection(PluginCollectionName)
-	res, err := collection.InsertOne(ctx, p)
-
-	if err != nil {
-		return err
-	}
-
-	value, ok := res.InsertedID.(primitive.ObjectID)
-	if !ok {
-		return err
-	}
-
-	p.ID = value
-
-	return err
-}
-
 func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 	var (
 		p  *Plugin
@@ -111,7 +89,7 @@ func FindPlugins(ctx context.Context, filter bson.M, opts ...*options.FindOption
 	ps := []*Plugin{}
 
 
-	cursor, err := utils.GetMongoDBDocs(PluginCollectionName, filter)
+	cursor, err := utils.GetMongoDBDocs(PluginCollectionName, filter, opts...)
 
 
 	if err != nil {
@@ -163,56 +141,6 @@ func SortPlugins(ctx context.Context, filter bson.M, sort bson.D) ([]*Plugin, er
 	}
 
 	return ps, nil
-}
-
-func updatePlugin(ctx context.Context, id string, pp *Patch) error {
-	collection := utils.GetCollection(PluginCollectionName)
-	objID, _ := primitive.ObjectIDFromHex(id)
-	set := bson.M{}
-	push := bson.M{}
-
-	if pp.Name != nil {
-		set["name"] = *(pp.Name)
-	}
-
-	if pp.Description != nil {
-		set["description"] = *(pp.Description)
-	}
-
-	if pp.SidebarURL != nil {
-		set["sidebar_url"] = *(pp.SidebarURL)
-	}
-
-	if pp.InstallURL != nil {
-		set["install_url"] = *(pp.InstallURL)
-	}
-
-	if pp.TemplateURL != nil {
-		set["template_url"] = *(pp.TemplateURL)
-	}
-
-	if pp.Version != nil {
-		set["version"] = *(pp.Version)
-	}
-
-	if pp.SyncRequestURL != nil {
-		set["sync_request_url"] = *(pp.SyncRequestURL)
-	}
-
-	if pp.Images != nil {
-		push["images"] = bson.M{"$each": pp.Images}
-	}
-
-	if pp.Tags != nil {
-		push["tags"] = bson.M{"$each": pp.Tags}
-	}
-
-	_, err := collection.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{
-		"$set":  set,
-		"$push": push,
-	})
-
-	return err
 }
 
 type SyncUpdateRequest struct {

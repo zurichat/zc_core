@@ -161,7 +161,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/plugins/register", ph.Register).Methods("POST")
 	r.HandleFunc("/plugins", ph.Register).Methods("POST")
 	r.HandleFunc("/plugins/{id}", ph.Update).Methods("PATCH")
-	r.HandleFunc("/plugins/{id}", plugin.Delete).Methods("DELETE")
+	r.HandleFunc("/plugins/{id}", ph.Delete).Methods("DELETE")
 	r.HandleFunc("/plugins/{id}/sync", plugin.SyncUpdate).Methods("PATCH")
 
 	// Marketplace
