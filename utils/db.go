@@ -33,6 +33,10 @@ func (e *errChecker) Check(err error) {
 	e.err = err
 }
 
+func GetDefaultMongoClient() *mongo.Client {
+	return defaultMongoHandle.client
+}
+
 func ConnectToDB(clusterURL string) error {
 	var ec errChecker
 
@@ -290,24 +294,24 @@ func CreateUniqueIndex(collName, field string, order int) error {
 
 func CreateTextIndexForPlugins() error {
 	collection := defaultMongoHandle.GetCollection("plugins")
-   
-   indexModel := mongo.IndexModel{
-   	Keys: bson.D{
-   		{Key: "name", Value: "text"},
-   		{Key:"description", Value:"text"},
-   		{Key: "category", Value: "text"},
-   		{Key: "tags", Value: "text"},
-   	},
-   	Options: options.Index().SetWeights(bson.M{
-   		"name": 10,
-   		"description": 5,
-   		"category": 3,
-   		"tags": 1,
-   	}),
-   }
+
+	indexModel := mongo.IndexModel{
+		Keys: bson.D{
+			{Key: "name", Value: "text"},
+			{Key: "description", Value: "text"},
+			{Key: "category", Value: "text"},
+			{Key: "tags", Value: "text"},
+		},
+		Options: options.Index().SetWeights(bson.M{
+			"name":        10,
+			"description": 5,
+			"category":    3,
+			"tags":        1,
+		}),
+	}
 
 	indexName, err := collection.Indexes().CreateOne(context.Background(), indexModel)
-	
+
 	if err != nil {
 		fmt.Printf("error creating text index for plugins collection %v", err)
 		return nil
@@ -317,7 +321,6 @@ func CreateTextIndexForPlugins() error {
 
 	return nil
 }
-
 
 func CountCollection(ctx context.Context, name string, filter bson.M) int64 {
 	collection := defaultMongoHandle.GetCollection(name)
