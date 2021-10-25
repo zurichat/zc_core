@@ -9,9 +9,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"zuri.chat/zccore/plugin"
 	"zuri.chat/zccore/utils"
 )
+
+const CollectionLimit = 2
 
 type writeDataRequest struct {
 	PluginID       string                 `json:"plugin_id"`
@@ -34,7 +35,7 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := plugin.FindPluginByID(r.Context(), reqData.PluginID); err != nil {
+	if _, err := utils.GetMongoDBDoc("plugins", bson.M{"_id": mustObjectIDFromHex(reqData.PluginID)}); err != nil {
 		msg := "plugin with this id does not exist"
 		utils.GetError(errors.New(msg), http.StatusNotFound, w)
 
@@ -53,7 +54,7 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (wdr *writeDataRequest) handlePost(w http.ResponseWriter, _ *http.Request) {
+func (wdr *writeDataRequest) handlePost(w http.ResponseWriter, r *http.Request) {
 	var payload interface{}
 
 	if wdr.BulkWrite {
@@ -63,8 +64,35 @@ func (wdr *writeDataRequest) handlePost(w http.ResponseWriter, _ *http.Request) 
 	}
 
 	actualCollName := mongoCollectionName(wdr.PluginID, wdr.CollectionName)
+
+	colls, err := FindPluginCollections(r.Context(), wdr.PluginID)
+
+	if err != nil {
+		utils.GetError(fmt.Errorf("an error occurred: %v", err), http.StatusInternalServerError, w)
+		return
+	}
+
+	exists := false
+
+	for _, c := range colls {
+		if c.Name == wdr.CollectionName {
+			exists = true
+			break
+		}
+	}
+
+	if !exists && len(colls) < CollectionLimit {
+		if err = SaveCollection(wdr.CollectionName, wdr.PluginID); err != nil {
+			utils.GetError(fmt.Errorf("an error occurred: %v", err), http.StatusInternalServerError, w)
+			return
+		}
+	} else if !exists && len(colls) >= CollectionLimit {
+		utils.GetError(fmt.Errorf("maximum collections limit reached"), http.StatusNotAcceptable, w)
+		return
+	}
+
 	res, err := insertMany(actualCollName, wdr.OrganizationID, payload)
-	
+
 	if err != nil {
 		utils.GetError(fmt.Errorf("an error occurred: %v", err), http.StatusInternalServerError, w)
 		return
@@ -92,12 +120,12 @@ func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, _ *http.Request) {
 	filter := make(map[string]interface{})
 	collName := mongoCollectionName(wdr.PluginID, wdr.CollectionName)
 
-    //nolint:gocritic // dod-san: ignore if else-if chain
+	//nolint:gocritic // dod-san: ignore if else-if chain
 	if wdr.ObjectID != "" {
 		filter["_id"] = wdr.ObjectID
 	} else if wdr.Filter != nil {
 		filter = wdr.Filter
-	}else {
+	} else {
 		utils.GetError(errors.New("object id or filter object not specified"), http.StatusUnprocessableEntity, w)
 		return
 	}
