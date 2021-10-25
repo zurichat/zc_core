@@ -118,7 +118,6 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	userDoc, _ := utils.GetMongoDBDoc(UserCollectionName, bson.M{"email": newOrg.CreatorEmail})
 	if userDoc == nil {
-		fmt.Printf("user with email %s does not exist!", newOrg.CreatorEmail)
 		utils.GetError(errors.New("user with this email does not exist"), http.StatusBadRequest, w)
 
 		return
@@ -485,7 +484,7 @@ func (oh *OrganizationHandler) InviteStats(w http.ResponseWriter, r *http.Reques
 	utils.GetSuccess("successful", invites, w)
 }
 
-// Upgrade services to Pro. 
+// Upgrade services to Pro.
 func (oh *OrganizationHandler) UpgradeToPro(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -544,12 +543,12 @@ func (oh *OrganizationHandler) UpdateBillingSettings(w http.ResponseWriter, r *h
 
 	var billingSetting BillingSetting
 
-	payload := settingsPayload {
+	payload := settingsPayload{
 		settings: &billingSetting,
-		field: "billing.setting",
+		field:    "billing.setting",
 	}
 
-	updateBilling(w, r, payload)	
+	updateBilling(w, r, payload)
 }
 
 // Update an organization billing contact.
@@ -558,9 +557,9 @@ func (oh *OrganizationHandler) UpdateBillingContact(w http.ResponseWriter, r *ht
 
 	var billingContact BillingContact
 
-	payload := settingsPayload {
+	payload := settingsPayload{
 		settings: &billingContact,
-		field: "billing.contact",
+		field:    "billing.contact",
 	}
 
 	updateBilling(w, r, payload)

@@ -2,80 +2,94 @@ package organizations
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 
-	"github.com/gorilla/mux"
-	"github.com/stretchr/testify/suite"
+	"github.com/joho/godotenv"
 	"zuri.chat/zccore/utils"
 )
 
-// We'll be able to store suite-wide
-// variables and add methods to this
-// test suite struct.
-type OrganizationTestSuite struct {
-	suite.Suite
-	orghandler *OrganizationHandler
-}
-  
-// This is an example test that will always succeed.
-func (suite *OrganizationTestSuite) TestGetNonExistingIDFails() {
-	mu := mux.NewRouter()
-	mu.HandleFunc("/organizations/{id}", suite.orghandler.GetOrganization).Methods("GET")
+var configs = utils.NewConfigurations()
+var orgs = NewOrganizationHandler(configs, nil)
 
-	req, _ := http.NewRequest("GET", "/organizations/6145c915285e4a1840207403", nil)
+func TestMain(m *testing.M) {
+	// load .env file if it exists
+	err := godotenv.Load("../.env")
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
 
-	testHTTPResponse(suite.T(), mu, req, func(w *httptest.ResponseRecorder) bool {
-		statusOK := w.Code == http.StatusNotFound
-		return statusOK
-	})
-}
+	fmt.Println("Environment variables successfully loaded. Starting application...")
 
-func (suite *OrganizationTestSuite) TestCreateOrgWithBadBodyRequestFail() {
-	mu := mux.NewRouter()
-	mu.HandleFunc("/organizations/{id}", suite.orghandler.Create).Methods("GET")
-	
-	badpayload := []byte(`{"creato_email":"test@test.com"}`)
-	req, _ := http.NewRequest("GET", "/organizations/6145c915285e4a1840207403", bytes.NewBuffer(badpayload))
-
-	testHTTPResponse(suite.T(), mu, req, func(w *httptest.ResponseRecorder) bool {
-		statusOK := w.Code == http.StatusBadRequest
-		return statusOK
-	})
-}
-
-// This will run before before the tests in the suite are run.
-func (suite *OrganizationTestSuite) SetupSuite() {
-	configs := utils.NewConfigurations()
-	suite.orghandler = NewOrganizationHandler(configs, nil)
-
-	os.Setenv("DB_NAME", "zurichat_test")
-	os.Setenv("CLUSTER_URL", "mongodb://127.0.0.1:27017")
-
-	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
+	if err = utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
 		log.Fatal("Could not connect to MongoDB")
 	}
-}
-  
-  // We need this function to kick off the test suite, otherwise
-  // "go test" won't know about our tests.
-func TestOrganizationTestSuite(t *testing.T) {
-	suite.Run(t, new(OrganizationTestSuite))
+	fmt.Printf("\n\n")
+	m.Run()
 }
 
-func testHTTPResponse(t *testing.T, r *mux.Router, req *http.Request, f func(w *httptest.ResponseRecorder) bool) {
-	// Create a response recorder
-	t.Helper()
+func TestCreateOrganization(t *testing.T) {
+	t.Run("test for successful organization creation", func(t *testing.T) {
+		var requestBody = []byte(`{"creator_email": "utukphd@gmail.com"}`)
 
-	w := httptest.NewRecorder()
+		req, err := http.NewRequest("POST", "/organizations", bytes.NewBuffer(requestBody))
+		if err != nil {
+			t.Fatal(err)
+		}
+		response := httptest.NewRecorder()
+		orgs.Create(response, req)
+		assertStatusCode(t, response.Code, http.StatusOK)
+	})
 
-	// Create the service and process the above request.
-	r.ServeHTTP(w, req)
+	t.Run("test for bad email format", func(t *testing.T) {
+		var requestBody = []byte(`{"creator_email": "badmailformat.xyz"}`)
 
-	if !f(w) {
-		t.Fail()
+		req, err := http.NewRequest("POST", "/organizations", bytes.NewBuffer(requestBody))
+		if err != nil {
+			t.Fatal(err)
+		}
+		response := httptest.NewRecorder()
+		orgs.Create(response, req)
+		assertStatusCode(t, response.Code, http.StatusBadRequest)
+		assertResponseMessage(t, parseResponse(response)["message"].(string), "invalid email format : badmailformat.xyz")
+	})
+
+	t.Run("test for non existent user", func(t *testing.T) {
+		var requestBody = []byte(`{"creator_email": "notuser@gmail.com"}`)
+
+		req, err := http.NewRequest("POST", "/organizations", bytes.NewBuffer(requestBody))
+		if err != nil {
+			t.Fatal(err)
+		}
+		response := httptest.NewRecorder()
+		orgs.Create(response, req)
+		assertStatusCode(t, response.Code, http.StatusBadRequest)
+		assertResponseMessage(t, parseResponse(response)["message"].(string), "user with this email does not exist")
+	})
+}
+
+func TestGetOrganization(t *testing.T) {
+}
+
+func assertStatusCode(t *testing.T, got, expected int) {
+	if got != expected {
+		t.Errorf("got status %d expected status %d", got, expected)
 	}
+}
+
+func assertResponseMessage(t *testing.T, got, expected string) {
+	if got != expected {
+		t.Errorf("got message: %q expected: %q", got, expected)
+	}
+}
+
+func parseResponse(w *httptest.ResponseRecorder) map[string]interface{} {
+	res := make(map[string]interface{})
+	json.NewDecoder(w.Body).Decode(&res)
+	return res
 }
