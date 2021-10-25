@@ -33,7 +33,7 @@ func (app *App) Run() error {
 	// load .env file if it exists
 	err := godotenv.Load(".env")
 	if err != nil {
-		return errors.New(fmt.Sprintf("Error loading .env file: %v", err))
+		return fmt.Errorf("Error loading .env file: %v", err)
 	}
 
 	fmt.Println("Environment variables successfully loaded. Starting application...")
@@ -51,7 +51,7 @@ func (app *App) Run() error {
 	})
 
 	if err != nil {
-		return errors.New(fmt.Sprintf("sentry.Init: %s", err))
+		return fmt.Errorf("sentry.Init: %s", err)
 	}
 
 	// transporter
@@ -77,6 +77,7 @@ func (app *App) Run() error {
 	defer Server.Close()
 
 	fmt.Println("Zuri Chat API running on port ", app.Port)
+
 	if err := srv.ListenAndServe(); err != nil {
 		return err
 	}
@@ -95,7 +96,7 @@ func main() {
 	app := App{ Port: port }
 	
 	if err := app.Run(); err != nil {
-		fmt.Println("Error occur while starting the server.")
+		fmt.Println("Error occur while starting the Zuri Chat API.")
 		log.Fatal(err)
 	}
 }

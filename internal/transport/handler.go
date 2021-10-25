@@ -219,5 +219,4 @@ func (h *Handler) SetupRoutes(server *socketio.Server) {
 
 	// Docs
 	h.Router.PathPrefix("/").Handler(http.StripPrefix("/docs", http.RedirectHandler("https://docs.zuri.chat/", http.StatusMovedPermanently)))
-
 }
