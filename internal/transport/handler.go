@@ -25,16 +25,19 @@ import (
 
 type Handler struct {
 	Router *mux.Router
+	SocketIO *socketio.Server
 }
 
-func NewHandler() *Handler {
-	return &Handler{}
+func NewHandler(server *socketio.Server) *Handler {
+	return &Handler{
+		SocketIO: server,
+	}
 }
 
-func (h *Handler) SetupRoutes(server *socketio.Server) {
+func (h *Handler) SetupRoutes() {
 	h.Router = mux.NewRouter().StrictSlash(true)
 
-	// Load handlers(Doing this to reduce dependency circle issue, might reverse if not working)
+	// Load handlers(this to reduce dependency circle issue, might reverse if not working)
 	configs := utils.NewConfigurations()
 	mailService := service.NewZcMailService(configs)
 
@@ -186,7 +189,7 @@ func (h *Handler) SetupRoutes(server *socketio.Server) {
 	h.Router.HandleFunc("/realtime/auth", realtime.Auth).Methods("POST")
 	h.Router.HandleFunc("/realtime/refresh", realtime.Refresh).Methods("POST")
 	h.Router.HandleFunc("/realtime/publish-event", realtime.PublishEvent).Methods("POST")
-	h.Router.Handle("/socket.io/", server)
+	h.Router.Handle("/socket.io/", h.SocketIO)
 
 	// Email subscription
 	h.Router.HandleFunc("/external/subscribe", exts.EmailSubscription).Methods("POST")
