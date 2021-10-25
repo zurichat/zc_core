@@ -33,6 +33,7 @@ const (
 	UpdateOrganizationMemberSettings      = "UpdateOrganizationMemberSettings"
 	UpdateOrganizationMemberRole          = "UpdateOrganizationMemberRole"
 	UpdateOrganizationMemberStatusCleared = "UpdateOrganizationMemberStatusCleared"
+	UpdateOrganizationBillingSettings     = "UpdateOrganizationBillingSettings"
 )
 
 const (
@@ -65,6 +66,13 @@ var ClearOld = make(chan bool, 1)
 
 var RequestData = make(map[string]string)
 
+const(
+	logoWidth = 111
+	logoHeight = 74
+	imageWidth = 170
+	imageHeight = 170
+)
+
 type MemberPassword struct {
 	MemberID string `bson:"member_id"`
 	Password string `bson:"password"`
@@ -78,6 +86,7 @@ type Organization struct {
 	Plugins      []map[string]interface{} `json:"plugins" bson:"plugins"`
 	Admins       []string                 `json:"admins" bson:"admins"`
 	Settings     OrganizationPreference   `json:"settings" bson:"settings"`
+	Customize    Customize                `json:"customize" bson:"customize"`
 	LogoURL      string                   `json:"logo_url" bson:"logo_url"`
 	WorkspaceURL string                   `json:"workspace_url" bson:"workspace_url"`
 	CreatedAt    time.Time                `json:"created_at" bson:"created_at"`
@@ -93,8 +102,8 @@ type Billing struct {
 }
 
 type BillingContact struct {
-	ToDefaultEmail      bool 		`json:"to_default_email" bson:"to_default_email"`
-	Contact 			[]Contact	`json:"contacts" bson:"contacts"`
+	ToDefaultEmail      bool 		`json:"to_default_email" bson:"to_default_email" default:"true"`
+	Contact 			[]Contact	`json:"contacts" bson:"contacts" default:"[]"`
 }
 
 type Contact struct {
@@ -249,6 +258,29 @@ type Settings struct {
 	PluginSettings      []PluginSettings    `json:"plugin_settings" bson:"plugin_settings"`
 }
 
+type Customize struct {
+	Prefixes       []ChannelPrefixes `json:"prefixes" bson:"prefixes"`
+	AddCustomEmoji []CustomEmoji     `json:"addcustomemoji" bson:"addcustomemoji"`
+	SlackBot       []SlackBot        `json:"slackbot" bson:"slackbot"`
+}
+
+type SlackBot struct {
+	WhenSomeOneSays string `json:"whensomeonesays" bson:"whensomeonesays"`
+	SlackResponds   string `json:"slackresponds" bson:"slackresponds"`
+}
+
+type ChannelPrefixes struct {
+	Title       string `json:"title" bson:"title"`
+	Description string `json:"description" bson:"description"`
+}
+
+type CustomEmoji struct {
+	Name      string    `json:"name" bson:"name"`
+	ImageURL  string    `json:"imageurl" bson:"imageurl"`
+	User      string    `json:"user" bson:"user"`
+	CreatedAt time.Time `json:"created_at" bson:"created_at"`
+}
+
 type OrganizationPreference struct {
 	Settings       OrgSettings       `json:"settings" bson:"settings"`
 	Permissions    OrgPermissions    `json:"permissions" bson:"permissions"`
@@ -324,6 +356,7 @@ type UserThemes struct {
 	Mode	string `json:"mode"`
 	Colors	string `json:"colors"`
 }
+
 const (
 	ThemeClean   = "clean"
 	ThemeCompact = "compact"

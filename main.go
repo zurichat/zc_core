@@ -92,6 +92,11 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/settings", au.IsAuthenticated(orgs.UpdateOrganizationSettings)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/permission", au.IsAuthenticated(orgs.UpdateOrganizationPermission)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/auth", au.IsAuthenticated(orgs.UpdateOrganizationAuthentication)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/change-owner", au.IsAuthenticated(orgs.TransferOwnership)).Methods("PATCH")
+
+	r.HandleFunc("/organizations/{id}/prefixes", au.IsAuthenticated(orgs.UpdateOrganizationPrefixes)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/slackbotresponses", au.IsAuthenticated(orgs.UpdateSlackBotResponses)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/customemoji", au.IsAuthenticated(orgs.AddSlackCustomEmoji)).Methods("PATCH")
 
 	// Organization: Guest Invites
 	r.HandleFunc("/organizations/{id}/send-invite", au.IsAuthenticated(au.IsAuthorized(orgs.SendInvite, "admin"))).Methods("POST")
@@ -120,20 +125,17 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/role", au.IsAuthenticated(au.IsAuthorized(orgs.UpdateMemberRole, "admin"))).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/notification", au.IsAuthenticated(orgs.UpdateNotification)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/theme", au.IsAuthenticated(orgs.UpdateUserTheme)).Methods("PATCH")
-	// r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/mark-as-read", au.IsAuthenticated(orgs.UpdateMarkAsRead)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/message-media", au.IsAuthenticated(orgs.UpdateMemberMessageAndMediaSettings)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/accessibility", au.IsAuthenticated(orgs.UpdateMemberAccessibilitySettings)).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/languages-and-region", au.IsAuthenticated(orgs.SetLanguagesAndRegions)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/languages-and-region", au.IsAuthenticated(orgs.UpdateLanguagesAndRegions)).Methods("PATCH")
 	r.HandleFunc("/organizations/{id}/members/{mem_id}/settings/advanced", au.IsAuthenticated(orgs.UpdateMemberAdvancedSettings)).Methods("PATCH")
 
 	r.HandleFunc("/organizations/{id}/reports", au.IsAuthenticated(reps.AddReport)).Methods("POST")
 	r.HandleFunc("/organizations/{id}/reports", au.IsAuthenticated(reps.GetReports)).Methods("GET")
 	r.HandleFunc("/organizations/{id}/reports/{report_id}", au.IsAuthenticated(reps.GetReport)).Methods("GET")
-	r.HandleFunc("/organizations/{id}/change-owner", au.IsAuthenticated(orgs.TransferOwnership)).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/billing", au.IsAuthenticated(orgs.SaveBillingSettings)).Methods("PATCH")
-	// the above endpoint need to change to the commented endpoint below for uniformity but every front end using it has to be updated so as to prevent their code from braking
-	// r.HandleFunc("/organizations/{id}/billing/settings", au.IsAuthenticated(orgs.SaveBillingSettings)).Methods("PATCH")
-	r.HandleFunc("/organizations/{id}/billing/contact", au.IsAuthenticated(orgs.SaveBillingContact)).Methods("PATCH")
+	
+	r.HandleFunc("/organizations/{id}/billing/settings", au.IsAuthenticated(orgs.UpdateBillingSettings)).Methods("PATCH")
+	r.HandleFunc("/organizations/{id}/billing/contact", au.IsAuthenticated(orgs.UpdateBillingContact)).Methods("PATCH")
 
 	//organization: payment
 	r.HandleFunc("/organizations/{id}/add-token", au.IsAuthenticated(orgs.AddToken)).Methods("POST")
@@ -176,7 +178,7 @@ func Router(server *socketio.Server) *mux.Router {
 	r.HandleFunc("/guests/invite", us.CreateUserFromUUID).Methods("POST")
 
 	// Contact Us
-	r.HandleFunc("/contact", au.OptionalAuthentication(contact.MailUs, au)).Methods("POST")
+	r.HandleFunc("/contact", au.OptionalAuthentication(contact.MailUs)).Methods("POST")
 
 	// Realtime communications
 	r.HandleFunc("/realtime/test", realtime.Test).Methods("GET")
@@ -327,7 +329,7 @@ func RequestDurationMiddleware(h http.Handler) http.Handler {
 				return
 			}
 
-			if resp.StatusCode != 200 {
+			if resp.StatusCode != http.StatusOK {
 				fmt.Printf("got error %d", resp.StatusCode)
 			}
 

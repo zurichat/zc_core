@@ -125,8 +125,8 @@ var MessageModelType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "MessageModel",
 		Fields: graphql.Fields{
-			"_id":     &graphql.Field{Type: ObjectID, Description: "Id"},
-			"event":   &graphql.Field{Type: graphql.String, Description: "Event"},
+			"_id":   &graphql.Field{Type: ObjectID, Description: "Id"},
+			"event": &graphql.Field{Type: graphql.String, Description: "Event"},
 			// Please resolve, throw Error: Invalid or incomplete schema, unknown type
 			// "message": &graphql.Field{Type: &graphql.Interface{}, Description: "Message"},
 		},

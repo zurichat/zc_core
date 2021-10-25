@@ -118,7 +118,7 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	userDoc, _ := utils.GetMongoDBDoc(UserCollectionName, bson.M{"email": newOrg.CreatorEmail})
 	if userDoc == nil {
-		fmt.Printf("user with email %s does not exist!", newOrg.CreatorEmail)
+		// fmt.Printf("user with email %s does not exist!", newOrg.CreatorEmail)
 		utils.GetError(errors.New("user with this email does not exist"), http.StatusBadRequest, w)
 
 		return
@@ -238,7 +238,7 @@ func (oh *OrganizationHandler) UpdateName(w http.ResponseWriter, r *http.Request
 	})
 }
 
-// transfer workspace ownership.
+// Transfer workspace ownership.
 func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -355,7 +355,7 @@ func (oh *OrganizationHandler) UpdateLogo(w http.ResponseWriter, r *http.Request
 
 	uploadPath := "logo/" + orgID
 
-	imgURL, err := service.ProfileImageUpload(uploadPath, r)
+	imgURL, err := service.ProfileImageUpload(uploadPath, logoWidth, logoHeight, r)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
@@ -381,6 +381,7 @@ func (oh *OrganizationHandler) UpdateLogo(w http.ResponseWriter, r *http.Request
 	utils.GetSuccess("Logo updated successfully", imgURL, w)
 }
 
+// Send invite to a list of emails.
 func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -441,13 +442,14 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 		// Save newly generated uuid and associated info in the database
 		save, err := utils.CreateMongoDBDoc(OrganizationInviteCollection, invInterface)
 		if err != nil {
-			fmt.Println(err)
 			utils.GetError(err, http.StatusInternalServerError, w)
 
 			return
 		}
+
 		// Append new invite to array of generated invites
 		inviteIDs = append(inviteIDs, save.InsertedID)
+
 		// Parse data for customising email template
 		inviteLink := fmt.Sprintf("https://zuri.chat/invites/%s", uuid)
 		orgName := fmt.Sprintf("%v", org["name"])
@@ -469,6 +471,7 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 	utils.GetSuccess("Organization invite operation result", resonse, w)
 }
 
+// Get invite records of an organization.
 func (oh *OrganizationHandler) InviteStats(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -482,6 +485,7 @@ func (oh *OrganizationHandler) InviteStats(w http.ResponseWriter, r *http.Reques
 	utils.GetSuccess("successful", invites, w)
 }
 
+// Upgrade services to Pro.
 func (oh *OrganizationHandler) UpgradeToPro(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -534,102 +538,35 @@ func IsProVersion(orgID string) (bool, error) {
 	return organization.Version == ProVersion, nil
 }
 
-func (oh *OrganizationHandler) SaveBillingSettings(w http.ResponseWriter, r *http.Request) {
+// Update an organization billing settings.
+func (oh *OrganizationHandler) UpdateBillingSettings(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
-	orgID := mux.Vars(r)["id"]
 
 	var billingSetting BillingSetting
 
-	if err := utils.ParseJSONFromRequest(r, &billingSetting); err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
+	payload := settingsPayload{
+		settings: &billingSetting,
+		field:    "billing.setting",
 	}
 
-	validate := validator.New()
-
-	if err := validate.Struct(billingSetting); err != nil {
-		utils.GetError(err, http.StatusBadRequest, w)
-		return
-	}
-
-	loggedInUser, ok := r.Context().Value("user").(*auth.AuthUser)
-	if !ok {
-		utils.GetError(errors.New("invalid user"), http.StatusBadRequest, w)
-		return
-	}
-
-	fmt.Fprintln(w, loggedInUser.Email)
-
-	if _, err := FetchMember(bson.M{"org_id": orgID, "email": loggedInUser.Email}); err != nil {
-		utils.GetError(errors.New("access denied"), http.StatusNotFound, w)
-		return
-	}
-
-	orgFilter := make(map[string]interface{})
-	orgFilter["billing.setting"] = billingSetting
-
-	update, err := utils.UpdateOneMongoDBDoc(OrganizationCollectionName, orgID, orgFilter)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
-
-	if update.ModifiedCount == 0 {
-		utils.GetError(errors.New("operation failed"), http.StatusUnprocessableEntity, w)
-		return
-	}
-
-	utils.GetSuccess("organization billing settings updated successfully", nil, w)
+	updateBilling(w, r, payload)
 }
 
-func (oh *OrganizationHandler) SaveBillingContact(w http.ResponseWriter, r *http.Request) {
+// Update an organization billing contact.
+func (oh *OrganizationHandler) UpdateBillingContact(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
-	orgID := mux.Vars(r)["id"]
 
 	var billingContact BillingContact
 
-	if err := utils.ParseJSONFromRequest(r, &billingContact); err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
+	payload := settingsPayload{
+		settings: &billingContact,
+		field:    "billing.contact",
 	}
 
-	validate := validator.New()
-
-	if err := validate.Struct(billingContact); err != nil {
-		utils.GetError(err, http.StatusBadRequest, w)
-		return
-	}
-
-	loggedInUser, ok := r.Context().Value("user").(*auth.AuthUser)
-	if !ok {
-		utils.GetError(errors.New("invalid user"), http.StatusBadRequest, w)
-		return
-	}
-
-	if _, err := FetchMember(bson.M{"org_id": orgID, "email": loggedInUser.Email}); err != nil {
-		utils.GetError(errors.New("access denied"), http.StatusNotFound, w)
-		return
-	}
-
-	orgFilter := make(map[string]interface{})
-	orgFilter["billing.contact"] = billingContact
-
-	update, err := utils.UpdateOneMongoDBDoc(OrganizationCollectionName, orgID, orgFilter)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
-
-	if update.ModifiedCount == 0 {
-		utils.GetError(errors.New("operation failed"), http.StatusUnprocessableEntity, w)
-		return
-	}
-
-	utils.GetSuccess("organization billing contact updated successfully", nil, w)
+	updateBilling(w, r, payload)
 }
 
+// Update an organization settings.
 func (oh *OrganizationHandler) UpdateOrganizationSettings(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -700,6 +637,7 @@ func (oh *OrganizationHandler) UpdateOrganizationSettings(w http.ResponseWriter,
 	utils.GetSuccess("organization settings updated successfully", nil, w)
 }
 
+// Update an organization permission settings.
 func (oh *OrganizationHandler) UpdateOrganizationPermission(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -769,6 +707,7 @@ func (oh *OrganizationHandler) UpdateOrganizationPermission(w http.ResponseWrite
 	utils.GetSuccess("organization settings updated successfully", nil, w)
 }
 
+// Update an organization authentication settings.
 func (oh *OrganizationHandler) UpdateOrganizationAuthentication(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -837,4 +776,216 @@ func (oh *OrganizationHandler) UpdateOrganizationAuthentication(w http.ResponseW
 	}
 
 	utils.GetSuccess("organization settings updated successfully", nil, w)
+}
+
+// Update an organization channel prefix.
+func (oh *OrganizationHandler) UpdateOrganizationPrefixes(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	orgID := mux.Vars(r)["id"]
+
+	var channelprefixes ChannelPrefixes
+
+	err := utils.ParseJSONFromRequest(r, &channelprefixes)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	objID, err := primitive.ObjectIDFromHex(orgID)
+
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	validate := validator.New()
+
+	// get previous settings
+	save, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
+
+	if save == nil {
+		utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
+		return
+	}
+
+	var org Organization
+
+	// convert bson to struct
+	bsonBytes, _ := bson.Marshal(save)
+	err = bson.Unmarshal(bsonBytes, &org)
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	// valdate struct
+	if err = validate.Struct(org); err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+	// adds new prefixes with existing settings
+	orgPref := Customize{
+		append(org.Customize.Prefixes, channelprefixes),
+		org.Customize.AddCustomEmoji,
+		org.Customize.SlackBot,
+	}
+
+	orgFilter := make(map[string]interface{})
+	orgFilter["customize"] = orgPref
+
+	update, err := utils.UpdateOneMongoDBDoc(OrganizationCollectionName, orgID, orgFilter)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	utils.GetSuccess("organization channelprefixes updated successfully", nil, w)
+}
+
+// Update an organization slackbot response.
+func (oh *OrganizationHandler) UpdateSlackBotResponses(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	orgID := mux.Vars(r)["id"]
+
+	var slackbotresponse SlackBot
+
+	err := utils.ParseJSONFromRequest(r, &slackbotresponse)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	objID, err := primitive.ObjectIDFromHex(orgID)
+
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	validate := validator.New()
+
+	// get previous responses
+	save, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
+
+	if save == nil {
+		utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
+		return
+	}
+
+	var org Organization
+
+	// convert bson to struct
+	bsonBytes, _ := bson.Marshal(save)
+	err = bson.Unmarshal(bsonBytes, &org)
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	// valdate struct
+	if err = validate.Struct(org); err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	orgPref := Customize{
+		org.Customize.Prefixes,
+		org.Customize.AddCustomEmoji,
+		append(org.Customize.SlackBot, slackbotresponse),
+	}
+
+	orgFilter := make(map[string]interface{})
+	orgFilter["customize"] = orgPref
+
+	update, err := utils.UpdateOneMongoDBDoc(OrganizationCollectionName, orgID, orgFilter)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	utils.GetSuccess("organization slackbotresponse updated successfully", nil, w)
+}
+
+func (oh *OrganizationHandler) AddSlackCustomEmoji(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	orgID := mux.Vars(r)["id"]
+
+	var customemoji CustomEmoji
+
+	err := utils.ParseJSONFromRequest(r, &customemoji)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	objID, err := primitive.ObjectIDFromHex(orgID)
+
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	validate := validator.New()
+
+	// get previous responses
+	save, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
+
+	if save == nil {
+		utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
+		return
+	}
+
+	var org Organization
+
+	// convert bson to struct
+	bsonBytes, _ := bson.Marshal(save)
+	err = bson.Unmarshal(bsonBytes, &org)
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	// valdate struct
+	if err = validate.Struct(org); err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	orgPref := Customize{
+		org.Customize.Prefixes,
+		append(org.Customize.AddCustomEmoji, customemoji),
+		org.Customize.SlackBot,
+	}
+
+	orgFilter := make(map[string]interface{})
+	orgFilter["customize"] = orgPref
+
+	update, err := utils.UpdateOneMongoDBDoc(OrganizationCollectionName, orgID, orgFilter)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	utils.GetSuccess("organization customemoji updated successfully", nil, w)
 }

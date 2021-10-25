@@ -70,7 +70,7 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 // OptionalAuthenticated calls the next's handler's ServeHTTP() with the request context unchanged
 // if a user is not authenticated, else it modifies the request context with a copy of the user's
 // details and passes the changed copy of the request to the next handler's ServeHTTP().
-func (au *AuthHandler) OptionalAuthentication(nextHandler http.HandlerFunc, auth *AuthHandler) http.HandlerFunc {
+func (au *AuthHandler) OptionalAuthentication(nextHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("content-type", "application/json")
 
@@ -79,13 +79,10 @@ func (au *AuthHandler) OptionalAuthentication(nextHandler http.HandlerFunc, auth
 		status, sessData, err := GetSessionDataFromToken(r, []byte(au.configs.HmacSampleSecret))
 
 		if er != nil || err != nil {
-			utils.GetError(ErrNotAuthorized, http.StatusUnauthorized, w)
-			return
-		}
-
-		if !status && sessData.Email == "" {
-			nextHandler.ServeHTTP(w, r)
-			return
+			if !status && sessData.Email == "" {
+				nextHandler.ServeHTTP(w, r)
+				return
+			}
 		}
 
 		ctx := context.WithValue(r.Context(), UserDetails, &sessData)
