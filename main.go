@@ -55,8 +55,8 @@ func (app *App) Run() error {
 	}
 
 	// transporter
-	handler := transportHttp.NewHandler()
-	handler.SetupRoutes(Server)	
+	handler := transportHttp.NewHandler(Server)
+	handler.SetupRoutes()
 
 	c := cors.AllowAll()
 
