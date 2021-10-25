@@ -17,10 +17,6 @@ import (
 var configs = utils.NewConfigurations()
 var orgs = NewOrganizationHandler(configs, nil)
 
-// test user email and password
-var testUserEmail = "utukphd@gmail.com"
-var testUserPassword = "ootook349"
-
 func TestMain(m *testing.M) {
 	// load .env file if it exists
 	err := godotenv.Load("../.env")
@@ -78,7 +74,6 @@ func TestCreateOrganization(t *testing.T) {
 }
 
 func TestGetOrganization(t *testing.T) {
-
 }
 
 func assertStatusCode(t *testing.T, got, expected int) {
