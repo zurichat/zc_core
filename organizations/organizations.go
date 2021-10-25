@@ -118,7 +118,6 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	userDoc, _ := utils.GetMongoDBDoc(UserCollectionName, bson.M{"email": newOrg.CreatorEmail})
 	if userDoc == nil {
-		// fmt.Printf("user with email %s does not exist!", newOrg.CreatorEmail)
 		utils.GetError(errors.New("user with this email does not exist"), http.StatusBadRequest, w)
 
 		return
