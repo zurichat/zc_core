@@ -123,6 +123,7 @@ func (h *Handler) SetupRoutes() {
 	h.Router.HandleFunc("/organizations/{id}/members/{mem_id}/status/remove-history/{history_index}", au.IsAuthenticated(orgs.RemoveStatusHistory)).Methods("PATCH")
 	h.Router.HandleFunc("/organizations/{id}/members/{mem_id}/photo/{action}", au.IsAuthenticated(orgs.UpdateProfilePicture)).Methods("PATCH")
 	h.Router.HandleFunc("/organizations/{id}/members/{mem_id}/profile", au.IsAuthenticated(orgs.UpdateProfile)).Methods("PATCH")
+	h.Router.HandleFunc("/organizations/{id}/members/{mem_id}/uploadfile", au.IsAuthenticated(orgs.UpdateProfile)).Methods("POST")
 	h.Router.HandleFunc("/organizations/{id}/members/{mem_id}/presence", au.IsAuthenticated(orgs.TogglePresence)).Methods("POST")
 	h.Router.HandleFunc("/organizations/{id}/members/{mem_id}/settings", au.IsAuthenticated(orgs.UpdateMemberSettings)).Methods("PATCH")
 	h.Router.HandleFunc("/organizations/{id}/members/{mem_id}/role", au.IsAuthenticated(au.IsAuthorized(orgs.UpdateMemberRole, "admin"))).Methods("PATCH")
