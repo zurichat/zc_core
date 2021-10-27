@@ -349,9 +349,12 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 		utils.GetSuccess("image updated successfully", imgURL, w)
 	}
 }
+
+//	an endpoint to allow upload of media files
 func (oh *OrganizationHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-Type", "application/json")
 
+	// validate the user ID
 	orgID := mux.Vars(r)["id"]
 	memberID := mux.Vars(r)["mem_id"]
 
@@ -364,7 +367,6 @@ func (oh *OrganizationHandler) UploadFile(w http.ResponseWriter, r *http.Request
 
 	// check that member_id is valid
 	err = ValidateMember(orgID, memberID)
-
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
@@ -379,14 +381,16 @@ func (oh *OrganizationHandler) UploadFile(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
+	// publish update to subscriber
+	eventChannel := fmt.Sprintf("organizations_%s", orgID)
+	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberProfile, Channel: eventChannel, Payload: make(map[string]interface{})}
+
+	go utils.Emitter(event)
 
 	utils.GetSuccess("file uploaded successfully", fileURL, w)
 }
 
+	
 // Update a member's status.
 func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
