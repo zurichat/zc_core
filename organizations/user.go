@@ -372,7 +372,7 @@ func (oh *OrganizationHandler) UploadFile(w http.ResponseWriter, r *http.Request
 
 	uploadPath := "fileupload/" + orgID + "/" + memberID
 
-	fileUrl, err := service.MultipleFileUpload(uploadPath, r)
+	fileURL, err := service.MultipleFileUpload(uploadPath, r)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
@@ -384,7 +384,7 @@ func (oh *OrganizationHandler) UploadFile(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	utils.GetSuccess("file uploaded successfully", fileUrl, w)
+	utils.GetSuccess("file uploaded successfully", fileURL, w)
 }
 
 // Update a member's status.
