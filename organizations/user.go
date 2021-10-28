@@ -306,12 +306,12 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 
 	// check that member_id is valid
 	err = ValidateMember(orgID, memberID)
-	
+
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
-	
+
 	if mux.Vars(r)["action"] == "delete" {
 		result, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, bson.M{"image_url": ""})
 
@@ -348,14 +348,49 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 
 		utils.GetSuccess("image updated successfully", imgURL, w)
 	}
+}
+
+//	an endpoint to allow upload of media files
+func (oh *OrganizationHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("content-Type", "application/json")
+
+	// validate the user ID
+	orgID := mux.Vars(r)["id"]
+	memberID := mux.Vars(r)["mem_id"]
+
+	// check that org_id is valid
+	err := ValidateOrg(orgID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	// check that member_id is valid
+	err = ValidateMember(orgID, memberID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	uploadPath := "fileupload/" + orgID + "/" + memberID
+
+	fileURL, err := service.MultipleFileUpload(uploadPath, r)
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
 
 	// publish update to subscriber
 	eventChannel := fmt.Sprintf("organizations_%s", orgID)
-	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberPic, Channel: eventChannel, Payload: make(map[string]interface{})}
+	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberProfile, Channel: eventChannel, Payload: make(map[string]interface{})}
 
 	go utils.Emitter(event)
+
+	utils.GetSuccess("file uploaded successfully", fileURL, w)
 }
 
+	
 // Update a member's status.
 func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
@@ -774,9 +809,9 @@ func (oh *OrganizationHandler) TogglePresence(w http.ResponseWriter, r *http.Req
 func (oh *OrganizationHandler) UpdateMemberSettings(w http.ResponseWriter, r *http.Request) {
 	var settings Settings
 
-	payload := settingsPayload {
+	payload := settingsPayload{
 		settings: &settings,
-		checkSettingsPayload: func() bool{
+		checkSettingsPayload: func() bool {
 			return true
 		},
 		field: "settings",
@@ -789,14 +824,14 @@ func (oh *OrganizationHandler) UpdateMemberSettings(w http.ResponseWriter, r *ht
 func (oh *OrganizationHandler) UpdateMemberMessageAndMediaSettings(w http.ResponseWriter, r *http.Request) {
 	var messageAndMediaSettings MessagesAndMedia
 
-	payload := settingsPayload {
+	payload := settingsPayload{
 		settings: &messageAndMediaSettings,
 		checkSettingsPayload: func() bool {
 			if _, ok := MsgMedias[messageAndMediaSettings.Names]; !ok {
 				utils.GetError(errors.New("name is not valid"), http.StatusBadRequest, w)
 				return false
 			}
-		
+
 			if _, ok := MsgMedias[messageAndMediaSettings.Emoji]; !ok {
 				utils.GetError(errors.New("emoji is not valid"), http.StatusBadRequest, w)
 				return false
@@ -814,9 +849,9 @@ func (oh *OrganizationHandler) UpdateMemberMessageAndMediaSettings(w http.Respon
 func (oh *OrganizationHandler) UpdateMemberAccessibilitySettings(w http.ResponseWriter, r *http.Request) {
 	var accessibilitySettings Accessibility
 
-	payload := settingsPayload {
+	payload := settingsPayload{
 		settings: &accessibilitySettings,
-		checkSettingsPayload: func() bool{
+		checkSettingsPayload: func() bool {
 			if _, ok := EmptyMessageFields[accessibilitySettings.PressEmptyMessageField]; !ok {
 				utils.GetError(errors.New("invalid field"), http.StatusBadRequest, w)
 				return false
@@ -833,7 +868,7 @@ func (oh *OrganizationHandler) UpdateMemberAccessibilitySettings(w http.Response
 func (oh *OrganizationHandler) UpdateMemberAdvancedSettings(w http.ResponseWriter, r *http.Request) {
 	var advancedSettings Advanced
 
-	payload := settingsPayload {
+	payload := settingsPayload{
 		settings: &advancedSettings,
 		checkSettingsPayload: func() bool {
 			return true
@@ -1132,9 +1167,9 @@ func (oh *OrganizationHandler) UpdateMemberRole(w http.ResponseWriter, r *http.R
 func (oh *OrganizationHandler) UpdateNotification(w http.ResponseWriter, r *http.Request) {
 	var notifications Notifications
 
-	payload := settingsPayload {
+	payload := settingsPayload{
 		settings: &notifications,
-		checkSettingsPayload: func() bool{
+		checkSettingsPayload: func() bool {
 			return true
 		},
 		field: "settings.notifications",
@@ -1147,9 +1182,9 @@ func (oh *OrganizationHandler) UpdateNotification(w http.ResponseWriter, r *http
 func (oh *OrganizationHandler) UpdateUserTheme(w http.ResponseWriter, r *http.Request) {
 	var theme UserThemes
 
-	payload := settingsPayload {
+	payload := settingsPayload{
 		settings: &theme,
-		checkSettingsPayload: func() bool{
+		checkSettingsPayload: func() bool {
 			return true
 		},
 		field: "settings.theme",
@@ -1162,9 +1197,9 @@ func (oh *OrganizationHandler) UpdateUserTheme(w http.ResponseWriter, r *http.Re
 func (oh *OrganizationHandler) UpdateLanguagesAndRegions(w http.ResponseWriter, r *http.Request) {
 	var languagesAndRegions LanguagesAndRegions
 
-	payload := settingsPayload {
+	payload := settingsPayload{
 		settings: &languagesAndRegions,
-		checkSettingsPayload: func() bool{
+		checkSettingsPayload: func() bool {
 			return true
 		},
 		field: "settings.languages_and_regions",

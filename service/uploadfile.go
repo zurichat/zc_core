@@ -26,7 +26,7 @@ import (
 )
 
 var allowedMimeTypes = []string{"application/pdf",
-	"image/png", "image/jpg", "text/plain", "image/jpeg",
+	"image/png",  "image/gif", "image/jpg", "text/plain", "image/jpeg",
 	"video/mp4", "video/mpeg", "video/ogg", "video/quicktime",
 	"application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 	"application/vnd.android.package-archive", "application/octet-stream",
@@ -219,14 +219,12 @@ func Resize(f multipart.File, width, height int, r *http.Request, handle *multip
 
 func decodeFile(f multipart.File, handle *multipart.FileHeader) (image.Image, error) {
 	fileExtension := strings.ToLower(filepath.Ext(handle.Filename))
-	fmt.Println(handle.Filename)
-	fmt.Println(fileExtension)
 
 	if fileExtension == ".gif" {
 		_, err := gif.DecodeAll(f)
 		if err != nil {
 			fmt.Println(err)
-			return nil, fmt.Errorf("error decoding")
+			return nil,  fmt.Errorf("error decoding")
 		}
 
 		return nil, nil
