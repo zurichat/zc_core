@@ -30,23 +30,15 @@ func (app *App) Run() error {
 
 	messaging.SocketEvents(Server)
 
-	// load .env file if it exists
-	err := godotenv.Load(".env")
-	if err != nil {
-		return fmt.Errorf("Error loading .env file: %v", err)
-	}
-
-	fmt.Println("Environment variables successfully loaded. Starting application...")
-
 	// Set Stripe api key
 	stripe.Key = os.Getenv("STRIPE_KEY")
 
-	if err = utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
+	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
 		return errors.New("Could not connect to MongoDB")
 	}
 
 	// sentry: enables reporting messages, errors, and panics.
-	err = sentry.Init(sentry.ClientOptions{
+	err := sentry.Init(sentry.ClientOptions{
 		Dsn: "https://82e17f3bba86400a9a38e2437b884d4a@o1013682.ingest.sentry.io/5979019",
 	})
 
@@ -87,8 +79,16 @@ func (app *App) Run() error {
 
 
 func main() {
+	// load .env file if it exists
+	err := godotenv.Load(".env")
+	if err != nil {
+		fmt.Printf("Error loading .env file: %v", err)
+	}
+
+	fmt.Println("Environment variables successfully loaded. Starting application...")
+
 	// get PORT from environment variables
-	port, _ := os.LookupEnv("PORT")
+	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8000"
 	}
