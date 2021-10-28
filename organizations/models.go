@@ -34,6 +34,7 @@ const (
 	UpdateOrganizationMemberRole          = "UpdateOrganizationMemberRole"
 	UpdateOrganizationMemberStatusCleared = "UpdateOrganizationMemberStatusCleared"
 	UpdateOrganizationBillingSettings     = "UpdateOrganizationBillingSettings"
+	UpdateOrganizationMemberFiles		  = "UpdateOrganizationMemberFiles"
 )
 
 const (

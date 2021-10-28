@@ -383,7 +383,7 @@ func (oh *OrganizationHandler) UploadFile(w http.ResponseWriter, r *http.Request
 
 	// publish update to subscriber
 	eventChannel := fmt.Sprintf("organizations_%s", orgID)
-	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberProfile, Channel: eventChannel, Payload: make(map[string]interface{})}
+	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberFiles, Channel: eventChannel, Payload: make(map[string]interface{})}
 
 	go utils.Emitter(event)
 
