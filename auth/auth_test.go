@@ -1,27 +1,27 @@
-// +build integration
-
-package tests
+package auth
 
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strconv"
 	"testing"
 
-	"zuri.chat/zccore/auth"
+	"github.com/joho/godotenv"
 	"zuri.chat/zccore/service"
-	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 )
 
 var (
 	configs = utils.NewConfigurations()
 	mailService = service.NewZcMailService(configs)
-	au = auth.NewAuthHandler(configs, mailService)
-	us = user.NewUserHandler(configs, mailService)
+	au = NewAuthHandler(configs, mailService)
+	// us = user.NewUserHandler(configs, mailService)
 )
 
 /*
@@ -37,6 +37,22 @@ var (
 	7. TestRequestResetPasswordCode
 */
 
+func TestMain(m *testing.M) {
+	// load .env file if it exists
+	err := godotenv.Load("../.env")
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
+
+	fmt.Println("Environment variables successfully loaded. Starting application...")
+
+	if err = utils.ConnectToDB(os.Getenv("CLUSTER_TEST_URL")); err != nil {
+		log.Fatal("Could not connect to MongoDB")
+	}
+	fmt.Printf("\n\n")
+	m.Run()
+}
+
 func TestLogin(t *testing.T) {
 	requestURI := url.URL{ Path: "/auth/login"}
 	
@@ -44,12 +60,12 @@ func TestLogin(t *testing.T) {
 
 	tests := []struct {
 		Name         string
-		RequestBody  auth.Credentials
+		RequestBody  Credentials
 		ExpectedCode int		
 	}{
 		{
 			Name:   "OK",
-			RequestBody: auth.Credentials{
+			RequestBody: Credentials{
 				Email: "john.doe@workable.com",
 				Password: "password",
 			},
@@ -57,7 +73,7 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			Name:   "should fail for incorrect password",
-			RequestBody: auth.Credentials{
+			RequestBody: Credentials{
 				Email: "john.doe@workable.com",
 				Password: "password223666",
 			},
@@ -65,7 +81,7 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			Name:   "should throw error for invalid email",
-			RequestBody: auth.Credentials{
+			RequestBody: Credentials{
 				Email: "enigbe.enike.com",
 				Password: "password34223",
 			},
