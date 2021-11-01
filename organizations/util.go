@@ -34,14 +34,18 @@ func FetchMember(filter map[string]interface{}) (*Member, error) {
 	memberCollection, err := utils.GetMongoDBCollection(os.Getenv("DB_NAME"), MemberCollectionName)
 
 	if err != nil {
-		return member, err
+		return nil, err
 	}
 
 	result := memberCollection.FindOne(context.TODO(), filter)
 
 	err = mapstructure.Decode(result, &member)
 
-	return member, err
+	if err != nil {
+		return nil, err
+	}
+
+	return member, nil
 }
 
 // check that an organization exist.

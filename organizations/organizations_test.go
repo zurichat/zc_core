@@ -2,16 +2,19 @@ package organizations
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"go.mongodb.org/mongo-driver/bson"
+	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/utils"
 )
 
 var configs = utils.NewConfigurations()
 var orgs = NewOrganizationHandler(configs, nil)
-const defaultUser string = "testUser@gmail.com"
+const defaultUser string = "testuser@gmail.com"
 
 func TestCreateOrganization(t *testing.T) {
 	t.Run("test for invalid json request body", func(t *testing.T) {
@@ -68,7 +71,7 @@ func TestCreateOrganization(t *testing.T) {
 	*/
 
 	t.Run("test for successful organization creation", func(t *testing.T) {
-		var requestBody = []byte(`{"creator_email": "testUser@gmail.com"}`)
+		var requestBody = []byte(fmt.Sprintf(`{"creator_email": "%s"}`, defaultUser))
 
 		req, err := http.NewRequest("POST", "/organizations", bytes.NewBuffer(requestBody))
 		if err != nil {
@@ -79,7 +82,19 @@ func TestCreateOrganization(t *testing.T) {
 		assertStatusCode(t, response.Code, http.StatusOK)
 
 		// assert that the created org owner is a member of the org
-		// assert that the created org id is added to the user organizations list
+		res := parseResponse(response)
+		data := res["data"].(map[string]interface{})
+		orgID := data["organization_id"].(string)
+
+		memDoc, _ := utils.GetMongoDBDoc(MemberCollectionName, bson.M{"org_id": orgID, "email": defaultUser})
+		if memDoc == nil{
+			t.Errorf("user %s not found in org %s", defaultUser, orgID)
+		}
+
+		user, _ := auth.FetchUserByEmail(bson.M{"email": defaultUser})
+		if user.Organizations[0] != orgID{
+			t.Errorf("org %s, not in user %s workspaces",orgID, defaultUser)
+		}
 	})
 }
 

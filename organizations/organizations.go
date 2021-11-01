@@ -176,7 +176,7 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	userObj.Organizations = append(userObj.Organizations, iiid)
 
-	updateFields["Organizations"] = userObj.Organizations
+	updateFields["workspaces"] = userObj.Organizations
 	_, ee := utils.UpdateOneMongoDBDoc(UserCollectionName, creatorID, updateFields)
 
 	if ee != nil {
