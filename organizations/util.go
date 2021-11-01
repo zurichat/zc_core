@@ -34,7 +34,7 @@ func FetchMember(filter map[string]interface{}) (*Member, error) {
 	memberCollection, err := utils.GetMongoDBCollection(os.Getenv("DB_NAME"), MemberCollectionName)
 
 	if err != nil {
-		return member, err
+		return nil, err
 	}
 
 	result := memberCollection.FindOne(context.TODO(), filter)

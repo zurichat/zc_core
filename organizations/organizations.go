@@ -176,7 +176,7 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	userObj.Organizations = append(userObj.Organizations, iiid)
 
-	updateFields["Organizations"] = userObj.Organizations
+	updateFields["workspaces"] = userObj.Organizations
 	_, ee := utils.UpdateOneMongoDBDoc(UserCollectionName, creatorID, updateFields)
 
 	if ee != nil {
@@ -321,6 +321,11 @@ func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.
 	}
 
 	formerOwner, _ := FetchMember(bson.M{"org_id": orgID, "email": loggedInUser.Email})
+	
+	if err != nil {
+		utils.GetError(errors.New("user not a member of this work space"), http.StatusBadRequest, w)
+		return
+	}
 
 	// ID of former owner
 	formerOwnerID := formerOwner.ID
