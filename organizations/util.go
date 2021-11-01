@@ -41,7 +41,11 @@ func FetchMember(filter map[string]interface{}) (*Member, error) {
 
 	err = mapstructure.Decode(result, &member)
 
-	return member, err
+	if err != nil {
+		return nil, err
+	}
+
+	return member, nil
 }
 
 // check that an organization exist.

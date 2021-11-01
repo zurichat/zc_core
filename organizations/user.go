@@ -1130,7 +1130,12 @@ func (oh *OrganizationHandler) UpdateMemberRole(w http.ResponseWriter, r *http.R
 
 	memID, _ := primitive.ObjectIDFromHex(memberID)
 
-	orgMember, _ := FetchMember(bson.M{"org_id": orgID, "_id": memID})
+	orgMember, err := FetchMember(bson.M{"org_id": orgID, "_id": memID})
+
+	if err != nil {
+		utils.GetError(errors.New("user not a member of this work space"), http.StatusBadRequest, w)
+		return
+	}
 
 	if orgMember.Role == role {
 		errorMessage := fmt.Sprintf("member role is already %s", role)
