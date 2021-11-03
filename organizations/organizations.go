@@ -14,6 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"zuri.chat/zccore/auth"
+	"zuri.chat/zccore/logger"
 	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
@@ -61,7 +62,7 @@ func (oh *OrganizationHandler) GetOrganizationByURL(w http.ResponseWriter, r *ht
 	data, err := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"workspace_url": orgURL})
 
 	if data == nil {
-		fmt.Printf("workspace with url %s doesn't exist!", orgURL)
+		logger.Error("workspace with url %s doesn't exist!", orgURL)
 		utils.GetError(errors.New("organization does not exist"), http.StatusNotFound, w)
 
 		return
@@ -464,7 +465,7 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 			})
 		// error with sending main
 		if err := oh.mailService.SendMail(msger); err != nil {
-			fmt.Printf("Error occurred while sending mail: %s", err.Error())
+			logger.Error("Error occurred while sending mail: %s", err.Error())
 		}
 	}
 
