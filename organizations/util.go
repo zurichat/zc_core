@@ -225,15 +225,20 @@ func OrganizationUpdate(w http.ResponseWriter, r *http.Request, updateParam upda
 	w.Header().Set("Content-Type", "application/json")
 
 	orgID := mux.Vars(r)["id"]
-	requestData := make(map[string]string)
+	_, err := primitive.ObjectIDFromHex(orgID)
 
-	if err := utils.ParseJSONFromRequest(r, &requestData); err != nil {
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	if err = utils.ParseJSONFromRequest(r, &RequestData); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
 
 	orgFilter := make(map[string]interface{})
-	orgFilter[updateParam.orgFilterKey] = requestData[updateParam.requestDataKey]
+	orgFilter[updateParam.orgFilterKey] = RequestData[updateParam.requestDataKey]
 	update, err := utils.UpdateOneMongoDBDoc(OrganizationCollectionName, orgID, orgFilter)
 
 	if err != nil {
