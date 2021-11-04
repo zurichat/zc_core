@@ -14,6 +14,7 @@ import (
 
 var configs = utils.NewConfigurations()
 var orgs = NewOrganizationHandler(configs, nil)
+
 const defaultUser string = "testuser@gmail.com"
 
 func TestCreateOrganization(t *testing.T) {
@@ -117,4 +118,44 @@ func TestGetOrganization(t *testing.T) {
 		response := getHTTPResponse(t, r, req)
 		assertStatusCode(t, response.Code, http.StatusNotFound)
 	})
+}
+
+func TestGetOrganizationByURL(t *testing.T) {
+	t.Run("test for invalid url fails", func(t *testing.T) {
+		r := getRouter()
+		r.HandleFunc("/organizations/url/{url}", orgs.GetOrganizationByURL).Methods("GET")
+		req, _ := http.NewRequest("GET", "/organizations/url/www.google.com", nil)
+
+		response := getHTTPResponse(t, r, req)
+
+		assertStatusCode(t, response.Code, http.StatusNotFound)
+	})
+}
+
+func TestDeleteOrganization(t *testing.T) {
+	t.Run("test for invalid id fails", func(t *testing.T) {
+		r := getRouter()
+		r.HandleFunc("/organizations/{id}", orgs.DeleteOrganization).Methods("DELETE")
+		req, _ := http.NewRequest("DELETE", "/organizations/12345", nil)
+
+		response := getHTTPResponse(t, r, req)
+
+		assertStatusCode(t, response.Code, http.StatusInternalServerError)
+	})
+}
+
+func TestUpdateURL(t *testing.T) {
+	t.Run("test for invalid id fails", func(t *testing.T) {
+		var requestBody = []byte(`{"workspace_url": "https://www.zuri.chat/zuri"}`)
+	
+		req, err := http.NewRequest("PATCH", "/organizations", bytes.NewBuffer(requestBody))
+		if err != nil {
+			t.Fatal(err)
+		}
+		response := httptest.NewRecorder()
+		orgs.UpdateURL(response, req)
+		assertStatusCode(t, response.Code, http.StatusInternalServerError)
+	})
+
+	
 }
