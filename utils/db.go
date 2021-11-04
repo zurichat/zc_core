@@ -248,7 +248,11 @@ func DeleteOneMongoDBDoc(collectionName, id string) (*mongo.DeleteResult, error)
 	ctx := context.Background()
 	collection := defaultMongoHandle.GetCollection(collectionName)
 
-	_id, _ := primitive.ObjectIDFromHex(id)
+	_id, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+	
 	filter := bson.M{"_id": _id}
 	res, err := collection.DeleteOne(ctx, filter)
 

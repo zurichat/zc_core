@@ -164,6 +164,10 @@ func ConvertStructure(input, output interface{}) error {
 }
 
 func ParseJSONFromRequest(r *http.Request, v interface{}) error {
+	if r.Body == nil{
+		return fmt.Errorf("missing body request")
+	}
+	
 	return json.NewDecoder(r.Body).Decode(v)
 }
 

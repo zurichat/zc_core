@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"zuri.chat/zccore/user"
 	"zuri.chat/zccore/utils"
 )
@@ -74,6 +75,11 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+	
+	defaultOrgID, err = setUpOrganization()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 
 	exitVal := m.Run()
 
@@ -103,5 +109,31 @@ func setUpUserAccount() error{
 		return err
 	}
 	
-	return err
+	return nil
+}
+
+func setUpOrganization() (string, error) {
+	newOrg := Organization{
+		Name: "Zuri Chat",
+		WorkspaceURL: defaultOrgUrl,
+		CreatorEmail: defaultUser,
+	}
+
+	detail, _ := utils.StructToMap(newOrg)
+	save, err := utils.CreateMongoDBDoc(OrganizationCollectionName, detail)
+	if err != nil {
+		return "",err
+	}
+
+	iid := save.InsertedID
+	id := iid.(primitive.ObjectID).Hex()
+
+	newMember := NewMember(defaultUser, "testuser", id, OwnerRole)
+	memDetail, _ := utils.StructToMap(newMember)
+	_, err = utils.CreateMongoDBDoc(OrganizationCollectionName, memDetail)
+	if err != nil {
+		return "",err
+	}
+
+	return id, nil
 }
