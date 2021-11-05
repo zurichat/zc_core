@@ -92,8 +92,7 @@ func (au *AuthHandler) LoginIn(response http.ResponseWriter, request *http.Reque
 	}
 
 	// check password
-	check := CheckPassword(creds.Password, vser.Password)
-	if !check {
+	if check := ComparePassword(creds.Password, vser.Password); !check {
 		utils.GetError(ErrInvalidCredentials, http.StatusBadRequest, response)
 		return
 	}
@@ -228,7 +227,7 @@ func (au *AuthHandler) LogOutOtherSessions(w http.ResponseWriter, r *http.Reques
 		}
 
 		// Check that password is correct
-		check := CheckPassword(r.FormValue("password"), u.Password)
+		check := ComparePassword(r.FormValue("password"), u.Password)
 		if !check {
 			utils.GetError(errors.New("invalid password, confirm and try again"), http.StatusBadRequest, w)
 			return
@@ -246,7 +245,7 @@ func (au *AuthHandler) LogOutOtherSessions(w http.ResponseWriter, r *http.Reques
 		}
 
 		// Check that password is correct
-		check := CheckPassword(r.FormValue("password"), u.Password)
+		check := ComparePassword(r.FormValue("password"), u.Password)
 		if !check {
 			utils.GetError(errors.New("invalid password, confirm and try again"), http.StatusBadRequest, w)
 			return
@@ -427,7 +426,7 @@ func (au *AuthHandler) ConfirmUserPassword(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	// check password
-	check := CheckPassword(creds.Password, u.Password)
+	check := ComparePassword(creds.Password, u.Password)
 	if !check {
 		utils.GetError(errors.New("invalid credentials, confirm and try again"), http.StatusBadRequest, w)
 		return

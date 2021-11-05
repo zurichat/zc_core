@@ -97,7 +97,7 @@ type AuthHandler struct {
 type UserKey string
 
 // Method to compare password.
-func CheckPassword(password, hash string) bool {
+func ComparePassword(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }

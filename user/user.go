@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"golang.org/x/crypto/bcrypt"
 	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
@@ -20,14 +20,6 @@ var (
 	errEmailNotValid = errors.New("email address is not valid")
 	errHashingFailed = errors.New("failed to hashed password")
 )
-
-// Method to hash password.
-func GenerateHashPassword(password string) (string, error) {
-	cost := 14
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), cost)
-
-	return string(bytes), err
-}
 
 // An end point to create new users.
 func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Request) {
@@ -42,10 +34,17 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 	}
 
 	userEmail := strings.ToLower(user.Email)
-	if !utils.IsValidEmail(userEmail) {
+	isValidEmail := regexp.MustCompile(emailRegex).MatchString(userEmail)
+
+	if !utils.IsValidEmail(userEmail) || !isValidEmail {
 		utils.GetError(errEmailNotValid, http.StatusBadRequest, response)
 		return
 	}
+
+	if err := validate.Struct(user); err != nil {
+		utils.GetError(err, http.StatusBadRequest, response)
+		return
+	}	
 
 	// confirm if user_email exists
 	result, _ := utils.GetMongoDBDoc(UserCollectionName, bson.M{"email": userEmail})
@@ -59,7 +58,7 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 		return
 	}
 
-	hashPassword, err := GenerateHashPassword(user.Password)
+	hashPassword, err := GetHash(user.Password)
 	if err != nil {
 		utils.GetError(errHashingFailed, http.StatusBadRequest, response)
 		return
@@ -374,7 +373,7 @@ func (uh *UserHandler) CreateUserFromUUID(w http.ResponseWriter, r *http.Request
 	con := &UserEmailVerification{true, comfimationToken, time.Now().Add(time.Minute * time.Duration(timeLimit))}
 
 	// Hash password
-	hashPassword, err := GenerateHashPassword(uRequest.Password)
+	hashPassword, err := GetHash(uRequest.Password)
 	if err != nil {
 		utils.GetError(errHashingFailed, http.StatusBadRequest, w)
 		return
