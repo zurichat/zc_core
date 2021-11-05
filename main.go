@@ -96,9 +96,4 @@ func main() {
 	app := App{ Port: port }
 
 	log.Fatal(app.Run())
-	
-	// if err := app.Run(); err != nil {
-	// 	fmt.Println("Error occur while starting the Zuri Chat API.")
-	// 	log.Fatal(err)
-	// }
 }
