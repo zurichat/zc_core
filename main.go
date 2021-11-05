@@ -12,6 +12,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/stripe/stripe-go/v72"
 	transportHttp "zuri.chat/zccore/internal/transport"
+	"zuri.chat/zccore/logger"
 
 	sentry "github.com/getsentry/sentry-go"
 	"github.com/rs/cors"
@@ -63,11 +64,11 @@ func (app *App) Run() error {
 	//nolint:errcheck //CODEI8: ignore error check
 	go Server.Serve()
 
-	fmt.Println("Socket Served")
+	logger.Info("Socket Served")
 
 	defer Server.Close()
 
-	fmt.Println("Zuri Chat API running on port ", app.Port)
+	logger.Info("Zuri Chat API running on port %s", app.Port)
 
 	if err := srv.ListenAndServe(); err != nil {
 		return err
@@ -81,10 +82,10 @@ func main() {
 	// load .env file if it exists
 	err := godotenv.Load(".env")
 	if err != nil {
-		fmt.Printf("Error loading .env file: %v", err)
+		logger.Error("Error loading .env file: %v", err)
 	}
 
-	fmt.Println("Environment variables successfully loaded. Starting application...")
+	logger.Info("Environment variables successfully loaded. Starting application...")
 
 	// get PORT from environment variables
 	port := os.Getenv("PORT")
