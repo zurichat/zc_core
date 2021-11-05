@@ -26,9 +26,7 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 	response.Header().Add("content-type", "application/json")
 
 	var user User
-	err := utils.ParseJSONFromRequest(request, &user)
-
-	if err != nil {
+	if err := utils.ParseJSONFromRequest(request, &user); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, response)
 		return
 	}
