@@ -243,13 +243,8 @@ func (oh *OrganizationHandler) UpdateName(w http.ResponseWriter, r *http.Request
 // Transfer workspace ownership.
 func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
+	
 	orgID := mux.Vars(r)["id"]
-
-	// checks if the logged in user trying to make changes is the owner the workspaceace
-	if !auth.IsAuthorized(orgID, "owner", w, r) {
-		return
-	}
 
 	// Checks if organization id is valid
 	orgIDHex, err := primitive.ObjectIDFromHex(orgID)

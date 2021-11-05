@@ -400,3 +400,38 @@ func (au *AuthHandler) SocialAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+// This confirm user password before deactivation.
+func (au *AuthHandler) ConfirmUserPassword(w http.ResponseWriter, r *http.Request) {
+	loggedInUser, _ := r.Context().Value("user").(*AuthUser)
+
+	creds := struct {
+		Password        string `json:"password"`
+		ConfirmPassword string `json:"confirm_password"`
+	}{}
+
+	if err := utils.ParseJSONFromRequest(r, &creds); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	if creds.Password != creds.ConfirmPassword {
+		utils.GetError(ErrConfirmPassword, http.StatusBadRequest, w)
+		return
+	}
+
+	u, err := FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
+
+	if err != nil {
+		utils.GetError(ErrUserNotFound, http.StatusBadRequest, w)
+		return
+	}
+	// check password
+	check := CheckPassword(creds.Password, u.Password)
+	if !check {
+		utils.GetError(errors.New("invalid credentials, confirm and try again"), http.StatusBadRequest, w)
+		return
+	}
+
+	utils.GetSuccess("Password confirm successful", nil, w)
+}

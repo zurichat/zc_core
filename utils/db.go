@@ -281,13 +281,13 @@ func CreateUniqueIndex(collName, field string, order int) error {
 		Options: options.Index().SetUnique(true),
 	}
 
-	indexName, err := collection.Indexes().CreateOne(context.Background(), indexModel)
-	if err != nil {
-		fmt.Printf("error creating unique index on %s field in %s: %v", field, collName, err)
-		return nil
-	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()	
 
-	fmt.Printf("%s index on %s collection created successfully\n", indexName, collName)
+	_, err := collection.Indexes().CreateOne(ctx, indexModel)
+	if err != nil {
+		return fmt.Errorf("failed to create unique index on field %s in %s", field, collName)
+	}
 
 	return nil
 }
@@ -310,14 +310,13 @@ func CreateTextIndexForPlugins() error {
 		}),
 	}
 
-	indexName, err := collection.Indexes().CreateOne(context.Background(), indexModel)
-
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()	
+	
+	_, err := collection.Indexes().CreateOne(ctx, indexModel)
 	if err != nil {
-		fmt.Printf("error creating text index for plugins collection %v", err)
-		return nil
+		return fmt.Errorf("error creating text index for plugins collection %v", err)
 	}
-
-	fmt.Printf("%s index on plugins collection created successfully\n", indexName)
 
 	return nil
 }

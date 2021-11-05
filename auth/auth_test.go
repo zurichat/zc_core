@@ -44,13 +44,14 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
 
-	fmt.Println("Environment variables successfully loaded. Starting application...")
-
-	if err = utils.ConnectToDB(os.Getenv("CLUSTER_TEST_URL")); err != nil {
+	if err = utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
 		log.Fatal("Could not connect to MongoDB")
 	}
+
 	fmt.Printf("\n\n")
-	m.Run()
+	exitVal := m.Run()
+
+	os.Exit(exitVal)
 }
 
 func TestLogin(t *testing.T) {
@@ -66,10 +67,18 @@ func TestLogin(t *testing.T) {
 		{
 			Name:   "OK",
 			RequestBody: Credentials{
-				Email: "john.doe@workable.com",
-				Password: "password",
+				Email: "bbnaija2025@gmail.com",
+				Password: "password3245",
 			},
 			ExpectedCode: http.StatusCreated,			
+		},
+		{
+			Name: "should throw account not verified error",
+			RequestBody: Credentials{
+				Email: "bbnaija2025@gmail.com",
+				Password: "password3245",				
+			},
+			ExpectedCode: http.StatusBadRequest,
 		},
 		{
 			Name:   "should fail for incorrect password",
@@ -85,7 +94,7 @@ func TestLogin(t *testing.T) {
 				Email: "enigbe.enike.com",
 				Password: "password34223",
 			},
-			ExpectedCode: http.StatusUnprocessableEntity,			
+			ExpectedCode: http.StatusBadRequest,			
 		},				
 	}
 
@@ -113,9 +122,8 @@ func TestLogin(t *testing.T) {
 			handler := http.HandlerFunc(au.LoginIn)
 			handler.ServeHTTP(rr, req)	
 			
-			status := rr.Code
 			// fmt.Print(rr.Body)
-			if status != test.ExpectedCode {
+			if status := rr.Code; status != test.ExpectedCode {
 				t.Errorf("handler returned wrong status code: got %v want %v", status, test.ExpectedCode)
 				return
 			}			

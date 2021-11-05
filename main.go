@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -34,7 +33,7 @@ func (app *App) Run() error {
 	stripe.Key = os.Getenv("STRIPE_KEY")
 
 	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
-		return errors.New("Could not connect to MongoDB")
+		return fmt.Errorf("Could not connect to MongoDB: \n%v", err)
 	}
 
 	// sentry: enables reporting messages, errors, and panics.
