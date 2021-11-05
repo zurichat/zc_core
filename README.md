@@ -53,7 +53,7 @@ $ golangci-lint run --timeout 2m
 ```
 2. Automated unit and integration tests done with golang's builtin [`testing`](https://pkg.go.dev/testing) package. 
 ```bash
-WIP
+$ go test -v ./...  -cover
 ```
 
 ## Features
@@ -78,7 +78,7 @@ Pull requests are welcome from the zc_core_main team. Please review the issues c
 
 1. Fork/Clone the Project
 2. Create your Feature Branch (`git checkout -b [branch name]`)
-3. Commit your Changes (`git commit -m Add some amazing features`)
-4. Lint your Changes
-4. Push to the Branch (`git push origin [branch name]`)
-5. Open a Pull Request
+3. Lint your Changes (`golangci-lint run --timeout 2m`)
+4. Commit your Changes (`git commit -m "Added some amazing features"`)
+5. Push to the Branch (`git push origin [branch name]`)
+6. Open a Pull Request
