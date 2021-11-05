@@ -21,6 +21,16 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
+var (
+	NumberTwo          = 2
+	ErrNoAuthToken     = errors.New("no authorization or session expired")
+	ErrTokenExp        = errors.New("session expired")
+	ErrNotAuthorized   = errors.New("not authorized")
+	ErrConfirmPassword = errors.New("the password confirmation does not match")
+	ErrAccessDenied    = errors.New("access Denied")
+	UserDetails        = UserKey("userDetails")
+)
+
 type RoleMember struct {
 	ID          string             `json:"id" bson:"_id"`
 	OrgID       primitive.ObjectID `json:"org_id" bson:"org_id"`
@@ -37,15 +47,19 @@ type RoleMember struct {
 	JoinedAt    time.Time          `json:"joined_at" bson:"joined_at"`
 }
 
-var (
-	NumberTwo          = 2
-	ErrNoAuthToken     = errors.New("no authorization or session expired")
-	ErrTokenExp        = errors.New("session expired")
-	ErrNotAuthorized   = errors.New("not authorized")
-	ErrConfirmPassword = errors.New("the password confirmation does not match")
-	ErrAccessDenied    = errors.New("access Denied")
-	UserDetails        = UserKey("userDetails")
-)
+type UserResponse struct {
+	ID          string    `json:"id,omitempty"`
+	FirstName   string    `json:"first_name"`
+	LastName    string    `json:"last_name"`
+	DisplayName string    `json:"display_name"`
+	Email       string    `json:"email"`
+	Phone       string    `json:"phone"`
+	Status      int       `json:"status"`
+	Timezone    string    `json:"time_zone"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	Token       string    `json:"token"`
+}
 
 type Credentials struct {
 	Email    string `json:"email" validate:"required,email"`
@@ -69,20 +83,6 @@ type MyCustomClaims struct {
 	jwt.StandardClaims
 }
 
-type UserResponse struct {
-	ID          string    `json:"id,omitempty"`
-	FirstName   string    `json:"first_name"`
-	LastName    string    `json:"last_name"`
-	DisplayName string    `json:"display_name"`
-	Email       string    `json:"email"`
-	Phone       string    `json:"phone"`
-	Status      int       `json:"status"`
-	Timezone    string    `json:"time_zone"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-	Token       string    `json:"token"`
-}
-
 type VerifiedTokenResponse struct {
 	Verified bool         `json:"is_verified"`
 	User     UserResponse `json:"user"`
@@ -102,6 +102,21 @@ func CheckPassword(password, hash string) bool {
 	return err == nil
 }
 
+// Deletes other sessions apart from current one.
+func DeleteOtherSessions(userID, sessionID string) {
+	uid, _ := primitive.ObjectIDFromHex(userID)
+	sid, _ := primitive.ObjectIDFromHex(sessionID)
+	filter := bson.M{
+		"user_id": bson.M{"$eq": uid},
+		"_id":     bson.M{"$ne": sid},
+	}
+	_, err := utils.DeleteManyMongoDBDoc(sessionCollection, filter)
+
+	if err != nil {
+		fmt.Printf("%v", err)
+	}
+}
+
 func FetchUserByEmail(filter map[string]interface{}) (*user.User, error) {
 	u := &user.User{}
 	userCollection, err := utils.GetMongoDBCollection(os.Getenv("DB_NAME"), userCollection)
@@ -116,158 +131,17 @@ func FetchUserByEmail(filter map[string]interface{}) (*user.User, error) {
 	return u, err
 }
 
-// Checks if a user is authorized to access a particular function, and either returns a 403 error or continues the process
-// First is the Organisation's Id
-// Second Option is the role necessary for accessing your endpoint, options are "owner" or "admin" or "member" or "guest"
-// Third is response writer
-// Fourth request reader.
-func IsAuthorized(orgID, role string, w http.ResponseWriter, r *http.Request) bool {
-	loggedInUser, _ := r.Context().Value("user").(*AuthUser)
-	lguser, ee := FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
+// Finds User by ID.
+func FetchUserByID(id string) (*user.User, error) {
+	uid, _ := primitive.ObjectIDFromHex(id)
+	filter := bson.M{"_id": uid}
+	u := &user.User{}
 
-	if ee != nil {
-		utils.GetError(errors.New("error fetching logged in User"), http.StatusBadRequest, w)
-		return false
-	}
+	userCollection := utils.GetCollection(userCollection)
+	result := userCollection.FindOne(context.TODO(), filter)
+	err := result.Decode(&u)
 
-	userID := lguser.ID
-	luHexid, _ := primitive.ObjectIDFromHex(userID)
-	_, userCollection, memberCollection := "organizations", "users", "members"
-	userDoc, _ := utils.GetMongoDBDoc(userCollection, bson.M{"_id": luHexid})
-
-	if userDoc == nil {
-		utils.GetError(errors.New("user not found"), http.StatusBadRequest, w)
-		return false
-	}
-
-	var (
-		u    user.User
-		memb RoleMember
-	)
-
-	//nolint:errcheck //CODEI8: please ignore
-	mapstructure.Decode(userDoc, &u)
-
-	if role == "zuri_admin" {
-		if u.Role == role {
-			return true
-		}
-
-		utils.GetError(errors.New("access Denied"), http.StatusUnauthorized, w)
-
-		return false
-	}
-
-	// Getting member's document from db
-	orgMember, _ := utils.GetMongoDBDoc(memberCollection, bson.M{"org_id": orgID, "email": u.Email})
-	if orgMember == nil {
-		utils.GetError(errors.New("access Denied"), http.StatusUnauthorized, w)
-		return false
-	}
-
-	//nolint:errcheck //CODEI8:
-	mapstructure.Decode(orgMember, &memb)
-
-	// check role's access
-	nA := map[string]int{"owner": 4, "admin": 3, "member": 2, "guest": 1}
-
-	if nA[role] > nA[memb.Role] {
-		utils.GetError(errors.New("user Not Authorized"), http.StatusUnauthorized, w)
-		return false
-	}
-
-	return true
-}
-
-// NOTE: Example of how to use isAuthorized function
-// loggedInUser := r.Context().Value("user").(*auth.AuthUser)
-// user, _ := auth.FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
-// sOrgId := mux.Vars(r)["id"]
-
-// if !auth.IsAuthorized(sOrgId, "admin", w, r) {
-// 	return
-// }
-
-func (au *AuthHandler) AuthTest(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	store := NewMongoStore(utils.GetCollection(sessionCollection), au.configs.SessionMaxAge, true, []byte(au.configs.SecretKey))
-
-	var (
-		session *sessions.Session
-		err     error
-		erro    error
-	)
-
-	session, err = store.Get(r, au.configs.SessionKey)
-	status, sessData, _ := GetSessionDataFromToken(r, []byte(au.configs.HmacSampleSecret))
-
-	if err != nil && !status {
-		utils.GetError(ErrNotAuthorized, http.StatusUnauthorized, w)
-		return
-	}
-
-	if status {
-		session, erro = NewS(store, sessData.Cookie, sessData.ID, sessData.Email, r, sessData.SessionName, sessData.Gothic)
-		if err != nil && erro != nil {
-			utils.GetError(ErrNotAuthorized, http.StatusUnauthorized, w)
-			return
-		}
-	}
-
-	// use is coming in newly, no cookies
-	if session.IsNew {
-		utils.GetError(ErrNoAuthToken, http.StatusUnauthorized, w)
-		return
-	}
-
-	objID, err := primitive.ObjectIDFromHex(session.ID)
-
-	if err != nil {
-		utils.GetError(ErrorInvalid, http.StatusUnauthorized, w)
-		return
-	}
-
-	u := &AuthUser{
-		ID:    objID,
-		Email: session.Values["email"].(string),
-	}
-	utils.GetSuccess("Retrieved", u, w)
-}
-
-// This confirm user password before deactivation.
-func (au *AuthHandler) ConfirmUserPassword(w http.ResponseWriter, r *http.Request) {
-	loggedInUser, _ := r.Context().Value("user").(*AuthUser)
-
-	creds := struct {
-		Password        string `json:"password"`
-		ConfirmPassword string `json:"confirm_password"`
-	}{}
-
-	if err := utils.ParseJSONFromRequest(r, &creds); err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
-	}
-
-	if creds.Password != creds.ConfirmPassword {
-		utils.GetError(ErrConfirmPassword, http.StatusBadRequest, w)
-		return
-	}
-
-	u, err := FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
-
-	if err != nil {
-		utils.GetError(ErrUserNotFound, http.StatusBadRequest, w)
-		return
-	}
-	// check password
-	check := CheckPassword(creds.Password, u.Password)
-	if !check {
-		utils.GetError(errors.New("invalid credentials, confirm and try again"), http.StatusBadRequest, w)
-		return
-	}
-
-	utils.GetSuccess("Password confirm successful", nil, w)
+	return u, err
 }
 
 func GetSessionDataFromToken(r *http.Request, hmacSampleSecret []byte) (status bool, data ResToken, err error) {
@@ -305,6 +179,22 @@ func GetSessionDataFromToken(r *http.Request, hmacSampleSecret []byte) (status b
 	}
 
 	return false, ResToken{}, fmt.Errorf("failed")
+}
+
+func ClearSession(m *MongoStore, w http.ResponseWriter, session *sessions.Session) error {
+	if err := m.delete(session); err != nil {
+		return err
+	}
+
+	m.Token.SetToken(w, session.Name(), "", session.Options)
+
+	Resptoken = ResToken{
+		SessionName: session.Name(),
+		Cookie:      "",
+		Options:     session.Options,
+	}
+
+	return nil
 }
 
 func NewAuthHandler(c *utils.Configurations, mail service.MailService) *AuthHandler {

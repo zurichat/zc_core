@@ -2,11 +2,7 @@ package auth
 
 import (
 	"context"
-	"crypto/aes"
-	"crypto/cipher"
-	"encoding/base64"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -17,8 +13,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"zuri.chat/zccore/user"
-	"zuri.chat/zccore/utils"
 )
 
 var (
@@ -140,49 +134,7 @@ func NewS(m *MongoStore, cookie, id, email string, r *http.Request, name string,
 	return session, err
 }
 
-func ClearSession(m *MongoStore, w http.ResponseWriter, session *sessions.Session) error {
-	if err := m.delete(session); err != nil {
-		return err
-	}
-
-	m.Token.SetToken(w, session.Name(), "", session.Options)
-
-	Resptoken = ResToken{
-		SessionName: session.Name(),
-		Cookie:      "",
-		Options:     session.Options,
-	}
-
-	return nil
-}
-
 func (m *MongoStore) Save(r *http.Request, w http.ResponseWriter, session *sessions.Session) error {
-	if session.ID == "" {
-		session.ID = primitive.NewObjectID().Hex()
-	}
-
-	if err := m.upsert(session); err != nil {
-		return err
-	}
-
-	encoded, err := securecookie.EncodeMulti(session.Name(), session.ID, m.Codecs...)
-	if err != nil {
-		return err
-	}
-
-	Resptoken = ResToken{
-		ID:          session.ID,
-		SessionName: session.Name(),
-		Cookie:      encoded,
-		Options:     session.Options,
-	}
-
-	m.Token.SetToken(w, session.Name(), encoded, session.Options)
-
-	return nil
-}
-
-func SaveSocialSession(r *http.Request, w http.ResponseWriter, session *sessions.Session, m *MongoStore) error {
 	if session.ID == "" {
 		session.ID = primitive.NewObjectID().Hex()
 	}
@@ -302,75 +254,4 @@ func (m *MongoStore) delete(session *sessions.Session) error {
 	}
 
 	return nil
-}
-
-var iv = []byte{35, 46, 57, 24, 85, 35, 24, 74, 87, 35, 88, 98, 66, 32, 14, 05}
-
-func encodeBase64(b []byte) string {
-	return base64.StdEncoding.EncodeToString(b)
-}
-
-func decodeBase64(s string) []byte {
-	data, err := base64.StdEncoding.DecodeString(s)
-	if err != nil {
-		panic(err)
-	}
-
-	return data
-}
-
-func Encrypt(key, text string) string {
-	block, err := aes.NewCipher([]byte(key))
-	if err != nil {
-		panic(err)
-	}
-
-	plaintext := []byte(text)
-	cfb := cipher.NewCFBEncrypter(block, iv)
-	ciphertext := make([]byte, len(plaintext))
-	cfb.XORKeyStream(ciphertext, plaintext)
-
-	return encodeBase64(ciphertext)
-}
-
-func Decrypt(key, text string) string {
-	block, err := aes.NewCipher([]byte(key))
-	if err != nil {
-		panic(err)
-	}
-
-	ciphertext := decodeBase64(text)
-	cfb := cipher.NewCFBEncrypter(block, iv)
-	plaintext := make([]byte, len(ciphertext))
-	cfb.XORKeyStream(plaintext, ciphertext)
-
-	return string(plaintext)
-}
-
-// Deletes other sessions apart from current one.
-func DeleteOtherSessions(userID, sessionID string) {
-	uid, _ := primitive.ObjectIDFromHex(userID)
-	sid, _ := primitive.ObjectIDFromHex(sessionID)
-	filter := bson.M{
-		"user_id": bson.M{"$eq": uid},
-		"_id":     bson.M{"$ne": sid},
-	}
-	_, err := utils.DeleteManyMongoDBDoc(sessionCollection, filter)
-
-	if err != nil {
-		fmt.Printf("%v", err)
-	}
-}
-
-// Finds User by ID.
-func FetchUserByID(id string) (*user.User, error) {
-	uid, _ := primitive.ObjectIDFromHex(id)
-	filter := bson.M{"_id": uid}
-	u := &user.User{}
-
-	userCollection := utils.GetCollection(userCollection)
-	result := userCollection.FindOne(context.TODO(), filter)
-	err := result.Decode(&u)
-
-	return u, err
 }
