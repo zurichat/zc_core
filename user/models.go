@@ -3,10 +3,18 @@ package user
 import (
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"golang.org/x/crypto/bcrypt"
 	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
+)
+
+var (
+	emailRegex = `^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`
+	validate = validator.New()
+	defaultHashCost = 14
 )
 
 const (
@@ -108,6 +116,12 @@ type UUIDUserData struct {
 	Password  string `bson:"password" json:"password"`
 	FirstName string `bson:"first_name" json:"first_name"`
 	LastName  string `bson:"last_name" json:"last_name"`
+}
+
+// Method to hash password.
+func GetHash(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), defaultHashCost)
+	return string(bytes), err
 }
 
 func NewUserHandler(c *utils.Configurations, mail service.MailService) *UserHandler {
