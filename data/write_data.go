@@ -12,7 +12,7 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
-const CollectionLimit = 2
+const CollectionLimit = 3
 
 type writeDataRequest struct {
 	PluginID       string                 `json:"plugin_id"`
