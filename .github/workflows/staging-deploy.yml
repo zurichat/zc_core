@@ -1,4 +1,4 @@
-name: Zuri main staging Deployment
+name: Zuri core staging Deployment
 
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
