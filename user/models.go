@@ -78,11 +78,11 @@ type Social struct {
 
 type User struct {
 	ID                string                 `bson:"_id,omitempty" json:"_id,omitempty"`
-	FirstName         string                 `bson:"first_name" validate:"required,min=2,max=100" json:"first_name"`
-	LastName          string                 `bson:"last_name" validate:"required,min=2,max=100" json:"last_name"`
+	FirstName         string                 `bson:"first_name" json:"first_name"`
+	LastName          string                 `bson:"last_name" json:"last_name"`
 	Email             string                 `bson:"email" validate:"email,required" json:"email"`
 	Password          string                 `bson:"password" json:"password" validate:"required,min=6"`
-	Phone             string                 `bson:"phone" validate:"required" json:"phone"`
+	Phone             string                 `bson:"phone" json:"phone"`
 	Settings          *UserSettings          `bson:"settings" json:"settings"`
 	Timezone          string                 `bson:"time_zone" json:"time_zone"`
 	Role              string                 `bson:"role" json:"role"`
