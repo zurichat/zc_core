@@ -23,7 +23,7 @@ jobs:
           script: |
             cd /var/www/zuri.chat/zuricore/zc_core
             git fetch --all 
-            git reset --hard origin/staging
+            git reset --hard origin/main
             git stash
             git pull
             pm2 restart zc_core_main
