@@ -170,6 +170,7 @@ func (h *Handler) SetupRoutes() {
 	h.Router.HandleFunc("/marketplace/plugins/recommended", marketplace.GetRecomendedPlugins).Methods("GET")
 	h.Router.HandleFunc("/marketplace/plugins/search", marketplace.Search).Methods("GET")
 	h.Router.HandleFunc("/marketplace/plugins/{id}", marketplace.GetPlugin).Methods("GET")
+	h.Router.HandleFunc("/marketplace/plugins/urls/url", marketplace.GetPluginByURL).Methods("GET")
 	h.Router.HandleFunc("/marketplace/plugins/{id}", marketplace.RemovePlugin).Methods("DELETE")
 
 	// Users

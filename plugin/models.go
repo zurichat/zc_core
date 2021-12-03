@@ -63,7 +63,11 @@ func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 	}
 
 
-	res, _ := utils.GetMongoDBDoc(PluginCollectionName, bson.M{"_id": objID, "deleted": false})
+	res, err := utils.GetMongoDBDoc(PluginCollectionName, bson.M{"_id": objID, "deleted": false})
+
+	if err != nil {
+		return nil, err
+	}
 
 	bsonBytes, err := bson.Marshal(res)
 
@@ -141,6 +145,38 @@ func SortPlugins(ctx context.Context, filter bson.M, sort bson.D) ([]*Plugin, er
 	}
 
 	return ps, nil
+}
+
+func FindPluginByTemplateURL(ctx context.Context, url string) (*Plugin, error) {
+	var (
+		p  *Plugin
+		bp *Plugin
+	)
+
+	res, err := utils.GetMongoDBDoc(PluginCollectionName, bson.M{"deleted": false, "template_url": url})
+
+	if err != nil {
+		return nil, err
+	}	
+
+	bsonBytes, err := bson.Marshal(res)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = bson.Unmarshal(bsonBytes, &p)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := mapstructure.Decode(res, &bp); err != nil {
+		return nil, err
+	}
+
+	p.Queue = bp.Queue
+
+	return p, nil
 }
 
 type SyncUpdateRequest struct {

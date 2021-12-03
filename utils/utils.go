@@ -77,8 +77,7 @@ func GetError(err error, statusCode int, w http.ResponseWriter) {
 		StatusCode:   statusCode,
 	}
 
-	w.WriteHeader(response.StatusCode)
-	w.Header().Set("Content-Type", "application/json<Left>")
+	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("Error sending response: %v", err)
