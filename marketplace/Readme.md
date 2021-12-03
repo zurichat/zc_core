@@ -43,3 +43,5 @@ The response is of this format. The `page`, `limit` and `total` are absent if th
 ## Marketplace GetOne
 This [GET] /marketplace/plugins/{id} retreives an approved plugin with the id, and returns data containing the plugin details including the url to install it.
 
+## Marketplace Get Plugin by Template url
+This [GET] marketplace/plugins/urls/url?url=<template_url> retreives an approved plugin with the id.
