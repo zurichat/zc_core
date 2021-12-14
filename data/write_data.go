@@ -44,15 +44,15 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "POST":
-		reqData.handlePost(w, r)
+		reqData.handlePost(w)
 	case "PUT", "PATCH":
-		reqData.handlePut(w, r)
+		reqData.handlePut(w)
 	default:
 		fmt.Fprint(w, `{"data_write": "Data write request"}`)
 	}
 }
 
-func (wdr *writeDataRequest) handlePost(w http.ResponseWriter, r *http.Request) {
+func (wdr *writeDataRequest) handlePost(w http.ResponseWriter) {
 	var payload interface{}
 
 	if wdr.BulkWrite {
@@ -92,7 +92,7 @@ func (wdr *writeDataRequest) handlePost(w http.ResponseWriter, r *http.Request) 
 	utils.GetSuccess("success", data, w)
 }
 
-func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, _ *http.Request) {
+func (wdr *writeDataRequest) handlePut(w http.ResponseWriter) {
 	var err error
 
 	var res *mongo.UpdateResult
