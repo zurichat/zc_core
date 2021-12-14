@@ -159,7 +159,6 @@ func (h *Handler) SetupRoutes() {
 
 	// Plugins
 	h.Router.HandleFunc("/plugins/register", ph.Register).Methods("POST")
-	h.Router.HandleFunc("/plugins", ph.Register).Methods("POST")
 	h.Router.HandleFunc("/plugins/{id}", ph.Update).Methods("PATCH")
 	h.Router.HandleFunc("/plugins/{id}", ph.Delete).Methods("DELETE")
 	h.Router.HandleFunc("/plugins/{id}/sync", plugin.SyncUpdate).Methods("PATCH")

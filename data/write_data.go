@@ -12,8 +12,6 @@ import (
 	"zuri.chat/zccore/utils"
 )
 
-const CollectionLimit = 3
-
 type writeDataRequest struct {
 	PluginID       string                 `json:"plugin_id"`
 	CollectionName string                 `json:"collection_name"`
@@ -63,34 +61,16 @@ func (wdr *writeDataRequest) handlePost(w http.ResponseWriter, r *http.Request) 
 		payload = []interface{}{wdr.Payload}
 	}
 
+	// a plugin has just 3 collcetions they can write to: data - messages - rooms
+	if _, ok := PluginCollectionNames[wdr.CollectionName]; !ok {
+		msg := fmt.Sprintf("write forbidden to %s collection", wdr.CollectionName)
+		utils.GetError(errors.New(msg), http.StatusBadRequest, w)
+
+		return
+	}
+
+	
 	actualCollName := mongoCollectionName(wdr.PluginID, wdr.CollectionName)
-
-	colls, err := FindPluginCollections(r.Context(), wdr.PluginID)
-
-	if err != nil {
-		utils.GetError(fmt.Errorf("an error occurred: %v", err), http.StatusInternalServerError, w)
-		return
-	}
-
-	exists := false
-
-	for _, c := range colls {
-		if c.Name == wdr.CollectionName {
-			exists = true
-			break
-		}
-	}
-
-	if !exists && len(colls) < CollectionLimit {
-		if err = SaveCollection(wdr.CollectionName, wdr.PluginID); err != nil {
-			utils.GetError(fmt.Errorf("an error occurred: %v", err), http.StatusInternalServerError, w)
-			return
-		}
-	} else if !exists && len(colls) >= CollectionLimit {
-		utils.GetError(fmt.Errorf("maximum collections limit reached"), http.StatusNotAcceptable, w)
-		return
-	}
-
 	res, err := insertMany(actualCollName, wdr.OrganizationID, payload)
 
 	if err != nil {
