@@ -6,7 +6,7 @@ require (
 	github.com/0xAX/notificator v0.0.0-20210731104411-c42e3d4a43ee // indirect
 	github.com/anthonynsimon/bild v0.13.0
 	github.com/codegangsta/envy v0.0.0-20141216192214-4b78388c8ce4 // indirect
-	github.com/codegangsta/gin v0.0.0-20171026143024-cafe2ce98974 // indirect
+	github.com/codegangsta/gin v0.0.0-20211113050330-71f90109db02 // indirect
 	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/getsentry/sentry-go v0.11.0
 	github.com/go-playground/validator/v10 v10.9.0
@@ -34,6 +34,7 @@ require (
 	github.com/sendgrid/sendgrid-go v3.10.2+incompatible
 	github.com/spf13/viper v1.9.0
 	github.com/stripe/stripe-go/v72 v72.68.0
+	github.com/urfave/cli v1.22.5 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
 	go.mongodb.org/mongo-driver v1.7.3
 	go.uber.org/zap v1.19.1
@@ -43,5 +44,4 @@ require (
 	golang.org/x/sys v0.0.0-20211007075335-d3039528d8ac // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac
-	gopkg.in/urfave/cli.v1 v1.20.0 // indirect
 )

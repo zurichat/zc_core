@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 
+	"github.com/getsentry/sentry-go"
 	socketio "github.com/googollee/go-socket.io"
 	"github.com/gorilla/mux"
 	"github.com/graphql-go/graphql"
@@ -215,6 +216,7 @@ func (h *Handler) SetupRoutes() {
 
 	// Ping endpoint
 	h.Router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		sentry.CaptureMessage("Server is down")
 		utils.GetSuccess("Server is live", nil, w)
 	})
 
