@@ -60,6 +60,28 @@ func GetPlugin(w http.ResponseWriter, r *http.Request) {
 	utils.GetSuccess("success", p, w)
 }
 
+func GetPluginByURL(w http.ResponseWriter, r *http.Request) {
+	url:= r.URL.Query().Get("url")
+	if url == ""{
+		utils.GetError(errors.New("url not supplied"), http.StatusInternalServerError, w)
+		return
+	}
+	
+	p, err := plugin.FindPluginByTemplateURL(r.Context(), url)
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if !p.Approved {
+		utils.GetError(errors.New("plugin is not approved"), http.StatusForbidden, w)
+		return
+	}
+
+	utils.GetSuccess("success", p, w)
+}
+
 // RemovePlugin handles removal of plugins from marketplace.
 func RemovePlugin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
