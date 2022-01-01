@@ -2,7 +2,6 @@ package organizations
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -204,20 +203,25 @@ func GetOrgPluginCollectionName(orgName string) string {
 }
 
 func (o *Organization) OrgPlugins() []map[string]interface{} {
-	orgCollectionName := GetOrgPluginCollectionName(o.ID)
+	// orgCollectionName := GetOrgPluginCollectionName(o.ID)
 
-	orgPlugins, _ := utils.GetMongoDBDocs(orgCollectionName, nil)
+	// orgPlugins, _ := utils.GetMongoDBDocs(orgCollectionName, nil)
 
-	var pluginsMap []map[string]interface{}
+	// var pluginsMap []map[string]interface{}
 
-	pluginJSON, _ := json.Marshal(orgPlugins)
-	err := json.Unmarshal(pluginJSON, &pluginsMap)
+	// pluginJSON, _ := json.Marshal(orgPlugins)
+	// err := json.Unmarshal(pluginJSON, &pluginsMap)
 
-	if err != nil {
-		return nil
-	}
+	// if err != nil {
+	// 	return nil
+	// }
 
-	return pluginsMap
+	// return pluginsMap
+
+	fmt.Println("Org: ", o)
+	fmt.Println("Org plugins: ", o.Plugins)
+
+	return o.Plugins
 }
 
 // used to update any field in an organization.
@@ -302,12 +306,12 @@ func InsertHistoryAtIndex(s []StatusHistory, history StatusHistory, index int) [
 	return append(s[:index], append([]StatusHistory{history}, s[index:]...)...)
 }
 
-type checkSettingsPayload func () (ok bool)
+type checkSettingsPayload func() (ok bool)
 
 type settingsPayload struct {
-	settings interface{}
+	settings             interface{}
 	checkSettingsPayload checkSettingsPayload
-	field string
+	field                string
 }
 
 // utility function to manage updates to a member's setting.
