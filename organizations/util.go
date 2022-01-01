@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -198,29 +197,7 @@ func FetchOrganization(filter map[string]interface{}) (*Organization, error) {
 	return organization, err
 }
 
-func GetOrgPluginCollectionName(orgName string) string {
-	return strings.ToLower(orgName) + "_" + InstalledPluginsCollectionName
-}
-
 func (o *Organization) OrgPlugins() []map[string]interface{} {
-	// orgCollectionName := GetOrgPluginCollectionName(o.ID)
-
-	// orgPlugins, _ := utils.GetMongoDBDocs(orgCollectionName, nil)
-
-	// var pluginsMap []map[string]interface{}
-
-	// pluginJSON, _ := json.Marshal(orgPlugins)
-	// err := json.Unmarshal(pluginJSON, &pluginsMap)
-
-	// if err != nil {
-	// 	return nil
-	// }
-
-	// return pluginsMap
-
-	fmt.Println("Org: ", o)
-	fmt.Println("Org plugins: ", o.Plugins)
-
 	return o.Plugins
 }
 
