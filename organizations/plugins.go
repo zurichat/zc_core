@@ -85,7 +85,7 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 
 	plugins := make([]map[string]interface{}, 0)
 
-	if err := utils.ConvertStructure(p[PluginCollectionName], &plugins); err != nil {
+	if err = utils.ConvertStructure(p[PluginCollectionName], &plugins); err != nil {
 		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
 		return
 	}
@@ -231,6 +231,7 @@ func (oh *OrganizationHandler) GetOrganizationPlugin(w http.ResponseWriter, r *h
 	}
 
 	var doc map[string]interface{}
+
 	for _, v := range org.Plugins {
 		if v["plugin_id"] == pluginID {
 			doc = v
@@ -328,7 +329,9 @@ func (oh *OrganizationHandler) RemoveOrganizationPlugin(w http.ResponseWriter, r
 		return
 	}
 
-	plugins := append(org.Plugins[:pluginIndex], org.Plugins[pluginIndex+1:]...)
+	plugins := org.Plugins
+
+	plugins = append(plugins[:pluginIndex], plugins[pluginIndex+1:]...)
 
 	addPlugin := bson.M{"plugins": plugins}
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	// "fmt"
 	"fmt"
 	"log"
 	"net/http"
@@ -19,7 +18,7 @@ import (
 	sentry "github.com/getsentry/sentry-go"
 	"github.com/rs/cors"
 	"zuri.chat/zccore/messaging"
-	// "zuri.chat/zccore/utils"
+	// "zuri.chat/zccore/utils".
 )
 
 type App struct {
@@ -50,7 +49,9 @@ func (app *App) Run() error {
 	}
 	// Flush buffered events before the program terminates.
 	// Set the timeout to the maximum duration the program can afford to wait.
-	defer sentry.Flush(2 * time.Second)
+	
+	num  := 2
+	defer sentry.Flush(time.Duration(num) * time.Second)
 
 	sentry.CaptureMessage("It works!")
 
