@@ -92,11 +92,11 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	var newOrg Organization
 
-	if r.Body == nil{
+	if r.Body == nil {
 		utils.GetError(fmt.Errorf("missing body request"), http.StatusBadRequest, w)
 		return
 	}
-	
+
 	err := json.NewDecoder(r.Body).Decode(&newOrg)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -130,6 +130,7 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	newOrg.CreatorID = creatorID
 	newOrg.CreatorEmail = userEmail
 	newOrg.CreatedAt = time.Now()
+	newOrg.Plugins = []map[string]interface{}{}
 
 	// initialize organization with 100 free tokens
 	newOrg.Tokens = 100
@@ -244,7 +245,7 @@ func (oh *OrganizationHandler) UpdateName(w http.ResponseWriter, r *http.Request
 // Transfer workspace ownership.
 func (oh *OrganizationHandler) TransferOwnership(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	
+
 	orgID := mux.Vars(r)["id"]
 
 	// Checks if organization id is valid
@@ -438,7 +439,7 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 		}
 
 		// Save newly generated uuid and associated info in the database
-		save, err := utils.CreateMongoDBDoc(OrganizationInviteCollection, invInterface)
+		save, err := utils.CreateMongoDBDoc(OrganizationInviteCollectionName, invInterface)
 		if err != nil {
 			utils.GetError(err, http.StatusInternalServerError, w)
 
@@ -475,7 +476,7 @@ func (oh *OrganizationHandler) InviteStats(w http.ResponseWriter, r *http.Reques
 
 	orgID := mux.Vars(r)["id"]
 
-	invites, err := utils.GetMongoDBDocs(OrganizationInviteCollection, bson.M{"org_id": orgID})
+	invites, err := utils.GetMongoDBDocs(OrganizationInviteCollectionName, bson.M{"org_id": orgID})
 	if err != nil {
 		utils.GetError(err, http.StatusNotFound, w)
 	}

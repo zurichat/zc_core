@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"zuri.chat/zccore/utils"
 )
@@ -40,7 +41,7 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 		return
 	}
 
-	plugin, _ := utils.GetMongoDBDoc(PluginCollection, bson.M{"_id": pluginID})
+	plugin, _ := utils.GetMongoDBDoc(PluginCollectionName, bson.M{"_id": pluginID})
 
 	if plugin == nil {
 		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
@@ -72,13 +73,28 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 		return
 	}
 
-	orgCollectionName := GetOrgPluginCollectionName(OrgID)
+	orgID, err := primitive.ObjectIDFromHex(OrgID)
 
-	p, _ := utils.GetMongoDBDoc(orgCollectionName, bson.M{"plugin_id": orgPlugin.PluginID})
-
-	if p != nil {
-		utils.GetError(errors.New("plugin has already been added"), http.StatusBadRequest, w)
+	if err != nil {
+		utils.GetError(errors.New("invalid organization id"), http.StatusBadRequest, w)
 		return
+	}
+
+	p, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgID},
+		options.FindOne().SetProjection(bson.D{{Key: PluginCollectionName, Value: 1}, {Key: "_id", Value: 0}}))
+
+	plugins := make([]map[string]interface{}, 0)
+
+	if err := utils.ConvertStructure(p[PluginCollectionName], &plugins); err != nil {
+		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
+		return
+	}
+
+	for _, v := range plugins {
+		if v["plugin_id"] == orgPlugin.PluginID {
+			utils.GetError(errors.New("plugin has already been added"), http.StatusBadRequest, w)
+			return
+		}
 	}
 
 	userName := user["first_name"].(string) + " " + user["last_name"].(string)
@@ -101,24 +117,38 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 		return
 	}
 
+	plugins = append(plugins, pluginMap)
+
 	wg := sync.WaitGroup{}
-	num := 2
+	num := 1
+
 	wg.Add(num)
 
-	var save *mongo.InsertOneResult
-	
-	var increaseCount *mongo.UpdateResult
+	var save *mongo.UpdateResult
 
 	go func() {
 		defer wg.Done()
 
-		save, err = utils.CreateMongoDBDoc(orgCollectionName, pluginMap)
+		addPlugin := bson.M{"plugins": plugins}
+
+		save, err = utils.UpdateOneMongoDBDoc(OrganizationCollectionName, OrgID, addPlugin)
 	}()
 
+	wg.Wait()
+
+	if err != nil || save.ModifiedCount != 1 {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	var increaseCount *mongo.UpdateResult
+
+	wg.Add(num)
+
 	go func() {
 		defer wg.Done()
 
-		increaseCount, err = utils.IncrementOneMongoDBDocField(PluginCollection, orgPlugin.PluginID, "install_count")
+		increaseCount, err = utils.IncrementOneMongoDBDocField(PluginCollectionName, orgPlugin.PluginID, "install_count")
 	}()
 
 	wg.Wait()
@@ -128,7 +158,11 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 		return
 	}
 
-	utils.GetSuccess("plugin saved successfully", save, w)
+	data := map[string]interface{}{
+		"plugin_id": orgPlugin.PluginID,
+	}
+
+	utils.GetSuccess("plugin saved successfully", data, w)
 }
 
 // Get an organization plugins.

@@ -2,6 +2,7 @@ package main
 
 import (
 	// "fmt"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"github.com/stripe/stripe-go/v72"
 	transportHttp "zuri.chat/zccore/internal/transport"
 	"zuri.chat/zccore/logger"
+	"zuri.chat/zccore/utils"
 
 	sentry "github.com/getsentry/sentry-go"
 	"github.com/rs/cors"
@@ -33,11 +35,15 @@ func (app *App) Run() error {
 	// Set Stripe api key
 	stripe.Key = os.Getenv("STRIPE_KEY")
 
+	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
+		fmt.Println("Could not connect to MongoDB")
+	}
+
 	err := sentry.Init(sentry.ClientOptions{
-		Dsn: os.Getenv("SENTRY_DNS"),
+		Dsn:         os.Getenv("SENTRY_DNS"),
 		Environment: os.Getenv("ENV"),
 		Release:     "zurichat@0.1.0",
-		Debug: true,
+		Debug:       true,
 	})
 	if err != nil {
 		log.Fatalf("sentry.Init: %s", err)
@@ -68,17 +74,16 @@ func (app *App) Run() error {
 
 	logger.Info("Socket Served")
 
-	defer Server.Close()
-
 	logger.Info("Zuri Chat API running on port %s", app.Port)
 
 	if err := srv.ListenAndServe(); err != nil {
 		return err
 	}
 
+	defer Server.Close()
+
 	return nil
 }
-
 
 func main() {
 	// load .env file if it exists
@@ -95,7 +100,7 @@ func main() {
 		port = "8000"
 	}
 
-	app := App{ Port: port }
+	app := App{Port: port}
 
 	log.Fatal(app.Run())
 }
