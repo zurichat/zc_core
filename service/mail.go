@@ -99,7 +99,6 @@ func (ms *ZcMailService) LoadTemplate(mailReq *Mail) (string, error) {
 }
 
 func (ms *ZcMailService) SendMail(mailReq *Mail) error {
-	// if ms.configs.ESPType == "sendgrid"
 	switch esp := strings.ToLower(ms.configs.ESPType); esp {
 	case "sendgrid":
 		// SENDGRID
@@ -156,7 +155,6 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 		return nil
 
 	case "smtp":
-		// SMTP -> use gmail
 		var (
 			body string
 			err  error
@@ -173,14 +171,14 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 			"",
 			ms.configs.SMTPUsername,
 			ms.configs.SMTPPassword,
-			"smtp.gmail.com",
+			"work.timbu.cloud",
 		)
 
 		subject := fmt.Sprintf("Subject: %s\n", mailReq.subject)
 		mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
 		msg := []byte(subject + mime + body)
 
-		addr := "smtp.gmail.com:587"
+		addr := "work.timbu.cloud:587"
 		if err := smtp.SendMail(addr, auth, ms.configs.SMTPUsername, mailReq.to, msg); err != nil {
 			return err
 		}
