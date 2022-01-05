@@ -174,9 +174,10 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 			"work.timbu.cloud",
 		)
 
+		from := fmt.Sprintf("From: %s\n", ms.configs.SMTPUsername)
 		subject := fmt.Sprintf("Subject: %s\n", mailReq.subject)
 		mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
-		msg := []byte(subject + mime + body)
+		msg := []byte(from + subject + mime + body)
 
 		addr := "work.timbu.cloud:587"
 		if err := smtp.SendMail(addr, auth, ms.configs.SMTPUsername, mailReq.to, msg); err != nil {
