@@ -84,7 +84,6 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 	p, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": pOrgID},
 		options.FindOne().SetProjection(bson.D{{Key: PluginCollectionName, Value: 1}, {Key: "_id", Value: 0}}))
 
-	// plugins := make([]map[string]interface{}, 0)
 	plugins := make(map[string]interface{})
 
 	if err = utils.ConvertStructure(p[PluginCollectionName], &plugins); err != nil {
@@ -97,17 +96,8 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 		return
 	}
 
-	// for _, v := range plugins {
-	// 	if v["plugin_id"] == orgPlugin.PluginID {
-	// 		utils.GetError(errors.New("plugin has already been added"), http.StatusBadRequest, w)
-	// 		return
-	// 	}
-	// }
-
-	// userName := user["first_name"].(string) + " " + user["last_name"].(string)
-	fmt.Println(user)
-	fmt.Println(member)
 	userName := member.UserName
+	fmt.Println("user: ", userName)
 
 	installedPlugin := InstalledPlugin{
 		PluginID:    orgPlugin.PluginID,
@@ -127,7 +117,6 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 		return
 	}
 
-	// plugins = append(plugins, pluginMap)
 	plugins[orgPlugin.PluginID] = pluginMap
 
 	wg := sync.WaitGroup{}
@@ -243,13 +232,15 @@ func (oh *OrganizationHandler) GetOrganizationPlugin(w http.ResponseWriter, r *h
 
 	doc := map[string]interface{}{}
 
-	if plugin, ok := org.Plugins[pluginID]; !ok {
+	if _, ok := org.Plugins[pluginID]; !ok {
 		logger.Error("plugin does not exist")
 		utils.GetError(errors.New("plugin does not exist"), http.StatusNotFound, w)
+
 		return
-	} else {
-		doc[pluginID] = plugin
 	}
+
+	plugin := org.Plugins[pluginID]
+	doc[pluginID] = plugin
 
 	utils.GetSuccess("plugin returned successfully", doc, w)
 }
@@ -318,7 +309,6 @@ func (oh *OrganizationHandler) RemoveOrganizationPlugin(w http.ResponseWriter, r
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
-
 	}
 
 	fmt.Println("org: ", org)
@@ -333,10 +323,11 @@ func (oh *OrganizationHandler) RemoveOrganizationPlugin(w http.ResponseWriter, r
 		// plugin not found in organization.
 		logger.Error("plugin does not exist")
 		utils.GetError(errors.New("plugin does not exist"), http.StatusNotFound, w)
+
 		return
-	} else {
-		delete(org.Plugins, pluginID)
 	}
+
+	delete(org.Plugins, pluginID)
 
 	plugins := org.Plugins
 
@@ -348,6 +339,7 @@ func (oh *OrganizationHandler) RemoveOrganizationPlugin(w http.ResponseWriter, r
 	if err != nil || update.ModifiedCount != 1 {
 		logger.Error("plugin failed to uninstall")
 		utils.GetError(errors.New("plugin failed to uninstall"), http.StatusBadRequest, w)
+
 		return
 	}
 

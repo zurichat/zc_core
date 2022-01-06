@@ -130,7 +130,7 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	newOrg.CreatorID = creatorID
 	newOrg.CreatorEmail = userEmail
 	newOrg.CreatedAt = time.Now()
-	// newOrg.Plugins = []map[string]interface{}{}
+
 	newOrg.Plugins = map[string]interface{}{}
 
 	// initialize organization with 100 free tokens
