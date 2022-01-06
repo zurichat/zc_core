@@ -18,7 +18,6 @@ import (
 	sentry "github.com/getsentry/sentry-go"
 	"github.com/rs/cors"
 	"zuri.chat/zccore/messaging"
-	// "zuri.chat/zccore/utils".
 )
 
 type App struct {
@@ -35,7 +34,7 @@ func (app *App) Run() error {
 	stripe.Key = os.Getenv("STRIPE_KEY")
 
 	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
-		fmt.Println("Could not connect to MongoDB")
+		return fmt.Errorf("could not connect to MongoDB: \n%v", err)
 	}
 
 	err := sentry.Init(sentry.ClientOptions{
@@ -45,12 +44,12 @@ func (app *App) Run() error {
 		Debug:       true,
 	})
 	if err != nil {
-		log.Fatalf("sentry.Init: %s", err)
+		return fmt.Errorf("sentry.Init: %s", err)
 	}
 	// Flush buffered events before the program terminates.
 	// Set the timeout to the maximum duration the program can afford to wait.
-	
-	num  := 2
+
+	num := 2
 	defer sentry.Flush(time.Duration(num) * time.Second)
 
 	sentry.CaptureMessage("It works!")

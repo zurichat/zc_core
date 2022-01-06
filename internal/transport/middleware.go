@@ -33,8 +33,6 @@ func RequestDurationMiddleware(h http.Handler) http.Handler {
 		duration := time.Since(start)
 
 		postToSlack := func() {
-			fmt.Println("Hi")
-
 			m := make(map[string]interface{})
 			m["timeTaken"] = duration.Seconds()
 
@@ -66,7 +64,6 @@ func RequestDurationMiddleware(h http.Handler) http.Handler {
 		}
 
 		if strings.Contains(r.Host, "api.zuri.chat") {
-			fmt.Println("Hello")
 			go postToSlack()
 		}
 	})

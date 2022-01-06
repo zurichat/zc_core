@@ -14,6 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"zuri.chat/zccore/logger"
 	"zuri.chat/zccore/utils"
 )
 
@@ -73,31 +74,40 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 		return
 	}
 
-	orgID, err := primitive.ObjectIDFromHex(OrgID)
+	pOrgID, err := primitive.ObjectIDFromHex(OrgID)
 
 	if err != nil {
 		utils.GetError(errors.New("invalid organization id"), http.StatusBadRequest, w)
 		return
 	}
 
-	p, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgID},
+	p, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": pOrgID},
 		options.FindOne().SetProjection(bson.D{{Key: PluginCollectionName, Value: 1}, {Key: "_id", Value: 0}}))
 
-	plugins := make([]map[string]interface{}, 0)
+	// plugins := make([]map[string]interface{}, 0)
+	plugins := make(map[string]interface{})
 
 	if err = utils.ConvertStructure(p[PluginCollectionName], &plugins); err != nil {
 		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
 		return
 	}
 
-	for _, v := range plugins {
-		if v["plugin_id"] == orgPlugin.PluginID {
-			utils.GetError(errors.New("plugin has already been added"), http.StatusBadRequest, w)
-			return
-		}
+	if _, ok := plugins[orgPlugin.PluginID]; ok {
+		utils.GetError(errors.New("plugin has already been added"), http.StatusBadRequest, w)
+		return
 	}
 
-	userName := user["first_name"].(string) + " " + user["last_name"].(string)
+	// for _, v := range plugins {
+	// 	if v["plugin_id"] == orgPlugin.PluginID {
+	// 		utils.GetError(errors.New("plugin has already been added"), http.StatusBadRequest, w)
+	// 		return
+	// 	}
+	// }
+
+	// userName := user["first_name"].(string) + " " + user["last_name"].(string)
+	fmt.Println(user)
+	fmt.Println(member)
+	userName := member.UserName
 
 	installedPlugin := InstalledPlugin{
 		PluginID:    orgPlugin.PluginID,
@@ -117,7 +127,8 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 		return
 	}
 
-	plugins = append(plugins, pluginMap)
+	// plugins = append(plugins, pluginMap)
+	plugins[orgPlugin.PluginID] = pluginMap
 
 	wg := sync.WaitGroup{}
 	num := 1
@@ -230,19 +241,14 @@ func (oh *OrganizationHandler) GetOrganizationPlugin(w http.ResponseWriter, r *h
 		return
 	}
 
-	var doc map[string]interface{}
+	doc := map[string]interface{}{}
 
-	for _, v := range org.Plugins {
-		if v["plugin_id"] == pluginID {
-			doc = v
-			break
-		}
-	}
-
-	if doc == nil {
-		// plugin not found in organization.
-		utils.GetError(err, http.StatusNotFound, w)
+	if plugin, ok := org.Plugins[pluginID]; !ok {
+		logger.Error("plugin does not exist")
+		utils.GetError(errors.New("plugin does not exist"), http.StatusNotFound, w)
 		return
+	} else {
+		doc[pluginID] = plugin
 	}
 
 	utils.GetSuccess("plugin returned successfully", doc, w)
@@ -312,32 +318,35 @@ func (oh *OrganizationHandler) RemoveOrganizationPlugin(w http.ResponseWriter, r
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
+
 	}
 
-	pluginIndex := -1
+	fmt.Println("org: ", org)
 
-	for k, v := range org.Plugins {
-		if v["plugin_id"] == pluginID {
-			pluginIndex = k
-			break
-		}
+	if len(org.Plugins) == 0 {
+		utils.GetSuccess("organization has no plugin", nil, w)
 	}
 
-	if pluginIndex == -1 {
+	fmt.Println("hello ")
+
+	if _, ok := org.Plugins[pluginID]; !ok {
 		// plugin not found in organization.
-		utils.GetError(err, http.StatusNotFound, w)
+		logger.Error("plugin does not exist")
+		utils.GetError(errors.New("plugin does not exist"), http.StatusNotFound, w)
 		return
+	} else {
+		delete(org.Plugins, pluginID)
 	}
 
 	plugins := org.Plugins
 
-	plugins = append(plugins[:pluginIndex], plugins[pluginIndex+1:]...)
+	updatedPlugins := make(map[string]interface{})
+	updatedPlugins["plugins"] = plugins
 
-	addPlugin := bson.M{"plugins": plugins}
-
-	update, err := utils.UpdateOneMongoDBDoc(OrganizationCollectionName, orgID, addPlugin)
+	update, err := utils.UpdateOneMongoDBDoc(OrganizationCollectionName, orgID, updatedPlugins)
 
 	if err != nil || update.ModifiedCount != 1 {
+		logger.Error("plugin failed to uninstall")
 		utils.GetError(errors.New("plugin failed to uninstall"), http.StatusBadRequest, w)
 		return
 	}

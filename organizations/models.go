@@ -80,21 +80,22 @@ type MemberPassword struct {
 }
 
 type Organization struct {
-	ID           string                   `json:"_id,omitempty" bson:"_id,omitempty"`
-	Name         string                   `json:"name" bson:"name"`
-	CreatorEmail string                   `json:"creator_email" bson:"creator_email"`
-	CreatorID    string                   `json:"creator_id" bson:"creator_id"`
-	Plugins      []map[string]interface{} `json:"plugins" bson:"plugins"`
-	Admins       []string                 `json:"admins" bson:"admins"`
-	Settings     OrganizationPreference   `json:"settings" bson:"settings"`
-	Customize    Customize                `json:"customize" bson:"customize"`
-	LogoURL      string                   `json:"logo_url" bson:"logo_url"`
-	WorkspaceURL string                   `json:"workspace_url" bson:"workspace_url"`
-	CreatedAt    time.Time                `json:"created_at" bson:"created_at"`
-	UpdatedAt    time.Time                `json:"updated_at" bson:"updated_at"`
-	Tokens       float64                  `json:"tokens" bson:"tokens"`
-	Version      string                   `json:"version" bson:"version"`
-	Billing      Billing                  `json:"billing" bson:"billing"`
+	ID           string `json:"_id,omitempty" bson:"_id,omitempty"`
+	Name         string `json:"name" bson:"name"`
+	CreatorEmail string `json:"creator_email" bson:"creator_email"`
+	CreatorID    string `json:"creator_id" bson:"creator_id"`
+	// Plugins      []map[string]interface{} `json:"plugins" bson:"plugins"`
+	Plugins      map[string]interface{} `json:"plugins" bson:"plugins"`
+	Admins       []string               `json:"admins" bson:"admins"`
+	Settings     OrganizationPreference `json:"settings" bson:"settings"`
+	Customize    Customize              `json:"customize" bson:"customize"`
+	LogoURL      string                 `json:"logo_url" bson:"logo_url"`
+	WorkspaceURL string                 `json:"workspace_url" bson:"workspace_url"`
+	CreatedAt    time.Time              `json:"created_at" bson:"created_at"`
+	UpdatedAt    time.Time              `json:"updated_at" bson:"updated_at"`
+	Tokens       float64                `json:"tokens" bson:"tokens"`
+	Version      string                 `json:"version" bson:"version"`
+	Billing      Billing                `json:"billing" bson:"billing"`
 }
 
 type Billing struct {
@@ -151,7 +152,7 @@ type OrgPluginBody struct {
 }
 
 type InstalledPlugin struct {
-	ID          string                 `json:"id" bson:"_id"`
+	// ID          string                 `json:"id" bson:"_id"`
 	PluginID    string                 `json:"plugin_id" bson:"plugin_id"`
 	Plugin      map[string]interface{} `json:"plugin" bson:"plugin"`
 	AddedBy     string                 `json:"added_by" bson:"added_by"`

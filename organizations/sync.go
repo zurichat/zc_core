@@ -42,7 +42,7 @@ func PingPlugins(plugins []string) error {
 	var wg sync.WaitGroup
 
 	wg.Add(nw)
-	
+
 	wrkchan := make(chan error, nw)
 
 	for _, plgd := range plugins {
@@ -74,7 +74,7 @@ func AddToPluginsQueue(plugins []string, event string, message interface{}) erro
 	var wg sync.WaitGroup
 
 	wg.Add(nw)
-	
+
 	wrkchan := make(chan error, nw)
 
 	for _, plgd := range plugins {
@@ -209,9 +209,15 @@ func GetInstalledPlugins(organizationID string) ([]string, error) {
 
 	pluginSlice := make([]string, 0)
 
-	for _, plgd := range org.OrgPlugins() {
-		pluginSlice = append(pluginSlice, fmt.Sprintf("%v", plgd["plugin_id"]))
-	}
+	// for _, plgd := range org.OrgPlugins() {
+	// 	pluginSlice = append(pluginSlice, fmt.Sprintf("%v", plgd["plugin_id"]))
+	// }
+
+	// pluginSlice = append(pluginSlice, fmt.Sprintf("%v", org.OrgPlugins()["plugin_id"]))
+
+	// for _, plgd := range org.OrgPlugins() {
+	// 	pluginSlice = append(pluginSlice, fmt.Sprintf("%v", plgd["plugin_id"]))
+	// }
 
 	return pluginSlice, nil
 }
