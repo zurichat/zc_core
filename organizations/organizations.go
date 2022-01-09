@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -449,7 +450,8 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 		inviteIDs = append(inviteIDs, save.InsertedID)
 
 		// Parse data for customising email template
-		inviteLink := fmt.Sprintf("https://staging.zuri.chat/invites/%s", uuid)
+		
+		inviteLink := fmt.Sprintf("%s/%s", os.Getenv("INVITE_DOMAIN"), uuid)
 		orgName := fmt.Sprintf("%v", org["name"])
 
 		msger := oh.mailService.NewMail(
