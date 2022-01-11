@@ -10,10 +10,12 @@ import (
 	"strings"
 	"time"
 
+	emailverifier "github.com/AfterShip/email-verifier"
 	"github.com/mailgun/mailgun-go/v4"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 	"zuri.chat/zccore/utils"
+	"zuri.chat/zccore/logger"
 )
 
 type MailService interface {
@@ -99,6 +101,27 @@ func (ms *ZcMailService) LoadTemplate(mailReq *Mail) (string, error) {
 }
 
 func (ms *ZcMailService) SendMail(mailReq *Mail) error {
+	var (
+		verifier = emailverifier.
+        NewVerifier().
+        EnableSMTPCheck()
+	)
+
+	result := strings.Split(mailReq.to[0], "@")
+	
+	domain := result[1]
+    username := result[0]
+
+    ret, err := verifier.CheckSMTP(domain, username)
+
+    if err != nil {
+		logger.Error("check smtp failed: %v", err)
+    }
+
+	if !ret.Deliverable {
+		return fmt.Errorf("email %s verification failed", mailReq.to[0])
+	}
+
 	switch esp := strings.ToLower(ms.configs.ESPType); esp {
 	case "sendgrid":
 		// SENDGRID

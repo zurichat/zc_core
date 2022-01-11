@@ -466,9 +466,9 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	resonse := SendInviteResponse{InvalidEmails: invalidEmails, InviteIDs: inviteIDs}
+	response := SendInviteResponse{InvalidEmails: invalidEmails, InviteIDs: inviteIDs}
 
-	utils.GetSuccess("Organization invite operation result", resonse, w)
+	utils.GetSuccess("Organization invite operation result", response, w)
 }
 
 // Get invite records of an organization.
