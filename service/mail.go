@@ -10,10 +10,12 @@ import (
 	"strings"
 	"time"
 
+	emailverifier "github.com/AfterShip/email-verifier"
 	"github.com/mailgun/mailgun-go/v4"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 	"zuri.chat/zccore/utils"
+	"zuri.chat/zccore/logger"
 )
 
 type MailService interface {
@@ -99,7 +101,27 @@ func (ms *ZcMailService) LoadTemplate(mailReq *Mail) (string, error) {
 }
 
 func (ms *ZcMailService) SendMail(mailReq *Mail) error {
-	// if ms.configs.ESPType == "sendgrid"
+	var (
+		verifier = emailverifier.
+        NewVerifier().
+        EnableSMTPCheck()
+	)
+
+	result := strings.Split(mailReq.to[0], "@")
+	
+	domain := result[1]
+    username := result[0]
+
+    ret, err := verifier.CheckSMTP(domain, username)
+
+    if err != nil {
+		logger.Error("check smtp failed: %v", err)
+    }
+
+	if !ret.Deliverable {
+		return fmt.Errorf("email %s verification failed", mailReq.to[0])
+	}
+
 	switch esp := strings.ToLower(ms.configs.ESPType); esp {
 	case "sendgrid":
 		// SENDGRID
@@ -156,7 +178,6 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 		return nil
 
 	case "smtp":
-		// SMTP -> use gmail
 		var (
 			body string
 			err  error
@@ -173,14 +194,15 @@ func (ms *ZcMailService) SendMail(mailReq *Mail) error {
 			"",
 			ms.configs.SMTPUsername,
 			ms.configs.SMTPPassword,
-			"smtp.gmail.com",
+			"work.timbu.cloud",
 		)
 
+		from := fmt.Sprintf("From: %s\n", ms.configs.SMTPUsername)
 		subject := fmt.Sprintf("Subject: %s\n", mailReq.subject)
 		mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
-		msg := []byte(subject + mime + body)
+		msg := []byte(from + subject + mime + body)
 
-		addr := "smtp.gmail.com:587"
+		addr := "work.timbu.cloud:587"
 		if err := smtp.SendMail(addr, auth, ms.configs.SMTPUsername, mailReq.to, msg); err != nil {
 			return err
 		}

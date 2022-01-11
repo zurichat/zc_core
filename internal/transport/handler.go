@@ -194,6 +194,7 @@ func (h *Handler) SetupRoutes() {
 
 	// Email subscription
 	h.Router.HandleFunc("/external/subscribe", exts.EmailSubscription).Methods("POST")
+	h.Router.HandleFunc("/external/unsubscribe/{email}", exts.UnsubscribeEmail).Methods("GET")
 	h.Router.HandleFunc("/external/download-client", exts.DownloadClient).Methods("GET")
 	h.Router.HandleFunc("/external/send-mail", exts.SendMail).Queries("custom_mail", "{custom_mail:[0-9]+}").Methods("POST")
 
