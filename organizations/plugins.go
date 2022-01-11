@@ -12,7 +12,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"zuri.chat/zccore/logger"
 	"zuri.chat/zccore/utils"
 )
 
@@ -40,7 +42,7 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 		return
 	}
 
-	plugin, _ := utils.GetMongoDBDoc(PluginCollection, bson.M{"_id": pluginID})
+	plugin, _ := utils.GetMongoDBDoc(PluginCollectionName, bson.M{"_id": pluginID})
 
 	if plugin == nil {
 		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
@@ -72,16 +74,30 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 		return
 	}
 
-	orgCollectionName := GetOrgPluginCollectionName(OrgID)
+	pOrgID, err := primitive.ObjectIDFromHex(OrgID)
 
-	p, _ := utils.GetMongoDBDoc(orgCollectionName, bson.M{"plugin_id": orgPlugin.PluginID})
+	if err != nil {
+		utils.GetError(errors.New("invalid organization id"), http.StatusBadRequest, w)
+		return
+	}
 
-	if p != nil {
+	p, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": pOrgID},
+		options.FindOne().SetProjection(bson.D{{Key: PluginCollectionName, Value: 1}, {Key: "_id", Value: 0}}))
+
+	plugins := make(map[string]interface{})
+
+	if err = utils.ConvertStructure(p[PluginCollectionName], &plugins); err != nil {
+		utils.GetError(errors.New("operation failed"), http.StatusBadRequest, w)
+		return
+	}
+
+	if _, ok := plugins[orgPlugin.PluginID]; ok {
 		utils.GetError(errors.New("plugin has already been added"), http.StatusBadRequest, w)
 		return
 	}
 
-	userName := user["first_name"].(string) + " " + user["last_name"].(string)
+	userName := member.UserName
+	fmt.Println("user: ", userName)
 
 	installedPlugin := InstalledPlugin{
 		PluginID:    orgPlugin.PluginID,
@@ -101,24 +117,38 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 		return
 	}
 
+	plugins[orgPlugin.PluginID] = pluginMap
+
 	wg := sync.WaitGroup{}
-	num := 2
+	num := 1
+
 	wg.Add(num)
 
-	var save *mongo.InsertOneResult
-	
-	var increaseCount *mongo.UpdateResult
+	var save *mongo.UpdateResult
 
 	go func() {
 		defer wg.Done()
 
-		save, err = utils.CreateMongoDBDoc(orgCollectionName, pluginMap)
+		addPlugin := bson.M{"plugins": plugins}
+
+		save, err = utils.UpdateOneMongoDBDoc(OrganizationCollectionName, OrgID, addPlugin)
 	}()
 
+	wg.Wait()
+
+	if err != nil || save.ModifiedCount != 1 {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	var increaseCount *mongo.UpdateResult
+
+	wg.Add(num)
+
 	go func() {
 		defer wg.Done()
 
-		increaseCount, err = utils.IncrementOneMongoDBDocField(PluginCollection, orgPlugin.PluginID, "install_count")
+		increaseCount, err = utils.IncrementOneMongoDBDocField(PluginCollectionName, orgPlugin.PluginID, "install_count")
 	}()
 
 	wg.Wait()
@@ -128,14 +158,16 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 		return
 	}
 
-	utils.GetSuccess("plugin saved successfully", save, w)
+	data := map[string]interface{}{
+		"plugin_id": orgPlugin.PluginID,
+	}
+
+	utils.GetSuccess("plugin saved successfully", data, w)
 }
 
 // Get an organization plugins.
 func (oh *OrganizationHandler) GetOrganizationPlugins(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
-	collection := "organizations"
 
 	orgID := mux.Vars(r)["id"]
 	objID, err := primitive.ObjectIDFromHex(orgID)
@@ -145,7 +177,7 @@ func (oh *OrganizationHandler) GetOrganizationPlugins(w http.ResponseWriter, r *
 		return
 	}
 
-	save, _ := utils.GetMongoDBDoc(collection, bson.M{"_id": objID})
+	save, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
 
 	if save == nil {
 		utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
@@ -187,17 +219,30 @@ func (oh *OrganizationHandler) GetOrganizationPlugin(w http.ResponseWriter, r *h
 		return
 	}
 
-	orgCollectionName := GetOrgPluginCollectionName(orgID)
+	var org Organization
 
-	doc, err := utils.GetMongoDBDoc(orgCollectionName, bson.M{"plugin_id": pluginID})
+	// convert bson to struct
+	bsonBytes, _ := bson.Marshal(save)
+	err = bson.Unmarshal(bsonBytes, &org)
 
 	if err != nil {
-		// plugin not found in organization.
-		utils.GetError(err, http.StatusNotFound, w)
+		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
 
-	utils.GetSuccess("plugins returned successfully", doc, w)
+	doc := map[string]interface{}{}
+
+	if _, ok := org.Plugins[pluginID]; !ok {
+		logger.Error("plugin does not exist")
+		utils.GetError(errors.New("plugin does not exist"), http.StatusNotFound, w)
+
+		return
+	}
+
+	plugin := org.Plugins[pluginID]
+	doc[pluginID] = plugin
+
+	utils.GetSuccess("plugin returned successfully", doc, w)
 }
 
 // Remove an organization plugin.
@@ -240,30 +285,63 @@ func (oh *OrganizationHandler) RemoveOrganizationPlugin(w http.ResponseWriter, r
 		return
 	}
 
-	orgCollectionName := GetOrgPluginCollectionName(orgID)
-
-	orgPluginDoc, _ := utils.GetMongoDBDoc(orgCollectionName, bson.M{"plugin_id": pluginID})
-	if orgPluginDoc == nil {
-		// plugin not found in organization.
-		utils.GetError(errors.New("plugin does not exist"), http.StatusBadRequest, w)
-		return
-	}
-
-	orgPluginObjID := orgPluginDoc["_id"]
-	orgPluginID := orgPluginObjID.(primitive.ObjectID).Hex()
-
-	doc, err := utils.DeleteOneMongoDBDoc(orgCollectionName, orgPluginID)
+	// confirm if user_id exists
+	objID, err := primitive.ObjectIDFromHex(orgID)
 
 	if err != nil {
+		utils.GetError(errors.New("invalid user id"), http.StatusBadRequest, w)
+		return
+	}
+
+	save, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
+
+	if save == nil {
+		utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
+		return
+	}
+
+	var org Organization
+
+	// convert bson to struct
+	bsonBytes, _ := bson.Marshal(save)
+	err = bson.Unmarshal(bsonBytes, &org)
+
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	fmt.Println("org: ", org)
+
+	if len(org.Plugins) == 0 {
+		utils.GetSuccess("organization has no plugin", nil, w)
+	}
+
+	fmt.Println("hello ")
+
+	if _, ok := org.Plugins[pluginID]; !ok {
 		// plugin not found in organization.
-		utils.GetError(err, http.StatusNotFound, w)
+		logger.Error("plugin does not exist")
+		utils.GetError(errors.New("plugin does not exist"), http.StatusNotFound, w)
+
 		return
 	}
 
-	if doc.DeletedCount == 0 {
+	delete(org.Plugins, pluginID)
+
+	plugins := org.Plugins
+
+	updatedPlugins := make(map[string]interface{})
+	updatedPlugins["plugins"] = plugins
+
+	update, err := utils.UpdateOneMongoDBDoc(OrganizationCollectionName, orgID, updatedPlugins)
+
+	if err != nil || update.ModifiedCount != 1 {
+		logger.Error("plugin failed to uninstall")
 		utils.GetError(errors.New("plugin failed to uninstall"), http.StatusBadRequest, w)
+
 		return
 	}
 
-	utils.GetSuccess("plugin removed successfully", doc, w)
+	utils.GetSuccess("plugin removed successfully", nil, w)
 }

@@ -390,7 +390,6 @@ func (oh *OrganizationHandler) UploadFile(w http.ResponseWriter, r *http.Request
 	utils.GetSuccess("file uploaded successfully", fileURL, w)
 }
 
-	
 // Update a member's status.
 func (oh *OrganizationHandler) UpdateMemberStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
@@ -948,7 +947,7 @@ func (oh *OrganizationHandler) CheckGuestStatus(w http.ResponseWriter, r *http.R
 	}
 
 	// 1. Query organization invites collection for uuid
-	res, err := utils.GetMongoDBDoc(OrganizationInviteCollection, bson.M{"uuid": guestUUID})
+	res, err := utils.GetMongoDBDoc(OrganizationInviteCollectionName, bson.M{"uuid": guestUUID})
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
@@ -984,7 +983,7 @@ func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *htt
 		return
 	}
 
-	res, err := utils.GetMongoDBDoc(OrganizationInviteCollection, bson.M{"uuid": gUUID})
+	res, err := utils.GetMongoDBDoc(OrganizationInviteCollectionName, bson.M{"uuid": gUUID})
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
@@ -1087,7 +1086,7 @@ func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *htt
 	// update invite status
 	inviteID := res["_id"].(primitive.ObjectID).Hex()
 
-	_, err = utils.UpdateOneMongoDBDoc(OrganizationInviteCollection, inviteID, bson.M{"has_accepted": true})
+	_, err = utils.UpdateOneMongoDBDoc(OrganizationInviteCollectionName, inviteID, bson.M{"has_accepted": true})
 	if err != nil {
 		utils.GetError(errors.New("invite update failed"), http.StatusInternalServerError, w)
 		return

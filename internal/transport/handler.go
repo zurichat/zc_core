@@ -24,7 +24,7 @@ import (
 )
 
 type Handler struct {
-	Router *mux.Router
+	Router   *mux.Router
 	SocketIO *socketio.Server
 }
 
@@ -137,7 +137,7 @@ func (h *Handler) SetupRoutes() {
 	h.Router.HandleFunc("/organizations/{id}/reports", au.IsAuthenticated(reps.AddReport)).Methods("POST")
 	h.Router.HandleFunc("/organizations/{id}/reports", au.IsAuthenticated(reps.GetReports)).Methods("GET")
 	h.Router.HandleFunc("/organizations/{id}/reports/{report_id}", au.IsAuthenticated(reps.GetReport)).Methods("GET")
-	
+
 	h.Router.HandleFunc("/organizations/{id}/billing/settings", au.IsAuthenticated(orgs.UpdateBillingSettings)).Methods("PATCH")
 	h.Router.HandleFunc("/organizations/{id}/billing/contact", au.IsAuthenticated(orgs.UpdateBillingContact)).Methods("PATCH")
 

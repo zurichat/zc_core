@@ -13,11 +13,11 @@ import (
 	"github.com/stripe/stripe-go/v72"
 	transportHttp "zuri.chat/zccore/internal/transport"
 	"zuri.chat/zccore/logger"
+	"zuri.chat/zccore/utils"
 
 	sentry "github.com/getsentry/sentry-go"
 	"github.com/rs/cors"
 	"zuri.chat/zccore/messaging"
-	"zuri.chat/zccore/utils"
 )
 
 type App struct {
@@ -34,17 +34,25 @@ func (app *App) Run() error {
 	stripe.Key = os.Getenv("STRIPE_KEY")
 
 	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
-		return fmt.Errorf("Could not connect to MongoDB: \n%v", err)
+		return fmt.Errorf("could not connect to MongoDB: \n%v", err)
 	}
 
-	// sentry: enables reporting messages, errors, and panics.
 	err := sentry.Init(sentry.ClientOptions{
-		Dsn: "https://82e17f3bba86400a9a38e2437b884d4a@o1013682.ingest.sentry.io/5979019",
+		Dsn:         os.Getenv("SENTRY_DNS"),
+		Environment: os.Getenv("ENV"),
+		Release:     "zurichat@0.1.0",
+		Debug:       true,
 	})
-
 	if err != nil {
 		return fmt.Errorf("sentry.Init: %s", err)
 	}
+	// Flush buffered events before the program terminates.
+	// Set the timeout to the maximum duration the program can afford to wait.
+
+	num := 2
+	defer sentry.Flush(time.Duration(num) * time.Second)
+
+	sentry.CaptureMessage("It works!")
 
 	// transporter
 	handler := transportHttp.NewHandler(Server)
@@ -66,17 +74,16 @@ func (app *App) Run() error {
 
 	logger.Info("Socket Served")
 
-	defer Server.Close()
-
 	logger.Info("Zuri Chat API running on port %s", app.Port)
 
 	if err := srv.ListenAndServe(); err != nil {
 		return err
 	}
 
+	defer Server.Close()
+
 	return nil
 }
-
 
 func main() {
 	// load .env file if it exists
@@ -93,7 +100,7 @@ func main() {
 		port = "8000"
 	}
 
-	app := App{ Port: port }
+	app := App{Port: port}
 
 	log.Fatal(app.Run())
 }
