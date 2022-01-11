@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"zuri.chat/zccore/logger"
 	"zuri.chat/zccore/service"
@@ -25,7 +26,6 @@ var (
 func (eh *Handler) EmailSubscription(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	newsletterCollection := "subscription"
 
 	var NewSubscription Subscription
 
@@ -39,7 +39,7 @@ func (eh *Handler) EmailSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	SubDoc, _ := utils.GetMongoDBDoc(newsletterCollection, bson.M{"email": NewSubscription.Email})
+	SubDoc, _ := utils.GetMongoDBDoc(NewsletterCollection, bson.M{"email": NewSubscription.Email})
 	if SubDoc != nil {
 		logger.Info("%s already subscribed for newsletter", NewSubscription.Email)
 		utils.GetSuccess("User already subscribed for newsletter", subRes{status: true}, w)
@@ -60,7 +60,7 @@ func (eh *Handler) EmailSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	coll := utils.GetCollection(newsletterCollection)
+	coll := utils.GetCollection(NewsletterCollection)
 	_, err = coll.InsertOne(r.Context(), NewSubscription)
 
 	if err != nil {
@@ -197,4 +197,28 @@ func (eh *Handler) SendMail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.GetSuccess("Mail sent successfully", nil, w)
+}
+
+func (eh *Handler) UnsubscribeEmail(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	email := mux.Vars(r)["email"]
+	field := make(map[string]interface{})
+
+	field["email"] = email
+	
+	coll := utils.GetCollection(NewsletterCollection)
+
+	response, err := coll.DeleteOne(r.Context(), field)
+
+	if err != nil {
+		logger.Error(err.Error())
+	}
+
+	if response.DeletedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("user unsubsribed successfully", nil, w)
 }
