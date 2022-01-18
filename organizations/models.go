@@ -217,7 +217,7 @@ type Member struct {
 	FirstName   string    `json:"first_name" bson:"first_name"`
 	LastName    string    `json:"last_name" bson:"last_name"`
 	Email       string    `json:"email" bson:"email"`
-	UserName    string    `bson:"user_name" json:"user_name"`
+	UserName    string    `json:"user_name" bson:"user_name"`
 	DisplayName string    `json:"display_name" bson:"display_name"`
 	Bio         string    `json:"bio" bson:"bio"`
 	Status      Status    `json:"status" bson:"status"`

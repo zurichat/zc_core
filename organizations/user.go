@@ -52,13 +52,13 @@ func (oh *OrganizationHandler) GetMember(w http.ResponseWriter, r *http.Request)
 
 	var member Member
 
-	err = utils.ConvertStructure(orgMember, &member)
+	err = utils.BsonToStruct(orgMember, &member)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
 
-	utils.GetSuccess("Member retrieved successfully", orgMember, w)
+	utils.GetSuccess("Member retrieved successfully", member, w)
 }
 
 // Get several members in an organization infos with a slice member ids.
