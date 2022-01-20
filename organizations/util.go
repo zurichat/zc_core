@@ -197,10 +197,6 @@ func FetchOrganization(filter map[string]interface{}) (*Organization, error) {
 	return organization, err
 }
 
-// func (o *Organization) OrgPlugins() []map[string]interface{} {
-// 	return o.Plugins
-// }
-
 func (o *Organization) OrgPlugins() map[string]interface{} {
 	return o.Plugins
 }

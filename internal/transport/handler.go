@@ -110,7 +110,7 @@ func (h *Handler) SetupRoutes() {
 	h.Router.HandleFunc("/organizations/{id}/plugins", au.IsAuthenticated(orgs.AddOrganizationPlugin)).Methods("POST")
 	h.Router.HandleFunc("/organizations/{id}/plugins", au.IsAuthenticated(orgs.GetOrganizationPlugins)).Methods("GET")
 	h.Router.HandleFunc("/organizations/{id}/plugins/{plugin_id}", au.IsAuthenticated(orgs.GetOrganizationPlugin)).Methods("GET")
-	h.Router.HandleFunc("/organizations/{id}/plugins/{plugin_id}", au.IsAuthenticated(orgs.RemoveOrganizationPlugin)).Methods("PATCH")
+	h.Router.HandleFunc("/organizations/{id}/plugins/{plugin_id}", au.IsAuthenticated(orgs.RemoveOrganizationPlugin)).Methods("DELETE")
 
 	h.Router.HandleFunc("/organizations/{id}/members", au.IsAuthenticated(au.IsAuthorized(orgs.CreateMember, "admin"))).Methods("POST")
 	h.Router.HandleFunc("/organizations/{id}/members", orgs.GetMembers).Methods("GET")
@@ -194,6 +194,7 @@ func (h *Handler) SetupRoutes() {
 
 	// Email subscription
 	h.Router.HandleFunc("/external/subscribe", exts.EmailSubscription).Methods("POST")
+	h.Router.HandleFunc("/external/unsubscribe/{email}", exts.UnsubscribeEmail).Methods("GET")
 	h.Router.HandleFunc("/external/download-client", exts.DownloadClient).Methods("GET")
 	h.Router.HandleFunc("/external/send-mail", exts.SendMail).Queries("custom_mail", "{custom_mail:[0-9]+}").Methods("POST")
 

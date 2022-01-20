@@ -10,7 +10,9 @@ import (
 	"strings"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
+	"zuri.chat/zccore/logger"
 	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
@@ -24,7 +26,6 @@ var (
 func (eh *Handler) EmailSubscription(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	newsletterCollection := "subscription"
 
 	var NewSubscription Subscription
 
@@ -38,44 +39,36 @@ func (eh *Handler) EmailSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	SubDoc, _ := utils.GetMongoDBDoc(newsletterCollection, bson.M{"email": NewSubscription.Email})
+	SubDoc, _ := utils.GetMongoDBDoc(NewsletterCollection, bson.M{"email": NewSubscription.Email})
 	if SubDoc != nil {
-		msger := eh.mailService.NewMail(
-			[]string{NewSubscription.Email}, "Zuri Chat Newsletter Subscription", service.EmailSubscription,
-			map[string]interface{}{
-				"Username": NewSubscription.Email,
-			})
-
-		if err = eh.mailService.SendMail(msger); err != nil {
-			fmt.Printf("Error occurred while sending mail: %s", err.Error())
-		}
-
-		utils.GetSuccess("Thanks for subscribing to for or Newsletter", subRes{status: true}, w)
+		logger.Info("%s already subscribed for newsletter", NewSubscription.Email)
+		utils.GetSuccess("User already subscribed for newsletter", subRes{status: true}, w)
 
 		return
 	}
 
-	coll := utils.GetCollection(newsletterCollection)
-	res, err := coll.InsertOne(r.Context(), NewSubscription)
+	msger := eh.mailService.NewMail(
+	[]string{NewSubscription.Email}, "Zuri Chat Newsletter Subscription", service.EmailSubscription,
+	map[string]interface{}{
+		"Username": NewSubscription.Email,
+	})
+
+	if err = eh.mailService.SendMail(msger); err != nil {
+		logger.Error("Error occurred while sending mail: %s", err.Error())
+		utils.GetError(errors.New("Subscription failed"), http.StatusInternalServerError, w)
+
+		return
+	}
+
+	coll := utils.GetCollection(NewsletterCollection)
+	_, err = coll.InsertOne(r.Context(), NewSubscription)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
 
-	fmt.Println(res.InsertedID)
-
-	msger := eh.mailService.NewMail(
-		[]string{NewSubscription.Email}, "Zuri Chat Newsletter Subscription", service.EmailSubscription,
-		map[string]interface{}{
-			"Username": NewSubscription.Email,
-		})
-
-	if err := eh.mailService.SendMail(msger); err != nil {
-		fmt.Printf("Error occurred while sending mail: %s", err.Error())
-	}
-
-	utils.GetSuccess("Thanks for subscribing for our Newsletter", subRes{status: true}, w)
+	utils.GetSuccess("User successfully subscribed for newsletter", subRes{status: true}, w)
 }
 
 func (eh *Handler) DownloadClient(w http.ResponseWriter, r *http.Request) {
@@ -204,4 +197,28 @@ func (eh *Handler) SendMail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.GetSuccess("Mail sent successfully", nil, w)
+}
+
+func (eh *Handler) UnsubscribeEmail(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	email := mux.Vars(r)["email"]
+	field := make(map[string]interface{})
+
+	field["email"] = email
+	
+	coll := utils.GetCollection(NewsletterCollection)
+
+	response, err := coll.DeleteOne(r.Context(), field)
+
+	if err != nil {
+		logger.Error(err.Error())
+	}
+
+	if response.DeletedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	utils.GetSuccess("user unsubsribed successfully", nil, w)
 }

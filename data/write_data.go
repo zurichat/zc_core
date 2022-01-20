@@ -61,7 +61,7 @@ func (wdr *writeDataRequest) handlePost(w http.ResponseWriter) {
 		payload = []interface{}{wdr.Payload}
 	}
 
-	// a plugin has just 3 collcetions they can write to: data - messages - rooms
+	// a plugin has just 3 collections they can write to: data - messages - rooms
 	if _, ok := PluginCollectionNames[wdr.CollectionName]; !ok {
 		msg := fmt.Sprintf("write forbidden to %s collection", wdr.CollectionName)
 		utils.GetError(errors.New(msg), http.StatusBadRequest, w)
