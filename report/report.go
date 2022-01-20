@@ -149,10 +149,12 @@ func (rh *Handler) GetReports(w http.ResponseWriter, r *http.Request) {
 	for _, doc := range docs {
 		var report Report
 		err := utils.BsonToStruct(doc, &report)
+		
 		if err != nil {
 			utils.GetError(err, http.StatusInternalServerError, w)
 			return
 		}
+		
 		reports = append(reports, report)
 	}
 

@@ -97,8 +97,6 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 	}
 
 	userName := member.UserName
-	logger.Info("member: ", member)
-	logger.Info("user_name: ", userName)
 
 	installedPlugin := InstalledPlugin{
 		PluginID:    orgPlugin.PluginID,
