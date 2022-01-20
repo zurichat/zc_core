@@ -3,8 +3,7 @@ module zuri.chat/zccore
 go 1.16
 
 require (
-	github.com/0xAX/notificator v0.0.0-20210731104411-c42e3d4a43ee // indirect
-	github.com/AfterShip/email-verifier v1.3.0 // indirect
+	github.com/AfterShip/email-verifier v1.3.0
 	github.com/anthonynsimon/bild v0.13.0
 	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/getsentry/sentry-go v0.11.0
