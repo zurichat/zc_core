@@ -133,6 +133,11 @@ func MapToBson(data map[string]interface{}) bson.M {
 	return bson.M(data)
 }
 
+func BsonToStruct(input bson.M, output interface{}) error {
+	bsonBytes, _ := bson.Marshal(input)
+	return bson.Unmarshal(bsonBytes, output)
+}
+
 // StructToMap converts a struct of any type to a map[string]inteface{}.
 func StructToMap(inStruct interface{}) (map[string]interface{}, error) {
 	out := make(map[string]interface{})

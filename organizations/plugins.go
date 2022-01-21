@@ -64,7 +64,7 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 	}
 
 	var member Member
-	if err = utils.ConvertStructure(user, &member); err != nil {
+	if err = utils.BsonToStruct(user, &member); err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
@@ -97,7 +97,6 @@ func (oh *OrganizationHandler) AddOrganizationPlugin(w http.ResponseWriter, r *h
 	}
 
 	userName := member.UserName
-	fmt.Println("user: ", userName)
 
 	installedPlugin := InstalledPlugin{
 		PluginID:    orgPlugin.PluginID,
@@ -275,7 +274,7 @@ func (oh *OrganizationHandler) RemoveOrganizationPlugin(w http.ResponseWriter, r
 	}
 
 	var member Member
-	if err = utils.ConvertStructure(user, &member); err != nil {
+	if err = utils.BsonToStruct(user, &member); err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
 	}
@@ -311,13 +310,9 @@ func (oh *OrganizationHandler) RemoveOrganizationPlugin(w http.ResponseWriter, r
 		return
 	}
 
-	fmt.Println("org: ", org)
-
 	if len(org.Plugins) == 0 {
 		utils.GetSuccess("organization has no plugin", nil, w)
 	}
-
-	fmt.Println("hello ")
 
 	if _, ok := org.Plugins[pluginID]; !ok {
 		// plugin not found in organization.
