@@ -2,20 +2,21 @@ package organizations
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
+	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
+	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
@@ -31,14 +32,18 @@ func FetchMember(filter map[string]interface{}) (*Member, error) {
 	memberCollection, err := utils.GetMongoDBCollection(os.Getenv("DB_NAME"), MemberCollectionName)
 
 	if err != nil {
-		return member, err
+		return nil, err
 	}
 
 	result := memberCollection.FindOne(context.TODO(), filter)
 
-	err = result.Decode(&member)
+	err = mapstructure.Decode(result, &member)
 
-	return member, err
+	if err != nil {
+		return nil, err
+	}
+
+	return member, nil
 }
 
 // check that an organization exist.
@@ -192,25 +197,8 @@ func FetchOrganization(filter map[string]interface{}) (*Organization, error) {
 	return organization, err
 }
 
-func GetOrgPluginCollectionName(orgName string) string {
-	return strings.ToLower(orgName) + "_" + InstalledPluginsCollectionName
-}
-
-func (o *Organization) OrgPlugins() []map[string]interface{} {
-	orgCollectionName := GetOrgPluginCollectionName(o.ID)
-
-	orgPlugins, _ := utils.GetMongoDBDocs(orgCollectionName, nil)
-
-	var pluginsMap []map[string]interface{}
-
-	pluginJSON, _ := json.Marshal(orgPlugins)
-	err := json.Unmarshal(pluginJSON, &pluginsMap)
-
-	if err != nil {
-		return nil
-	}
-
-	return pluginsMap
+func (o *Organization) OrgPlugins() map[string]interface{} {
+	return o.Plugins
 }
 
 // used to update any field in an organization.
@@ -218,15 +206,20 @@ func OrganizationUpdate(w http.ResponseWriter, r *http.Request, updateParam upda
 	w.Header().Set("Content-Type", "application/json")
 
 	orgID := mux.Vars(r)["id"]
-	requestData := make(map[string]string)
+	_, err := primitive.ObjectIDFromHex(orgID)
 
-	if err := utils.ParseJSONFromRequest(r, &requestData); err != nil {
+	if err != nil {
+		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	if err = utils.ParseJSONFromRequest(r, &RequestData); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
 
 	orgFilter := make(map[string]interface{})
-	orgFilter[updateParam.orgFilterKey] = requestData[updateParam.requestDataKey]
+	orgFilter[updateParam.orgFilterKey] = RequestData[updateParam.requestDataKey]
 	update, err := utils.UpdateOneMongoDBDoc(OrganizationCollectionName, orgID, orgFilter)
 
 	if err != nil {
@@ -247,13 +240,14 @@ func OrganizationUpdate(w http.ResponseWriter, r *http.Request, updateParam upda
 	utils.GetSuccess(fmt.Sprintf("%s updated successfully", updateParam.successMessage), nil, w)
 }
 
-func HandleMemberSearch(orgID string, memberId string, ch chan HandleMemberSearchResponse, wg *sync.WaitGroup) {
+func HandleMemberSearch(orgID, memberID string, ch chan HandleMemberSearchResponse, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	memberIDhex, err := primitive.ObjectIDFromHex(memberId)
+	memberIDhex, err := primitive.ObjectIDFromHex(memberID)
 	if err != nil {
 		resp := HandleMemberSearchResponse{Memberinfo: Member{}, Err: err}
 		ch <- resp
+
 		return
 	}
 
@@ -266,13 +260,16 @@ func HandleMemberSearch(orgID string, memberId string, ch chan HandleMemberSearc
 	if err != nil {
 		resp := HandleMemberSearchResponse{Memberinfo: Member{}, Err: err}
 		ch <- resp
+
 		return
 	}
 
 	var member Member
 
 	bsonBytes, _ := bson.Marshal(orgMember)
-	bson.Unmarshal(bsonBytes, &member)
+	if err := bson.Unmarshal(bsonBytes, &member); err != nil {
+		return
+	}
 
 	resp := HandleMemberSearchResponse{Memberinfo: member, Err: nil}
 	ch <- resp
@@ -284,4 +281,128 @@ func RemoveHistoryAtIndex(s []StatusHistory, index int) []StatusHistory {
 
 func InsertHistoryAtIndex(s []StatusHistory, history StatusHistory, index int) []StatusHistory {
 	return append(s[:index], append([]StatusHistory{history}, s[index:]...)...)
+}
+
+type checkSettingsPayload func() (ok bool)
+
+type settingsPayload struct {
+	settings             interface{}
+	checkSettingsPayload checkSettingsPayload
+	field                string
+}
+
+// utility function to manage updates to a member's setting.
+func updateMemberSettings(w http.ResponseWriter, r *http.Request, settingsPayload settingsPayload) {
+	w.Header().Set("Content-Type", "application/json")
+
+	vars := mux.Vars(r)
+	orgID, memberID := vars["id"], vars["mem_id"]
+
+	// check that org_id is valid
+	err := ValidateOrg(orgID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	// check that member_id is valid
+	err = ValidateMember(orgID, memberID)
+	if err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	// Parse request from incoming payload
+	err = utils.ParseJSONFromRequest(r, &settingsPayload.settings)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	if ok := settingsPayload.checkSettingsPayload(); !ok {
+		return
+	}
+
+	// convert setting struct to map
+	settingsMap, err := utils.StructToMap(settingsPayload.settings)
+	if err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	memberSettings := make(map[string]interface{})
+	memberSettings[settingsPayload.field] = settingsMap
+
+	// fetch and update the document
+	update, err := utils.UpdateOneMongoDBDoc(MemberCollectionName, memberID, memberSettings)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
+
+	// publish update to subscriber
+	eventChannel := fmt.Sprintf("organizations_%s", orgID)
+	event := utils.Event{Identifier: memberID, Type: "User", Event: UpdateOrganizationMemberSettings, Channel: eventChannel, Payload: make(map[string]interface{})}
+
+	go utils.Emitter(event)
+
+	utils.GetSuccess("Member settings updated successfully", nil, w)
+}
+
+// utility function to manage update to organization billing.
+func updateBilling(w http.ResponseWriter, r *http.Request, settingsPayload settingsPayload) {
+	w.Header().Set("Content-Type", "application/json")
+
+	orgID := mux.Vars(r)["id"]
+
+	if err := utils.ParseJSONFromRequest(r, &settingsPayload.settings); err != nil {
+		utils.GetError(err, http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	validate := validator.New()
+
+	if err := validate.Struct(settingsPayload.settings); err != nil {
+		utils.GetError(err, http.StatusBadRequest, w)
+		return
+	}
+
+	loggedInUser, ok := r.Context().Value("user").(*auth.AuthUser)
+	if !ok {
+		utils.GetError(errors.New("invalid user"), http.StatusBadRequest, w)
+		return
+	}
+
+	member, err := FetchMember(bson.M{"org_id": orgID, "email": loggedInUser.Email})
+	if err != nil {
+		utils.GetError(errors.New("access denied"), http.StatusNotFound, w)
+		return
+	}
+
+	orgFilter := make(map[string]interface{})
+	orgFilter[settingsPayload.field] = settingsPayload.settings
+
+	update, err := utils.UpdateOneMongoDBDoc(OrganizationCollectionName, orgID, orgFilter)
+	if err != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if update.ModifiedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusUnprocessableEntity, w)
+		return
+	}
+
+	// publish update to subscriber
+	eventChannel := fmt.Sprintf("organizations_%s", orgID)
+	event := utils.Event{Identifier: member.ID, Type: "User", Event: UpdateOrganizationBillingSettings, Channel: eventChannel, Payload: make(map[string]interface{})}
+
+	go utils.Emitter(event)
+
+	utils.GetSuccess("organization billing updated successfully", nil, w)
 }

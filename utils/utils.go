@@ -77,8 +77,8 @@ func GetError(err error, statusCode int, w http.ResponseWriter) {
 		StatusCode:   statusCode,
 	}
 
-	w.WriteHeader(response.StatusCode)
-	w.Header().Set("Content-Type", "application/json<Left>")
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
 
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("Error sending response: %v", err)
@@ -110,6 +110,7 @@ func GetSuccess(msg string, data interface{}, w http.ResponseWriter) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("Error sending response: %v", err)
@@ -130,6 +131,11 @@ func FileExists(name string) bool {
 // convert map to bson.M for mongoDB docs.
 func MapToBson(data map[string]interface{}) bson.M {
 	return bson.M(data)
+}
+
+func BsonToStruct(input bson.M, output interface{}) error {
+	bsonBytes, _ := bson.Marshal(input)
+	return bson.Unmarshal(bsonBytes, output)
 }
 
 // StructToMap converts a struct of any type to a map[string]inteface{}.
@@ -164,6 +170,10 @@ func ConvertStructure(input, output interface{}) error {
 }
 
 func ParseJSONFromRequest(r *http.Request, v interface{}) error {
+	if r.Body == nil{
+		return fmt.Errorf("missing body request")
+	}
+	
 	return json.NewDecoder(r.Body).Decode(v)
 }
 

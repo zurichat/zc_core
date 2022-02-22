@@ -3,10 +3,18 @@ package user
 import (
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"golang.org/x/crypto/bcrypt"
 	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
+)
+
+var (
+	emailRegex = `^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`
+	validate = validator.New()
+	defaultHashCost = 14
 )
 
 const (
@@ -70,11 +78,11 @@ type Social struct {
 
 type User struct {
 	ID                string                 `bson:"_id,omitempty" json:"_id,omitempty"`
-	FirstName         string                 `bson:"first_name" validate:"required,min=2,max=100" json:"first_name"`
-	LastName          string                 `bson:"last_name" validate:"required,min=2,max=100" json:"last_name"`
+	FirstName         string                 `bson:"first_name" json:"first_name"`
+	LastName          string                 `bson:"last_name" json:"last_name"`
 	Email             string                 `bson:"email" validate:"email,required" json:"email"`
 	Password          string                 `bson:"password" json:"password" validate:"required,min=6"`
-	Phone             string                 `bson:"phone" validate:"required" json:"phone"`
+	Phone             string                 `bson:"phone" json:"phone"`
 	Settings          *UserSettings          `bson:"settings" json:"settings"`
 	Timezone          string                 `bson:"time_zone" json:"time_zone"`
 	Role              string                 `bson:"role" json:"role"`
@@ -108,6 +116,12 @@ type UUIDUserData struct {
 	Password  string `bson:"password" json:"password"`
 	FirstName string `bson:"first_name" json:"first_name"`
 	LastName  string `bson:"last_name" json:"last_name"`
+}
+
+// Method to hash password.
+func GetHash(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), defaultHashCost)
+	return string(bytes), err
 }
 
 func NewUserHandler(c *utils.Configurations, mail service.MailService) *UserHandler {

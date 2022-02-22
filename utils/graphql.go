@@ -19,7 +19,7 @@ type GraphQlHandler struct {
 	configs *Configurations
 }
 
-// Utils
+// ObjectID for utils.
 var ObjectID = graphql.NewScalar(graphql.ScalarConfig{
 	Name:        "BSON",
 	Description: "The `bson` scalar type represents a BSON Object.",
@@ -56,7 +56,7 @@ var ObjectID = graphql.NewScalar(graphql.ScalarConfig{
 	},
 })
 
-// ********** Users **********
+// ********** Users **********.
 var userType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Users",
@@ -73,7 +73,7 @@ var userType = graphql.NewObject(
 	},
 )
 
-// ********** Orgnisation **********
+// ********** Orgnisation **********.
 var organizationType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Organizations",
@@ -125,8 +125,8 @@ var MessageModelType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "MessageModel",
 		Fields: graphql.Fields{
-			"_id":     &graphql.Field{Type: ObjectID, Description: "Id"},
-			"event":   &graphql.Field{Type: graphql.String, Description: "Event"},
+			"_id":   &graphql.Field{Type: ObjectID, Description: "Id"},
+			"event": &graphql.Field{Type: graphql.String, Description: "Event"},
 			// Please resolve, throw Error: Invalid or incomplete schema, unknown type
 			// "message": &graphql.Field{Type: &graphql.Interface{}, Description: "Message"},
 		},

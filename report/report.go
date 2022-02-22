@@ -14,7 +14,7 @@ import (
 )
 
 // Add a report.
-func (rh *ReportHandler) AddReport(w http.ResponseWriter, r *http.Request) {
+func (rh *Handler) AddReport(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var report Report
@@ -31,7 +31,7 @@ func (rh *ReportHandler) AddReport(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
 		return
-	}
+	} 
 
 	orgDoc, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
 
@@ -83,7 +83,7 @@ func (rh *ReportHandler) AddReport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var reportMap map[string]interface{}
-	err = utils.ConvertStructure(report, &reportMap)
+	reportMap, err = utils.StructToMap(report)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
@@ -100,7 +100,7 @@ func (rh *ReportHandler) AddReport(w http.ResponseWriter, r *http.Request) {
 }
 
 // Get a report.
-func (rh *ReportHandler) GetReport(w http.ResponseWriter, r *http.Request) {
+func (rh *Handler) GetReport(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	orgID := mux.Vars(r)["id"]
@@ -121,7 +121,7 @@ func (rh *ReportHandler) GetReport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var report Report
-	err = utils.ConvertStructure(doc, &report)
+	err = utils.BsonToStruct(doc, &report)
 
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
@@ -132,26 +132,31 @@ func (rh *ReportHandler) GetReport(w http.ResponseWriter, r *http.Request) {
 }
 
 // Get reports.
-func (rh *ReportHandler) GetReports(w http.ResponseWriter, r *http.Request) {
+func (rh *Handler) GetReports(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	orgID := mux.Vars(r)["id"]
 
-	doc, _ := utils.GetMongoDBDocs(ReportCollectionName, bson.M{"organization_id": orgID})
+	docs, _ := utils.GetMongoDBDocs(ReportCollectionName, bson.M{"organization_id": orgID})
 
-	report := []Report{}
+	reports := []Report{}
 
-	if doc == nil {
-		utils.GetSuccess("no report has been added yet", report, w)
+	if docs == nil {
+		utils.GetSuccess("no report has been added yet", reports, w)
 		return
 	}
 
-	err := utils.ConvertStructure(doc, &report)
-
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
+	for _, doc := range docs {
+		var report Report
+		err := utils.BsonToStruct(doc, &report)
+		
+		if err != nil {
+			utils.GetError(err, http.StatusInternalServerError, w)
+			return
+		}
+		
+		reports = append(reports, report)
 	}
 
-	utils.GetSuccess("reports retrieved successfully", report, w)
+	utils.GetSuccess("reports retrieved successfully", reports, w)
 }

@@ -2,7 +2,6 @@ package plugin
 
 import (
 	"context"
-	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
@@ -34,7 +33,6 @@ type Plugin struct {
 	ApprovedAt     string             `json:"approved_at" bson:"approved_at"`
 	CreatedAt      string             `json:"created_at" bson:"created_at"`
 	UpdatedAt      string             `json:"updated_at" bson:"updated_at"`
-	DeletedAt      string             `json:"deleted_at" bson:"deleted_at"`
 	SyncRequestURL string             `json:"sync_request_url" bson:"sync_request_url"`
 	Queue          []MessageModel     `json:"queue" bson:"queue"`
 	QueuePID       int                `json:"queuepid" bson:"queuepid"`
@@ -52,27 +50,6 @@ type Patch struct {
 	SyncRequestURL *string  `json:"sync_request_url" bson:"sync_request_url"`
 }
 
-func CreatePlugin(ctx context.Context, p *Plugin) error {
-	p.Approved = false
-	p.CreatedAt = time.Now().String()
-	p.UpdatedAt = time.Now().String()
-	collection := utils.GetCollection(PluginCollectionName)
-	res, err := collection.InsertOne(ctx, p)
-
-	if err != nil {
-		return err
-	}
-
-	value, ok := res.InsertedID.(primitive.ObjectID)
-	if !ok {
-		return err
-	}
-
-	p.ID = value
-
-	return err
-}
-
 func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 	var (
 		p  *Plugin
@@ -85,7 +62,12 @@ func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 		return nil, err
 	}
 
-	res, _ := utils.GetMongoDBDoc(PluginCollectionName, bson.M{"_id": objID, "deleted": false})
+
+	res, err := utils.GetMongoDBDoc(PluginCollectionName, bson.M{"_id": objID, "deleted": false})
+
+	if err != nil {
+		return nil, err
+	}
 
 	bsonBytes, err := bson.Marshal(res)
 
@@ -110,7 +92,9 @@ func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 func FindPlugins(ctx context.Context, filter bson.M, opts ...*options.FindOptions) ([]*Plugin, error) {
 	ps := []*Plugin{}
 
-	cursor, err := utils.GetMongoDBDocs(PluginCollectionName, filter)
+
+	cursor, err := utils.GetMongoDBDocs(PluginCollectionName, filter, opts...)
+
 
 	if err != nil {
 		return nil, err
@@ -163,54 +147,36 @@ func SortPlugins(ctx context.Context, filter bson.M, sort bson.D) ([]*Plugin, er
 	return ps, nil
 }
 
-func updatePlugin(ctx context.Context, id string, pp *Patch) error {
-	collection := utils.GetCollection(PluginCollectionName)
-	objID, _ := primitive.ObjectIDFromHex(id)
-	set := bson.M{}
-	push := bson.M{}
+func FindPluginByTemplateURL(ctx context.Context, url string) (*Plugin, error) {
+	var (
+		p  *Plugin
+		bp *Plugin
+	)
 
-	if pp.Name != nil {
-		set["name"] = *(pp.Name)
+	res, err := utils.GetMongoDBDoc(PluginCollectionName, bson.M{"deleted": false, "template_url": url})
+
+	if err != nil {
+		return nil, err
+	}	
+
+	bsonBytes, err := bson.Marshal(res)
+
+	if err != nil {
+		return nil, err
 	}
 
-	if pp.Description != nil {
-		set["description"] = *(pp.Description)
+	err = bson.Unmarshal(bsonBytes, &p)
+	if err != nil {
+		return nil, err
 	}
 
-	if pp.SidebarURL != nil {
-		set["sidebar_url"] = *(pp.SidebarURL)
+	if err := mapstructure.Decode(res, &bp); err != nil {
+		return nil, err
 	}
 
-	if pp.InstallURL != nil {
-		set["install_url"] = *(pp.InstallURL)
-	}
+	p.Queue = bp.Queue
 
-	if pp.TemplateURL != nil {
-		set["template_url"] = *(pp.TemplateURL)
-	}
-
-	if pp.Version != nil {
-		set["version"] = *(pp.Version)
-	}
-
-	if pp.SyncRequestURL != nil {
-		set["sync_request_url"] = *(pp.SyncRequestURL)
-	}
-
-	if pp.Images != nil {
-		push["images"] = bson.M{"$each": pp.Images}
-	}
-
-	if pp.Tags != nil {
-		push["tags"] = bson.M{"$each": pp.Tags}
-	}
-
-	_, err := collection.UpdateOne(ctx, M{"_id": objID}, bson.M{
-		"$set":  set,
-		"$push": push,
-	})
-
-	return err
+	return p, nil
 }
 
 type SyncUpdateRequest struct {

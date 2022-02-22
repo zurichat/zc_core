@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"image"
+	"image/gif"
+	"image/jpeg"
+	"image/png"
 	"io/fs"
 	"io/ioutil"
 	"mime/multipart"
@@ -15,12 +19,14 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/anthonynsimon/bild/imgio"
+	"github.com/anthonynsimon/bild/transform"
 	"zuri.chat/zccore/plugin"
 	"zuri.chat/zccore/utils"
 )
 
 var allowedMimeTypes = []string{"application/pdf",
-	"image/png", "image/jpg", "text/plain", "image/jpeg",
+	"image/png",  "image/gif", "image/jpg", "text/plain", "image/jpeg",
 	"video/mp4", "video/mpeg", "video/ogg", "video/quicktime",
 	"application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 	"application/vnd.android.package-archive", "application/octet-stream",
@@ -30,6 +36,8 @@ var allowedMimeTypes = []string{"application/pdf",
 const (
 	localDH  = "127.0.0.1:8080"
 	localDHL = "localhost:8080"
+	mescPath = "mesc/"
+	hostPath = "127.0.0.1:8080/"
 )
 
 var (
@@ -128,7 +136,7 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 		if spl := strings.ReplaceAll(folderName, " ", ""); spl != "" {
 			folderName += "/"
 		} else {
-			folderName = "mesc/"
+			folderName = mescPath
 		}
 
 		fileExtension := filepath.Ext(fileHeader.Filename)
@@ -165,7 +173,7 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 
 		var urlPrefix = "https://api.zuri.chat/"
 		if r.Host == localDH || r.Host == localDHL {
-			urlPrefix = "127.0.0.1:8080/"
+			urlPrefix = hostPath
 		}
 
 		fileURL := urlPrefix + filenameE
@@ -193,10 +201,107 @@ func DeleteFileFromServer(filePath string) error {
 	return nil
 }
 
+func Resize(f multipart.File, width, height int, r *http.Request, handle *multipart.FileHeader, folderName string) (string, error) {
+	img, err := decodeFile(f, handle)
+	if err != nil {
+		return "", err
+	}
+
+	resized := transform.Resize(img, width, height, transform.Linear)
+
+    imagePath, err := saveImageFile(folderName, resized, handle, r, imgio.PNGEncoder())
+	if err != nil {
+		return "", err
+	}
+
+	return imagePath, nil
+}
+
+func decodeFile(f multipart.File, handle *multipart.FileHeader) (image.Image, error) {
+	fileExtension := strings.ToLower(filepath.Ext(handle.Filename))
+
+	if fileExtension == ".gif" {
+		_, err := gif.DecodeAll(f)
+		if err != nil {
+			fmt.Println(err)
+			return nil,  fmt.Errorf("error decoding")
+		}
+
+		return nil, nil
+	} else if fileExtension == ".jpg" || fileExtension == ".jpeg" {
+		img, err := jpeg.Decode(f)
+		if err != nil {
+			fmt.Println(err)
+			return nil, fmt.Errorf("error decoding")
+		}
+
+		return img, nil
+	}
+	
+	img, err := png.Decode(f)
+	if err != nil {
+		fmt.Println(err)
+		return nil, fmt.Errorf("error decoding")
+	}
+
+	return img, nil
+}
+
+func saveImageFile(folderName string, file *image.RGBA, handle *multipart.FileHeader, r *http.Request, encoder imgio.Encoder) (string, error) {
+	if spl := strings.ReplaceAll(folderName, " ", ""); spl != "" {
+		folderName += "/"
+	} else {
+		folderName = mescPath
+	}
+
+	fileExtension := filepath.Ext(handle.Filename)
+
+	exeDir, newF := "files/"+folderName, ""
+	filenamePrefix := filepath.Join(exeDir, newF, buildFileName())
+
+	filename, errr := pickFileName(filenamePrefix, fileExtension)
+	if errr != nil {
+		return "", errr
+	}
+
+	_, err2 := os.Stat(exeDir)
+	if err2 != nil {
+		err0 := os.MkdirAll(exeDir, os.ModePerm)
+		if err0 != nil {
+			return "", err0
+		}
+	}
+
+	destinationFile, erri := os.Create(filename)
+
+	if erri != nil {
+		return "", erri
+	}
+
+	defer destinationFile.Close()
+
+	err := encoder(destinationFile, file)
+	if err != nil {
+		return "", err
+	}
+
+	filenameE := strings.Join(strings.Split(filename, "\\"), "/")
+
+	var urlPrefix = "https://api.zuri.chat/"
+
+	if r.Host == localDH || r.Host == localDHL {
+		urlPrefix = hostPath
+	}
+
+	fileURL := urlPrefix + filenameE
+
+	return fileURL, nil
+}
+
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 // profile image upload.
-func ProfileImageUpload(folderName string, r *http.Request) (string, error) {
+func ProfileImageUpload(folderName string, width, height int, r *http.Request) (string, error) {
 	var allowedMimeImageTypes = []string{
 		"image/bmp", "image/cis-cod", "image/gif", "image/ief", "image/jpeg", "image/jpeg", "image/jpeg", "image/pipeg	jfif", "image/svg+xml",
 		"image/tiff", "image/tiff", "image/x-cmu-raster", "	image/x-cmx", "image/x-icon", "image/x-portable-anymap", "image/x-portable-bitmap",
@@ -215,7 +320,7 @@ func ProfileImageUpload(folderName string, r *http.Request) (string, error) {
 
 	switch {
 	case contains(mimeType, allowedMimeImageTypes):
-		path, err := saveFile(folderName, file, handle, r)
+		path, err := Resize(file, width, height, r, handle, folderName)
 		if err != nil {
 			return "", err
 		}
@@ -336,7 +441,7 @@ func saveFile(folderName string, file multipart.File, handle *multipart.FileHead
 	if spl := strings.ReplaceAll(folderName, " ", ""); spl != "" {
 		folderName += "/"
 	} else {
-		folderName = "mesc/"
+		folderName = mescPath
 	}
 
 	fileExtension := filepath.Ext(handle.Filename)
@@ -375,7 +480,7 @@ func saveFile(folderName string, file multipart.File, handle *multipart.FileHead
 	var urlPrefix = "https://api.zuri.chat/"
 
 	if r.Host == localDH || r.Host == localDHL {
-		urlPrefix = "127.0.0.1:8080/"
+		urlPrefix = hostPath
 	}
 
 	fileURL := urlPrefix + filenameE

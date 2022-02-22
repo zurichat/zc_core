@@ -9,14 +9,14 @@ import (
 )
 
 const (
-	OrganizationCollectionName     = "organizations"
-	TokenTransactionCollectionName = "token_transaction"
-	InstalledPluginsCollectionName = "installed_plugins"
-	OrganizationInviteCollection   = "organizations_invites"
-	MemberCollectionName           = "members"
-	CardCollectionName             = "cards"
-	UserCollectionName             = "users"
-	PluginCollection               = "plugins"
+	OrganizationCollectionName       = "organizations"
+	TokenTransactionCollectionName   = "token_transaction"
+	InstalledPluginsCollectionName   = "installed_plugins"
+	OrganizationInviteCollectionName = "organizations_invites"
+	MemberCollectionName             = "members"
+	CardCollectionName               = "cards"
+	UserCollectionName               = "users"
+	PluginCollectionName             = "plugins"
 )
 
 const (
@@ -33,6 +33,8 @@ const (
 	UpdateOrganizationMemberSettings      = "UpdateOrganizationMemberSettings"
 	UpdateOrganizationMemberRole          = "UpdateOrganizationMemberRole"
 	UpdateOrganizationMemberStatusCleared = "UpdateOrganizationMemberStatusCleared"
+	UpdateOrganizationBillingSettings     = "UpdateOrganizationBillingSettings"
+	UpdateOrganizationMemberFiles         = "UpdateOrganizationMemberFiles"
 )
 
 const (
@@ -65,30 +67,49 @@ var ClearOld = make(chan bool, 1)
 
 var RequestData = make(map[string]string)
 
+const (
+	logoWidth   = 111
+	logoHeight  = 74
+	imageWidth  = 170
+	imageHeight = 170
+)
+
 type MemberPassword struct {
 	MemberID string `bson:"member_id"`
 	Password string `bson:"password"`
 }
 
 type Organization struct {
-	ID           string                   `json:"_id,omitempty" bson:"_id,omitempty"`
-	Name         string                   `json:"name" bson:"name"`
-	CreatorEmail string                   `json:"creator_email" bson:"creator_email"`
-	CreatorID    string                   `json:"creator_id" bson:"creator_id"`
-	Plugins      []map[string]interface{} `json:"plugins" bson:"plugins"`
-	Admins       []string                 `json:"admins" bson:"admins"`
-	Settings     OrganizationPreference   `json:"settings" bson:"settings"`
-	LogoURL      string                   `json:"logo_url" bson:"logo_url"`
-	WorkspaceURL string                   `json:"workspace_url" bson:"workspace_url"`
-	CreatedAt    time.Time                `json:"created_at" bson:"created_at"`
-	UpdatedAt    time.Time                `json:"updated_at" bson:"updated_at"`
-	Tokens       float64                  `json:"tokens" bson:"tokens"`
-	Version      string                   `json:"version" bson:"version"`
-	Billing      Billing                  `json:"billing" bson:"billing"`
+	ID           string `json:"_id,omitempty" bson:"_id,omitempty"`
+	Name         string `json:"name" bson:"name"`
+	CreatorEmail string `json:"creator_email" bson:"creator_email"`
+	CreatorID    string `json:"creator_id" bson:"creator_id"`
+	// Plugins      []map[string]interface{} `json:"plugins" bson:"plugins"`
+	Plugins      map[string]interface{} `json:"plugins" bson:"plugins"`
+	Admins       []string               `json:"admins" bson:"admins"`
+	Settings     OrganizationPreference `json:"settings" bson:"settings"`
+	Customize    Customize              `json:"customize" bson:"customize"`
+	LogoURL      string                 `json:"logo_url" bson:"logo_url"`
+	WorkspaceURL string                 `json:"workspace_url" bson:"workspace_url"`
+	CreatedAt    time.Time              `json:"created_at" bson:"created_at"`
+	UpdatedAt    time.Time              `json:"updated_at" bson:"updated_at"`
+	Tokens       float64                `json:"tokens" bson:"tokens"`
+	Version      string                 `json:"version" bson:"version"`
+	Billing      Billing                `json:"billing" bson:"billing"`
 }
 
 type Billing struct {
-	Settings BillingSetting
+	Settings BillingSetting `json:"billing_setting" bson:"setting"`
+	Contact  BillingContact `json:"billing_contact" bson:"contact"`
+}
+
+type BillingContact struct {
+	ToDefaultEmail bool      `json:"to_default_email" bson:"to_default_email" default:"true"`
+	Contact        []Contact `json:"contacts" bson:"contacts" default:"[]"`
+}
+
+type Contact struct {
+	Email string `json:"email" bson:"email"`
 }
 
 type BillingSetting struct {
@@ -131,7 +152,7 @@ type OrgPluginBody struct {
 }
 
 type InstalledPlugin struct {
-	ID          string                 `json:"id" bson:"_id"`
+	// ID          string                 `json:"id" bson:"_id"`
 	PluginID    string                 `json:"plugin_id" bson:"plugin_id"`
 	Plugin      map[string]interface{} `json:"plugin" bson:"plugin"`
 	AddedBy     string                 `json:"added_by" bson:"added_by"`
@@ -196,7 +217,7 @@ type Member struct {
 	FirstName   string    `json:"first_name" bson:"first_name"`
 	LastName    string    `json:"last_name" bson:"last_name"`
 	Email       string    `json:"email" bson:"email"`
-	UserName    string    `bson:"user_name" json:"user_name"`
+	UserName    string    `json:"user_name" bson:"user_name"`
 	DisplayName string    `json:"display_name" bson:"display_name"`
 	Bio         string    `json:"bio" bson:"bio"`
 	Status      Status    `json:"status" bson:"status"`
@@ -229,7 +250,7 @@ type Profile struct {
 type Settings struct {
 	Notifications       Notifications       `json:"notifications" bson:"notifications"`
 	Sidebar             Sidebar             `json:"sidebar" bson:"sidebar"`
-	Themes              UserThemes           `json:"themes" bson:"themes"`
+	Themes              UserThemes          `json:"themes" bson:"themes"`
 	MessagesAndMedia    MessagesAndMedia    `json:"messages_and_media" bson:"messages_and_media"`
 	ChatSettings        ChatSettings        `json:"chat_settings" bson:"chat_settings"`
 	LanguagesAndRegions LanguagesAndRegions `json:"languages_and_regions" bson:"languages_and_regions"`
@@ -237,6 +258,29 @@ type Settings struct {
 	Advanced            Advanced            `json:"advanced" bson:"advanced"`
 	AudioAndVideo       AudioAndVideo       `json:"audio_and_video" bson:"audio_and_video"`
 	PluginSettings      []PluginSettings    `json:"plugin_settings" bson:"plugin_settings"`
+}
+
+type Customize struct {
+	Prefixes       []ChannelPrefixes `json:"prefixes" bson:"prefixes"`
+	AddCustomEmoji []CustomEmoji     `json:"addcustomemoji" bson:"addcustomemoji"`
+	SlackBot       []SlackBot        `json:"slackbot" bson:"slackbot"`
+}
+
+type SlackBot struct {
+	WhenSomeOneSays string `json:"whensomeonesays" bson:"whensomeonesays"`
+	SlackResponds   string `json:"slackresponds" bson:"slackresponds"`
+}
+
+type ChannelPrefixes struct {
+	Title       string `json:"title" bson:"title"`
+	Description string `json:"description" bson:"description"`
+}
+
+type CustomEmoji struct {
+	Name      string    `json:"name" bson:"name"`
+	ImageURL  string    `json:"imageurl" bson:"imageurl"`
+	User      string    `json:"user" bson:"user"`
+	CreatedAt time.Time `json:"created_at" bson:"created_at"`
 }
 
 type OrganizationPreference struct {
@@ -311,9 +355,10 @@ type Themes struct {
 	Colors                           string `json:"colors" bson:"colors"`
 }
 type UserThemes struct {
-	Mode	string `json:"mode"`
-	Colors	string `json:"colors"`
+	Mode   string `json:"mode"`
+	Colors string `json:"colors"`
 }
+
 const (
 	ThemeClean   = "clean"
 	ThemeCompact = "compact"
@@ -484,7 +529,7 @@ type EnterLeaveMessage struct {
 }
 
 type MemberIDS struct {
-	IdList []string `json:"id_list" bson:"id_list" validate:"required"`
+	IDList []string `json:"id_list" bson:"id_list" validate:"required"`
 }
 
 type HandleMemberSearchResponse struct {

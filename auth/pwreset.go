@@ -98,7 +98,7 @@ func (au *AuthHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("content-type", "application/json")
 
 	rBody := struct {
-		Password        string `json:"password" validate:"required"`
+		Password        string `json:"password" validate:"required,min=6"`
 		ConfirmPassword string `json:"confirm_password" validate:"required"`
 	}{}
 

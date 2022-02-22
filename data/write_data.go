@@ -9,7 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"zuri.chat/zccore/plugin"
 	"zuri.chat/zccore/utils"
 )
 
@@ -34,7 +33,7 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := plugin.FindPluginByID(r.Context(), reqData.PluginID); err != nil {
+	if _, err := utils.GetMongoDBDoc("plugins", bson.M{"_id": mustObjectIDFromHex(reqData.PluginID)}); err != nil {
 		msg := "plugin with this id does not exist"
 		utils.GetError(errors.New(msg), http.StatusNotFound, w)
 
@@ -45,15 +44,15 @@ func WriteData(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "POST":
-		reqData.handlePost(w, r)
+		reqData.handlePost(w)
 	case "PUT", "PATCH":
-		reqData.handlePut(w, r)
+		reqData.handlePut(w)
 	default:
 		fmt.Fprint(w, `{"data_write": "Data write request"}`)
 	}
 }
 
-func (wdr *writeDataRequest) handlePost(w http.ResponseWriter, _ *http.Request) {
+func (wdr *writeDataRequest) handlePost(w http.ResponseWriter) {
 	var payload interface{}
 
 	if wdr.BulkWrite {
@@ -62,9 +61,18 @@ func (wdr *writeDataRequest) handlePost(w http.ResponseWriter, _ *http.Request) 
 		payload = []interface{}{wdr.Payload}
 	}
 
+	// a plugin has just 3 collections they can write to: data - messages - rooms
+	if _, ok := PluginCollectionNames[wdr.CollectionName]; !ok {
+		msg := fmt.Sprintf("write forbidden to %s collection", wdr.CollectionName)
+		utils.GetError(errors.New(msg), http.StatusBadRequest, w)
+
+		return
+	}
+
+	
 	actualCollName := mongoCollectionName(wdr.PluginID, wdr.CollectionName)
 	res, err := insertMany(actualCollName, wdr.OrganizationID, payload)
-	
+
 	if err != nil {
 		utils.GetError(fmt.Errorf("an error occurred: %v", err), http.StatusInternalServerError, w)
 		return
@@ -84,7 +92,7 @@ func (wdr *writeDataRequest) handlePost(w http.ResponseWriter, _ *http.Request) 
 	utils.GetSuccess("success", data, w)
 }
 
-func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, _ *http.Request) {
+func (wdr *writeDataRequest) handlePut(w http.ResponseWriter) {
 	var err error
 
 	var res *mongo.UpdateResult
@@ -92,12 +100,12 @@ func (wdr *writeDataRequest) handlePut(w http.ResponseWriter, _ *http.Request) {
 	filter := make(map[string]interface{})
 	collName := mongoCollectionName(wdr.PluginID, wdr.CollectionName)
 
-    //nolint:gocritic // dod-san: ignore if else-if chain
+	//nolint:gocritic // dod-san: ignore if else-if chain
 	if wdr.ObjectID != "" {
 		filter["_id"] = wdr.ObjectID
 	} else if wdr.Filter != nil {
 		filter = wdr.Filter
-	}else {
+	} else {
 		utils.GetError(errors.New("object id or filter object not specified"), http.StatusUnprocessableEntity, w)
 		return
 	}

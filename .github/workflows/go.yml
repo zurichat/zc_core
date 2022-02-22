@@ -1,8 +1,6 @@
 name: Go
 
 on:
-#   push:
-#     branches: [ main ]
   pull_request:
     branches: [ dev ]
 
@@ -16,3 +14,4 @@ jobs:
         uses: golangci/golangci-lint-action@v2
         with:
           version: v1.42.1
+          args:  --timeout 2m

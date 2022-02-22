@@ -49,6 +49,7 @@ type Configurations struct {
 func NewConfigurations() *Configurations {
 	// Load environmental variables
 	viper.AddConfigPath(".")
+	viper.AddConfigPath("..") // for testing
 	viper.SetConfigName(".env")
 	viper.SetConfigType("env")
 
@@ -85,7 +86,6 @@ func NewConfigurations() *Configurations {
 		UserDBCollection:    viper.GetString("USER_COLLECTION"),
 		SendGridAPIKey:      viper.GetString("SENDGRID_API_KEY"),
 		ESPType:             viper.GetString("ESP_TYPE"),
-
 
 		ConfirmEmailTemplate:       viper.GetString("CONFIRM_EMAIL_TEMPLATE"),
 		PasswordResetTemplate:      viper.GetString("PASSWORD_RESET_TEMPLATE"),

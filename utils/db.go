@@ -33,6 +33,10 @@ func (e *errChecker) Check(err error) {
 	e.err = err
 }
 
+func GetDefaultMongoClient() *mongo.Client {
+	return defaultMongoHandle.client
+}
+
 func ConnectToDB(clusterURL string) error {
 	var ec errChecker
 
@@ -244,7 +248,11 @@ func DeleteOneMongoDBDoc(collectionName, id string) (*mongo.DeleteResult, error)
 	ctx := context.Background()
 	collection := defaultMongoHandle.GetCollection(collectionName)
 
-	_id, _ := primitive.ObjectIDFromHex(id)
+	_id, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+	
 	filter := bson.M{"_id": _id}
 	res, err := collection.DeleteOne(ctx, filter)
 
@@ -277,53 +285,57 @@ func CreateUniqueIndex(collName, field string, order int) error {
 		Options: options.Index().SetUnique(true),
 	}
 
-	indexName, err := collection.Indexes().CreateOne(context.Background(), indexModel)
-	if err != nil {
-		fmt.Printf("error creating unique index on %s field in %s: %v", field, collName, err)
-		return nil
-	}
+	timeOutFactor := 3
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeOutFactor)*time.Second)
 
-	fmt.Printf("%s index on %s collection created successfully\n", indexName, collName)
+	defer cancel()
+
+	_, err := collection.Indexes().CreateOne(ctx, indexModel)
+	if err != nil {
+		return fmt.Errorf("failed to create unique index on field %s in %s", field, collName)
+	}
 
 	return nil
 }
 
 func CreateTextIndexForPlugins() error {
 	collection := defaultMongoHandle.GetCollection("plugins")
-   
-   indexModel := mongo.IndexModel{
-   	Keys: bson.D{
-   		{Key: "name", Value: "text"},
-   		{Key:"description", Value:"text"},
-   		{Key: "category", Value: "text"},
-   		{Key: "tags", Value: "text"},
-   	},
-   	Options: options.Index().SetWeights(bson.M{
-   		"name": 10,
-   		"description": 5,
-   		"category": 3,
-   		"tags": 1,
-   	}),
-   }
 
-	indexName, err := collection.Indexes().CreateOne(context.Background(), indexModel)
-	
-	if err != nil {
-		fmt.Printf("error creating text index for plugins collection %v", err)
-		return nil
+	indexModel := mongo.IndexModel{
+		Keys: bson.D{
+			{Key: "name", Value: "text"},
+			{Key: "description", Value: "text"},
+			{Key: "category", Value: "text"},
+			{Key: "tags", Value: "text"},
+		},
+		Options: options.Index().SetWeights(bson.M{
+			"name":        10,
+			"description": 5,
+			"category":    3,
+			"tags":        1,
+		}),
 	}
 
-	fmt.Printf("%s index on plugins collection created successfully\n", indexName)
+	timeOutFactor := 3
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeOutFactor)*time.Second)
+	
+	defer cancel()	
+	
+	_, err := collection.Indexes().CreateOne(ctx, indexModel)
+	if err != nil {
+		return fmt.Errorf("error creating text index for plugins collection %v", err)
+	}
 
 	return nil
 }
 
-
 func CountCollection(ctx context.Context, name string, filter bson.M) int64 {
 	collection := defaultMongoHandle.GetCollection(name)
 	count, err := collection.CountDocuments(ctx, filter)
+	
 	if err != nil {
 		return 0
 	}
+	
 	return count
 }
