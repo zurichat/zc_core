@@ -44,6 +44,10 @@ type Configurations struct {
 	FacebookOAuthURL string
 
 	HmacSampleSecret string
+
+	// Agora details
+	AppId         string
+	AppCerificate string
 }
 
 func NewConfigurations() *Configurations {
@@ -111,6 +115,10 @@ func NewConfigurations() *Configurations {
 		FacebookOAuthURL: viper.GetString("FACEBOOK_OAUTH"),
 
 		HmacSampleSecret: viper.GetString("HMAC_SECRET"),
+
+		// Agora details
+		AppId:         viper.GetString("APP_ID"),
+		AppCerificate: viper.GetString("APP_CERTIFICATE"),
 	}
 
 	return configs

@@ -8,6 +8,7 @@ import (
 	"github.com/graphql-go/graphql"
 	gqlHandler "github.com/graphql-go/handler"
 
+	"zuri.chat/zccore/agora"
 	"zuri.chat/zccore/auth"
 	"zuri.chat/zccore/blog"
 	"zuri.chat/zccore/contact"
@@ -47,6 +48,9 @@ func (h *Handler) SetupRoutes() {
 	au := auth.NewAuthHandler(configs, mailService)
 	us := user.NewUserHandler(configs, mailService)
 	gql := utils.NewGraphQlHandler(configs)
+
+	// Agora
+	ah := agora.NewAgoraHandler(configs)
 
 	client := utils.GetDefaultMongoClient()
 	ps := plugin.NewMongoService(client)
@@ -204,6 +208,9 @@ func (h *Handler) SetupRoutes() {
 	h.Router.HandleFunc("/upload/mesc/{apk_sec}/{exe_sec}", au.IsAuthenticated(service.MescFiles)).Methods("POST")
 	h.Router.HandleFunc("/delete/file/{plugin_id}", au.IsAuthenticated(service.DeleteFile)).Methods("DELETE")
 	h.Router.PathPrefix("/files/").Handler(http.StripPrefix("/files/", http.FileServer(http.Dir("./files/"))))
+
+	// Agora token generator
+	h.Router.HandleFunc("/rtc/{channelName}/{role}/{tokentype}/{uid}/", ah.GetRtcToken).Methods("GET")
 
 	// graphql
 	schema, _ := graphql.NewSchema(gql.LoadGraphQlSchema())
