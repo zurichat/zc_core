@@ -3,11 +3,11 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"image"
 	"image/gif"
 	"image/jpeg"
 	"image/png"
+	"io"
 	"io/fs"
 	"io/ioutil"
 	"mime/multipart"
@@ -18,15 +18,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/anthonynsimon/bild/imgio"
 	"github.com/anthonynsimon/bild/transform"
+	"github.com/gorilla/mux"
 	"zuri.chat/zccore/plugin"
 	"zuri.chat/zccore/utils"
 )
 
 var allowedMimeTypes = []string{"application/pdf",
-	"image/png",  "image/gif", "image/jpg", "text/plain", "image/jpeg",
+	"image/png", "image/gif", "image/jpg", "text/plain", "image/jpeg",
 	"video/mp4", "video/mpeg", "video/ogg", "video/quicktime",
 	"application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 	"application/vnd.android.package-archive", "application/octet-stream",
@@ -209,7 +209,7 @@ func Resize(f multipart.File, width, height int, r *http.Request, handle *multip
 
 	resized := transform.Resize(img, width, height, transform.Linear)
 
-    imagePath, err := saveImageFile(folderName, resized, handle, r, imgio.PNGEncoder())
+	imagePath, err := saveImageFile(folderName, resized, handle, r, imgio.PNGEncoder())
 	if err != nil {
 		return "", err
 	}
@@ -224,7 +224,7 @@ func decodeFile(f multipart.File, handle *multipart.FileHeader) (image.Image, er
 		_, err := gif.DecodeAll(f)
 		if err != nil {
 			fmt.Println(err)
-			return nil,  fmt.Errorf("error decoding")
+			return nil, fmt.Errorf("error decoding")
 		}
 
 		return nil, nil
@@ -237,7 +237,7 @@ func decodeFile(f multipart.File, handle *multipart.FileHeader) (image.Image, er
 
 		return img, nil
 	}
-	
+
 	img, err := png.Decode(f)
 	if err != nil {
 		fmt.Println(err)
@@ -272,20 +272,10 @@ func saveImageFile(folderName string, file *image.RGBA, handle *multipart.FileHe
 		}
 	}
 
-	destinationFile, erri := os.Create(filename)
-
-	if erri != nil {
-		return "", erri
-	}
-
-	defer destinationFile.Close()
-
-	err := encoder(destinationFile, file)
-	if err != nil {
+	filenameE := strings.Join(strings.Split(filename, "\\"), "/")
+	if err := imgio.Save(filenameE, file, encoder); err != nil {
 		return "", err
 	}
-
-	filenameE := strings.Join(strings.Split(filename, "\\"), "/")
 
 	var urlPrefix = "https://api.zuri.chat/"
 
