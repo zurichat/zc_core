@@ -210,7 +210,7 @@ func (h *Handler) SetupRoutes() {
 	h.Router.PathPrefix("/files/").Handler(http.StripPrefix("/files/", http.FileServer(http.Dir("./files/"))))
 
 	// Agora token generator
-	h.Router.HandleFunc("/rtc/{channelName}/{role}/{tokentype}/{uid}/", ah.GetRtcToken).Methods("GET")
+	h.Router.HandleFunc("/rtc/{channelName}/{role}/{tokentype}", ah.GetRtcToken).Methods("GET")
 
 	// graphql
 	schema, _ := graphql.NewSchema(gql.LoadGraphQlSchema())

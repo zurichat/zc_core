@@ -3,7 +3,6 @@ package agora
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/AgoraIO-Community/go-tokenbuilder/rtctokenbuilder"
@@ -34,8 +33,8 @@ func ParseRtcParams(r *http.Request) (channelName, tokentype, uidStr string, rol
 	channelName = mux.Vars(r)["channelName"]
 	tokentype = mux.Vars(r)["tokentype"]
 	roleStr := mux.Vars(r)["role"]
-	uidStr = mux.Vars(r)["uid"]
-
+	r.ParseForm()
+	uidStr = r.FormValue("uid")
 	if roleStr == "publisher" {
 		role = rtctokenbuilder.RolePublisher
 	} else {
@@ -54,21 +53,20 @@ func generateRtcToken(appId, appCertificate, channelName, uidStr, tokentype stri
 			return "", err
 		}
 		return rtcToken, nil
+		// else if tokentype == "uid" {
+		// 	uid64, parseErr := strconv.ParseUint(uidStr, 10, 64)
+		// 	// check if conversion fails
+		// 	if parseErr != nil {
+		// 		err := fmt.Errorf("failed to parse uidStr: %s, to uint causing error: %s", uidStr, parseErr)
+		// 		return "", err
+		// 	}
 
-	} else if tokentype == "uid" {
-		uid64, parseErr := strconv.ParseUint(uidStr, 10, 64)
-		// check if conversion fails
-		if parseErr != nil {
-			err := fmt.Errorf("failed to parse uidStr: %s, to uint causing error: %s", uidStr, parseErr)
-			return "", err
-		}
-
-		uid := uint32(uid64) // convert uid from uint64 to uint 32
-		rtcToken, err := rtctokenbuilder.BuildTokenWithUID(appId, appCertificate, channelName, uid, role, expireTime)
-		if err != nil {
-			return "", err
-		}
-		return rtcToken, nil
+		// 	uid := uint32(uid64) // convert uid from uint64 to uint 32
+		// 	rtcToken, err := rtctokenbuilder.BuildTokenWithUID(appId, appCertificate, channelName, uid, role, expireTime)
+		// 	if err != nil {
+		// 		return "", err
+		// 	}nil
+		// 	return rtcToken,
 
 	} else {
 		err := fmt.Errorf("failed to generate RTC token for Unknown Tokentype: %s", tokentype)
