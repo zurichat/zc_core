@@ -86,38 +86,38 @@ func (h *Handler) SetupRoutes() {
 	h.Router.HandleFunc("/account/update-password/{verification_code:[0-9]+}", au.UpdatePassword).Methods(http.MethodPost)
 
 	// Organization
-	h.Router.HandleFunc("/organizations", au.IsAuthenticated(orgs.Create)).Methods("POST")
-	h.Router.HandleFunc("/organizations", au.IsAuthenticated(orgs.GetOrganizations)).Methods("GET")
-	h.Router.HandleFunc("/organizations/{id}", au.IsAuthenticated(orgs.GetOrganization)).Methods("GET")
-	h.Router.HandleFunc("/organizations/{id}", au.IsAuthenticated(au.IsAuthorized(orgs.DeleteOrganization, "admin"))).Methods("DELETE")
-	h.Router.HandleFunc("/organizations/url/{url}", orgs.GetOrganizationByURL).Methods("GET")
+	h.Router.HandleFunc("/organizations", au.IsAuthenticated(orgs.Create)).Methods("POST")                                              // works
+	h.Router.HandleFunc("/organizations", au.IsAuthenticated(orgs.GetOrganizations)).Methods("GET")                                     // works
+	h.Router.HandleFunc("/organizations/{id}", au.IsAuthenticated(orgs.GetOrganization)).Methods("GET")                                 // works
+	h.Router.HandleFunc("/organizations/{id}", au.IsAuthenticated(au.IsAuthorized(orgs.DeleteOrganization, "admin"))).Methods("DELETE") // worksxxx
+	h.Router.HandleFunc("/organizations/url/{url}", orgs.GetOrganizationByURL).Methods("GET")                                           // works
 
-	h.Router.HandleFunc("/organizations/{id}/url", au.IsAuthenticated(orgs.UpdateURL)).Methods("PATCH")
-	h.Router.HandleFunc("/organizations/{id}/name", au.IsAuthenticated(orgs.UpdateName)).Methods("PATCH")
-	h.Router.HandleFunc("/organizations/{id}/logo", au.IsAuthenticated(orgs.UpdateLogo)).Methods("PATCH")
+	h.Router.HandleFunc("/organizations/{id}/url", au.IsAuthenticated(orgs.UpdateURL)).Methods("PATCH")   // works
+	h.Router.HandleFunc("/organizations/{id}/name", au.IsAuthenticated(orgs.UpdateName)).Methods("PATCH") // works
+	h.Router.HandleFunc("/organizations/{id}/logo", au.IsAuthenticated(orgs.UpdateLogo)).Methods("PATCH") // works
 
-	h.Router.HandleFunc("/organizations/{id}/settings", au.IsAuthenticated(orgs.UpdateOrganizationSettings)).Methods("PATCH")
-	h.Router.HandleFunc("/organizations/{id}/permission", au.IsAuthenticated(orgs.UpdateOrganizationPermission)).Methods("PATCH")
-	h.Router.HandleFunc("/organizations/{id}/auth", au.IsAuthenticated(orgs.UpdateOrganizationAuthentication)).Methods("PATCH")
+	h.Router.HandleFunc("/organizations/{id}/settings", au.IsAuthenticated(orgs.UpdateOrganizationSettings)).Methods("PATCH")     // works
+	h.Router.HandleFunc("/organizations/{id}/permission", au.IsAuthenticated(orgs.UpdateOrganizationPermission)).Methods("PATCH") //works
+	h.Router.HandleFunc("/organizations/{id}/auth", au.IsAuthenticated(orgs.UpdateOrganizationAuthentication)).Methods("PATCH")   // works
 	h.Router.HandleFunc("/organizations/{id}/change-owner", au.IsAuthenticated(au.IsAuthorized(orgs.TransferOwnership, "owner"))).Methods("PATCH")
 
-	h.Router.HandleFunc("/organizations/{id}/prefixes", au.IsAuthenticated(orgs.UpdateOrganizationPrefixes)).Methods("PATCH")
-	h.Router.HandleFunc("/organizations/{id}/slackbotresponses", au.IsAuthenticated(orgs.UpdateSlackBotResponses)).Methods("PATCH")
-	h.Router.HandleFunc("/organizations/{id}/customemoji", au.IsAuthenticated(orgs.AddSlackCustomEmoji)).Methods("PATCH")
+	h.Router.HandleFunc("/organizations/{id}/prefixes", au.IsAuthenticated(orgs.UpdateOrganizationPrefixes)).Methods("PATCH")       // fixed
+	h.Router.HandleFunc("/organizations/{id}/slackbotresponses", au.IsAuthenticated(orgs.UpdateSlackBotResponses)).Methods("PATCH") // works
+	h.Router.HandleFunc("/organizations/{id}/customemoji", au.IsAuthenticated(orgs.AddSlackCustomEmoji)).Methods("PATCH")           // works
 
 	// Organization: Guest Invites
-	h.Router.HandleFunc("/organizations/{id}/send-invite", au.IsAuthenticated(au.IsAuthorized(orgs.SendInvite, "admin"))).Methods("POST")
-	h.Router.HandleFunc("/organizations/{id}/invite-stats", au.IsAuthenticated(au.IsAuthorized(orgs.InviteStats, "admin"))).Methods("GET")
-	h.Router.HandleFunc("/organizations/invites/{uuid}", orgs.CheckGuestStatus).Methods(http.MethodGet)
-	h.Router.HandleFunc("/organizations/guests/{uuid}", orgs.GuestToOrganization).Methods(http.MethodPost)
+	h.Router.HandleFunc("/organizations/{id}/send-invite", au.IsAuthenticated(au.IsAuthorized(orgs.SendInvite, "admin"))).Methods("POST")  //works
+	h.Router.HandleFunc("/organizations/{id}/invite-stats", au.IsAuthenticated(au.IsAuthorized(orgs.InviteStats, "admin"))).Methods("GET") // none
+	h.Router.HandleFunc("/organizations/invites/{uuid}", orgs.CheckGuestStatus).Methods(http.MethodGet)                                    // none
+	h.Router.HandleFunc("/organizations/guests/{uuid}", orgs.GuestToOrganization).Methods(http.MethodPost)                                 // test
 
-	h.Router.HandleFunc("/organizations/{id}/plugins", au.IsAuthenticated(orgs.AddOrganizationPlugin)).Methods("POST")
-	h.Router.HandleFunc("/organizations/{id}/plugins", au.IsAuthenticated(orgs.GetOrganizationPlugins)).Methods("GET")
-	h.Router.HandleFunc("/organizations/{id}/plugins/{plugin_id}", au.IsAuthenticated(orgs.GetOrganizationPlugin)).Methods("GET")
-	h.Router.HandleFunc("/organizations/{id}/plugins/{plugin_id}", au.IsAuthenticated(orgs.RemoveOrganizationPlugin)).Methods("DELETE")
+	h.Router.HandleFunc("/organizations/{id}/plugins", au.IsAuthenticated(orgs.AddOrganizationPlugin)).Methods("POST")                  //works
+	h.Router.HandleFunc("/organizations/{id}/plugins", au.IsAuthenticated(orgs.GetOrganizationPlugins)).Methods("GET")                  //works
+	h.Router.HandleFunc("/organizations/{id}/plugins/{plugin_id}", au.IsAuthenticated(orgs.GetOrganizationPlugin)).Methods("GET")       //works
+	h.Router.HandleFunc("/organizations/{id}/plugins/{plugin_id}", au.IsAuthenticated(orgs.RemoveOrganizationPlugin)).Methods("DELETE") //ask
 
-	h.Router.HandleFunc("/organizations/{id}/members", au.IsAuthenticated(au.IsAuthorized(orgs.CreateMember, "admin"))).Methods("POST")
-	h.Router.HandleFunc("/organizations/{id}/members", orgs.GetMembers).Methods("GET")
+	h.Router.HandleFunc("/organizations/{id}/members", au.IsAuthenticated(au.IsAuthorized(orgs.CreateMember, "admin"))).Methods("POST") // done
+	h.Router.HandleFunc("/organizations/{id}/members", orgs.GetMembers).Methods("GET")                                                  // should work
 	h.Router.HandleFunc("/organizations/{id}/members/multiple", au.IsAuthenticated(orgs.GetmultipleMembers)).Methods("GET")
 	h.Router.HandleFunc("/organizations/{id}/members/{mem_id}", au.IsAuthenticated(orgs.GetMember)).Methods("GET")
 	h.Router.HandleFunc("/organizations/{id}/members/{mem_id}", au.IsAuthenticated(au.IsAuthorized(orgs.DeactivateMember, "admin"))).Methods("DELETE")
@@ -146,13 +146,13 @@ func (h *Handler) SetupRoutes() {
 	h.Router.HandleFunc("/organizations/{id}/billing/contact", au.IsAuthenticated(orgs.UpdateBillingContact)).Methods("PATCH")
 
 	//organization: payment
-	h.Router.HandleFunc("/organizations/{id}/add-token", au.IsAuthenticated(orgs.AddToken)).Methods("POST")
+	h.Router.HandleFunc("/organizations/{id}/add-token", au.IsAuthenticated(orgs.AddToken)).Methods("POST") //works
 	h.Router.HandleFunc("/organizations/{id}/token-transactions", au.IsAuthenticated(orgs.GetTokenTransaction)).Methods("GET")
-	h.Router.HandleFunc("/organizations/{id}/upgrade-to-pro", au.IsAuthenticated(orgs.UpgradeToPro)).Methods("POST")
-	h.Router.HandleFunc("/organizations/{id}/charge-tokens", au.IsAuthenticated(orgs.ChargeTokens)).Methods("POST")
-	h.Router.HandleFunc("/organizations/{id}/checkout-session", au.IsAuthenticated(orgs.CreateCheckoutSession)).Methods("POST")
-	h.Router.HandleFunc("/organizations/{id}/members/{mem_id}/cards", au.IsAuthenticated(orgs.AddCard)).Methods("POST")
-	h.Router.HandleFunc("/organizations/{id}/members/{mem_id}/cards/{card_id}", au.IsAuthenticated(orgs.DeleteCard)).Methods("DELETE")
+	h.Router.HandleFunc("/organizations/{id}/upgrade-to-pro", au.IsAuthenticated(orgs.UpgradeToPro)).Methods("POST")                   //works
+	h.Router.HandleFunc("/organizations/{id}/charge-tokens", au.IsAuthenticated(orgs.ChargeTokens)).Methods("POST")                    //work
+	h.Router.HandleFunc("/organizations/{id}/checkout-session", au.IsAuthenticated(orgs.CreateCheckoutSession)).Methods("POST")        //work
+	h.Router.HandleFunc("/organizations/{id}/members/{mem_id}/cards", au.IsAuthenticated(orgs.AddCard)).Methods("POST")                //works
+	h.Router.HandleFunc("/organizations/{id}/members/{mem_id}/cards/{card_id}", au.IsAuthenticated(orgs.DeleteCard)).Methods("DELETE") //work
 
 	// Data
 	h.Router.HandleFunc("/data/write", data.WriteData)

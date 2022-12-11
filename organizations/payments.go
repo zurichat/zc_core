@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -81,26 +82,45 @@ func IncrementToken(orgID, description string, tokenAmount float64) error {
 
 // Takes as input org id and token amount and decreases token by that amount if available, else returns error.
 func DeductToken(orgID, description string, tokenAmount float64) error {
-	OrgIDFromHex, err := primitive.ObjectIDFromHex(orgID)
-	if err != nil {
+
+	if strings.Contains(orgID, "-org") {
+		organization, err := FetchOrganization(bson.M{"_id": orgID})
+		if err != nil {
+			return err
+		}
+		if organization.Tokens < tokenAmount {
+			return errors.New("insufficient token balance")
+		}
+
+		organization.Tokens -= tokenAmount
+
+		updateData := make(map[string]interface{})
+		updateData["tokens"] = organization.Tokens
+
+		return err
+
+	} else {
+		OrgIDFromHex, err := primitive.ObjectIDFromHex(orgID)
+		if err != nil {
+			return err
+		}
+		organization, err := FetchOrganization(bson.M{"_id": OrgIDFromHex})
+		if err != nil {
+			return err
+		}
+
+		if organization.Tokens < tokenAmount {
+			return errors.New("insufficient token balance")
+		}
+
+		organization.Tokens -= tokenAmount
+
+		updateData := make(map[string]interface{})
+		updateData["tokens"] = organization.Tokens
+
 		return err
 	}
 
-	organization, err := FetchOrganization(bson.M{"_id": OrgIDFromHex})
-	if err != nil {
-		return err
-	}
-
-	if organization.Tokens < tokenAmount {
-		return errors.New("insufficient token balance")
-	}
-
-	organization.Tokens -= tokenAmount
-
-	updateData := make(map[string]interface{})
-	updateData["tokens"] = organization.Tokens
-
-	return err
 }
 
 func SubscriptionBilling(orgID string, proVersionRate float64) error {
@@ -158,23 +178,34 @@ func SendTokenBillingEmail(orgID, description string, amount float64) error {
 func (oh *OrganizationHandler) AddToken(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	var org bson.M
+
 	orgID := mux.Vars(r)["id"]
-	objID, err := primitive.ObjectIDFromHex(orgID)
+	if strings.Contains(orgID, "-org") {
+		org, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgID})
 
-	if err != nil {
-		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
-		return
-	}
+		if org == nil {
+			utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
+			return
+		}
+	} else {
+		objID, err := primitive.ObjectIDFromHex(orgID)
 
-	org, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
+		if err != nil {
+			utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+			return
+		}
 
-	if org == nil {
-		utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
-		return
+		org, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
+
+		if org == nil {
+			utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
+			return
+		}
 	}
 
 	requestData := make(map[string]float64)
-	if err = utils.ParseJSONFromRequest(r, &requestData); err != nil {
+	if err := utils.ParseJSONFromRequest(r, &requestData); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
@@ -267,22 +298,15 @@ func (oh *OrganizationHandler) ChargeTokens(w http.ResponseWriter, r *http.Reque
 	utils.GetSuccess("Billing successful for: "+description, nil, w)
 }
 
-// Create checkout session. 
+// Create checkout session.
 func (oh *OrganizationHandler) CreateCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	orgID := mux.Vars(r)["id"]
-	objID, err := primitive.ObjectIDFromHex(orgID)
 
+	err := ValidateOrg(orgID)
 	if err != nil {
-		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
-		return
-	}
-
-	org, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
-
-	if org == nil {
-		utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
+		utils.GetError(err, http.StatusBadRequest, w)
 		return
 	}
 
@@ -334,19 +358,30 @@ func (oh *OrganizationHandler) CreateCheckoutSession(w http.ResponseWriter, r *h
 func (oh *OrganizationHandler) AddCard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	var orgDoc bson.M
 	orgID := mux.Vars(r)["id"]
-	// Checks if organization id is valid
-	orgIDHex, err := primitive.ObjectIDFromHex(orgID)
-	if err != nil {
-		utils.GetError(errors.New("invalid organization id"), http.StatusBadRequest, w)
-		return
-	}
 
-	// Checks if organization exists in the database
-	orgDoc, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgIDHex})
-	if orgDoc == nil {
-		utils.GetError(errors.New("organization does not exist"), http.StatusBadRequest, w)
-		return
+	if strings.Contains(orgID, "-org") {
+		orgDoc, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgID})
+		if orgDoc == nil {
+			utils.GetError(errors.New("organization does not exist"), http.StatusBadRequest, w)
+			return
+		}
+	} else {
+
+		// Checks if organization id is valid
+		orgIDHex, err := primitive.ObjectIDFromHex(orgID)
+		if err != nil {
+			utils.GetError(errors.New("invalid organization id"), http.StatusBadRequest, w)
+			return
+		}
+
+		// Checks if organization exists in the database
+		orgDoc, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgIDHex})
+		if orgDoc == nil {
+			utils.GetError(errors.New("organization does not exist"), http.StatusBadRequest, w)
+			return
+		}
 	}
 
 	MemberID := mux.Vars(r)["mem_id"]
@@ -371,7 +406,6 @@ func (oh *OrganizationHandler) AddCard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	newcard.OrgID = orgID
 	newcard.MemberID = MemberID
 	newcard.CVCCheck = string(utils.GCMEncrypt([]byte(newcard.CVCCheck), "zcore_key"))
@@ -379,7 +413,7 @@ func (oh *OrganizationHandler) AddCard(w http.ResponseWriter, r *http.Request) {
 
 	// convert card struct to map
 	card, err := utils.StructToMap(newcard)
-	
+
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
@@ -400,18 +434,28 @@ func (oh *OrganizationHandler) DeleteCard(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", "application/json")
 
 	orgID := mux.Vars(r)["id"]
-	// Checks if organization id is valid
-	orgIDHex, err := primitive.ObjectIDFromHex(orgID)
-	if err != nil {
-		utils.GetError(errors.New("invalid organization id"), http.StatusBadRequest, w)
-		return
-	}
+	var orgDoc bson.M
 
-	// Checks if organization exists in the database
-	orgDoc, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgIDHex})
-	if orgDoc == nil {
-		utils.GetError(errors.New("organization does not exist"), http.StatusBadRequest, w)
-		return
+	// Checks if organization id is valid
+
+	if strings.Contains(orgID, "-org") {
+		orgDoc, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgID})
+		if orgDoc == nil {
+			utils.GetError(errors.New("organization does not exist"), http.StatusBadRequest, w)
+			return
+		}
+	} else {
+		orgIDHex, err := primitive.ObjectIDFromHex(orgID)
+		if err != nil {
+			utils.GetError(errors.New("invalid organization id"), http.StatusBadRequest, w)
+			return
+		}
+		// Checks if organization exists in the database
+		orgDoc, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgIDHex})
+		if orgDoc == nil {
+			utils.GetError(errors.New("organization does not exist"), http.StatusBadRequest, w)
+			return
+		}
 	}
 
 	MemberID := mux.Vars(r)["mem_id"]

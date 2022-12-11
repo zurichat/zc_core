@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -117,6 +118,7 @@ func (au *AuthHandler) LoginIn(response http.ResponseWriter, request *http.Reque
 	}
 
 	resp, err := au.GetAuthToken(vser, session)
+	log.Println(session)
 
 	if err != nil {
 		utils.GetError(err, http.StatusBadRequest, response)

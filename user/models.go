@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	emailRegex = `^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`
-	validate = validator.New()
+	emailRegex      = `^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`
+	validate        = validator.New()
 	defaultHashCost = 14
 )
 
@@ -78,6 +78,7 @@ type Social struct {
 
 type User struct {
 	ID                string                 `bson:"_id,omitempty" json:"_id,omitempty"`
+	Sid               string                 `json:"sid"`
 	FirstName         string                 `bson:"first_name" json:"first_name"`
 	LastName          string                 `bson:"last_name" json:"last_name"`
 	Email             string                 `bson:"email" validate:"email,required" json:"email"`
@@ -98,6 +99,7 @@ type User struct {
 }
 
 // Struct that user can update directly.
+//
 //nolint:revive //changing name will break a lot of codes
 type UserUpdate struct {
 	FirstName string `bson:"first_name" validate:"required,min=2,max=100" json:"first_name"`

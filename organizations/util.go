@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -49,6 +50,17 @@ func FetchMember(filter map[string]interface{}) (*Member, error) {
 // check that an organization exist.
 func ValidateOrg(orgID string) error {
 	// check that org_id is valid
+
+	if strings.Contains(orgID, "-org") {
+		orgDoc, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgID})
+		if orgDoc == nil {
+			fmt.Printf("org with id %s doesn't exist!", orgID)
+			return errors.New("organization does not exist")
+		}
+
+		return nil
+	}
+
 	pOrgID, err := primitive.ObjectIDFromHex(orgID)
 	if err != nil {
 		return errors.New("invalid organization id")
@@ -206,14 +218,15 @@ func OrganizationUpdate(w http.ResponseWriter, r *http.Request, updateParam upda
 	w.Header().Set("Content-Type", "application/json")
 
 	orgID := mux.Vars(r)["id"]
-	_, err := primitive.ObjectIDFromHex(orgID)
 
-	if err != nil {
-		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
-		return
-	}
+	//_, err := primitive.ObjectIDFromHex(orgID)
+	//
+	//if err != nil {
+	//	utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+	//	return
+	//}
 
-	if err = utils.ParseJSONFromRequest(r, &RequestData); err != nil {
+	if err := utils.ParseJSONFromRequest(r, &RequestData); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}

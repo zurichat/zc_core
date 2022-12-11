@@ -3,16 +3,17 @@ package user
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
 	"time"
+	"zuri.chat/zccore/SuidService"
 
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"zuri.chat/zccore/service"
 	"zuri.chat/zccore/utils"
 )
 
@@ -42,7 +43,7 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 	if err := validate.Struct(user); err != nil {
 		utils.GetError(err, http.StatusBadRequest, response)
 		return
-	}	
+	}
 
 	// confirm if user_email exists
 	result, _ := utils.GetMongoDBDoc(UserCollectionName, bson.M{"email": userEmail})
@@ -68,7 +69,9 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 
 	con := &UserEmailVerification{false, comfimationToken, time.Now().Add(time.Minute * time.Duration(timeLimit))}
 
+	suid := SuidService.NewSuid()
 	user.Email = userEmail
+	user.ID = suid.GenerateId(user.FirstName, 6)
 	user.CreatedAt = time.Now()
 	user.Password = hashPassword
 	user.Deactivated = false
@@ -84,16 +87,19 @@ func (uh *UserHandler) Create(response http.ResponseWriter, request *http.Reques
 		utils.GetError(err, http.StatusInternalServerError, response)
 		return
 	}
-	// Email Service <- send confirmation mail
-	msger := uh.mailService.NewMail(
-		[]string{user.Email}, "Account Confirmation", service.MailConfirmation, map[string]interface{}{
-			"Username": user.Email,
-			"Code":     comfimationToken,
-		})
+	log.Println("response is", detail)
+	log.Println("response is", res.InsertedID)
 
-	if err := uh.mailService.SendMail(msger); err != nil {
-		fmt.Printf("Error occurred while sending mail: %s", err.Error())
-	}
+	// Email Service <- send confirmation mail
+	//msger := uh.mailService.NewMail(
+	//	[]string{user.Email}, "Account Confirmation", service.MailConfirmation, map[string]interface{}{
+	//		"Username": user.Email,
+	//		"Code":     comfimationToken,
+	//	})
+	//
+	//if err := uh.mailService.SendMail(msger); err != nil {
+	//	fmt.Printf("Error occurred while sending mail: %s", err.Error())
+	//}
 
 	respse := map[string]interface{}{
 		"user_id":           res.InsertedID,
@@ -127,7 +133,9 @@ func (uh *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // endpoint to find user by ID.
+
 func (uh *UserHandler) GetUser(response http.ResponseWriter, request *http.Request) {
+	log.Println("in here")
 	response.Header().Set("Access-Control-Allow-Origin", "*")
 	response.Header().Set("Access-Control-Allow-Headers", "Content-Type,access-control-allow-origin, access-control-allow-headers")
 	// Find a user by user ID
@@ -135,14 +143,14 @@ func (uh *UserHandler) GetUser(response http.ResponseWriter, request *http.Reque
 
 	params := mux.Vars(request)
 	userID := params["user_id"]
-	objID, err := primitive.ObjectIDFromHex(userID)
+	//objID, err := primitive.ObjectIDFromHex(userID)
+	//
+	//if err != nil {
+	//	utils.GetError(errors.New("invalid user id"), http.StatusBadRequest, response)
+	//	return
+	//}
 
-	if err != nil {
-		utils.GetError(errors.New("invalid user id"), http.StatusBadRequest, response)
-		return
-	}
-
-	res, err := utils.GetMongoDBDoc(UserCollectionName, bson.M{"_id": objID, "deactivated": false})
+	res, err := utils.GetMongoDBDoc(UserCollectionName, bson.M{"_id": userID, "deactivated": false})
 
 	if err != nil {
 		utils.GetError(errors.New("user not found"), http.StatusNotFound, response)
@@ -251,7 +259,7 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 	for _, value := range result {
 		basic := make(map[string]interface{})
 		orgid, _ := value["org_id"].(string)
-		objID, _ := primitive.ObjectIDFromHex(orgid)
+		//objID, _ := primitive.ObjectIDFromHex(orgid)
 
 		// find all members of an org
 		MembersLengthChannel, orgDetailsChannel := make(chan GUOCR), make(chan GUOCR)
@@ -291,7 +299,10 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 		}(imageLimit)
 
 		go func() {
-			orgDetailsrt, err := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
+			orgDetailsrt, err := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgid})
+			if err != nil {
+				log.Println(err)
+			}
 			resp := GUOCR{
 				Err:  err,
 				Bson: orgDetailsrt,
@@ -303,6 +314,9 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 		basic["no_of_members"], basic["isOwner"], basic["member_id"] = MembersLengthData.Interger, value["role"] == "owner", value["_id"]
 
 		if MembersLengthData.Err != nil || orgDetailsData.Err != nil || basicimagesdata.Err != nil {
+			log.Println(MembersLengthData.Err)
+			log.Println(orgDetailsData.Err)
+			log.Println(basicimagesdata.Err)
 			utils.GetError(fmt.Errorf("query Failed, try again later"), http.StatusUnprocessableEntity, response)
 			return
 		}

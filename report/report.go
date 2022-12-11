@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -26,18 +27,29 @@ func (rh *Handler) AddReport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	orgID := mux.Vars(r)["id"]
-	objID, err := primitive.ObjectIDFromHex(orgID)
 
-	if err != nil {
-		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
-		return
-	} 
+	if strings.Contains(orgID, "-org") {
+		orgDoc, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgID})
 
-	orgDoc, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
+		if orgDoc == nil {
+			utils.GetError(errors.New("organization with id "+orgID+" doesn't exist!"), http.StatusBadRequest, w)
+			return
+		}
+	} else {
 
-	if orgDoc == nil {
-		utils.GetError(errors.New("organization with id "+orgID+" doesn't exist!"), http.StatusBadRequest, w)
-		return
+		objID, err := primitive.ObjectIDFromHex(orgID)
+
+		if err != nil {
+			utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+			return
+		}
+
+		orgDoc, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
+
+		if orgDoc == nil {
+			utils.GetError(errors.New("organization with id "+orgID+" doesn't exist!"), http.StatusBadRequest, w)
+			return
+		}
 	}
 
 	report.Organization = orgID
@@ -149,12 +161,12 @@ func (rh *Handler) GetReports(w http.ResponseWriter, r *http.Request) {
 	for _, doc := range docs {
 		var report Report
 		err := utils.BsonToStruct(doc, &report)
-		
+
 		if err != nil {
 			utils.GetError(err, http.StatusInternalServerError, w)
 			return
 		}
-		
+
 		reports = append(reports, report)
 	}
 

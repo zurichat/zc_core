@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+	"zuri.chat/zccore/SuidService"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
@@ -25,18 +27,49 @@ import (
 func (oh *OrganizationHandler) GetOrganization(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	orgID := mux.Vars(r)["id"]
-	objID, err := primitive.ObjectIDFromHex(orgID)
+	objID := mux.Vars(r)["id"]
 
-	if err != nil {
+	if objID == "" {
 		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+		return
+	}
+
+	if !strings.Contains(objID, "-org") {
+
+		objID, err := primitive.ObjectIDFromHex(objID)
+		if err != nil {
+			utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+			return
+		}
+
+		save, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
+
+		if save == nil {
+			utils.GetError(fmt.Errorf("organization %s not found", objID), http.StatusNotFound, w)
+			return
+		}
+
+		var org Organization
+		// convert bson to struct
+		bsonBytes, _ := bson.Marshal(save)
+
+		err = bson.Unmarshal(bsonBytes, &org)
+		if err != nil {
+			utils.GetError(err, http.StatusInternalServerError, w)
+			return
+		}
+
+		org.Plugins = org.OrgPlugins()
+
+		utils.GetSuccess("organization retrieved successfully", org, w)
+
 		return
 	}
 
 	save, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
 
 	if save == nil {
-		utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
+		utils.GetError(fmt.Errorf("organization %s not found", objID), http.StatusNotFound, w)
 		return
 	}
 
@@ -44,7 +77,7 @@ func (oh *OrganizationHandler) GetOrganization(w http.ResponseWriter, r *http.Re
 	// convert bson to struct
 	bsonBytes, _ := bson.Marshal(save)
 
-	err = bson.Unmarshal(bsonBytes, &org)
+	err := bson.Unmarshal(bsonBytes, &org)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
@@ -111,7 +144,7 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// generate workspace url
-	newOrg.Name = "Zuri Chat"
+	//newOrg.Name = "Zuri Chat"
 	newOrg.WorkspaceURL = utils.GenWorkspaceURL(newOrg.Name)
 
 	userEmail := strings.ToLower(newOrg.CreatorEmail)
@@ -119,7 +152,6 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	// get creator id
 	creator, _ := auth.FetchUserByEmail(bson.M{"email": userEmail})
-	creatorID := creator.ID
 
 	userDoc, _ := utils.GetMongoDBDoc(UserCollectionName, bson.M{"email": newOrg.CreatorEmail})
 	if userDoc == nil {
@@ -128,7 +160,7 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newOrg.CreatorID = creatorID
+	newOrg.CreatorID = creator.ID
 	newOrg.CreatorEmail = userEmail
 	newOrg.CreatedAt = time.Now()
 
@@ -137,6 +169,16 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	// initialize organization with 100 free tokens
 	newOrg.Tokens = 100
 	newOrg.Version = FreeVersion
+	suid := SuidService.NewSuid()
+
+	if len(newOrg.Name) >= 10 {
+		newOrg.Name = newOrg.Name[:10]
+	}
+
+	str := fmt.Sprintf("%s-org", newOrg.Name)
+	nn := strings.ReplaceAll(str, " ", "-")
+	orgID := suid.GenerateId(nn, 5)
+	newOrg.ID = orgID
 
 	// convert to map object
 	var inInterface map[string]interface{}
@@ -156,8 +198,8 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	iid := save.InsertedID
-	iiid := iid.(primitive.ObjectID).Hex()
+	//iid := save.InsertedID
+	//iiid := iid.(primitive.ObjectID).Hex()
 
 	// Adding user as a member
 	var userObj user.User
@@ -166,7 +208,7 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newMember := NewMember(userObj.Email, userName, iiid, OwnerRole)
+	newMember := NewMember(userObj.Email, userName, orgID, OwnerRole)
 
 	// add new member to member collection
 	coll := utils.GetCollection(MemberCollectionName)
@@ -178,10 +220,10 @@ func (oh *OrganizationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	// add organisation id to user organisations list
 	updateFields := make(map[string]interface{})
 
-	userObj.Organizations = append(userObj.Organizations, iiid)
+	userObj.Organizations = append(userObj.Organizations, orgID)
 
 	updateFields["workspaces"] = userObj.Organizations
-	_, ee := utils.UpdateOneMongoDBDoc(UserCollectionName, creatorID, updateFields)
+	_, ee := utils.UpdateOneMongoDBDoc(UserCollectionName, orgID, updateFields)
 
 	if ee != nil {
 		utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, w)
@@ -207,8 +249,9 @@ func (oh *OrganizationHandler) GetOrganizations(w http.ResponseWriter, r *http.R
 // Delete an organization record.
 func (oh *OrganizationHandler) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
+	log.Println("in here 1")
 	orgID := mux.Vars(r)["id"]
+
 	response, err := utils.DeleteOneMongoDBDoc(OrganizationCollectionName, orgID)
 
 	if err != nil {
@@ -395,6 +438,7 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 	sOrgID := mux.Vars(r)["id"]
 
 	var guests SendInviteBody
+	var org bson.M
 
 	err := utils.ParseJSONFromRequest(r, &guests)
 	if err != nil {
@@ -402,16 +446,26 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	orgID, err := primitive.ObjectIDFromHex(sOrgID)
-	if err != nil {
-		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
-		return
-	}
+	if strings.Contains(sOrgID, "-org") {
+		// get previous settings
+		org, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": sOrgID})
+		if org == nil {
+			utils.GetError(fmt.Errorf("organization %s not found", sOrgID), http.StatusNotFound, w)
+			return
+		}
+	} else {
+		// get previous settings 2
+		objID, err := primitive.ObjectIDFromHex(sOrgID)
+		if err != nil {
+			utils.GetError(err, http.StatusUnprocessableEntity, w)
+			return
+		}
 
-	org, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgID})
-	if org == nil {
-		utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
-		return
+		org, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
+		if org == nil {
+			utils.GetError(fmt.Errorf("organization %s not found", sOrgID), http.StatusNotFound, w)
+			return
+		}
 	}
 
 	var invalidEmails []interface{}
@@ -452,7 +506,7 @@ func (oh *OrganizationHandler) SendInvite(w http.ResponseWriter, r *http.Request
 		inviteIDs = append(inviteIDs, save.InsertedID)
 
 		// Parse data for customising email template
-		
+
 		inviteLink := fmt.Sprintf("%s/%s", os.Getenv("INVITE_DOMAIN"), uuid)
 		orgName := fmt.Sprintf("%v", org["name"])
 
@@ -527,17 +581,25 @@ func (oh *OrganizationHandler) UpgradeToPro(w http.ResponseWriter, r *http.Reque
 }
 
 func IsProVersion(orgID string) (bool, error) {
-	OrgIDFromHex, err := primitive.ObjectIDFromHex(orgID)
-	if err != nil {
-		return false, err
+
+	if strings.Contains(orgID, "-org") {
+		organization, err := FetchOrganization(bson.M{"_id": orgID})
+		if err != nil {
+			return false, err
+		}
+		return organization.Version == ProVersion, nil
+	} else {
+		OrgIDFromHex, err := primitive.ObjectIDFromHex(orgID)
+		if err != nil {
+			return false, err
+		}
+		organization, err := FetchOrganization(bson.M{"_id": OrgIDFromHex})
+		if err != nil {
+			return false, err
+		}
+		return organization.Version == ProVersion, nil
 	}
 
-	organization, err := FetchOrganization(bson.M{"_id": OrgIDFromHex})
-	if err != nil {
-		return false, err
-	}
-
-	return organization.Version == ProVersion, nil
 }
 
 // Update an organization billing settings.
@@ -576,35 +638,42 @@ func (oh *OrganizationHandler) UpdateOrganizationSettings(w http.ResponseWriter,
 
 	var orgSettings OrgSettings
 
+	var save bson.M
+
 	err := utils.ParseJSONFromRequest(r, &orgSettings)
 	if err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
 
-	objID, err := primitive.ObjectIDFromHex(orgID)
+	if strings.Contains(orgID, "-org") {
+		save, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgID})
+		if save == nil {
+			utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
+			return
+		}
+	} else {
+		objID, err := primitive.ObjectIDFromHex(orgID)
+		if err != nil {
+			utils.GetError(err, http.StatusUnprocessableEntity, w)
+			return
+		}
 
-	if err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
+		save, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
+		if save == nil {
+			utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
+			return
+		}
 	}
 
 	validate := validator.New()
 
-	// get previous settings
-	save, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
-
-	if save == nil {
-		utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
-		return
-	}
-
 	var org Organization
 
 	// convert bson to struct
-	bsonBytes, _ := bson.Marshal(save)
-	err = bson.Unmarshal(bsonBytes, &org)
+	bsonBytes, _ := bson.Marshal(&save)
 
+	err = bson.Unmarshal(bsonBytes, &org)
 	if err != nil {
 		utils.GetError(err, http.StatusInternalServerError, w)
 		return
@@ -646,6 +715,7 @@ func (oh *OrganizationHandler) UpdateOrganizationPermission(w http.ResponseWrite
 	orgID := mux.Vars(r)["id"]
 
 	var orgPermissions OrgPermissions
+	var save bson.M
 
 	err := utils.ParseJSONFromRequest(r, &orgPermissions)
 	if err != nil {
@@ -653,25 +723,34 @@ func (oh *OrganizationHandler) UpdateOrganizationPermission(w http.ResponseWrite
 		return
 	}
 
-	objID, err := primitive.ObjectIDFromHex(orgID)
-	if err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
+	if strings.Contains(orgID, "-org") {
+		// get previous settings
+		save, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgID})
+		if save == nil {
+			utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
+			return
+		}
+	} else {
+		// get previous settings 2
+		objID, err := primitive.ObjectIDFromHex(orgID)
+		if err != nil {
+			utils.GetError(err, http.StatusUnprocessableEntity, w)
+			return
+		}
+
+		save, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
+		if save == nil {
+			utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
+			return
+		}
 	}
 
 	validate := validator.New()
 
-	// get previous settings
-	save, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
-	if save == nil {
-		utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
-		return
-	}
-
 	var org Organization
 
 	// convert bson to struct
-	bsonBytes, _ := bson.Marshal(save)
+	bsonBytes, _ := bson.Marshal(&save)
 	err = bson.Unmarshal(bsonBytes, &org)
 
 	if err != nil {
@@ -716,6 +795,7 @@ func (oh *OrganizationHandler) UpdateOrganizationAuthentication(w http.ResponseW
 	orgID := mux.Vars(r)["id"]
 
 	var orgAuthentication OrgAuthentication
+	var save bson.M
 
 	err := utils.ParseJSONFromRequest(r, &orgAuthentication)
 	if err != nil {
@@ -723,27 +803,33 @@ func (oh *OrganizationHandler) UpdateOrganizationAuthentication(w http.ResponseW
 		return
 	}
 
-	objID, err := primitive.ObjectIDFromHex(orgID)
+	if strings.Contains(orgID, "-org") {
+		// get previous settings
+		save, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgID})
+		if save == nil {
+			utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
+			return
+		}
+	} else {
+		// get previous settings 2
+		objID, err := primitive.ObjectIDFromHex(orgID)
+		if err != nil {
+			utils.GetError(err, http.StatusUnprocessableEntity, w)
+			return
+		}
 
-	if err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
+		save, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
+		if save == nil {
+			utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
+			return
+		}
 	}
 
 	validate := validator.New()
-
-	// get previous settings
-	save, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
-
-	if save == nil {
-		utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
-		return
-	}
-
 	var org Organization
 
 	// convert bson to struct
-	bsonBytes, _ := bson.Marshal(save)
+	bsonBytes, _ := bson.Marshal(&save)
 	err = bson.Unmarshal(bsonBytes, &org)
 
 	if err != nil {
@@ -787,6 +873,7 @@ func (oh *OrganizationHandler) UpdateOrganizationPrefixes(w http.ResponseWriter,
 	orgID := mux.Vars(r)["id"]
 
 	var channelprefixes ChannelPrefixes
+	var save bson.M
 
 	err := utils.ParseJSONFromRequest(r, &channelprefixes)
 	if err != nil {
@@ -794,23 +881,29 @@ func (oh *OrganizationHandler) UpdateOrganizationPrefixes(w http.ResponseWriter,
 		return
 	}
 
-	objID, err := primitive.ObjectIDFromHex(orgID)
+	if strings.Contains(orgID, "-org") {
+		// get previous settings
+		save, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgID})
+		if save == nil {
+			utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
+			return
+		}
+	} else {
+		// get previous settings 2
+		objID, err := primitive.ObjectIDFromHex(orgID)
+		if err != nil {
+			utils.GetError(err, http.StatusUnprocessableEntity, w)
+			return
+		}
 
-	if err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
+		save, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
+		if save == nil {
+			utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
+			return
+		}
 	}
 
 	validate := validator.New()
-
-	// get previous settings
-	save, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
-
-	if save == nil {
-		utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
-		return
-	}
-
 	var org Organization
 
 	// convert bson to struct
@@ -858,6 +951,7 @@ func (oh *OrganizationHandler) UpdateSlackBotResponses(w http.ResponseWriter, r 
 	orgID := mux.Vars(r)["id"]
 
 	var slackbotresponse SlackBot
+	var save bson.M
 
 	err := utils.ParseJSONFromRequest(r, &slackbotresponse)
 	if err != nil {
@@ -865,23 +959,29 @@ func (oh *OrganizationHandler) UpdateSlackBotResponses(w http.ResponseWriter, r 
 		return
 	}
 
-	objID, err := primitive.ObjectIDFromHex(orgID)
+	if strings.Contains(orgID, "-org") {
+		// get previous settings
+		save, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgID})
+		if save == nil {
+			utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
+			return
+		}
+	} else {
+		// get previous settings 2
+		objID, err := primitive.ObjectIDFromHex(orgID)
+		if err != nil {
+			utils.GetError(err, http.StatusUnprocessableEntity, w)
+			return
+		}
 
-	if err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
+		save, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
+		if save == nil {
+			utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
+			return
+		}
 	}
 
 	validate := validator.New()
-
-	// get previous responses
-	save, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
-
-	if save == nil {
-		utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
-		return
-	}
-
 	var org Organization
 
 	// convert bson to struct
@@ -893,7 +993,7 @@ func (oh *OrganizationHandler) UpdateSlackBotResponses(w http.ResponseWriter, r 
 		return
 	}
 
-	// valdate struct
+	// validate struct
 	if err = validate.Struct(org); err != nil {
 		utils.GetError(err, http.StatusBadRequest, w)
 		return
@@ -928,6 +1028,7 @@ func (oh *OrganizationHandler) AddSlackCustomEmoji(w http.ResponseWriter, r *htt
 	orgID := mux.Vars(r)["id"]
 
 	var customemoji CustomEmoji
+	var save bson.M
 
 	err := utils.ParseJSONFromRequest(r, &customemoji)
 	if err != nil {
@@ -935,27 +1036,33 @@ func (oh *OrganizationHandler) AddSlackCustomEmoji(w http.ResponseWriter, r *htt
 		return
 	}
 
-	objID, err := primitive.ObjectIDFromHex(orgID)
+	if strings.Contains(orgID, "-org") {
+		// get previous settings
+		save, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgID})
+		if save == nil {
+			utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
+			return
+		}
+	} else {
+		// get previous settings 2
+		objID, err := primitive.ObjectIDFromHex(orgID)
+		if err != nil {
+			utils.GetError(err, http.StatusUnprocessableEntity, w)
+			return
+		}
 
-	if err != nil {
-		utils.GetError(err, http.StatusUnprocessableEntity, w)
-		return
+		save, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
+		if save == nil {
+			utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
+			return
+		}
 	}
 
 	validate := validator.New()
-
-	// get previous responses
-	save, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
-
-	if save == nil {
-		utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
-		return
-	}
-
 	var org Organization
 
 	// convert bson to struct
-	bsonBytes, _ := bson.Marshal(save)
+	bsonBytes, _ := bson.Marshal(&save)
 	err = bson.Unmarshal(bsonBytes, &org)
 
 	if err != nil {
