@@ -220,6 +220,18 @@ func (oh *OrganizationHandler) DeleteOrganization(w http.ResponseWriter, r *http
 		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
 		return
 	}
+	filter := bson.M{"org_id": orgID}
+	response1, err2 := utils.DeleteManyMongoDBDoc(MemberCollectionName,filter)
+
+	if err2 != nil {
+		utils.GetError(err, http.StatusInternalServerError, w)
+		return
+	}
+
+	if response1.DeletedCount == 0 {
+		utils.GetError(errors.New("operation failed"), http.StatusInternalServerError, w)
+		return
+	}
 
 	utils.GetSuccess("organization deleted successfully", nil, w)
 }
