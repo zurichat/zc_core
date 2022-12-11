@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"zuri.chat/zccore/utils"
 )
@@ -309,16 +310,22 @@ func (uh *UserHandler) GetUserOrganizations(response http.ResponseWriter, reques
 			}
 			orgDetailsChannel <- resp
 		}()
-
+			
 		MembersLengthData, orgDetailsData, basicimagesdata := <-MembersLengthChannel, <-orgDetailsChannel, <-ImageUrlsChannel
 		basic["no_of_members"], basic["isOwner"], basic["member_id"] = MembersLengthData.Interger, value["role"] == "owner", value["_id"]
 
 		if MembersLengthData.Err != nil || orgDetailsData.Err != nil || basicimagesdata.Err != nil {
+
 			log.Println(MembersLengthData.Err)
 			log.Println(orgDetailsData.Err)
 			log.Println(basicimagesdata.Err)
 			utils.GetError(fmt.Errorf("query Failed, try again later"), http.StatusUnprocessableEntity, response)
 			return
+
+			if orgDetailsData.Err != mongo.ErrNoDocuments {
+				utils.GetError(fmt.Errorf("query Failed, try again later"), http.StatusUnprocessableEntity, response)
+				return
+			}
 		}
 
 		orgDetails := orgDetailsData.Bson
