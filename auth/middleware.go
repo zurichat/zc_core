@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 
@@ -16,8 +17,10 @@ import (
 )
 
 // middleware to check if user is authorized.
+
 func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		log.Println("inside")
 		w.Header().Add("content-type", "application/json")
 
 		var (
@@ -61,6 +64,8 @@ func (au *AuthHandler) IsAuthenticated(nextHandler http.HandlerFunc) http.Handle
 			ID:    objID,
 			Email: SessionEmail,
 		}
+
+		log.Println(u)
 		//nolint:staticcheck //CODEI8: lint ignore
 		ctx := context.WithValue(r.Context(), UserContext, u)
 		nextHandler.ServeHTTP(w, r.WithContext(ctx))
@@ -83,34 +88,55 @@ func (au *AuthHandler) IsAuthorized(nextHandler http.HandlerFunc, role string) h
 
 		loggedInUser, _ := r.Context().Value("user").(*AuthUser)
 		lguser, ee := FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
-
 		if ee != nil {
 			utils.GetError(errors.New("error Fetching Logged in User"), http.StatusBadRequest, w)
 		}
 
 		userID := lguser.ID
-		luHexid, _ := primitive.ObjectIDFromHex(userID)
 		_, userCollection, memberCollection := "organizations", "users", "members"
-		userDoc, _ := utils.GetMongoDBDoc(userCollection, bson.M{"_id": luHexid})
+		var userDoc bson.M
+		var luHexid primitive.ObjectID
 
-		if userDoc == nil {
-			utils.GetError(errors.New("user not found"), http.StatusBadRequest, w)
-			return
+		if strings.Contains(userID, "-") {
+			userDoc, _ = utils.GetMongoDBDoc(userCollection, bson.M{"_id": userID})
+
+			if userDoc == nil {
+				utils.GetError(errors.New("user not found"), http.StatusBadRequest, w)
+				return
+			}
+		} else {
+
+			luHexid, _ = primitive.ObjectIDFromHex(userID)
+			userDoc, _ = utils.GetMongoDBDoc(userCollection, bson.M{"_id": luHexid})
+
+			if userDoc == nil {
+				utils.GetError(errors.New("user not found"), http.StatusBadRequest, w)
+				return
+			}
 		}
 
 		//nolint:errcheck //CODEI8:
 		mapstructure.Decode(userDoc, &authuser)
+		log.Println(authuser.Role, "role")
+		log.Println(role)
+		log.Println(orgID)
 
 		if role == "zuri_admin" {
 			if authuser.Role != "admin" {
+				log.Println(authuser.Role)
 				utils.GetError(errors.New("access Denied"), http.StatusUnauthorized, w)
 				return
 			}
 		} else {
 			// Getting member's document from db
-			orgMember, _ := utils.GetMongoDBDoc(memberCollection, bson.M{"org_id": orgID, "email": authuser.Email})
+			orgMember, errRes := utils.GetMongoDBDoc(memberCollection, bson.M{"org_id": orgID, "email": authuser.Email})
+			if errRes != nil {
+				utils.GetError(errors.New("user ID Invalid"), http.StatusUnauthorized, w)
+				log.Println(errRes)
+				return
+			}
 			if orgMember == nil {
-				utils.GetError(errors.New("access Denied"), http.StatusUnauthorized, w)
+				utils.GetError(errors.New("access Denied 11"), http.StatusUnauthorized, w)
 				return
 			}
 

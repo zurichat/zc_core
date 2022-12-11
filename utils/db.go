@@ -3,6 +3,8 @@ package utils
 import (
 	"context"
 	"fmt"
+	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -42,9 +44,9 @@ func ConnectToDB(clusterURL string) error {
 
 	once.Do(func() {
 		ec.Check(defaultMongoHandle.Connect(clusterURL))
-		ec.Check(CreateUniqueIndex("users", "email", 1))
-		ec.Check(CreateUniqueIndex("plugins", "template_url", 1))
-		ec.Check(CreateTextIndexForPlugins())
+		//ec.Check(CreateUniqueIndex("users", "email", 1))
+		//ec.Check(CreateUniqueIndex("plugins", "template_url", 1))
+		//ec.Check(CreateTextIndexForPlugins())
 	})
 
 	return ec.err
@@ -163,6 +165,20 @@ func UpdateOneMongoDBDoc(collectionName, id string, data map[string]interface{})
 	ctx := context.Background()
 	collection := defaultMongoHandle.GetCollection(collectionName)
 
+	if strings.Contains(id, "-org") {
+		filter := bson.M{"_id": id}
+
+		// updateOne sets the fields, without using $set the entire document will be overwritten
+		updateData := bson.M{"$set": MapToBson(data)}
+		res, err := collection.UpdateOne(ctx, filter, updateData)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return res, nil
+	}
+
 	_id, _ := primitive.ObjectIDFromHex(id)
 	filter := bson.M{"_id": _id}
 
@@ -248,11 +264,26 @@ func DeleteOneMongoDBDoc(collectionName, id string) (*mongo.DeleteResult, error)
 	ctx := context.Background()
 	collection := defaultMongoHandle.GetCollection(collectionName)
 
+	log.Println("in here 2")
+
+	if strings.Contains(id, "-org") {
+		log.Println("in here 3")
+		filter := bson.M{"_id": id}
+		res, err := collection.DeleteOne(ctx, filter)
+
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+
+		return res, nil
+	}
+
 	_id, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	filter := bson.M{"_id": _id}
 	res, err := collection.DeleteOne(ctx, filter)
 
@@ -318,9 +349,9 @@ func CreateTextIndexForPlugins() error {
 
 	timeOutFactor := 3
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeOutFactor)*time.Second)
-	
-	defer cancel()	
-	
+
+	defer cancel()
+
 	_, err := collection.Indexes().CreateOne(ctx, indexModel)
 	if err != nil {
 		return fmt.Errorf("error creating text index for plugins collection %v", err)
@@ -332,10 +363,10 @@ func CreateTextIndexForPlugins() error {
 func CountCollection(ctx context.Context, name string, filter bson.M) int64 {
 	collection := defaultMongoHandle.GetCollection(name)
 	count, err := collection.CountDocuments(ctx, filter)
-	
+
 	if err != nil {
 		return 0
 	}
-	
+
 	return count
 }

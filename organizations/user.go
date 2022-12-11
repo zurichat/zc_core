@@ -20,6 +20,7 @@ import (
 )
 
 // Get a single member of an organization.
+
 func (oh *OrganizationHandler) GetMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -167,16 +168,8 @@ func (oh *OrganizationHandler) GetMembers(w http.ResponseWriter, r *http.Request
 func (oh *OrganizationHandler) CreateMember(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	sOrgID := mux.Vars(r)["id"]
-
-	orgID, err := primitive.ObjectIDFromHex(sOrgID)
-	if err != nil {
-		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
-		return
-	}
-
 	// Get data from request json
-	if err = utils.ParseJSONFromRequest(r, &RequestData); err != nil {
+	if err := utils.ParseJSONFromRequest(r, &RequestData); err != nil {
 		utils.GetError(err, http.StatusUnprocessableEntity, w)
 		return
 	}
@@ -213,81 +206,160 @@ func (oh *OrganizationHandler) CreateMember(w http.ResponseWriter, r *http.Reque
 	// convert user to struct
 	var guser GUser
 
-	err = mapstructure.Decode(userDoc, &guser)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
+	nErr := mapstructure.Decode(userDoc, &guser)
+	if nErr != nil {
+		utils.GetError(nErr, http.StatusInternalServerError, w)
 		return
 	}
 
 	user, _ := auth.FetchUserByEmail(bson.M{"email": strings.ToLower(newUserEmail)})
 
-	// get organization
-	orgDoc, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgID})
-	if orgDoc == nil {
-		fmt.Printf("organization with id %s doesn't exist!", orgID.String())
-		utils.GetError(errors.New("organization with id "+sOrgID+" doesn't exist!"), http.StatusBadRequest, w)
+	sOrgID := mux.Vars(r)["id"]
+	var orgDoc bson.M
+	var event utils.Event
 
-		return
+	if strings.Contains(sOrgID, "-org") {
+		// get organization
+		orgDoc, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": sOrgID})
+		if orgDoc == nil {
+			fmt.Printf("organization with id %s doesn't exist!", sOrgID)
+			utils.GetError(errors.New("organization with id "+sOrgID+" doesn't exist!"), http.StatusBadRequest, w)
+
+			return
+		}
+		memDoc, _ := utils.GetMongoDBDocs(MemberCollectionName, bson.M{"org_id": sOrgID, "email": newUserEmail})
+		if memDoc != nil {
+			fmt.Printf("organization %s has member with email %s!", sOrgID, newUserEmail)
+			utils.GetError(errors.New("user is already in this organization"), http.StatusBadRequest, w)
+
+			return
+		}
+		var org Organization
+
+		err := mapstructure.Decode(orgDoc, &org)
+		if err != nil {
+			utils.GetError(err, http.StatusInternalServerError, w)
+			return
+		}
+
+		newMember := NewMember(user.Email, newUserName, sOrgID, MemberRole)
+
+		coll := utils.GetCollection(MemberCollectionName)
+
+		res, err := coll.InsertOne(r.Context(), newMember)
+		if err != nil {
+			utils.GetError(err, http.StatusInternalServerError, w)
+			return
+		}
+
+		// update user organizations collection
+		updateFields := make(map[string]interface{})
+
+		user.Organizations = append(user.Organizations, sOrgID)
+
+		updateFields["Organizations"] = user.Organizations
+
+		_, eerr := utils.UpdateOneMongoDBDoc(UserCollectionName, user.ID, updateFields)
+		if eerr != nil {
+			utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, w)
+			return
+		}
+
+		// publish update to subscriber
+		eventChannel := fmt.Sprintf("organizations_%s", sOrgID)
+		event = utils.Event{Identifier: res.InsertedID, Type: "User", Event: CreateOrganizationMember, Channel: eventChannel, Payload: make(map[string]interface{})}
+		go utils.Emitter(event)
+
+		utils.GetSuccess("Member created successfully", utils.M{"member_id": res.InsertedID}, w)
+
+		enterOrgMessage := EnterLeaveMessage{
+			OrganizationID: sOrgID,
+			MemberID:       res.InsertedID.(primitive.ObjectID).Hex(),
+		}
+
+		eee := AddSyncMessage(sOrgID, "enter_organization", enterOrgMessage)
+		if eee != nil {
+			log.Printf("sync error: %v", eee)
+		}
+
+	} else {
+		orgID, err := primitive.ObjectIDFromHex(sOrgID)
+		if err != nil {
+			utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
+			return
+		}
+
+		// get organization
+		orgDoc, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgID})
+		if orgDoc == nil {
+			fmt.Printf("organization with id %s doesn't exist!", orgID.String())
+			utils.GetError(errors.New("organization with id "+sOrgID+" doesn't exist!"), http.StatusBadRequest, w)
+
+			return
+		}
+
+		memDoc, _ := utils.GetMongoDBDocs(MemberCollectionName, bson.M{"org_id": sOrgID, "email": newUserEmail})
+		if memDoc != nil {
+			fmt.Printf("organization %s has member with email %s!", orgID.String(), newUserEmail)
+			utils.GetError(errors.New("user is already in this organization"), http.StatusBadRequest, w)
+
+			return
+		}
+
+		var org Organization
+
+		err = mapstructure.Decode(orgDoc, &org)
+		if err != nil {
+			utils.GetError(err, http.StatusInternalServerError, w)
+			return
+		}
+
+		newMember := NewMember(user.Email, newUserName, orgID.Hex(), MemberRole)
+
+		coll := utils.GetCollection(MemberCollectionName)
+
+		res, err := coll.InsertOne(r.Context(), newMember)
+		if err != nil {
+			utils.GetError(err, http.StatusInternalServerError, w)
+			return
+		}
+
+		// update user organizations collection
+		updateFields := make(map[string]interface{})
+
+		user.Organizations = append(user.Organizations, sOrgID)
+
+		updateFields["Organizations"] = user.Organizations
+
+		_, eerr := utils.UpdateOneMongoDBDoc(UserCollectionName, user.ID, updateFields)
+		if eerr != nil {
+			utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, w)
+			return
+		}
+
+		// publish update to subscriber
+		eventChannel := fmt.Sprintf("organizations_%s", orgID)
+		event = utils.Event{Identifier: res.InsertedID, Type: "User", Event: CreateOrganizationMember, Channel: eventChannel, Payload: make(map[string]interface{})}
+
+		go utils.Emitter(event)
+
+		utils.GetSuccess("Member created successfully", utils.M{"member_id": res.InsertedID}, w)
+
+		enterOrgMessage := EnterLeaveMessage{
+			OrganizationID: sOrgID,
+			MemberID:       res.InsertedID.(primitive.ObjectID).Hex(),
+		}
+
+		eee := AddSyncMessage(sOrgID, "enter_organization", enterOrgMessage)
+		if eee != nil {
+			log.Printf("sync error: %v", eee)
+		}
 	}
 
 	// check that member isn't already in the organization
-	memDoc, _ := utils.GetMongoDBDocs(MemberCollectionName, bson.M{"org_id": sOrgID, "email": newUserEmail})
-	if memDoc != nil {
-		fmt.Printf("organization %s has member with email %s!", orgID.String(), newUserEmail)
-		utils.GetError(errors.New("user is already in this organization"), http.StatusBadRequest, w)
-
-		return
-	}
 
 	// convert org to struct
-	var org Organization
 
-	err = mapstructure.Decode(orgDoc, &org)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
-
-	newMember := NewMember(user.Email, newUserName, orgID.Hex(), MemberRole)
-
-	coll := utils.GetCollection(MemberCollectionName)
-
-	res, err := coll.InsertOne(r.Context(), newMember)
-	if err != nil {
-		utils.GetError(err, http.StatusInternalServerError, w)
-		return
-	}
-
-	// update user organizations collection
-	updateFields := make(map[string]interface{})
-
-	user.Organizations = append(user.Organizations, sOrgID)
-
-	updateFields["Organizations"] = user.Organizations
-
-	_, eerr := utils.UpdateOneMongoDBDoc(UserCollectionName, user.ID, updateFields)
-	if eerr != nil {
-		utils.GetError(errors.New("user update failed"), http.StatusInternalServerError, w)
-		return
-	}
-
-	// publish update to subscriber
-	eventChannel := fmt.Sprintf("organizations_%s", orgID)
-	event := utils.Event{Identifier: res.InsertedID, Type: "User", Event: CreateOrganizationMember, Channel: eventChannel, Payload: make(map[string]interface{})}
-
-	go utils.Emitter(event)
-
-	utils.GetSuccess("Member created successfully", utils.M{"member_id": res.InsertedID}, w)
-
-	enterOrgMessage := EnterLeaveMessage{
-		OrganizationID: sOrgID,
-		MemberID:       res.InsertedID.(primitive.ObjectID).Hex(),
-	}
-
-	eee := AddSyncMessage(sOrgID, "enter_organization", enterOrgMessage)
-	if eee != nil {
-		log.Printf("sync error: %v", eee)
-	}
 }
 
 // Update a member's profile picture.
@@ -350,7 +422,7 @@ func (oh *OrganizationHandler) UpdateProfilePicture(w http.ResponseWriter, r *ht
 	}
 }
 
-//	an endpoint to allow upload of media files
+// an endpoint to allow upload of media files
 func (oh *OrganizationHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-Type", "application/json")
 
@@ -996,17 +1068,28 @@ func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *htt
 		return
 	}
 
-	validOrgID, err := primitive.ObjectIDFromHex(orgID)
+	var orgDoc bson.M
 
-	if err != nil {
-		utils.GetError(errors.New("invalid id"), http.StatusBadRequest, w)
-		return
-	}
+	if strings.Contains(orgID, "-org") {
+		// get previous settings
+		orgDoc, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": orgID})
+		if orgDoc == nil {
+			utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
+			return
+		}
+	} else {
+		// get previous settings 2
+		objID, err := primitive.ObjectIDFromHex(orgID)
+		if err != nil {
+			utils.GetError(err, http.StatusUnprocessableEntity, w)
+			return
+		}
 
-	orgDoc, _ := utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": validOrgID})
-	if orgDoc == nil {
-		utils.GetError(errors.New("organization with id "+orgID+" doesn't exist!"), http.StatusBadRequest, w)
-		return
+		orgDoc, _ = utils.GetMongoDBDoc(OrganizationCollectionName, bson.M{"_id": objID})
+		if orgDoc == nil {
+			utils.GetError(fmt.Errorf("organization %s not found", orgID), http.StatusNotFound, w)
+			return
+		}
 	}
 
 	email, ok := res["email"].(string)
@@ -1042,7 +1125,7 @@ func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *htt
 	memberStruct := Member{
 		Email:    user.Email,
 		UserName: username,
-		OrgID:    validOrgID.Hex(),
+		OrgID:    orgID,
 		Role:     "member",
 		Presence: "true",
 		JoinedAt: time.Now(),
@@ -1074,7 +1157,7 @@ func (oh *OrganizationHandler) GuestToOrganization(w http.ResponseWriter, r *htt
 	// update user organizations collection
 	updateFields := make(map[string]interface{})
 
-	user.Organizations = append(user.Organizations, validOrgID.Hex())
+	user.Organizations = append(user.Organizations, orgID)
 
 	updateFields["Organizations"] = user.Organizations
 	_, err = utils.UpdateOneMongoDBDoc(UserCollectionName, user.ID, updateFields)

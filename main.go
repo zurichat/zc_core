@@ -33,15 +33,15 @@ func (app *App) Run() error {
 	// Set Stripe api key
 	stripe.Key = os.Getenv("STRIPE_KEY")
 
-	if err := utils.ConnectToDB(os.Getenv("CLUSTER_URL")); err != nil {
+	if err := utils.ConnectToDB("mongodb://127.0.0.1:27017/zc"); err != nil {
 		return fmt.Errorf("could not connect to MongoDB: \n%v", err)
 	}
 
 	err := sentry.Init(sentry.ClientOptions{
-		Dsn:         os.Getenv("SENTRY_DNS"),
-		Environment: os.Getenv("ENV"),
-		Release:     "zurichat@0.1.0",
-		Debug:       true,
+		Dsn: os.Getenv("SENTRY_DNS"),
+		//Environment: os.Getenv("ENV"),
+		Release: "ticked@0.1.0",
+		Debug:   true,
 	})
 	if err != nil {
 		return fmt.Errorf("sentry.Init: %s", err)
@@ -87,7 +87,7 @@ func (app *App) Run() error {
 
 func main() {
 	// load .env file if it exists
-	err := godotenv.Load(".env")
+	err := godotenv.Load("example.env")
 	if err != nil {
 		logger.Error("Error loading .env file: %v", err)
 	}
