@@ -165,7 +165,7 @@ func UpdateOneMongoDBDoc(collectionName, id string, data map[string]interface{})
 	ctx := context.Background()
 	collection := defaultMongoHandle.GetCollection(collectionName)
 
-	if strings.Contains(id, "-org") {
+	if strings.Contains(id, "-") {
 		filter := bson.M{"_id": id}
 
 		// updateOne sets the fields, without using $set the entire document will be overwritten

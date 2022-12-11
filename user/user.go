@@ -142,20 +142,34 @@ func (uh *UserHandler) GetUser(response http.ResponseWriter, request *http.Reque
 	// Find a user by user ID
 	response.Header().Set("content-type", "application/json")
 
+	var res bson.M
+	var err error
+
 	params := mux.Vars(request)
 	userID := params["user_id"]
-	//objID, err := primitive.ObjectIDFromHex(userID)
-	//
-	//if err != nil {
-	//	utils.GetError(errors.New("invalid user id"), http.StatusBadRequest, response)
-	//	return
-	//}
 
-	res, err := utils.GetMongoDBDoc(UserCollectionName, bson.M{"_id": userID, "deactivated": false})
+	if strings.Contains(userID, "-") {
+		res, err = utils.GetMongoDBDoc(UserCollectionName, bson.M{"_id": userID, "deactivated": false})
 
-	if err != nil {
-		utils.GetError(errors.New("user not found"), http.StatusNotFound, response)
-		return
+		if err != nil {
+			utils.GetError(errors.New("user not found"), http.StatusNotFound, response)
+			return
+		}
+	} else {
+
+		objID, err := primitive.ObjectIDFromHex(userID)
+
+		if err != nil {
+			utils.GetError(errors.New("invalid user id"), http.StatusBadRequest, response)
+			return
+		}
+
+		res, err = utils.GetMongoDBDoc(UserCollectionName, bson.M{"_id": objID, "deactivated": false})
+
+		if err != nil {
+			utils.GetError(errors.New("user not found"), http.StatusNotFound, response)
+			return
+		}
 	}
 
 	DeleteMapProps(res, []string{"password"})
@@ -166,29 +180,48 @@ func (uh *UserHandler) GetUser(response http.ResponseWriter, request *http.Reque
 
 func (uh *UserHandler) UpdateUser(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("content-type", "application/json")
+
+	var userExist bson.M
+
 	// Validate the user ID
 	userID := mux.Vars(request)["user_id"]
-	objID, err := primitive.ObjectIDFromHex(userID)
 
-	if err != nil {
-		utils.GetError(errors.New("invalid user ID"), http.StatusBadRequest, response)
-		return
-	}
+	if strings.Contains(userID, "-") {
+		userExist, err := utils.GetMongoDBDoc(UserCollectionName, bson.M{"_id": userID})
 
-	userExist, err := utils.GetMongoDBDoc(UserCollectionName, bson.M{"_id": objID})
+		if err != nil {
+			utils.GetError(errors.New("user does not exist"), http.StatusNotFound, response)
+			return
+		}
 
-	if err != nil {
-		utils.GetError(errors.New("user does not exist"), http.StatusNotFound, response)
-		return
-	}
+		if userExist == nil {
+			utils.GetError(errors.New("user does not exist"), http.StatusBadRequest, response)
+			return
+		}
+	} else {
 
-	if userExist == nil {
-		utils.GetError(errors.New("user does not exist"), http.StatusBadRequest, response)
-		return
+		objID, err := primitive.ObjectIDFromHex(userID)
+
+		if err != nil {
+			utils.GetError(errors.New("invalid user ID"), http.StatusBadRequest, response)
+			return
+		}
+
+		userExist, err = utils.GetMongoDBDoc(UserCollectionName, bson.M{"_id": objID})
+
+		if err != nil {
+			utils.GetError(errors.New("user does not exist"), http.StatusNotFound, response)
+			return
+		}
+
+		if userExist == nil {
+			utils.GetError(errors.New("user does not exist"), http.StatusBadRequest, response)
+			return
+		}
 	}
 
 	var user UserUpdate
-	if err = utils.ParseJSONFromRequest(request, &user); err != nil {
+	if err := utils.ParseJSONFromRequest(request, &user); err != nil {
 		utils.GetError(errors.New("bad update data"), http.StatusUnprocessableEntity, response)
 		return
 	}
