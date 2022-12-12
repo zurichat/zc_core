@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"image"
 	"image/gif"
@@ -41,7 +42,6 @@ const (
 )
 
 var (
-	res              []MultipleTempResponse
 	permissionNumber fs.FileMode = 0777
 	mg32             int64       = 32
 	mg20             int64       = 20
@@ -107,7 +107,12 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 		return nil, err
 	}
 
+	res := []MultipleTempResponse{}
 	files := r.MultipartForm.File["file"]
+	if files == nil {
+		return nil, errors.New("empty file upload")
+	}
+
 	for _, fileHeader := range files {
 		file, err := fileHeader.Open()
 		if err != nil {
