@@ -133,9 +133,9 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 			return nil, fmt.Errorf("File type not allowed")
 		}
 
-		_, errr := file.Seek(0, io.SeekStart)
-		if errr != nil {
-			return nil, errr
+		_, err = file.Seek(0, io.SeekStart)
+		if err != nil {
+			return nil, err
 		}
 
 		if spl := strings.ReplaceAll(folderName, " ", ""); spl != "" {
@@ -147,24 +147,24 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 		fileExtension := filepath.Ext(fileHeader.Filename)
 		exeDir, newF := "files/"+folderName, ""
 		filenamePrefix := filepath.Join(exeDir, newF, buildFileName())
-		filename, errr := pickFileName(filenamePrefix, fileExtension)
+		filename, err := pickFileName(filenamePrefix, fileExtension)
 
-		if errr != nil {
-			return nil, errr
+		if err != nil {
+			return nil, err
 		}
 
-		_, err2 := os.Stat(exeDir)
-		if err2 != nil {
+		_, err = os.Stat(exeDir)
+		if err != nil {
 			err0 := os.MkdirAll(exeDir, permissionNumber)
 			if err0 != nil {
 				return nil, err0
 			}
 		}
 
-		destinationFile, erri := os.Create(filename)
+		destinationFile, err := os.Create(filename)
 
 		if err != nil {
-			return nil, erri
+			return nil, err
 		}
 
 		defer destinationFile.Close()
