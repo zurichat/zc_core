@@ -176,7 +176,7 @@ func MultipleFileUpload(folderName string, r *http.Request) ([]MultipleTempRespo
 
 		filenameE := strings.Join(strings.Split(filename, "\\"), "/")
 
-		var urlPrefix = "https://api.zuri.chat/"
+		var urlPrefix = os.Getenv("SERVER_NAME")
 		if r.Host == localDH || r.Host == localDHL {
 			urlPrefix = hostPath
 		}
