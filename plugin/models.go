@@ -62,8 +62,7 @@ func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 		return nil, err
 	}
 
-
-	res, err := utils.GetMongoDBDoc(PluginCollectionName, bson.M{"_id": objID, "deleted": false})
+	res, err := utils.GetMongoDBDoc(PluginCollectionName, bson.M{"_id": objID})
 
 	if err != nil {
 		return nil, err
@@ -92,9 +91,7 @@ func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 func FindPlugins(ctx context.Context, filter bson.M, opts ...*options.FindOptions) ([]*Plugin, error) {
 	ps := []*Plugin{}
 
-
 	cursor, err := utils.GetMongoDBDocs(PluginCollectionName, filter, opts...)
-
 
 	if err != nil {
 		return nil, err
@@ -157,7 +154,7 @@ func FindPluginByTemplateURL(ctx context.Context, url string) (*Plugin, error) {
 
 	if err != nil {
 		return nil, err
-	}	
+	}
 
 	bsonBytes, err := bson.Marshal(res)
 
