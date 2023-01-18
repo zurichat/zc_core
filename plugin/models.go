@@ -62,7 +62,7 @@ func FindPluginByID(ctx context.Context, id string) (*Plugin, error) {
 		return nil, err
 	}
 
-	res, err := utils.GetMongoDBDoc(PluginCollectionName, bson.M{"_id": objID, "deleted": false})
+	res, err := utils.GetMongoDBDoc(PluginCollectionName, bson.M{"_id": objID})
 
 	if err != nil {
 		return nil, err
