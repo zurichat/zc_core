@@ -82,7 +82,7 @@ func (au *AuthHandler) LoginIn(response http.ResponseWriter, request *http.Reque
 
 	vser, err := FetchUserByEmail(bson.M{"email": strings.ToLower(creds.Email)})
 	if err != nil {
-		utils.GetError(ErrUserNotFound, http.StatusBadRequest, response)
+		utils.GetError(ErrUserNotFound, http.StatusUnauthorized, response)
 		return
 	}
 	// check if user is verified
