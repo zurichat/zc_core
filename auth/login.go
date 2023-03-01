@@ -28,8 +28,8 @@ const (
 
 var (
 	validate               = validator.New()
-	ErrUserNotFound        = errors.New("User does not exist")
-	ErrInvalidCredentials  = errors.New("invalid login credentials")
+	ErrUserNotFound        = errors.New("User does not exist or Invalid credentials")
+	ErrInvalidCredentials  = errors.New("User does not exist or Invalid credentials")
 	ErrAccountConfirmError = errors.New("your account is not verified, kindly check your email for verification code")
 	ErrAccessExpired       = errors.New("error fetching user info, access token expired, kindly login again")
 )
@@ -422,13 +422,13 @@ func (au *AuthHandler) ConfirmUserPassword(w http.ResponseWriter, r *http.Reques
 	u, err := FetchUserByEmail(bson.M{"email": strings.ToLower(loggedInUser.Email)})
 
 	if err != nil {
-		utils.GetError(ErrUserNotFound, http.StatusBadRequest, w)
+		utils.GetError(ErrUserNotFound, http.StatusUnauthorized, w)
 		return
 	}
 	// check password
 	check := ComparePassword(creds.Password, u.Password)
 	if !check {
-		utils.GetError(errors.New("invalid credentials, confirm and try again"), http.StatusBadRequest, w)
+		utils.GetError(errors.New("invalid credentials, confirm and try again"), http.StatusUnauthorized, w)
 		return
 	}
 
